@@ -19,7 +19,7 @@ curvez 는 **보일러플레이트**다. 프로젝트 고유의 세부 에이전
 
 | 대상 | 이름 | 예시 |
 |---|---|---|
-| 마켓플레이스 | `curvez` | `/plugin marketplace add ~/Workspace/curvez` |
+| 마켓플레이스 | `curvez` | `/plugin marketplace add knut15/curvez` |
 | 플러그인 | `curvez` | `/plugin install curvez@curvez` |
 | 에이전트 | `curvez-<역할>` | `curvez-architect`, `curvez-nextjs` |
 | 스킬 | 역할명 (prefix 없음) | 호출 시 `curvez:bootstrap` 로 자동 네임스페이스 |

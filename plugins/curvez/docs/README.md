@@ -15,11 +15,18 @@ curvez 는 **보일러플레이트**다. 여기 들어 있는 12종 에이전트
 ## 설치
 
 curvez 는 Claude Code **플러그인 마켓플레이스** 형태로 배포된다.
-`~/Workspace/curvez` 저장소 자체가 마켓플레이스이고, 그 안의 `plugins/curvez` 가 플러그인이다.
+저장소 자체가 마켓플레이스이고, 그 안의 `plugins/curvez` 가 플러그인이다.
+
+```
+/plugin marketplace add knut15/curvez
+/plugin install curvez@curvez
+```
+
+curvez 자체를 고치면서 쓸 때는 GitHub 대신 로컬 체크아웃을 등록한다.
+원격을 등록하면 캐시된 사본이 붙으므로 방금 고친 파일이 반영되지 않는다.
 
 ```
 /plugin marketplace add ~/Workspace/curvez
-/plugin install curvez@curvez
 ```
 
 설치하면 에이전트 12종이 서브에이전트 이름으로 등록되고, 스킬 15종이 `curvez:` 네임스페이스로 붙는다.

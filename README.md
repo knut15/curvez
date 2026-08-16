@@ -14,7 +14,7 @@ Next.js · React Native 프로젝트를 위한 **Claude Code 오케스트레이�
 ## 설치
 
 ```bash
-/plugin marketplace add ~/Workspace/curvez
+/plugin marketplace add knut15/curvez
 /plugin install curvez@curvez
 ```
 
