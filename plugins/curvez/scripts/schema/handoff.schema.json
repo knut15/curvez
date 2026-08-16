@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://curvez.local/schema/handoff.schema.json",
+  "title": "curvez 핸드오프",
+  "description": "에이전트가 작업을 마치고 다음 에이전트 또는 오케스트레이터에게 넘기는 계약. .curvez/handoff/<from>.<timestamp>.json 에 저장한다.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "from",
+    "to",
+    "status",
+    "summary",
+    "artifacts",
+    "decisions",
+    "blocked_on",
+    "verification"
+  ],
+  "properties": {
+    "from": {
+      "type": "string",
+      "description": "이 핸드오프를 만든 에이전트의 name.",
+      "minLength": 1
+    },
+    "to": {
+      "type": "array",
+      "description": "이 결과를 받아야 하는 에이전트 name 목록. 오케스트레이터에게만 돌려줄 때도 명시한다.",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "status": {
+      "type": "string",
+      "enum": ["done", "blocked", "partial"],
+      "description": "done 은 verification 이 비면 쓸 수 없다. blocked 는 blocked_on 이 비면 쓸 수 없다."
+    },
+    "summary": {
+      "type": "string",
+      "description": "한 줄 요약. 수신 에이전트가 이것만 읽고도 다음 행동을 정할 수 있어야 한다.",
+      "minLength": 1
+    },
+    "artifacts": {
+      "type": "array",
+      "description": "이 작업이 만들거나 바꾼 파일.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "kind"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "kind": {
+            "type": "string",
+            "enum": ["decision", "code", "doc", "test", "spec", "research", "review", "retro", "commit", "pr"]
+          },
+          "note": { "type": "string" }
+        }
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "description": "되돌리려면 어디를 고쳐야 하는지까지 남긴 판단 기록.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["what", "why"],
+        "properties": {
+          "what": { "type": "string", "minLength": 1 },
+          "why": { "type": "string", "minLength": 1 },
+          "reversible_at": {
+            "type": "string",
+            "description": "이 결정을 바꾸려면 고쳐야 하는 위치. `파일:라인` 또는 파일 경로."
+          }
+        }
+      }
+    },
+    "blocked_on": {
+      "type": "array",
+      "description": "추측으로 채우지 않고 남긴 미해결 질문. 비어 있어도 된다.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["question", "who"],
+        "properties": {
+          "question": { "type": "string", "minLength": 1 },
+          "who": {
+            "type": "string",
+            "description": "답을 줄 주체. `user` 또는 에이전트 name.",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "description": "리뷰 지적. curvez-reviewer 와 curvez-structure-reviewer 가 쓴다. 그 외 에이전트는 비워 둔다.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "where", "what", "why"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "description": "지적 식별자. 두 리뷰어를 합칠 때 오케스트레이터가 `<from>/<id>` 로 접두사를 붙인다." },
+          "kind": { "type": "string", "minLength": 1, "description": "지적 유형." },
+          "where": {
+            "description": "파일:라인. 근거 없는 지적을 막는다. 한 곳이면 문자열, 여러 곳이면 문자열 배열. 중복·순환 지적은 본질적으로 위치가 여럿이다. 읽는 쪽은 항상 [].concat(where) 로 배열화해 쓴다.",
+            "oneOf": [
+              { "type": "string", "minLength": 1 },
+              { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+            ]
+          },
+          "what": { "type": "string", "minLength": 1 },
+          "why": { "type": "string", "minLength": 1 },
+          "evidence": {
+            "description": "재현 조건·근거. 문장이면 문자열, 실행으로 얻었으면 {command, output}.",
+            "oneOf": [
+              { "type": "string", "minLength": 1 },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["command", "output"],
+                "properties": {
+                  "command": { "type": "string", "minLength": 1 },
+                  "output": { "type": "string" }
+                }
+              }
+            ]
+          },
+          "severity": { "type": "string", "enum": ["blocker", "major", "minor"], "description": "curvez-reviewer 의 등급." },
+          "priority": { "type": "string", "enum": ["P0", "P1", "P2", "P3"], "description": "curvez-structure-reviewer 의 우선순위." },
+          "move_to": { "type": "string", "description": "옮길 위치. 구조 지적에서 쓴다." },
+          "blast_radius": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "영향 범위. 최소한 바뀔 파일 수를 담는다."
+          }
+        }
+      }
+    },
+    "verification": {
+      "type": "array",
+      "description": "실제로 돌린 명령과 그 결과. status 가 done 이면 최소 1건이 있어야 한다.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["command", "result"],
+        "properties": {
+          "command": { "type": "string", "minLength": 1 },
+          "result": { "type": "string", "minLength": 1 },
+          "passed": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

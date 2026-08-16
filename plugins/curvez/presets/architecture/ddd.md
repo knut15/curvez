@@ -1,0 +1,314 @@
+# DDD — 도메인 규칙이 화면보다 복잡할 때
+
+비즈니스 규칙은 프레임워크·DB·화면보다 오래 산다. "주문은 결제 완료 전에 취소할 수 있다" 는 규칙은
+Next.js 를 Remix 로 바꿔도, Postgres 를 Dynamo 로 바꿔도, 웹에서 앱으로 옮겨도 그대로다.
+그런데 그 규칙을 컴포넌트나 라우트 핸들러 안에 쓰면 그것들과 함께 죽는다.
+이 프리셋은 **오래 사는 것을 안쪽에, 자주 바뀌는 것을 바깥쪽에** 두고, 그 경계를 문장이 아니라
+`## 금지 import` 의 정규식으로 굳힌다. curvez 의 **기본 프리셋**이다.
+
+이 파일은 `.curvez/architecture.md` 의 **초안**이다. 완성품이 아니다.
+`curvez-architect` 가 이 파일을 읽어 3~5문 인터뷰로 레이어명과 경계 규칙만 조정한 뒤 프로젝트에 확정한다.
+`<...>` 로 표시된 자리와 `## 예외`·`## 결정 로그` 는 프로젝트가 채운다.
+
+---
+
+## 언제 이 프리셋을 고르는가
+
+curvez 는 DDD 하나만 제공한다. **고를 것이 없다 — 확인할 것은 규모가 이 구조를 감당하는가다.**
+
+| 규모 신호 | 조정 |
+|---|---|
+| 라우트 6개 이하 **그리고** 도메인 엔티티 4개 이하 | `application` 을 두지 않는다. `presentation → domain` 두 층으로 줄인다 |
+| 그 이상 | 프리셋 그대로. 4개 레이어를 전부 둔다 |
+| 바운디드 컨텍스트가 3개 이상으로 갈린다 | `## 인터뷰에서 조정할 것` 의 "컨텍스트를 나눌 때" 를 따른다 |
+
+조정 판정선은 `### application 을 둘 것인가` 에 있다. **레이어 수를 줄이는 것이지 다른 구조로 가는 것이 아니다.**
+
+**사용자가 아무것도 지정하지 않으면 이대로 간다. 되묻지 마라.**
+
+**사용자가 다른 구조를 명시적으로 요청하면** 이 프리셋을 쓰지 않는다. curvez 는 대안 프리셋을
+갖고 있지 않으므로 인터뷰로 직접 구성한다 — `curvez:architecture-setup` 의
+`### DDD 를 쓰지 않기로 했을 때`. 그 경우에도 `.curvez/architecture.md` 의 필수 헤딩 7개와
+`## 금지 import` 표는 똑같이 채운다.
+
+**적합:** 서버 상태와 계산 로직이 제품의 핵심일 때. 같은 규칙이 여러 화면에서 쓰일 때.
+규칙 변경이 화면 변경과 독립일 때. 도메인 로직을 런타임 없이 테스트하고 싶을 때.
+monorepo 에서 웹과 앱이 같은 규칙을 공유해야 할 때.
+
+**과함:** 화면이 대부분 폼과 목록이고 규칙이라 할 것이 검증 몇 줄일 때. 프로토타입.
+이럴 때 DDD 는 경계를 만드는 게 아니라 파일만 만든다.
+
+**대가:** 파일 수가 늘고 간접 층이 생긴다. CRUD 하나에 도메인 타입 + 리포지터리 인터페이스 +
+구현 + 유스케이스로 파일 넷이다. 의존 역전(도메인이 인터페이스를 선언하고 인프라가 구현한다)을
+팀이 이해하지 못하면 도메인 안에 ORM 타입이 그대로 들어오고 레이어는 폴더 이름으로만 남는다.
+
+## 인터뷰에서 조정할 것
+
+인터뷰는 **레이어명과 경계 규칙만** 바꾼다. 프리셋을 재설계하지 않는다. 3문 이상 5문 이하다.
+
+| 무엇을 | 프리셋 기본값 | 바꾸면 함께 고칠 곳 |
+|---|---|---|
+| 레이어 이름을 팀 용어로 | `application` → `usecase`, `presentation` → `ui` 등 | `## 레이어 정의`, `## 의존 방향`, `## 금지 import` 의 검사 경로와 패턴, `## 폴더 구조` |
+| 공유 코드를 어디에 둘 것인가 | `shared/` 를 두지 않는다. 순수 유틸은 `domain/shared/`, 프레임워크가 필요한 유틸은 `presentation/lib/` | `## 폴더 구조`. `shared/` 를 최상위로 올리면 ARCH-003·ARCH-004 의 검사 경로에 추가하라 |
+| 경계 예외를 허용할 지점 | 없음 | `## 예외` 에 대상·허용 범위·**만료 조건**을 함께 적는다. 만료 조건 없는 예외는 새 기본값이 된다 |
+| (monorepo) 앱 간 공유를 패키지로 자를 것인가 폴더로 자를 것인가 | 패키지. `paths.domain` 이 곧 그 패키지다 | `## 폴더 구조`, `## 스택 매핑` 의 monorepo 절, 금지 import 의 검사 경로 |
+| (react-native) 플랫폼 분기를 어느 레이어에서만 허용할 것인가 | `presentation` 과 `infrastructure` 에서만. `Platform.OS` 와 `.ios.tsx`/`.android.tsx` 가 그 밖으로 나가지 않는다 | `## 레이어 정의` 의 "여기 들어가면 안 되는 것", 필요하면 금지 import 규칙 추가 |
+| **바운디드 컨텍스트를 나눌 것인가** | 나누지 않는다. `src/{domain,application,...}` 하나 | 아래 절 |
+
+### 컨텍스트를 나눌 때
+
+도메인이 서로 다른 언어를 쓰기 시작하면(같은 `User` 가 두 곳에서 다른 것을 뜻하면) 나눈다.
+구조가 `src/domains/<컨텍스트>/{domain,application,infrastructure,presentation}` 로 바뀌고
+규칙 두 개가 추가된다.
+
+| 규칙 | 내용 |
+|---|---|
+| 배럴로만 접근 | 다른 컨텍스트는 `@/domains/<이름>` 만. 내부 경로(`@/domains/x/domain/...`)는 막는다 |
+| 의존 순서 | 컨텍스트에 상류→하류 순서를 정한다. **하류는 상류를 알아도 되지만 반대는 안 된다** |
+
+**의존 순서 규칙이 없으면 배럴이 우회로가 된다.** "내부 경로를 파고들지 마라" 는 배럴을 허용하므로,
+상류가 하류의 배럴을 부르는 것은 걸리지 않는다. 실제 프로젝트에서 이 구멍으로 상류→하류 참조가
+들어온 사례가 있다. 두 규칙을 함께 걸어야 경계가 닫힌다.
+
+나눈 뒤에는 [references/eslint-layer-rules.md](references/eslint-layer-rules.md) 의
+"여러 컨텍스트 설정" 절을 따른다. 컨텍스트 목록과 순서를 배열로 선언하고 규칙을 생성한다.
+
+**나누는 것을 기본값으로 두지 않는 이유:** 컨텍스트가 둘이면 컨텍스트 경계와 레이어 경계가 겹쳐
+규칙만 두 벌이 되고 실익이 없다. 셋 이상부터 값을 한다 — 그 판정은
+`agents/curvez-architect.md` 의 `## 판단 기준` 표에 있다.
+
+**묻지 않는 것:** 도메인이 프레임워크를 참조해도 되는가 — 협상 대상이 아니다.
+폴더 이름의 단복수·대소문자 — 답이 무엇이든 경계가 달라지지 않는다.
+어떤 라이브러리를 쓰는가 — 아키텍처는 라이브러리 교체에도 살아남아야 한다.
+
+### `application` 을 둘 것인가 — 인터뷰 문항이 아니다
+
+프리셋은 `application` 을 **두는 형태**로 쓴다. 하지만 규모가 작으면 합칠 수 있다.
+이건 취향이 아니라 **수치 판정**이므로 3~5문 예산을 여기에 쓰지 마라.
+
+- 판정선: **라우트(화면) 수와 도메인 엔티티 수 양쪽이 기준 미만이면 두지 않는다. 둘 중 하나라도 넘으면 둔다.**
+- 정확한 값은 `skills/architecture-setup/SKILL.md` 2단계 표와 `agents/curvez-architect.md` 의 `## 판단 기준` 표가 정본이다. 여기에 옮겨 적지 않는다
+- **합치는 방법:** `application` 을 지우고 `presentation` 이 `domain` 을 직접 호출한다. ARCH-003·ARCH-004 의 검사 경로에서 `src/application/` 을 빼고, `## 의존 방향` 을 `presentation → domain` 으로 줄인다. 삭제 작업이라 싸다
+- **합치지 말아야 할 신호:** 트랜잭션 경계가 코드로 안 보인다. 같은 조회 조합이 화면 여럿에서 반복된다. 도메인 테스트에 요청 객체나 모킹이 필요하다
+- **합쳐야 할 신호:** 새 층의 파일이 전부 위임 한 줄이다. 그 층을 지웠을 때 깨지는 규칙을 말할 수 없다
+
+애매하면 **레이어가 적은 쪽**을 고르되, 넘을 것이 예상되면 미리 둔다.
+어느 쪽을 골랐든 `## 결정 로그` 에 `되돌릴 위치` 를 남긴다.
+
+### 규칙을 더 둘 것인가
+
+아래는 프리셋이 **기본으로 켜지 않는** 규칙이다. 필요하면 인터뷰 답에 따라 `ARCH-009` 부터 이어 붙인다.
+
+- `presentation` 이 `infrastructure` 를 직접 참조 금지 — `src/presentation/` 에 `from ['\"][^'\"]*infrastructure/` 를 건다. 유스케이스 경계를 강제하지만 의존성 조립 지점(컴포지션 루트)이 걸리므로 그 파일을 `## 예외` 에 만료 조건과 함께 넣어야 한다. 예외를 만들기 싫으면 켜지 마라
+- `domain` 이 `crypto`/`node:crypto` 참조 금지 — RN 에는 없는 모듈이라 공유가 깨진다. 순수 해시 용도로 쓰고 있다면 오탐이 된다
+- `domain` 이 로깅·모니터링 SDK 참조 금지 — 도메인이 관측 도구에 묶이면 테스트에서 초기화가 필요해진다
+
+---
+
+## 레이어 정의
+
+| 레이어 | 책임 | 여기 들어가는 것 | 여기 들어가면 안 되는 것 |
+|---|---|---|---|
+| `domain` | 비즈니스 규칙 그 자체. 가장 오래 산다 | 엔티티, 값 객체, 도메인 이벤트, 불변식 검사, 순수 계산, 리포지터리·게이트웨이 **인터페이스 선언** | 프레임워크 import, I/O, DB·HTTP 클라이언트, 환경 변수 읽기, 시각·난수 직접 호출, 로깅 SDK. 필요한 값은 전부 **인자로 받는다** |
+| `application` | 유스케이스. 도메인 객체를 조립해 하나의 작업을 만든다. **트랜잭션 경계가 여기다** | 유스케이스 함수, 입력 DTO 와 출력 DTO, 권한 검사 조합, 도메인 인터페이스에 대한 의존 선언 | 구체 구현체 import, SQL, HTTP 호출, 컴포넌트, 라우트 객체, 요청·응답 타입 |
+| `infrastructure` | 도메인이 선언한 인터페이스의 **구현**. 바깥 세계와 붙는 유일한 곳 | 리포지터리 구현, DB 클라이언트, HTTP 클라이언트, 외부 SDK 래퍼, 캐시·저장소, 매퍼, 환경 변수 로딩 | 비즈니스 규칙, 화면 컴포넌트, 라우팅 결정 |
+| `presentation` | 화면과 진입점 | 라우트, 화면 컴포넌트, 폼, 상태 훅, 뷰 모델 변환, 네비게이션 | 비즈니스 규칙, DB·외부 API 직접 접근, 도메인 불변식 재구현 |
+
+**의존 역전이 이 프리셋의 핵심이다.** `domain` 이 `interface OrderRepository` 를 선언하고
+`infrastructure` 가 그것을 구현한다. `domain` 은 구현체의 존재를 모른다.
+이 방향이 뒤집히면 레이어는 폴더 이름으로만 남는다.
+
+## 의존 방향
+
+```
+presentation ──→ application ──→ domain
+                                   ↑
+infrastructure ────────────────────┘
+```
+
+- `presentation` 은 `application` 과 `domain` 의 타입을 쓸 수 있다
+- `application` 은 `domain` 만 쓸 수 있다
+- `infrastructure` 는 `domain` 이 선언한 인터페이스를 구현하므로 `domain` 을 향한다
+- 가장 안쪽 레이어는 **어느 레이어도 import 하지 않는다.** 자기 자신 안에서만 참조한다
+
+**역방향은 전부 금지다.** 아래 화살표는 하나도 존재하면 안 된다.
+
+- `domain` 에서 `application`·`infrastructure`·`presentation` 으로 (ARCH-003, ARCH-004)
+- `application` 에서 `infrastructure`·`presentation` 으로 (ARCH-003, ARCH-004)
+- `infrastructure` 에서 `presentation` 으로 (ARCH-008)
+
+`infrastructure` 와 `presentation` 은 **형제**다. 서로를 부르지 않고 둘 다 안쪽만 본다.
+둘을 잇는 배선은 진입점 한 곳에서만 한다.
+
+## 금지 import
+
+**이 표는 규칙의 선언이고, 집행은 lint 가 한다.**
+
+아키텍처를 확정한 직후 `eslint.config.mjs` 에 계층 규칙을 넣는다. 설정 전문과 함정은
+[references/eslint-layer-rules.md](references/eslint-layer-rules.md) 에 있다 — 코드를 쓰기 전에 연다.
+
+| | 이 표 (grep) | ESLint |
+|---|---|---|
+| 언제 | 감사·리뷰 시점 | 편집 시점, 커밋, CI |
+| 정확도 | 문자열 매칭 | import 구문 파싱 |
+| 역할 | 규칙이 무엇인지 **선언** | 규칙을 **집행** |
+
+둘 다 둔다. lint 설정이 없는 초기 단계나 ESLint 를 쓰지 않는 프로젝트에서는 이 표가 유일한 방어선이다.
+반대로 lint 는 주석 안의 import·줄바꿈된 import·동적 `import()` 까지 정확히 잡는다.
+
+**lint 를 넣었으면 위반을 일부러 만들어 에러가 나는지 확인한다.** 설정 오류로 규칙이 로드되지 않아도
+lint 는 조용히 통과한다 — 검사가 안 돌았는데 통과로 보이는 것이 이 프로젝트에서 가장 자주 나온 실패다.
+
+세 번째 열이 `grep -E` 에 **그대로** 들어가는 값이다. 패턴 안의 `|` 는 `\|` 로 이스케이프돼 있으므로
+검사 스크립트는 파싱 후 이스케이프를 **되돌린 뒤** 실행해야 한다.
+되돌리지 않으면 모든 규칙이 위반 0건으로 나오고, 그 0건은 "깨끗함" 과 구별되지 않는다.
+
+검사 경로의 `src/` 는 **단일 앱 기준의 자리표시자**다. `.curvez/profile.json` 의 `paths` 에 맞춰
+`apps/web/src/`, `apps/mobile/src/`, `packages/domain/src/` 로 바꿔 확정한다. `## 스택 매핑` 을 보라.
+
+| 규칙 ID | 검사 경로 | 금지 패턴 (ERE) | 이유 |
+|---|---|---|---|
+| ARCH-001 | src/domain/ | from ['\"](next\|next/.*\|react\|react-dom\|react/.*) | 도메인은 프레임워크 교체에서 분리돼야 한다 |
+| ARCH-002 | src/domain/ | from ['\"](react-native\|react-native/.*\|expo\|expo-.*\|expo/.*\|@react-navigation/.*) | 같은 도메인을 웹과 앱에서 재사용하려면 RN 의존이 없어야 한다 |
+| ARCH-003 | src/domain/ | from ['\"][^'\"]*infrastructure/ | 의존은 안쪽으로만 흐른다. 바깥을 부르면 레이어가 이름만 남는다 |
+| ARCH-004 | src/domain/ | from ['\"][^'\"]*presentation/ | 화면을 아는 도메인은 화면이 바뀔 때마다 함께 바뀐다 |
+| ARCH-009 | src/application/ | from ['\"][^'\"]*infrastructure/ | ARCH-003 과 같은 규칙을 application 에 적용한다. 검사 경로를 한 칸에 둘 이상 적으면 zsh 에서 단어 분리가 일어나지 않아 위반 0건으로 위장된다 |
+| ARCH-010 | src/application/ | from ['\"][^'\"]*presentation/ | ARCH-004 와 같은 규칙을 application 에 적용한다. 경로를 나눈 이유는 ARCH-009 와 같다 |
+| ARCH-005 | src/domain/ | from ['\"](node:)?(fs\|fs/promises\|path\|os\|http\|https\|net\|dns\|child_process\|worker_threads)['\"] | 런타임과 파일 시스템에 묶인 도메인은 앱에서 재사용도 테스트도 어렵다 |
+| ARCH-006 | src/domain/ | from ['\"](@prisma/client\|prisma\|drizzle-orm.*\|typeorm\|mongoose\|mongodb\|pg\|mysql2\|redis\|ioredis\|@supabase/.*\|firebase\|firebase/.*\|@aws-sdk/.*\|axios\|ky\|got\|node-fetch\|@tanstack/react-query\|swr) | DB 와 외부 클라이언트는 인프라의 관심사다. 도메인은 인터페이스만 선언한다 |
+| ARCH-007 | src/domain/ | (^\|[^a-zA-Z0-9_.])fetch\( | 도메인이 직접 네트워크를 부르면 단위 테스트가 통합 테스트가 된다 |
+| ARCH-008 | src/infrastructure/ | from ['\"][^'\"]*presentation/ | 인프라가 화면을 알면 의존이 바깥에서 바깥으로 흐른다 |
+
+ARCH-001 부터 ARCH-007 까지가 **도메인의 프레임워크 독립**을 세 축으로 나눠 검사한다.
+프레임워크(001·002), 레이어 방향(003·004), I/O(005·006·007).
+이 셋 중 하나라도 빠지면 나머지 둘이 통과해도 도메인은 독립이 아니다.
+
+정규식으로 표현할 수 없는 것은 규칙이 아니라 권고다. `## 예외` 가 아니라 `## 권고` 로 보낸다.
+
+## 실행 절차
+
+경계를 확정한 뒤 **파일을 만들거나 옮기거나 import 를 추가하기 전에**
+[references/ddd-execution.md](references/ddd-execution.md) 를 읽는다.
+배치 결정 트리, 안쪽부터 만드는 순서, 유스케이스 작성 순서, 명명 규칙, 커밋 전 체크리스트가 거기 있다.
+
+이 문서는 경계가 **무엇인지** 정의하고, 그 문서는 그 경계 안에서 **어떻게** 코드를 놓는지 다룬다.
+
+## 폴더 구조
+
+`.curvez/profile.json` 의 `paths` 를 전제로 읽는다. 아래 트리의 최상위 접두사는 그 값으로 치환된다.
+
+**단일 앱** — `stack: nextjs` 면 `<paths.web>/`, `stack: react-native` 면 `<paths.mobile>/` 아래다.
+
+```
+src/
+├── domain/                  # 프레임워크 0개. 여기서 import 하는 것이 거의 없다
+│   ├── order/
+│   │   ├── order.ts               # 엔티티와 불변식
+│   │   ├── order-status.ts        # 값 객체
+│   │   └── order-repository.ts    # 인터페이스 선언만. 구현 없음
+│   └── shared/              # 순수 유틸. 프레임워크가 필요하면 여기가 아니다
+├── application/             # 유스케이스. 트랜잭션 경계
+│   └── order/
+│       ├── cancel-order.ts
+│       └── dto.ts
+├── infrastructure/          # 도메인 인터페이스의 구현
+│   ├── db/
+│   │   └── order-repository.prisma.ts
+│   ├── http/
+│   └── config/              # 환경 변수는 여기서만 읽는다
+└── presentation/            # 화면과 진입점
+    ├── app/                 # Next.js App Router 라우트 (stack: nextjs)
+    ├── screens/             # 화면 컴포넌트 (stack: react-native)
+    ├── components/
+    └── hooks/
+```
+
+**monorepo** — `paths.domain` 이 별도 패키지로 빠진다. **`domain` 만 공유하고 나머지는 앱별로 둔다.**
+
+```
+packages/
+└── domain/                  # = paths.domain. 소유자를 두지 않는 공용 경로
+    └── src/
+        ├── order/
+        └── shared/
+apps/
+├── web/                     # = paths.web
+│   └── src/
+│       ├── application/
+│       ├── infrastructure/
+│       └── presentation/
+│           └── app/
+└── mobile/                  # = paths.mobile
+    └── src/
+        ├── application/
+        ├── infrastructure/
+        └── presentation/
+            ├── navigation/
+            └── screens/
+tests/                       # = paths.tests. 없으면 각 패키지 안의 관례 위치
+```
+
+`application` 을 공유 패키지로 올리지 않는 것이 기본값이다.
+유스케이스는 화면 흐름에 붙기 쉬워 웹과 앱에서 다르게 갈라진다.
+같은 유스케이스가 양쪽에서 실제로 반복되기 시작하면 그때 `packages/application` 을 만들고
+`## 결정 로그` 에 남긴다. 미리 만들면 통행세만 는다.
+
+## 스택 매핑
+
+| 레이어 | `nextjs` | `react-native` | `monorepo` |
+|---|---|---|---|
+| `domain` | `src/domain/` — 순수 TS | 동일. 웹과 그대로 공유 가능한 유일한 레이어다 | `packages/domain/src/` — 웹·앱이 함께 쓴다 |
+| `application` | `src/application/` — 서버에서 호출되는 유스케이스 | `src/application/` — 화면 훅이 호출하는 유스케이스 | 앱별로 각각 둔다 |
+| `infrastructure` | DB 클라이언트, `fetch` 래퍼, 외부 SDK | HTTP 클라이언트, 로컬 저장소, 네이티브 모듈 래퍼 | 앱별로 각각 둔다. 같은 도메인 인터페이스를 서로 다르게 구현한다 |
+| `presentation` | App Router 라우트, 서버·클라이언트 컴포넌트 | 화면 컴포넌트와 네비게이터 | 앱별로 각각 둔다 |
+
+### `nextjs` — RSC 경계는 레이어 경계가 아니다
+
+App Router 는 `presentation` **안쪽의 구분**이다. 레이어를 가르지 않는다.
+
+- `app/` 의 라우트·레이아웃·`page.tsx` 는 전부 `presentation` 이다. 서버 컴포넌트든 클라이언트 컴포넌트든 같다
+- **서버 컴포넌트라고 해서 `infrastructure` 를 직접 불러도 되는 것이 아니다.** 서버에서 돈다는 사실과 어느 레이어에 속하는가는 무관하다. 규칙이 필요하면 `ARCH-009` 로 켠다
+- Route Handler(`route.ts`)와 Server Action 은 `presentation` 의 진입점이다. 그 안에서 하는 일은 `application` 의 유스케이스를 **부르는 것뿐**이어야 한다
+- `next/headers`·`cookies()`·`auth()` 는 `presentation` 에서 읽어 **인자로** 안쪽에 넘긴다. `application` 이 요청 컨텍스트를 직접 읽으면 배치 작업이나 스크립트에서 그 유스케이스를 부를 수 없다
+- `'use client'` 는 `presentation` 파일에만 붙는다. `application` 이나 `domain` 파일에 이 지시어가 필요해졌다면 그 코드는 자리를 잘못 잡은 것이다
+- `src/` 를 쓰지 않는 프로젝트라면 루트 `app/` 이 `presentation/app/` 을 대신한다. 금지 import 의 검사 경로를 그에 맞게 고쳐라
+
+`app/` 디렉터리 이름이 레이어 이름과 겹치지 않으므로 Next.js App Router 의 `app/` 과 혼동할 여지가 없다.
+
+### `react-native` — 네비게이션은 `presentation` 이다
+
+- 네비게이터 정의, 스크린 등록, 라우트 파라미터 타입은 전부 `presentation/navigation/` 이다. `@react-navigation/*` 는 ARCH-002 로 `domain` 에서 이미 막혀 있다
+- **화면 이동은 유스케이스의 결과가 아니다.** `application` 이 `navigate()` 를 부르면 그 유스케이스는 화면 없이 테스트할 수 없다. 유스케이스는 결과를 반환하고, 무엇으로 이동할지는 `presentation` 이 정한다
+- 딥링크 스킴 정의는 `presentation`, 딥링크가 실어 오는 식별자의 유효성은 `domain` 이다
+- 플랫폼 분기(`Platform.OS`, `.ios.tsx`/`.android.tsx`)는 `presentation` 과 `infrastructure` 에서만 한다. `domain` 에 플랫폼 분기가 생기면 그 규칙은 두 플랫폼에서 다르게 동작하는 규칙이 된다
+- Expo 모듈(`expo-secure-store`, `expo-file-system` 등)은 전부 `infrastructure` 의 래퍼 뒤에 둔다. `domain` 은 그 래퍼의 인터페이스만 안다
+- `paths.mobile` 아래에 `src/` 를 두지 않는 템플릿이 흔하다. 확정 전에 실제 경로를 확인하고 검사 경로를 맞춰라
+
+### `monorepo` — `domain` 이 `paths.domain` 으로 빠진다
+
+**DDD 가 monorepo 에서 가장 잘 맞는 이유가 이것이다.** `domain` 이 프레임워크를 참조하지 않으면
+`packages/domain` 하나를 웹과 앱이 그대로 쓴다. 참조하는 순간 공유는 불가능해진다 —
+`domain` 이 `next/headers` 를 한 줄이라도 import 하면 RN 앱이 그 패키지를 못 쓴다. 반대도 같다.
+**공유는 "대부분 공유" 가 성립하지 않는다. 한 줄이면 전체가 막힌다.**
+
+- `paths.domain` 에는 **소유자를 두지 않는다.** 웹 담당도 앱 담당도 아닌 공용 경로다. 그래서 구현 에이전트를 이 경로에 동시에 띄우지 않는다
+- ARCH-001 과 ARCH-002 의 검사 경로를 `packages/domain/src/` 로 바꾼다. 이 둘이 monorepo 공유를 실제로 지키는 규칙이다
+- ARCH-003·ARCH-004 의 검사 경로는 `packages/domain/src/ apps/web/src/application/ apps/mobile/src/application/` 처럼 앱별 경로를 함께 나열한다
+- **패키지 경계는 상대 경로로 뚫린다.** 워크스페이스 프로토콜을 쓰더라도 `../../packages/...` 같은 import 가 가능하므로 금지 import 규칙은 여전히 필요하다
+- 앱 간 공유를 패키지로 자를지 폴더로 자를지는 인터뷰 문항이다. 패키지는 경계가 빌드 도구로 강제되지만 초기 설정과 빌드 시간이 늘고, 폴더는 반대다
+- `expo.sdkVersion` 이 있으면 RN 앱이 존재한다는 뜻이다. `paths.domain` 에서 RN 의존 검사(ARCH-002)를 절대 끄지 마라
+
+## 예외
+
+없음.
+
+프로젝트에서 규칙을 못 지키는 지점이 생기면 여기에 **만료 조건과 함께** 적는다.
+만료 조건이 없는 예외는 부채가 아니라 새 기본값이 된다.
+
+| 대상 | 허용 범위 | 만료 조건 |
+|---|---|---|
+
+## 결정 로그
+
+| 무엇을 | 왜 | 되돌릴 위치 |
+|---|---|---|
