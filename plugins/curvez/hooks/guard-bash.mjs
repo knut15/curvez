@@ -35,7 +35,22 @@ function gitCmd(sub) {
 
 /** 되돌리기 어렵거나 원격에 영향을 주는 명령. */
 const DANGEROUS_GIT = [
-  { re: gitCmd(String.raw`push\b`), why: "원격에 반영되면 되돌리기가 로컬 작업보다 훨씬 비싸다" },
+  // 평범한 `git push` 는 막지 않는다.
+  //
+  // 원격에 커밋을 얹는 것은 append 라 되돌릴 수 있다 — revert 커밋 하나면 된다.
+  // 반면 아래 두 가지는 원격의 이력을 **지운다**. 다른 사람이 이미 받아 간 커밋이면
+  // 로컬에서 되돌릴 방법이 없다. 그래서 push 전체가 아니라 이 둘만 막는다.
+  //
+  // `-f` 축약형을 함께 잡는 이유: 아래 `--force` 규칙은 문자열 `--force` 만 본다.
+  // push 규칙을 통째로 빼면 `git push -f` 가 어디에도 안 걸려 조용히 통과한다.
+  {
+    re: gitCmd(String.raw`push\b[^;&|]*\s(?:-f\b|--force\b(?!-with-lease))`),
+    why: "강제 push 는 원격에 있던 남의 커밋을 덮어쓴다. 되돌릴 수 없다",
+  },
+  {
+    re: gitCmd(String.raw`push\b[^;&|]*(?:\s--delete\b|\s:\S)`),
+    why: "원격 브랜치·태그를 지운다. 받아 간 사람이 없으면 복구할 방법이 없다",
+  },
   { re: gitCmd(String.raw`reset\s+--hard\b`), why: "커밋되지 않은 변경이 복구 불가능하게 사라진다" },
   { re: gitCmd(String.raw`clean\s+-[a-z]*f`), why: "추적되지 않는 파일이 사라진다. .env 나 로컬 설정이 포함될 수 있다" },
   { re: gitCmd(String.raw`branch\s+-D\b`), why: "머지되지 않은 브랜치를 강제로 지운다" },
