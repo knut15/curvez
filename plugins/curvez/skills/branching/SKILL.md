@@ -56,6 +56,8 @@ BASE=$(pf "?.git?.baseBranch")
 RELEASE=$(pf "?.git?.releaseBranch")
 STRATEGY=$(pf "?.git?.mergeStrategy")
 PROTECTED=$(pf "?.git?.protectedBranches?.join(' ')")
+# 머지 권한. 키가 없으면 [releaseBranch] 로 간주한다 (아래 "머지 권한은 humanMergeTargets 가 정한다")
+HUMAN=$(node -p "(()=>{const g=JSON.parse(require('fs').readFileSync('$P','utf8')).git??{};return (g.humanMergeTargets ?? [g.releaseBranch]).filter(Boolean).join(' ')})()")
 
 if [ -z "$BASE" ] || [ -z "$RELEASE" ]; then
   echo "BLOCKED: profile.json 에 git.baseBranch / git.releaseBranch 가 없다. 추측하지 않는다"
@@ -63,7 +65,7 @@ if [ -z "$BASE" ] || [ -z "$RELEASE" ]; then
 fi
 
 if [ "$BASE" = "$RELEASE" ]; then TIER=1; else TIER=2; fi
-echo "tier=$TIER base=$BASE release=$RELEASE strategy=$STRATEGY protected=[$PROTECTED]"
+echo "tier=$TIER base=$BASE release=$RELEASE strategy=$STRATEGY protected=[$PROTECTED] human=[$HUMAN]"
 ```
 
 **`git` 키가 없으면 `status: blocked` 다. 브랜치 이름을 추측하지 마라.**
@@ -89,18 +91,23 @@ echo "tier=$TIER base=$BASE release=$RELEASE strategy=$STRATEGY protected=[$PROT
 1단/2단 판정으로 머지 권한을 추론하지 마라. **PR 타겟이 프로파일의
 `git.humanMergeTargets` 에 있으면 사람이 누르고, 없으면 요청받았을 때 실행해도 된다.**
 
+`$HUMAN` 은 0단계에서 읽어 둔 값이다. **키가 없으면 `[$RELEASE]` 로 간주한다** — 없는 것을
+"비었다" 로 읽으면 배포 브랜치 머지가 열린다.
+
 ```bash
-HUMAN=$(node -p "(require('./.curvez/profile.json').git.humanMergeTargets ?? []).join(' ')")
 # PR 타겟이 $HUMAN 에 포함되면 머지하지 않고 URL 을 보고한다
+TARGET=$(gh pr view "$PR" --json baseRefName -q .baseRefName)
+case " $HUMAN " in *" $TARGET "*) echo "사람이 누른다: $TARGET" ;; *) echo "요청받으면 실행: $TARGET" ;; esac
 ```
 
 **이유:** `main` 으로 가는 머지가 곧 배포인지는 그 프로젝트의 CD 설정에 달렸고 curvez 는 알 수 없다.
 1단 구조라고 무조건 사람이 눌러야 하는 것도, 2단이라고 `$BASE` 머지가 항상 안전한 것도 아니다.
 추측하지 않고 프로파일에서 읽는다 — `paths` 와 `commands` 를 다루는 방식과 같다.
 
-기본값은 `[releaseBranch]` 다. 1단 구조에서는 그것이 곧 모든 PR 이므로 **기본 상태에서는
-에이전트가 머지하지 않는다.** 그 프로젝트에서 `main` 머지가 배포가 아니라면
-`humanMergeTargets` 를 비워 열어 준다. 안전한 쪽을 기본으로 두고 명시적으로 여는 구조다.
+`bootstrap` 이 넣는 기본값은 `[releaseBranch]` 다. 1단 구조에서는 그것이 곧 모든 PR 이므로
+**기본 상태에서는 에이전트가 머지하지 않는다.** 그 프로젝트에서 `$RELEASE` 머지가 배포가
+아니라면 사용자가 `humanMergeTargets` 를 비워 열어 준다. 안전한 쪽을 기본으로 두고 명시적으로
+여는 구조다. **배열을 고치는 것은 사용자의 결정이다 — 에이전트는 읽기만 한다.**
 
 
 ## 절대 규칙
@@ -126,26 +133,31 @@ HUMAN=$(node -p "(require('./.curvez/profile.json').git.humanMergeTargets ?? [])
 
 ## 머지 권한 — 되돌리기 비용의 비대칭
 
-**어디로 가는 PR 인가로 갈린다. 누가 요청했는지로 갈리지 않는다.**
+**타겟이 `$HUMAN`(= `humanMergeTargets`)에 있는지로 갈린다. 누가 요청했는지로 갈리지 않는다.**
 
-| PR | 누가 머지하는가 |
-|---|---|
-| 작업 브랜치 → `$BASE` (2단) | **요청받으면 실행한다** |
-| 작업 브랜치 → `$BASE` (1단, `$BASE = $RELEASE`) | 사람이 한다. PR URL 을 보고하고 멈춘다 |
-| `$BASE` → `$RELEASE` (릴리스 PR) | 사람이 한다 |
-| `hotfix/` → `$RELEASE` | 사람이 한다 |
-| back-merge (`$BASE` 를 `$RELEASE` 로 맞추기) | 사람이 한다. 가드가 막는다 (5절) |
+| PR | 누가 머지하는가 | 기본 프로파일에서 |
+|---|---|---|
+| 작업 브랜치 → `$BASE`, `$BASE` 가 `$HUMAN` 에 없다 | **요청받으면 실행한다** | 2단 구조가 여기 온다 |
+| 작업 브랜치 → `$BASE`, `$BASE` 가 `$HUMAN` 에 있다 | 사람이 한다. PR URL 을 보고하고 멈춘다 | 1단 구조(`$BASE = $RELEASE`)가 여기 온다 |
+| `$BASE` → `$RELEASE` (릴리스 PR) | 사람이 한다 | `$RELEASE` 는 기본값에 들어 있다 |
+| `hotfix/` → `$RELEASE` | 사람이 한다 | 위와 같다 |
+| back-merge (`$BASE` 를 `$RELEASE` 로 맞추기) | 사람이 한다. PR 이 아니라 포인터 이동이다 (5절) | 가드가 `reset --hard` 를 막는다 |
 
-**근거는 되돌리기 비용의 비대칭이다.** `$BASE` 로 가는 머지는 잘못돼도 revert PR 한 번으로
-걷어낸다 — 아무것도 배포되지 않았고 이력은 그대로 앞으로만 간다. 반대로 `$RELEASE` 로 가는 머지는
-**배포된 것을 건드리고**, 되돌리려면 배포 롤백과 브랜치 포인터 강제 이동이 따라온다.
-포인터 강제 이동은 그 사이에 누가 무엇을 땄는지에 따라 남의 커밋을 지울 수 있다.
+**기본값이 `[$RELEASE]` 인 근거는 되돌리기 비용의 비대칭이다.** `$RELEASE` 가 아닌 곳으로 가는
+머지는 잘못돼도 revert PR 한 번으로 걷어낸다 — 아무것도 배포되지 않았고 이력은 그대로 앞으로만
+간다. 반대로 `$RELEASE` 로 가는 머지는 **배포된 것을 건드리고**, 되돌리려면 배포 롤백과 브랜치
+포인터 강제 이동이 따라온다. 포인터 강제 이동은 그 사이에 누가 무엇을 땄는지에 따라 남의 커밋을
+지울 수 있다.
 
-### `$BASE` 로 가는 작업 PR 을 머지할 때 (2단)
+**그 비대칭이 실제로 어디에 걸리는지는 프로젝트가 정한다.** 그래서 판정은 이 표가 아니라
+`humanMergeTargets` 를 읽어서 한다 — 표는 기본 프로파일에서 그 배열이 어떤 결과를 내는지를
+보여주는 것이다.
+
+### `$HUMAN` 에 없는 타겟의 작업 PR 을 머지할 때
 
 넷을 **모두** 만족해야 한다.
 
-1. 타겟이 `$BASE` 다 (`gh pr view <번호> --json baseRefName` 로 확인한다)
+1. 타겟이 `$HUMAN` 에 없다 (`gh pr view <번호> --json baseRefName` 로 읽어 대조한다)
 2. **CI 가 통과했다** — `gh pr checks <번호>` 로 확인한 뒤에 누른다
 3. `mergeStrategy` 에 맞는 플래그를 쓴다 (아래 표)
 4. **사용자가 그 작업에서 머지까지 요청했다**
@@ -164,7 +176,10 @@ case "$STRATEGY" in
   *) echo "BLOCKED: mergeStrategy 값을 모르겠다: [$STRATEGY]"; exit 1 ;;
 esac
 
-gh pr view "$PR" --json baseRefName -q .baseRefName   # $BASE 인지 확인하고
+TARGET=$(gh pr view "$PR" --json baseRefName -q .baseRefName)
+case " $HUMAN " in
+  *" $TARGET "*) echo "STOP: $TARGET 는 humanMergeTargets 다. PR URL 을 보고하고 멈춘다"; exit 0 ;;
+esac
 gh pr checks "$PR"                                    # 통과를 확인하고
 gh pr merge "$PR" "$MERGE_FLAG" --delete-branch
 ```
@@ -176,7 +191,7 @@ gh pr merge "$PR" "$MERGE_FLAG" --delete-branch
 |---|---|
 | "브랜치 따줘" | 브랜치 생성까지 |
 | "PR 만들어줘" | PR 생성까지 |
-| "머지까지 해줘" | 머지 (`$BASE` 로 가는 것만) |
+| "머지까지 해줘" | 머지 (타겟이 `$HUMAN` 에 없는 PR 만) |
 
 머지한 뒤에도 PR URL 과 CI 결과를 보고한다. 무엇이 통합됐는지는 사용자가 알아야 한다.
 
@@ -329,7 +344,8 @@ PR 본문 형식(무엇을·왜·검증, 서명 줄)은 `commit` 스킬이 정�
 gh pr create --base "$RELEASE" --head "$BASE" --title "<릴리스 제목>"
 ```
 
-**릴리스 PR 은 머지하지 않는다.** 배포 시점 판단이라 사람이 누른다. **PR URL 을 보고하고 멈춘다.**
+**릴리스 PR 은 머지하지 않는다.** 타겟이 `$RELEASE` 이고 그것은 `$HUMAN` 의 기본값이다 —
+배포 시점 판단이라 사람이 누른다. **PR URL 을 보고하고 멈춘다.**
 
 ### back-merge — 사람이 실행한다
 
@@ -398,8 +414,9 @@ gh pr create --base "$RELEASE" --title "<제목>"
 - **`protectedBranches` 에 직접 push** — 전부 PR 을 거친다
 - **가드 우회** — 강제 push·원격 브랜치 삭제·`reset --hard` 를 감싸거나 쪼개서 실행하지 마라.
   **이유:** 우회가 성공하면 안전장치가 없다는 사실을 아무도 모르게 된다
-- **`$RELEASE` 로 가는 PR 머지** — 릴리스·hotfix·1단의 작업 PR 은 사람이 누른다
-- **요청받지 않은 머지** — `$BASE` 로 가는 것이라도 머지까지 요청받지 않았으면 PR 에서 멈춘다
+- **`$HUMAN` 에 있는 타겟으로 가는 PR 머지** — 기본 프로파일에서는 릴리스·hotfix·1단의 작업 PR 이
+  전부 여기 해당한다. **1단/2단으로 추론하지 말고 배열을 읽어라**
+- **요청받지 않은 머지** — 타겟이 `$HUMAN` 에 없어도 머지까지 요청받지 않았으면 PR 에서 멈춘다
 - **CI 를 확인하지 않은 머지** — `gh pr checks` 가 통과를 보여준 뒤에 누른다
 - **`git pull` 없이 브랜치 따기** — 뒤처진 기반의 충돌은 내가 안 건드린 파일에서 난다
 - **인자 없는 `git pull`** — `--ff-only` 를 붙인다

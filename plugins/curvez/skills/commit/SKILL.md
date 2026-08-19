@@ -70,7 +70,9 @@ BASE=$(pf "?.git?.baseBranch")
 RELEASE=$(pf "?.git?.releaseBranch")
 STRATEGY=$(pf "?.git?.mergeStrategy")
 PROTECTED=$(pf "?.git?.protectedBranches?.join(' ')")
-echo "base=[$BASE] release=[$RELEASE] strategy=[$STRATEGY] protected=[$PROTECTED]"
+# 머지 권한. 키가 없으면 [releaseBranch] 로 간주한다 — 없는 것을 "비었다" 로 읽으면 배포 머지가 열린다
+HUMAN=$(node -p "(()=>{const g=JSON.parse(require('fs').readFileSync('$P','utf8')).git??{};return (g.humanMergeTargets ?? [g.releaseBranch]).filter(Boolean).join(' ')})()")
+echo "base=[$BASE] release=[$RELEASE] strategy=[$STRATEGY] protected=[$PROTECTED] human=[$HUMAN]"
 
 if [ -z "$BASE" ] || [ -z "$RELEASE" ]; then
   echo "BLOCKED: profile.json 에 git.baseBranch / git.releaseBranch 가 없다"
@@ -81,6 +83,7 @@ if [ "$BASE" = "$RELEASE" ]; then
   echo "구조: 1단 (작업 브랜치 → $BASE PR 하나로 끝난다. 릴리스 PR 절차 없음)"
 else
   echo "구조: 2단 (작업 → $BASE 는 이 스킬, $BASE → $RELEASE 릴리스 PR 은 사람이 누른다)"
+  # 구조는 절차만 가른다. 머지 권한은 위 $HUMAN 이 정한다
 fi
 
 case "$STRATEGY" in
@@ -373,12 +376,18 @@ EOF
 3. `mergeStrategy` 가 정한 플래그로 머지한다
 4. **사용자가 머지까지 요청했다**
 
-1번의 근거: `$BASE` 로 가는 머지는 revert PR 로 되돌릴 수 있다. 반대로 2단 구조의 릴리스 PR 은
-배포된 것을 움직이고 뒤에 태그·포인터 조정이 따라온다. 1단 구조에서는 작업 브랜치 → `main` 이
-곧 `$BASE` PR 이므로 요청받으면 머지해도 된다 — 여기에는 승격 단계가 없어 revert 로 충분하다.
+1번의 근거: 목록에 없는 타겟으로 가는 머지는 revert PR 로 되돌릴 수 있다. 반대로 릴리스 PR 은
+배포된 것을 움직이고 뒤에 태그·포인터 조정이 따라온다. **어느 브랜치가 그 경계인지는 프로젝트의
+CD 설정에 달렸고 저장소 안에서 읽을 수 없다.** 그래서 브랜치 이름으로 추론하지 않고 배열을
+읽는다. 기본값 `[releaseBranch]` 때문에 1단 구조(`$BASE` = `$RELEASE`)에서는 작업 PR 도 사람이
+누른다 — 그 프로젝트에서 `$RELEASE` 머지가 배포가 아니라면 사용자가 배열을 비워 열어 준다.
 
 ```bash
 PR=123                                     # 8절에서 만든 PR 번호로 바꾼다
+TARGET=$(gh pr view "$PR" --json baseRefName -q .baseRefName)
+case " $HUMAN " in
+  *" $TARGET "*) echo "STOP: $TARGET 는 humanMergeTargets 다. PR URL 을 보고하고 멈춘다"; exit 0 ;;
+esac
 gh pr checks "$PR"                         # 통과를 눈으로 확인하고
 gh pr merge "$PR" "$MERGE_FLAG" --delete-branch
 git switch "$BASE" && git pull --ff-only   # 다음 작업이 최신 기반에서 시작하도록
@@ -437,6 +446,6 @@ git switch "$BASE" && git pull --ff-only   # 다음 작업이 최신 기반에�
 - [ ] 훅에 거부됐다면 규칙을 고쳐서 통과했다. **`--no-verify` 사용 0건**
 - [ ] push 는 요청받았을 때만 했고, 올라가는 커밋을 사용자에게 먼저 알렸다. 강제 push 0건
 - [ ] PR 을 만들었다면 `--base` 가 명시돼 있고 URL 을 보고했다
-- [ ] 머지했다면 타겟이 `$BASE` 였고, CI 통과를 확인했고, 사용자가 요청했다
+- [ ] 머지했다면 타겟이 `$HUMAN` 에 없었고, CI 통과를 확인했고, 사용자가 요청했다
 - [ ] `artifacts` 의 커밋 해시·PR URL 이 전부 실재한다
 - [ ] 사용자가 요청한 단계에서 멈췄다

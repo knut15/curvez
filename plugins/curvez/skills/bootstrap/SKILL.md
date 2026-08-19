@@ -165,10 +165,15 @@ QA 가 "검증 실패" 로 보고하고 구현 에이전트가 멀쩡한 코드�
 | 1 | 이 프로젝트의 스택은 `nextjs` / `react-native` / `monorepo` 중 무엇인가 | 절차 2 가 애매로 끝났을 때 |
 | 2 | 웹/모바일/도메인 소스 경로가 각각 어디인가 | 필수 `paths` 키를 감지로 못 채웠을 때 |
 | 3 | Expo SDK 메이저 버전이 몇인가 | `stack` 이 `react-native`·`monorepo` 인데 `expo` 범위를 못 읽었을 때 |
-| 4 | 타입 체크·린트·테스트를 어떤 명령으로 도는가 | 절차 3 에서 셋 다 비었을 때 |
-| 5 | 테스트 파일이 어디 있는가 | 아래 폴백으로도 못 찾았을 때 |
+| 4 | 작업 브랜치를 어디서 따고 PR 을 어디로 보내는가 | `git branch -r` 로 원격 브랜치를 읽지 못했을 때 |
+| 5 | 타입 체크·린트·테스트를 어떤 명령으로 도는가 | 절차 3 에서 셋 다 비었을 때 |
+| 6 | 테스트 파일이 어디 있는가 | 아래 폴백으로도 못 찾았을 때 |
 
 **한 번에 다 던지고 한 번에 받는다.** 한 문항씩 왕복하지 않는다.
+
+후보가 6개지만 **던지는 것은 5문까지다.** 상한을 넘으면 순위대로 5문만 던지고, 밀린 키는
+`status: blocked` 로 남긴다 — 값을 추측으로 메우지 않는다. 6개가 다 나오는 상황은 감지가 통째로
+실패한 것이므로 절차 2·3 을 다시 돌리는 편이 빠르다.
 
 ### paths.tests 만 폴백이 허용된다
 
@@ -194,6 +199,13 @@ ls -d tests test __tests__ e2e 2>/dev/null | head -3
   "architecture": "ddd",
   "paths": { "web": "apps/web", "mobile": "apps/mobile", "domain": "packages/domain", "tests": "tests" },
   "expo": { "sdkVersion": "57" },
+  "git": {
+    "baseBranch": "release",
+    "releaseBranch": "main",
+    "mergeStrategy": "rebase",
+    "protectedBranches": ["main", "release"],
+    "humanMergeTargets": ["main"]
+  },
   "commands": { "typecheck": "pnpm typecheck", "lint": "pnpm lint", "test": "pnpm test", "build": "pnpm build" }
 }
 ```
@@ -203,6 +215,27 @@ ls -d tests test __tests__ e2e 2>/dev/null | head -3
 | `nextjs` | `paths.web` | `paths.tests` |
 | `react-native` | `paths.mobile`, `expo.sdkVersion` | `paths.tests` |
 | `monorepo` | `paths.web`, `paths.mobile`, `paths.domain` | `paths.tests`, `expo.sdkVersion` |
+
+**`git` 블록 — 다섯 키 전부 쓴다.** 감지는 `git branch -r` 로 한다. 원격에 `release` 또는
+`develop` 이 있으면 그것이 `baseBranch`(2단), 없으면 `releaseBranch` 와 같은 값(1단)이다.
+
+| 키 | 값 | 채우는 법 |
+|---|---|---|
+| `baseBranch` | 작업 브랜치를 따는 곳이자 PR 타겟 | 원격의 `release` \| `develop`, 없으면 `releaseBranch` 와 같게 |
+| `releaseBranch` | 배포된 것 | 원격의 `main` \| `master` |
+| `mergeStrategy` | `rebase` \| `merge` \| `squash` | 초기값 `"rebase"` |
+| `protectedBranches` | 직접 커밋 금지 | 1단이면 `[releaseBranch]`, 2단이면 `[releaseBranch, baseBranch]` |
+| `humanMergeTargets` | **이 타겟으로 가는 PR 은 사람이 누른다** | 초기값 `[releaseBranch]` |
+
+- **원격 브랜치를 읽지 못하면 `git` 블록을 지어내지 말고 인터뷰 문항으로 돌린다**(절차 4).
+  **이유:** 브랜치를 잘못 짚으면 배포된 것 위에서 작업하거나 남의 작업 위에 커밋이 쌓인다.
+  경로를 잘못 짚는 것과 달리 파일을 옮기듯 분리할 수 없다
+- `humanMergeTargets` 초기값이 `[releaseBranch]` 인 이유: **그 머지가 곧 배포인지는 프로젝트의
+  CD 설정에 달렸고 curvez 는 알 수 없다.** 1단 구조에서는 이 값 때문에 모든 작업 PR 을 사람이
+  누르게 된다. 그 프로젝트에서 배포가 아니라면 사용자가 배열을 비운다 — 안전한 쪽을 기본으로 두고
+  명시적으로 여는 구조다. **에이전트가 임의로 비우지 않는다**
+- 브랜치 이름을 확정하기 전에 원격 목록을 사용자에게 보여 준다. `release` 라는 이름이 통합 지점이
+  아니라 오래된 유물일 수 있다
 
 - `paths` 값은 **저장소 루트 기준 상대 경로**다. 끝에 `/` 를 붙이지 않는다
 - `expo.sdkVersion` 은 메이저 숫자만 문자열로 쓴다 (`"~57.0.9"` → `"57"`)
@@ -303,6 +336,8 @@ bootstrap 이 끝나면 **`architecture-setup` 을 부른다.** `.curvez/archite
 - [ ] 절차 7 의 검증 명령이 exit 0 이고 `missing=none`, `notOnDisk=none`
 - [ ] `stack` 이 `nextjs` / `react-native` / `monorepo` 중 하나
 - [ ] `commands` 의 모든 값이 `package.json` 의 `scripts` 에 실제로 있는 이름
+- [ ] `git` 의 다섯 키가 전부 있고, `baseBranch` · `releaseBranch` 가 원격에 실제로 있는 브랜치다
+      (원격을 못 읽었다면 그 키를 지어내지 않고 `blocked` 로 남겼다)
 - [ ] `.curvez/` 아래 `profile.json` `architecture.md` `team.md` `research/` `handoff/` `tmp/` 6개가 전부 존재
 - [ ] `.gitignore` 에 `.curvez/tmp/` 가 **정확히 1줄**, `.curvez/` 통째 무시 줄은 **0줄**
 - [ ] 인터뷰 문항 수 **5문 이하**

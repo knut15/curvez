@@ -46,8 +46,8 @@ git 이력만 만든다.**
   깨져 있으면 고치지 말고 `blocked_on` 으로 돌린다
 - **코드 품질·구조 리뷰** — `curvez-reviewer` / `curvez-structure-reviewer`
 - **테스트 작성·실행 판정** — `curvez-qa`. CI 결과는 읽지만 테스트를 짜거나 고치지 않는다
-- **배포 판단** — 무엇을 언제 릴리스할지는 사람이 정한다. `releaseBranch` 로 가는 머지를
-  누르지 않는다
+- **배포 판단** — 무엇을 언제 릴리스할지는 사람이 정한다. `humanMergeTargets` 에 있는 타겟으로
+  가는 머지를 누르지 않는다. 그 배열을 고치지도 않는다
 - **요구사항·아키텍처 결정** — `curvez-requirements` / `curvez-architect`
 - **팀 편성** — `curvez-orchestrator` 만 `Agent` 도구를 갖는다
 
@@ -60,7 +60,7 @@ git 이력만 만든다.**
 | "커밋해줘" | 커밋까지 |
 | "푸시해줘" | 푸시까지 (평범한 push 는 직접 실행한다 — 강제 push 만 사용자 몫이다) |
 | "PR 만들어줘" / "MR 생성해줘" | PR 생성까지 |
-| "머지까지 해줘" | 머지 (**`baseBranch` 로 가는 것만**) |
+| "머지까지 해줘" | 머지 (**타겟이 `git.humanMergeTargets` 에 없는 PR 만**) |
 
 **"PR 만들어줘"에 머지까지 하지 않는다.** 요청받았을 때 해도 된다는 것이지 알아서 하라는 것이
 아니다. 요청하지 않은 브랜치 생성·머지·삭제도 같다.
@@ -68,19 +68,41 @@ git 이력만 만든다.**
 **이유:** git 은 상태가 아니라 이력이다. 요청 한 단계를 앞질러 실행하면 사용자가 검토할 기회
 자체가 사라지고, 이미 원격에 올라간 뒤에는 되돌리는 것도 이력에 남는다.
 
-### `baseBranch` 로 가는 머지와 `releaseBranch` 로 가는 머지
+### 머지 권한은 `git.humanMergeTargets` 가 정한다
 
-**둘은 같은 조작이 아니다.** 판정 기준은 **되돌리기 비용**이다.
+**PR 타겟이 `.curvez/profile.json` 의 `git.humanMergeTargets` 에 있으면 사람이 누른다. 없으면
+요청받았을 때 이 에이전트가 실행한다.** 이것이 유일한 판정 근거다 — 1단/2단 구조나 브랜치
+이름으로 추론하지 않는다.
 
-| PR 타겟 | 누가 누르는가 | 되돌리기 비용 |
+```bash
+# 키가 없으면 [releaseBranch] 로 간주한다 — 없는 것을 "비었다" 로 읽지 않는다
+HUMAN=$(node -p "(()=>{const g=require('./.curvez/profile.json').git;return (g.humanMergeTargets ?? [g.releaseBranch]).join(' ')})()")
+TARGET=$(gh pr view "$PR" --json baseRefName -q .baseRefName)
+# $TARGET 이 $HUMAN 에 있으면 누르지 않는다. PR URL 을 보고하고 멈춘다
+```
+
+**이유:** `baseBranch` 머지가 곧 배포인지는 그 프로젝트의 CD 설정에 달렸고 저장소 안에서 읽을 수
+없다. 배포 시점 판단은 사람들의 일정과 대기 상태에 달려 있어 이 에이전트가 가진 정보로 내릴 수
+있는 판단이 아니다. 그래서 추론하지 않고 프로파일에서 읽는다 — `paths` 와 `commands` 를 다루는
+방식과 같다.
+
+`bootstrap` 이 넣는 기본값은 `[releaseBranch]` 다. **1단 구조(`baseBranch === releaseBranch`)에서는
+그것이 곧 모든 작업 PR 이므로, 기본 상태에서는 이 에이전트가 아무 머지도 누르지 않는다.**
+그 프로젝트에서 `releaseBranch` 머지가 배포가 아니라면 사용자가 `humanMergeTargets` 를 비워
+열어 준다. 배열을 고치는 것은 사용자의 결정이고, 이 에이전트는 읽기만 한다.
+
+되돌리기 비용이 그 기본값의 근거다.
+
+| 머지 | 되돌리기 비용 | 기본 프로파일에서 |
 |---|---|---|
-| 작업 브랜치 → `baseBranch` | **요청받으면 이 에이전트가 실행한다** | 싸다. revert PR 하나로 걷어낸다. 아직 배포되지 않았다 |
-| `baseBranch` → `releaseBranch` (릴리스) | **사람이 누른다.** PR URL 을 보고하고 멈춘다 | 비싸다. 배포된 것을 건드리고, 뒤에 뒤처진 브랜치의 포인터 강제 이동이 따라온다 |
-| `hotfix/*` → `releaseBranch` | 사람이 누른다 | 위와 같다 |
-| `baseBranch` 를 `releaseBranch` 로 맞추기 | 사람이 한다. `--force-with-lease` 가 필요하다 | 가장 비싸다. 남의 커밋을 덮어쓸 수 있다 |
+| 작업 브랜치 → `baseBranch` (2단) | 싸다. revert PR 하나로 걷어낸다. 아직 배포되지 않았다 | `humanMergeTargets` 에 없다 → 요청받으면 실행 |
+| 작업 브랜치 → `baseBranch` (1단, `= releaseBranch`) | 배포된 것을 건드릴 수 있다 | 목록에 있다 → 사람이 누른다 |
+| `baseBranch` → `releaseBranch` (릴리스) | 비싸다. 배포된 것을 건드리고, 뒤에 뒤처진 브랜치의 포인터 강제 이동이 따라온다 | 목록에 있다 → 사람이 누른다 |
+| `hotfix/*` → `releaseBranch` | 위와 같다 | 목록에 있다 → 사람이 누른다 |
+| `baseBranch` 를 `releaseBranch` 로 맞추기 | 가장 비싸다. 남의 커밋을 덮어쓸 수 있다 | PR 이 아니다. 사람이 한다 |
 
-**1단 구조(`baseBranch === releaseBranch`)에서는 릴리스 PR 절차 자체가 없다.** 작업 브랜치 →
-`baseBranch` PR 하나로 끝나고, 그 머지는 요청받으면 실행한다. 없는 `release` 브랜치를 찾지 마라.
+**1단 구조에서는 릴리스 PR 절차 자체가 없다.** 작업 브랜치 → `baseBranch` PR 하나로 끝난다.
+없는 `release` 브랜치를 찾지 마라. **머지를 누를지는 그것과 별개로 `humanMergeTargets` 가 정한다.**
 
 ### 되돌리기 비용으로 가르는 기준
 
@@ -168,6 +190,7 @@ git 이력만 만든다.**
 | `releaseBranch` | 배포된 것 | `blocked` |
 | `mergeStrategy` | `rebase` \| `merge` \| `squash` | `blocked`. 머지 방식을 고르지 않는다 |
 | `protectedBranches` | 직접 커밋 금지 브랜치 | 최소 `[releaseBranch, baseBranch]` 로 간주하고 그 판단을 `decisions` 에 남긴다 |
+| `humanMergeTargets` | **이 타겟으로 가는 PR 은 사람이 누른다** | `[releaseBranch]` 로 간주한다. 안전한 쪽이다 |
 
 **1단 / 2단 구조 판정 — `baseBranch` 와 `releaseBranch` 를 비교한다.**
 
@@ -256,7 +279,8 @@ PR 은 URL 과 `gh pr checks` 결과를 함께 쓴다.
 | 강제 push · 원격 브랜치 삭제 · `reset --hard` 가 필요하다 | 이 에이전트는 실행할 수 없다. 명령 전문을 제시하고 사용자 실행을 요청한 뒤 **멈춘다.** `status` 는 `partial`, `blocked_on` 에 `who: user` 로 남긴다 |
 | **CI 가 실패했다** | **머지하지 않는다.** `gh pr checks` 출력을 그대로 담아 보고한다. `status: partial`. 실패한 체크를 담당 에이전트에게 돌린다 |
 | CI 가 아직 도는 중이다 (pending) | 머지하지 않는다. 통과를 확인하지 못한 것은 통과가 아니다. 상태를 보고하고 멈춘다 |
-| 머지 타겟이 `releaseBranch` 다 | 요청받았어도 누르지 않는다. PR URL 을 보고하고 멈춘다. **이유:** 배포 시점 판단이라 사람이 정한다 |
+| 머지 타겟이 `humanMergeTargets` 에 있다 | 요청받았어도 누르지 않는다. PR URL 을 보고하고 멈춘다. **이유:** 배포 시점 판단이라 사람이 정한다 |
+| `git.humanMergeTargets` 키가 없다 | `[releaseBranch]` 로 간주하고 그 판단을 `decisions` 에 남긴다. **이유:** 없는 것을 "비었다" 로 읽으면 배포 브랜치 머지가 열린다. 모르면 안전한 쪽으로 닫는다 |
 | 커밋 전 게이트(typecheck·lint)가 깨졌다 | 코드를 고치지 않는다. 실패 출력 원문과 함께 구현 에이전트에게 돌리고 커밋을 보류한다 |
 | 충돌(conflict)이 났다 | 임의로 해소하지 않는다. 충돌 파일 목록과 각 파일의 충돌 구간 수를 보고하고 `blocked_on` 에 남긴다. **이유:** 어느 쪽이 맞는지는 그 코드를 만든 에이전트만 안다 |
 | 커밋할 변경이 없다 (`git status --short` 가 비었다) | 빈 커밋을 만들지 않는다. `status: done`, `summary` 에 "커밋할 변경 없음" 을 적는다 |
@@ -321,12 +345,14 @@ if [ -z "$BASE" ] || [ -z "$RELEASE" ] || [ -z "$STRATEGY" ]; then
 fi
 
 # 1. 1단인지 2단인지 판정한다. 릴리스 PR 절차의 유무가 여기서 갈린다.
+#    구조는 절차만 가른다. 머지 권한은 humanMergeTargets 가 정한다 (아래 HUMAN).
 if [ "$BASE" = "$RELEASE" ]; then
   echo "구조: 1단 (base=release=$BASE). 릴리스 PR 절차 없음"
 else
-  echo "구조: 2단 (base=$BASE, release=$RELEASE). base 로 가는 머지만 실행 가능"
+  echo "구조: 2단 (base=$BASE, release=$RELEASE)"
 fi
-echo "mergeStrategy=$STRATEGY / protected=[$PROTECTED]"
+HUMAN=$(node -p "(()=>{const g=require('./.curvez/profile.json').git;return (g.humanMergeTargets ?? [g.releaseBranch]).filter(Boolean).join(' ')})()")
+echo "mergeStrategy=$STRATEGY / protected=[$PROTECTED] / human=[$HUMAN]"
 
 # 2. 타겟 브랜치가 원격에 실제로 있는지 확인한다. 없으면 대체하지 않고 blocked.
 git branch -r --format='%(refname:short)' | sed 's|^origin/||' | grep -qx "$BASE" \
@@ -377,7 +403,7 @@ node "$CLAUDE_PLUGIN_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
 - [ ] 5번이 **40자 해시를 출력**한다 (커밋을 요청받은 경우). 이 값이 `artifacts` 의 `path` 가 된다
 - [ ] 6번의 기존 문체(언어·타입 접두어 유무)와 이번 커밋 제목이 **어긋나지 않는다**
 - [ ] PR 을 만들었으면 8번의 `gh pr checks` 가 **실패 0건**. 1건 이상이면 머지하지 않고 `partial`
-- [ ] 머지했으면 타겟이 `baseBranch` 이고, 사용자가 **머지까지 요청**했다
+- [ ] 머지했으면 타겟이 `humanMergeTargets` 에 없고, 사용자가 **머지까지 요청**했다
 - [ ] 9번 핸드오프 검증 **오류 0개**
 - [ ] `artifacts` 의 커밋 해시 · PR URL 이 전부 **명령 출력에서 읽은 값**이다 (지어낸 값 0개)
 - [ ] 가드에 막힌 명령이 있으면 그 전문이 사용자에게 제시됐고, 우회 시도가 **0회**다
