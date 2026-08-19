@@ -1,6 +1,6 @@
 ---
 name: bootstrap
-description: 새 프로젝트에 curvez 를 붙인다. 스택을 감지하고 인터뷰로 `.curvez/profile.json` 을 확정한 뒤 `.curvez/` 를 스캐폴드한다. "curvez 붙여줘", "curvez 시작", "초기 설정 해줘", "부트스트랩", "bootstrap", "set up curvez", "init curvez" 라고 하거나 `.curvez/profile.json` 없이 curvez 작업을 시작하려 할 때 실행한다.
+description: 새 프로젝트에 curvez 를 붙인다. 스택을 감지하고 인터뷰로 `.curvez/profile.json` 을 확정한 뒤 `.curvez/` 와 CI 워크플로를 스캐폴드한다. "curvez 붙여줘", "curvez 시작", "초기 설정 해줘", "부트스트랩", "bootstrap", "set up curvez", "init curvez" 라고 하거나 `.curvez/profile.json` 없이 curvez 작업을 시작하려 할 때 실행한다.
 ---
 
 `.curvez/profile.json` 은 curvez 전체의 진입 전제다. `stack` 이 팀 편성을 정하고, `paths` 가 각
@@ -36,7 +36,7 @@ description: 새 프로젝트에 curvez 를 붙인다. 스택을 감지하고 �
 3. `commands` 를 `scripts` 에서 읽는다
 4. 못 채운 것만 인터뷰한다 (최대 5문)
 5. `profile.json` 을 쓴다
-6. `.curvez/` 를 스캐폴드하고 `.gitignore` 를 손본다
+6. `.curvez/` 를 스캐폴드하고 `.gitignore` 와 CI 워크플로를 손본다
 7. 검증하고 `architecture-setup` 으로 넘긴다
 
 ## 1. 이미 있는지 본다
@@ -56,6 +56,10 @@ test -e .curvez/profile.json && echo "EXISTS" || echo "NEW"
 2. `missing=` 에 나온 **필수 키만** 채운다. 채우는 값은 감지 결과나 사용자 답이어야 한다
 3. 이미 값이 있는 키는 사용자가 명시적으로 바꾸라고 한 것만 바꾼다
 4. `.curvez/` 아래 없는 디렉터리·파일만 만든다. 있는 파일은 열지도 않는다
+5. **없는 산출물은 지금 만든다.** 프로파일이 있다는 것이 "할 일이 없다" 는 뜻은 아니다 —
+   예전에 붙인 프로젝트에는 나중에 추가된 산출물(CI 워크플로 등)이 없다.
+   **이유:** 통째로 건너뛰면 사용자는 bootstrap 을 다시 돌렸는데도 아무 일이 없었던 것으로 보고,
+   왜 없는지 알 방법이 없다
 
 **기존 값을 덮어쓰지 마라.**
 **이유:** `paths` 는 이미 `.curvez/architecture.md` 의 `## 스택 매핑`, `.curvez/design/` 의
@@ -165,7 +169,7 @@ QA 가 "검증 실패" 로 보고하고 구현 에이전트가 멀쩡한 코드�
 | 1 | 이 프로젝트의 스택은 `nextjs` / `react-native` / `monorepo` 중 무엇인가 | 절차 2 가 애매로 끝났을 때 |
 | 2 | 웹/모바일/도메인 소스 경로가 각각 어디인가 | 필수 `paths` 키를 감지로 못 채웠을 때 |
 | 3 | Expo SDK 메이저 버전이 몇인가 | `stack` 이 `react-native`·`monorepo` 인데 `expo` 범위를 못 읽었을 때 |
-| 4 | 작업 브랜치를 어디서 따고 PR 을 어디로 보내는가 | `git branch -r` 로 원격 브랜치를 읽지 못했을 때 |
+| 4 | 원격 목록이 이렇다 — 작업 브랜치를 `baseBranch` 에서 따고 PR 도 거기로 여는 게 맞는가 | **2단으로 판정됐을 때**(이름만 보고 정한 값이라 확인받는다) 또는 원격 브랜치를 아예 못 읽었을 때 |
 | 5 | 타입 체크·린트·테스트를 어떤 명령으로 도는가 | 절차 3 에서 셋 다 비었을 때 |
 | 6 | 테스트 파일이 어디 있는가 | 아래 폴백으로도 못 찾았을 때 |
 
@@ -234,8 +238,11 @@ ls -d tests test __tests__ e2e 2>/dev/null | head -3
   CD 설정에 달렸고 curvez 는 알 수 없다.** 1단 구조에서는 이 값 때문에 모든 작업 PR 을 사람이
   누르게 된다. 그 프로젝트에서 배포가 아니라면 사용자가 배열을 비운다 — 안전한 쪽을 기본으로 두고
   명시적으로 여는 구조다. **에이전트가 임의로 비우지 않는다**
-- 브랜치 이름을 확정하기 전에 원격 목록을 사용자에게 보여 준다. `release` 라는 이름이 통합 지점이
-  아니라 오래된 유물일 수 있다
+- **2단으로 판정했으면 프로파일에 쓰기 전에 확인받는다.** `release`·`develop` 이라는 **이름만 보고**
+  통합 브랜치라고 정한 값이기 때문이다. 그 브랜치가 오래된 유물인 저장소에서는 작업 브랜치가
+  아무도 보지 않는 곳에서 나고 PR 도 거기로 열린다 — 오류가 나지 않아 리뷰 화면을 열어야 드러난다.
+  `scripts/bootstrap.mjs` 는 이 경우 `git.baseBranch` 문항을 원격 목록과 함께 `questions[]` 로
+  돌려준다. **1단은 확인 문항이 없다** — 통합 브랜치 후보가 원격에 아예 없어 추정한 것이 없다
 
 - `paths` 값은 **저장소 루트 기준 상대 경로**다. 끝에 `/` 를 붙이지 않는다
 - `expo.sdkVersion` 은 메이저 숫자만 문자열로 쓴다 (`"~57.0.9"` → `"57"`)
@@ -290,6 +297,39 @@ grep -qxF '.curvez/tmp/' .gitignore 2>/dev/null \
 실행 이력을 시간순으로 재구성하는 유일한 원본이다.
 `tmp/` 만 예외다. 파싱 실패한 워커 응답 원문 같은 실행 부산물이라 재현 가치가 없고 크기만 는다.
 
+### CI 워크플로도 함께 만든다
+
+`.github/workflows/ci.yml` 을 만든다. **게이트 명령은 `commands` 에서 그대로 가져온다 — 여기서
+명령을 새로 만들지 마라.**
+**이유:** 로컬 게이트와 CI 게이트가 다른 명령을 돌리면 "로컬은 통과인데 CI 는 빨간" 상태가
+상시화되고, 그때 어느 쪽이 맞는지 판정할 근거가 없다. 단일 출처는 `commands` 다.
+
+담기는 것은 다섯이다.
+
+| 무엇 | 어디서 온 값 |
+|---|---|
+| 트리거 브랜치 (`pull_request` · `push`) | `git.baseBranch` · `git.releaseBranch`. 하드코딩된 `main` 을 쓰지 않는다 |
+| 게이트 스텝 | `commands` 의 `typecheck` → `lint` → `test` → `build` 중 **있는 것만**, 이 순서로 |
+| Node 버전 | `package.json` 의 `engines.node` 에서 메이저만. 없으면 `22` |
+| pnpm | `pnpm/action-setup@v4`. `packageManager` 필드가 있으면 그것을 읽으므로 버전을 주지 않고, 없을 때만 `version: 10` |
+| 설치 | `pnpm install --frozen-lockfile` — lockfile 이 어긋나면 조용히 맞추지 말고 실패한다 |
+
+게이트 순서를 싼 것부터 두는 이유: 먼저 깨지는 것이 먼저 보고돼야 실패 원인을 좁히는 비용이 싸다.
+`build` 가 먼저 돌면 타입 오류 하나 때문에 몇 분을 기다린 뒤에야 그 사실을 알게 된다.
+
+**아래 넷 중 하나라도 해당하면 만들지 않는다. 이유를 보고하고 넘어간다.**
+
+| 만들지 않는 경우 | 왜 |
+|---|---|
+| `.github/workflows/` 에 이미 워크플로가 있다 (**이름이 달라도**) | 워크플로는 시크릿·배포·환경 승인과 얽혀 있다. 게이트가 두 번 도는 것 자체가 비용이고, 어느 쪽이 정본인지는 사람이 판단한다 |
+| 원격이 GitHub 이 아니다 | GitLab·Bitbucket 은 파일 위치와 문법이 통째로 다르다. 형식을 지어내면 **안 도는 파일이 저장소에 남고 사용자는 CI 가 있다고 믿는다** |
+| 원격 `origin` 이 없다 | 어느 CI 를 쓰는지 알 근거가 없다 |
+| `commands` 에 게이트가 하나도 없다 | 돌릴 것이 없다 |
+
+**기존 워크플로는 `--force` 로도 덮지 않는다.** `--force` 는 `.curvez/profile.json` 에만 걸린다.
+**이유:** 프로파일을 덮는 것은 이 저장소 안의 전제를 바꾸는 일이고, 워크플로를 덮는 것은
+**배포 파이프라인을 바꾸는 일**이다. 되돌리기 비용이 같은 등급이 아니다.
+
 ## 7. 검증하고 넘긴다
 
 ```bash
@@ -340,5 +380,7 @@ bootstrap 이 끝나면 **`architecture-setup` 을 부른다.** `.curvez/archite
       (원격을 못 읽었다면 그 키를 지어내지 않고 `blocked` 로 남겼다)
 - [ ] `.curvez/` 아래 `profile.json` `architecture.md` `team.md` `research/` `handoff/` `tmp/` 6개가 전부 존재
 - [ ] `.gitignore` 에 `.curvez/tmp/` 가 **정확히 1줄**, `.curvez/` 통째 무시 줄은 **0줄**
+- [ ] `.github/workflows/ci.yml` 을 만들었거나, **만들지 않은 이유를 보고했다**. 만들었으면 그
+      스텝의 명령이 `commands` 의 값과 문자열까지 같고, 기존 워크플로를 덮은 곳은 0곳이다
 - [ ] 인터뷰 문항 수 **5문 이하**
 - [ ] 감지·인터뷰로 확인하지 못한 값을 채운 곳 **0곳**

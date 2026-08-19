@@ -148,6 +148,9 @@ function scanWorkspaces() {
  * 원격 브랜치 목록으로 2단(`main ← release ← 작업`) 인지 1단(`main ← 작업`) 인지 가른다.
  * 이유: 브랜치 전략은 프로젝트마다 다르다. `release` 가 없는 저장소에서 그것을 기본값으로 두면
  * 작업 브랜치를 딸 곳이 없어 매번 막힌다. 반대로 있는데 안 쓰면 배포된 것 위에서 작업하게 된다.
+ *
+ * `{ git, remote, inferred }` 를 돌려준다. `remote` 와 `inferred` 는 확인 문항의 재료이고
+ * 프로파일에 들어가지 않는다 — `git` 만 그대로 쓴다.
  */
 function detectGit() {
   const r = spawnSync("git", ["branch", "-r", "--format=%(refname:short)"], {
@@ -162,18 +165,24 @@ function detectGit() {
   if (!releaseBranch) return null;
 
   // 통합 브랜치가 따로 있으면 2단이다.
-  const baseBranch = has("release") ? "release" : has("develop") ? "develop" : releaseBranch;
+  const integration = has("release") ? "release" : has("develop") ? "develop" : null;
+  const baseBranch = integration ?? releaseBranch;
 
   return {
-    baseBranch,
-    releaseBranch,
-    mergeStrategy: "rebase",
-    protectedBranches: baseBranch === releaseBranch ? [releaseBranch] : [releaseBranch, baseBranch],
-    // 이 브랜치로 가는 PR 은 사람이 머지한다.
-    // 기본값이 releaseBranch 인 이유: 그 머지가 곧 배포인지는 프로젝트의 CD 설정에 달렸고
-    // curvez 는 알 수 없다. 모르면 안전한 쪽 — 에이전트가 배포를 누르지 않는 쪽 — 으로 둔다.
-    // 1단 구조에서 에이전트 머지를 허용하려면 이 배열을 비운다.
-    humanMergeTargets: [releaseBranch],
+    git: {
+      baseBranch,
+      releaseBranch,
+      mergeStrategy: "rebase",
+      protectedBranches: baseBranch === releaseBranch ? [releaseBranch] : [releaseBranch, baseBranch],
+      // 이 브랜치로 가는 PR 은 사람이 머지한다.
+      // 기본값이 releaseBranch 인 이유: 그 머지가 곧 배포인지는 프로젝트의 CD 설정에 달렸고
+      // curvez 는 알 수 없다. 모르면 안전한 쪽 — 에이전트가 배포를 누르지 않는 쪽 — 으로 둔다.
+      // 1단 구조에서 에이전트 머지를 허용하려면 이 배열을 비운다.
+      humanMergeTargets: [releaseBranch],
+    },
+    remote,
+    // 이름만 보고 통합 브랜치라고 단정한 자리. 여기가 틀릴 수 있어 확인 문항이 나간다.
+    inferred: integration,
   };
 }
 
@@ -296,7 +305,8 @@ function decide(d) {
     });
   }
 
-  const git = detectGit();
+  const gitDetected = detectGit();
+  const git = gitDetected?.git ?? null;
   if (!git) {
     questions.push({
       key: "git",
@@ -304,10 +314,28 @@ function decide(d) {
       why: "브랜치를 잘못 짚으면 배포된 것 위에서 작업하거나 남의 작업 위에 커밋이 쌓인다",
     });
   } else {
+    const tier = git.baseBranch === git.releaseBranch ? "1단" : "2단";
     decisions.push({
-      what: `git 전략을 ${git.baseBranch === git.releaseBranch ? "1단" : "2단"}(base=${git.baseBranch}, release=${git.releaseBranch})으로 판정`,
+      what: `git 전략을 ${tier}(base=${git.baseBranch}, release=${git.releaseBranch})으로 판정`,
       why: "원격 브랜치 목록에서 통합 브랜치 존재 여부로 갈랐다",
     });
+
+    // 2단 판정은 브랜치 **이름**만 보고 내린 추정이다. 그래서 쓰기 전에 확인받는다.
+    // 이유: `release` 가 통합 지점이 아니라 오래된 유물인 저장소가 있다. 그 경우 작업 브랜치가
+    // 아무도 보지 않는 브랜치에서 나고 PR 도 거기로 열린다. 오류가 나지 않아 리뷰 화면을
+    // 열어 봐야 드러나고, 그때는 이미 커밋이 여러 개다.
+    // 1단은 확인 문항을 내지 않는다 — 통합 브랜치 후보가 원격에 아예 없어 추정한 것이 없다.
+    if (gitDetected.inferred) {
+      questions.push({
+        key: "git.baseBranch",
+        ask:
+          `원격 브랜치는 ${gitDetected.remote.join(", ")} 다. ` +
+          `이름을 보고 ${gitDetected.inferred} 를 통합 브랜치로 봤다 — ` +
+          `작업 브랜치를 ${git.baseBranch} 에서 따고 PR 도 거기로 열면 맞는가? ` +
+          `(${gitDetected.inferred} 가 지금 안 쓰는 브랜치면 ${git.releaseBranch} 하나로 간다)`,
+        why: "이름만 보고 정한 값이다. 틀리면 아무도 보지 않는 브랜치로 PR 이 열리고, 그 사실은 리뷰 화면을 열어야 드러난다",
+      });
+    }
   }
 
   const profile = {
@@ -359,6 +387,92 @@ const TEAM_SKELETON = `# 팀 구성
 이번 라운드에 세팅된 담당이 없다.
 `;
 
+/** CI 에서 돌릴 게이트. 순서는 싼 것부터 — 먼저 깨지는 것이 먼저 보고돼야 한다. */
+const CI_GATES = ["typecheck", "lint", "test", "build"];
+
+/**
+ * GitHub Actions 워크플로를 계획한다. 쓰지는 않는다 (`--dry-run` 에서도 계획은 나온다).
+ *
+ * 게이트 명령은 프로파일의 `commands` 를 그대로 쓴다. 여기서 명령을 새로 만들지 않는다.
+ * 이유: 로컬 게이트와 CI 게이트가 다른 명령을 돌리면 "로컬은 통과했는데 CI 가 빨간" 상태가
+ * 상시화되고, 그때 어느 쪽이 맞는지 판정할 근거가 없다. 단일 출처는 `commands` 다.
+ *
+ * `{ skip: 이유 }` 또는 `{ rel, content }` 를 돌려준다.
+ */
+function ciPlan(profile) {
+  const r = spawnSync("git", ["remote", "get-url", "origin"], { cwd: ROOT, encoding: "utf8" });
+  const origin = r.status === 0 ? r.stdout.trim() : "";
+  if (!origin) return { skip: "원격 origin 이 없다. 어느 CI 를 쓰는지 알 수 없어 만들지 않는다" };
+  if (!/github\.com/.test(origin)) {
+    // GitLab·Bitbucket 은 파일 위치와 문법이 통째로 다르다. 형식을 지어내면 조용히 안 도는
+    // 파일이 저장소에 남고, 사용자는 CI 가 있다고 믿는다.
+    return { skip: `원격이 GitHub 이 아니다 (${origin}). 다른 CI 형식을 지어내지 않는다` };
+  }
+
+  const wfDir = join(ROOT, ".github", "workflows");
+  if (existsSync(wfDir)) {
+    const existing = readdirSync(wfDir).filter((f) => /\.ya?ml$/.test(f));
+    if (existing.length) {
+      // 덮어쓰지 않는 이유: 워크플로는 시크릿·배포·환경 승인과 얽혀 있다. 이름이 겹치지 않아도
+      // 게이트가 두 번 도는 것 자체가 비용이고, 어느 쪽이 정본인지 사람이 판단해야 한다.
+      return { skip: `.github/workflows/ 에 이미 워크플로가 있다 (${existing.join(", ")}). 손대지 않는다` };
+    }
+  }
+
+  const gates = CI_GATES.filter((k) => profile.commands?.[k]);
+  if (!gates.length) return { skip: "commands 에 게이트가 하나도 없다. 돌릴 것이 없다" };
+
+  // 브랜치 필터는 프로파일에서 읽는다. 하드코딩된 main 을 쓰지 않는다.
+  const base = profile.git?.baseBranch;
+  const release = profile.git?.releaseBranch;
+  const branches = [...new Set([base, release].filter(Boolean))];
+  const filter = branches.length ? `\n    branches: [${branches.join(", ")}]` : "";
+
+  const pkg = readJson(join(ROOT, "package.json")) ?? {};
+  // engines.node 를 그대로 따른다. 없으면 22 (LTS). 프로젝트가 정한 값이 있으면 그것이 정본이다.
+  const nodeMajor = String(pkg.engines?.node ?? "").match(/(\d+)/)?.[1] ?? "22";
+  // packageManager 필드가 있으면 pnpm/action-setup 이 그 버전을 읽는다. 없을 때만 버전을 준다.
+  const pnpmVersion = /^pnpm@/.test(String(pkg.packageManager ?? "")) ? null : "10";
+
+  const steps = gates
+    .map((k) => `      - name: ${k}\n        run: ${profile.commands[k]}`)
+    .join("\n");
+
+  const content = `# curvez:bootstrap 이 만들었다. 게이트 명령은 .curvez/profile.json 의 commands 가 정본이다 —
+# 명령을 바꿀 때 이 파일만 고치면 로컬 게이트와 갈라진다. profile.json 을 함께 고쳐라.
+name: ci
+
+on:
+  pull_request:${filter}
+  push:${filter}
+
+# 같은 브랜치에 새 커밋이 오면 앞선 실행을 취소한다. 낡은 결과를 기다리지 않는다.
+concurrency:
+  group: ci-\${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4${pnpmVersion ? `\n        with:\n          version: ${pnpmVersion}` : ""}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "${nodeMajor}"
+          cache: pnpm
+
+      # --frozen-lockfile: lockfile 과 package.json 이 어긋나면 조용히 맞추지 말고 실패한다.
+      - run: pnpm install --frozen-lockfile
+
+${steps}
+`;
+
+  return { rel: ".github/workflows/ci.yml", content, gates, branches, nodeMajor };
+}
+
 function scaffold(profile) {
   const created = [];
   const skipped = [];
@@ -395,6 +509,16 @@ function scaffold(profile) {
     created.push(rel);
   }
 
+  // CI 워크플로. 이미 있으면 손대지 않는다 — --force 로도 덮지 않는다.
+  const ci = ciPlan(profile);
+  if (ci.skip) {
+    skipped.push(`.github/workflows/ci.yml (${ci.skip})`);
+  } else {
+    mkdirSync(join(ROOT, ".github", "workflows"), { recursive: true });
+    writeFileSync(join(ROOT, ci.rel), ci.content);
+    created.push(`${ci.rel} (게이트 ${ci.gates.join("·")})`);
+  }
+
   // .gitignore — tmp 만 막는다. .curvez/ 자체는 커밋 대상이다.
   const gi = join(ROOT, ".gitignore");
   const line = ".curvez/tmp/";
@@ -422,14 +546,24 @@ function main() {
   const canWrite = result.stack && result.missing.length === 0;
 
   if (!opt.dryRun && canWrite) {
-    if (already && !opt.force) {
-      // 덮어쓰지 않는 이유: paths 는 이미 architecture·design·소유권 판정에 참조돼 있다.
-      // 값이 바뀌면 그 참조들이 조용히 어긋난다.
-      scaffoldResult = { created: [], skipped: [".curvez/profile.json (이미 존재)"] };
-    } else {
-      scaffoldResult = scaffold(result.profile);
-    }
+    // 이미 프로파일이 있어도 스캐폴드를 돌린다. scaffold() 는 파일마다 존재 여부를 보고
+    // 있는 것은 건너뛰므로 기존 값은 덮이지 않는다 — 스킬 절차 1 의 "없는 디렉터리·파일만
+    // 만든다" 가 그 규칙이다.
+    //
+    // 통째로 건너뛰지 않는 이유: 그러면 이미 붙여 둔 프로젝트에 나중에 추가된 산출물
+    // (CI 워크플로 같은 것)이 영원히 안 생긴다. 사용자는 bootstrap 을 다시 돌렸는데도
+    // 아무 일이 없었던 것으로 보게 되고, 왜 없는지 알 방법이 없다.
+    //
+    // 덮어쓰지 않는 이유: paths 는 이미 architecture·design·소유권 판정에 참조돼 있다.
+    // 값이 바뀌면 그 참조들이 조용히 어긋난다.
+    scaffoldResult = scaffold(result.profile);
   }
+
+  // CI 계획은 쓰기와 무관하게 보고한다 — --dry-run 에서도 무엇이 만들어질지 보여야 한다.
+  const ci = canWrite ? ciPlan(result.profile) : null;
+  const ciSummary = !ci ? null
+    : ci.skip ? { skip: ci.skip }
+    : { path: ci.rel, gates: ci.gates, branches: ci.branches, nodeMajor: ci.nodeMajor };
 
   const payload = {
     ok: true,
@@ -439,6 +573,7 @@ function main() {
     questions: result.questions,
     decisions: result.decisions,
     scaffold: scaffoldResult,
+    ci: ciSummary,
     dryRun: opt.dryRun,
   };
 
@@ -465,6 +600,15 @@ function main() {
   if (result.questions.length) {
     console.log(`\n사용자에게 물을 것 ${result.questions.length}건`);
     for (const q of result.questions) console.log(`  [${q.key}] ${q.ask}\n      이유: ${q.why}`);
+  }
+
+  if (ciSummary) {
+    console.log(
+      ciSummary.skip
+        ? `\nCI    만들지 않는다 — ${ciSummary.skip}`
+        : `\nCI    ${ciSummary.path} (게이트 ${ciSummary.gates.join("·")} / node ${ciSummary.nodeMajor}` +
+          `${ciSummary.branches.length ? ` / 브랜치 ${ciSummary.branches.join(", ")}` : ""})`
+    );
   }
 
   if (scaffoldResult) {
