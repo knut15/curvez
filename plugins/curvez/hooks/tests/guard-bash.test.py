@@ -11,6 +11,9 @@
 `-f` 축약형 케이스를 반드시 남겨 둔다. push 규칙을 통째로 빼면 `--force` 규칙이
 문자열 `--force` 만 보기 때문에 `-f` 가 조용히 통과한다.
 
+로컬 브랜치 삭제도 **허용**한다. 원격에 닿지 않고, 지운 SHA 가 reflog 에 남아 되살릴 수 있다.
+막는 것은 보호 브랜치(main/master/release/develop/production)의 로컬 사본을 지우는 경우뿐이다.
+
 exit 0 = 전부 통과.
 """
 import json, subprocess, sys, os
@@ -43,7 +46,21 @@ cases = [
     (G + PUSH + " origin :old", 2, "콜론 문법 원격 브랜치 삭제"),
     (G + "-C /tmp " + RESET + " " + HARD, 2, "-C + reset"),
     (G + "-C /tmp clean -fd", 2, "-C + clean"),
-    (G + "-C /tmp branch -D old", 2, "-C + branch -D"),
+    # 로컬 브랜치 정리는 허용한다. 원격에 닿지 않고 reflog 로 되살릴 수 있다.
+    (G + "branch -D old", 0, "작업 브랜치 강제 삭제 허용"),
+    (G + "branch -d old", 0, "작업 브랜치 삭제 허용"),
+    (G + "-C /tmp branch -D feature/x", 0, "-C + 작업 브랜치 삭제 허용"),
+    (G + "branch --delete " + FORCE + " old", 0, "--delete --force 도 -D 와 같이 허용"),
+    (G + "branch -D main-old", 0, "이름이 보호 브랜치로 시작할 뿐인 브랜치 허용"),
+    (G + "branch -D feature/main", 0, "경로에 main 이 든 작업 브랜치 허용"),
+    (G + "branch -rd origin/main", 0, "원격 추적 ref 삭제 허용"),
+    (G + "branch -a", 0, "브랜치 목록"),
+    # 보호 브랜치의 로컬 사본만 계속 막는다.
+    (G + "branch -D main", 2, "보호 브랜치 강제 삭제"),
+    (G + "branch -d master", 2, "보호 브랜치 삭제"),
+    (G + "-C /tmp branch -D develop", 2, "-C + 보호 브랜치 삭제"),
+    (G + "branch --delete " + FORCE + " production", 2, "--delete --force 로 보호 브랜치 삭제"),
+    (G + "branch -D old main", 2, "여러 개 중 보호 브랜치가 섞인 삭제"),
     (G + "status", 0, "정상"),
     (G + "-C /tmp status", 0, "-C + 정상"),
     (G + "log --oneline", 0, "정상"),

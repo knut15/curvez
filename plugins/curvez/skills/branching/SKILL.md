@@ -206,13 +206,17 @@ gh pr merge "$PR" "$MERGE_FLAG" --delete-branch
 | `git push --delete origin <브랜치>` · `git push origin :<브랜치>` | 브랜치 정리 |
 | `--force` 가 붙은 git 명령 (`--force-with-lease` 는 통과) | 5절 |
 | `git reset --hard` | 5절 back-merge |
-| `git branch -D` | 브랜치 정리 |
+| 보호 브랜치(`main` 등)를 대상으로 하는 `git branch -D` · `-d` | 로컬 브랜치 정리 |
 | `git clean -f` · `git checkout .` · `git restore .` | 작업 트리 되돌리기 |
 | `git rebase` 로서 명령에 `main` 이 섞인 것 | 작업 브랜치를 최신 기반 위로 올릴 때 |
 
 **평범한 `git push` 는 막히지 않는다 — 에이전트가 직접 실행한다.** 원격에 커밋을 얹는 것은
 append 라 revert 커밋 하나로 되돌린다. 가드가 막는 것은 원격에 **있던** 이력을 지우는
 조작뿐이다.
+
+**로컬 브랜치 삭제도 막히지 않는다.** `git branch -D feature/x` 는 원격에 닿지 않고,
+잘못 지워도 reflog 로 되살릴 수 있다 (아래 "4-1. 머지된 로컬 브랜치 정리"). 걸리는 것은
+`main`·`master`·`release`·`develop`·`production` 을 대상으로 했을 때뿐이다.
 
 **막히면 명령을 제시하고 사용자에게 실행을 요청한다.** 아래 형식으로 낸다.
 
@@ -333,6 +337,49 @@ PR 본문 형식(무엇을·왜·검증, 서명 줄)은 `commit` 스킬이 정�
 
 머지까지 요청받았으면 CI 를 확인하고 이어서 머지한다 (위 "머지 권한").
 요청받지 않았으면 **PR URL 을 보고하고 여기서 멈춘다.**
+
+## 4-1. 머지된 로컬 브랜치 정리
+
+**사용자가 정리를 요청했을 때만 한다.** 요청 없이 브랜치를 지우지 않는다.
+
+지우기 전에 **무엇을 지울지 먼저 읽어 사용자에게 목록으로 보여 준다.** 원격에서 이미 사라진
+브랜치의 로컬 사본이 정리 대상이다.
+
+```bash
+# 1) 원격에서 사라진 추적 정보를 먼저 떨어낸다 (로컬 브랜치는 건드리지 않는다).
+git fetch --prune
+
+# 2) $BASE 에 머지가 끝난 로컬 브랜치를 뽑는다. 보호 브랜치와 현재 브랜치는 제외한다.
+git branch --merged "$BASE" --format='%(refname:short)' \
+  | grep -Ev '^(main|master|release|develop|production)$' \
+  | grep -v "^$(git branch --show-current)$"
+```
+
+목록을 보고한 뒤 지운다. **`-d` 를 먼저 쓴다** — 머지되지 않은 브랜치는 여기서 실패하고,
+그 실패가 "이건 아직 안 머지됐다"는 신호다.
+
+```bash
+git branch -d <브랜치> [<브랜치> ...]
+```
+
+`-d` 가 거부한 브랜치를 그래도 지워야 하면(스쿼시 머지된 브랜치가 대표적이다) **왜 안전한지를
+먼저 확인해 보고한 뒤** `-D` 를 쓴다.
+
+```bash
+# 스쿼시 머지 확인 — diff 가 비어 있으면 내용은 이미 $BASE 에 들어가 있다.
+git diff --stat "$BASE"...<브랜치>
+git branch -D <브랜치>
+```
+
+**지운 뒤 되살리는 법을 안내한다.** `git branch -D` 는 지운 SHA 를 출력한다.
+`git branch <이름> <SHA>` 로 복구하고, SHA 를 놓쳤으면 `git reflog` 에 남아 있다.
+
+**보호 브랜치는 가드가 막는다.** `git branch -D main` 은 exit 2 로 차단된다. 로컬 `main` 이
+꼬였으면 지우지 말고 `git switch main && git reset --hard origin/main` 을 **사용자에게 요청한다**
+(이 명령도 가드가 막는다).
+
+원격 브랜치 삭제(`git push --delete`)는 이 절에 없다. 가드가 막으며, PR 머지 시 GitHub 이
+자동으로 지우거나 사용자가 직접 지운다.
 
 ## 5. 릴리스 — 2단 구조일 때만
 
