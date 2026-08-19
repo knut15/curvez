@@ -180,28 +180,34 @@ gh pr merge "$PR" "$MERGE_FLAG" --delete-branch
 
 머지한 뒤에도 PR URL 과 CI 결과를 보고한다. 무엇이 통합됐는지는 사용자가 알아야 한다.
 
-## 훅이 막는 것 — push 이후는 사용자가 실행한다
+## 훅이 막는 것 — 이력을 지우는 조작은 사용자가 실행한다
 
 `plugins/curvez/hooks/guard-bash.mjs` 가 **PreToolUse 에서 exit 2 로 차단한다.** 아래 명령은
 **에이전트가 실행할 수 없다.**
 
 | 차단되는 것 | 이 스킬에서 걸리는 자리 |
 |---|---|
-| `git push` | 4절 PR 올리기, 5절 back-merge |
-| `--force` (`--force-with-lease` 는 통과) | 5절 |
+| `git push --force` · `git push -f` | 5절 back-merge |
+| `git push --delete origin <브랜치>` · `git push origin :<브랜치>` | 브랜치 정리 |
+| `--force` 가 붙은 git 명령 (`--force-with-lease` 는 통과) | 5절 |
 | `git reset --hard` | 5절 back-merge |
 | `git branch -D` | 브랜치 정리 |
 | `git clean -f` · `git checkout .` · `git restore .` | 작업 트리 되돌리기 |
 | `git rebase` 로서 명령에 `main` 이 섞인 것 | 작업 브랜치를 최신 기반 위로 올릴 때 |
 
+**평범한 `git push` 는 막히지 않는다 — 에이전트가 직접 실행한다.** 원격에 커밋을 얹는 것은
+append 라 revert 커밋 하나로 되돌린다. 가드가 막는 것은 원격에 **있던** 이력을 지우는
+조작뿐이다.
+
 **막히면 명령을 제시하고 사용자에게 실행을 요청한다.** 아래 형식으로 낸다.
 
 ```
 아래 명령은 가드가 막는다. 직접 실행해 달라.
+git diff 가 비어 있음을 위에서 확인했다.
 
-  git push -u origin feature/attendance-calendar
+  git switch <BASE> && git reset --hard origin/<RELEASE>
 
-끝나면 알려 달라. 이어서 gh pr create 로 PR 을 연다.
+끝나면 알려 달라. 이어서 다음 단계로 넘어간다.
 ```
 
 **가드를 우회하지 마라.** 변수 치환·따옴표 쪼개기·`sh -c` 감싸기·별칭·스크립트 파일로 우회하는
@@ -209,9 +215,9 @@ gh pr merge "$PR" "$MERGE_FLAG" --delete-branch
 조작이다. 우회에 성공하면 가드는 다음에도 못 막고, 그 시점부터 아무도 이 저장소에 안전장치가
 없다는 사실을 모른다. 가드의 실패는 경보가 아니라 침묵으로 나타난다.
 
-`git push` 는 막히지만 **`gh pr create` · `gh pr checks` · `gh pr merge` 는 막히지 않는다.**
-즉 push 만 사용자에게 넘기고 그 뒤는 이어서 진행한다. 한 턴에 전부 요청하지 말고
-**push 완료를 확인한 뒤** PR 을 연다 — push 되지 않은 브랜치로 `gh pr create` 를 하면 실패한다.
+**`gh pr create` · `gh pr checks` · `gh pr merge` 도 막히지 않는다.** 즉 push 부터 PR 생성까지
+한 실행 안에서 이어진다. 다만 순서는 지킨다 — **push 가 끝난 뒤에** PR 을 연다. push 되지 않은
+브랜치로 `gh pr create` 를 하면 원격에 브랜치가 없어 실패한다.
 
 ## 1. 새 작업을 시작할 때
 
@@ -289,10 +295,11 @@ GitHub PR 화면의 `Update branch` 를 쓰도록 안내한다.
 ## 4. PR 을 올릴 때
 
 ```bash
-# 1) push 는 가드가 막는다. 명령을 제시하고 사용자 실행을 요청한다.
-echo "직접 실행해 달라: git push -u origin $(git branch --show-current)"
+# 1) 올라가는 커밋을 먼저 읽어 사용자에게 한 줄로 알린 뒤 push 한다.
+git log --oneline @{u}.. 2>/dev/null || git log --oneline -5
+git push -u origin "$(git branch --show-current)"
 
-# 2) push 가 끝났음을 확인한 뒤 PR 을 연다.
+# 2) push 가 끝난 것을 확인한 뒤 PR 을 연다.
 gh pr create --base "$BASE" --title "<제목>" --body "<본문>"
 
 # 3) 생성된 PR 번호를 $PR 에 넣고 CI 를 확인한다.
@@ -339,11 +346,12 @@ git diff --name-only "origin/$RELEASE" "origin/$BASE"
 **`git diff` 출력이 비어 있지 않으면 실행하지 않는다.** 비어 있지 않다는 것은 `$BASE` 에
 릴리스에 담기지 않은 변경이 남아 있다는 뜻이고, 포인터를 옮기면 그것이 사라진다.
 
-diff 가 비었으면 아래를 **사용자에게 제시하고 직접 실행을 요청한다.** `git reset --hard` 와
-`git push` 둘 다 가드가 막는다 — 에이전트는 실행할 수 없다.
+diff 가 비었으면 아래를 **사용자에게 제시하고 직접 실행을 요청한다.** `git reset --hard` 는
+가드가 막고, 강제 갱신은 남의 커밋을 덮어쓸 수 있어 사람의 판단이 필요하다 — 두 줄 다 에이전트가
+실행하지 않는다.
 
 ```
-아래 두 줄은 가드가 막는다. 확인하고 직접 실행해 달라.
+아래 두 줄은 에이전트가 실행하지 않는다. 확인하고 직접 실행해 달라.
 git diff 가 비어 있음을 위에서 확인했다.
 
   git switch <BASE> && git reset --hard origin/<RELEASE>
@@ -368,7 +376,8 @@ git diff 가 비어 있음을 위에서 확인했다.
 git switch "$RELEASE"
 git pull --ff-only
 git switch -c hotfix/payslip-crash
-# 작업 후 (push 는 사용자에게 요청)
+# 작업 후 — push 하고 PR 을 연다
+git push -u origin hotfix/payslip-crash
 gh pr create --base "$RELEASE" --title "<제목>"
 ```
 
@@ -387,7 +396,7 @@ gh pr create --base "$RELEASE" --title "<제목>"
   **이유:** 다른 구조의 프로젝트에서 그 브랜치가 없어 절차가 통째로 실패한다
 - **`--base` 없이 `gh pr create`** — 저장소 기본 브랜치로 열린다 (4절)
 - **`protectedBranches` 에 직접 push** — 전부 PR 을 거친다
-- **가드 우회** — `git push`·`--force`·`reset --hard` 를 감싸거나 쪼개서 실행하지 마라.
+- **가드 우회** — 강제 push·원격 브랜치 삭제·`reset --hard` 를 감싸거나 쪼개서 실행하지 마라.
   **이유:** 우회가 성공하면 안전장치가 없다는 사실을 아무도 모르게 된다
 - **`$RELEASE` 로 가는 PR 머지** — 릴리스·hotfix·1단의 작업 PR 은 사람이 누른다
 - **요청받지 않은 머지** — `$BASE` 로 가는 것이라도 머지까지 요청받지 않았으면 PR 에서 멈춘다

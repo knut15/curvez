@@ -404,13 +404,13 @@ git switch "$BASE" && git pull --ff-only   # 다음 작업이 최신 기반에�
 | 단계까지 갔으면 | `artifacts` 에 |
 |---|---|
 | 커밋 | 커밋 해시(`git log -1 --format=%H`)와 제목 |
-| 푸시 | 사용자가 실행했음을 확인한 뒤의 원격 sha |
+| 푸시 | push 뒤 `git status -sb` 로 읽은 원격 브랜치와 sha |
 | PR | PR URL |
 | 머지 | PR URL 과 머지된 커밋 해시 |
 
 - `status: done` 은 `verification` 이 비면 쓸 수 없다. 값은 `quality-gate` 가 낸 수치를 옮긴다
-- push 를 사용자에게 넘기고 결과를 못 받았으면 `status` 는 `partial` 이고,
-  `blocked_on` 에 실패한 명령과 원문 출력을 남긴다
+- push 가 거부됐거나 가드에 막힌 조작을 사용자에게 넘기고 결과를 못 받았으면 `status` 는
+  `partial` 이고, `blocked_on` 에 실패한 명령과 원문 출력을 남긴다
 - **만들지 않은 PR 의 URL 을 지어내지 마라.** **이유:** 지어낸 URL 은 수신 에이전트가 열어보기 전까지
   존재하는 것으로 취급되고, 그 위에 다음 단계가 쌓인다
 

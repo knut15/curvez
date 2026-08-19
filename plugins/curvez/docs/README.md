@@ -273,7 +273,7 @@ scripts/lib/spec.mjs  (규약 수치의 단일 출처)
 | 에이전트 정의를 쓸 때 7섹션이 왜 그 순서인가. 각 섹션이 무엇을 막으려고 있는가 | [agent-authoring.md](agent-authoring.md) |
 | 스킬이 호출되게 하는 법. 분량을 왜 제한하는가. references 로 언제 쪼개는가 | [skill-authoring.md](skill-authoring.md) |
 | 팀을 어떻게 짜는가. 병렬·순차 판정, 소유권 충돌, 사용자 승인, 질문 중계 | [team-execution.md](team-execution.md) |
-| 브랜치·커밋·PR 을 어떻게 다루는가, 왜 push 를 훅이 막는가 | [git-strategy.md](git-strategy.md) |
+| 브랜치·커밋·PR 을 어떻게 다루는가, 훅이 왜 이력을 지우는 조작만 막는가 | [git-strategy.md](git-strategy.md) |
 | 왜 DDD 인가, 규모가 안 맞으면 어떻게 조정하는가 | [architecture-presets.md](architecture-presets.md) |
 | `done` 을 선언해도 되는 조건은 무엇인가. 검증을 왜 수치로 요구하는가 | [quality-model.md](quality-model.md) |
 | 셸·grep·awk 로 검증 스크립트를 짤 때 조용히 틀리는 지점들 | [shell-pitfalls.md](shell-pitfalls.md) |
