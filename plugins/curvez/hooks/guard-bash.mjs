@@ -33,6 +33,14 @@ function gitCmd(sub) {
   return new RegExp(String.raw`\bgit\b` + GIT_GLOBAL + String.raw`\s+` + sub);
 }
 
+/**
+ * 보호 브랜치 이름. 프로젝트마다 다르므로 흔한 것들을 함께 본다.
+ *
+ * 한계: 프로파일의 `git.protectedBranches` 를 읽지 않는다 — 훅은 프로젝트 컨텍스트 없이도
+ * 동작해야 하고, 여기서 파일을 읽으면 프로파일이 없는 저장소에서 가드가 통째로 죽는다.
+ */
+const PROTECTED = String.raw`(?:main|master|release|develop|production)`;
+
 /** 되돌리기 어렵거나 원격에 영향을 주는 명령. */
 const DANGEROUS_GIT = [
   // 평범한 `git push` 는 막지 않는다.
@@ -53,16 +61,29 @@ const DANGEROUS_GIT = [
   },
   { re: gitCmd(String.raw`reset\s+--hard\b`), why: "커밋되지 않은 변경이 복구 불가능하게 사라진다" },
   { re: gitCmd(String.raw`clean\s+-[a-z]*f`), why: "추적되지 않는 파일이 사라진다. .env 나 로컬 설정이 포함될 수 있다" },
-  { re: gitCmd(String.raw`branch\s+-D\b`), why: "머지되지 않은 브랜치를 강제로 지운다" },
+  // 로컬 브랜치 삭제 전체는 막지 않는다.
+  //
+  // 머지가 끝난 작업 브랜치를 지우는 것은 저장소를 쓰는 일상이고, 이 조작은 원격에 닿지
+  // 않는다. 잘못 지워도 커밋은 reflog 에 남고 삭제 명령이 SHA 를 출력하므로
+  // `git branch <이름> <SHA>` 로 되살린다 — 원격 이력을 지우는 push 와 손실의 성질이 다르다.
+  //
+  // 남기는 것은 보호 브랜치의 로컬 사본을 지우는 경우뿐이다. 이쪽은 되살릴 수는 있어도
+  // 지울 이유가 없고, 지운 뒤에 벌어지는 혼란(추적 브랜치 소실, 잘못된 base 에서 분기)이 크다.
+  // 축약형 `-D` 와 `--delete --force` 를 함께 본다. `-d`(머지된 것만 삭제)도 같이 잡는다.
+  {
+    re: gitCmd(String.raw`branch\b(?=[^;&|]*\s-(?:[a-zA-Z]*[dD]|-delete)\b)[^;&|]*\s` + PROTECTED + String.raw`(?![\w./-])`),
+    why: "보호 브랜치의 로컬 사본을 지운다. 작업 브랜치를 정리하는 것이라면 그 브랜치 이름을 직접 적어라",
+  },
   { re: gitCmd(String.raw`checkout\s+\.(\s|$)`), why: "작업 트리의 변경을 통째로 버린다" },
   { re: gitCmd(String.raw`restore\s+\.(\s|$)`), why: "작업 트리의 변경을 통째로 버린다" },
   // `--force` 는 git 명령일 때만 막는다.
   // 이유: 패턴만 보면 `pnpm install --force` 처럼 무해한 명령이 차단된다. 실측에서 걸렸다.
-  { re: /\bgit\b[^;&|]*--force\b(?!-with-lease)/, why: "강제 갱신은 남의 커밋을 덮어쓸 수 있다" },
-  // 보호 브랜치 대상 rebase. 이름은 프로젝트마다 다르므로 흔한 것들을 함께 본다.
-  // 한계: 프로파일의 `git.protectedBranches` 를 읽지 않는다 — 훅은 프로젝트 컨텍스트 없이도
-  // 동작해야 하고, 여기서 파일을 읽으면 프로파일이 없는 저장소에서 가드가 통째로 죽는다.
-  { re: gitCmd(String.raw`rebase\b[^;&|]*\b(main|master|release|develop|production)\b`), why: "공유 브랜치 rebase 는 이력을 갈라놓는다" },
+  //
+  // `git branch` 는 여기서 제외한다. 제외하지 않으면 `--delete --force` 만 이 규칙에 걸려
+  // 같은 조작인 `-D` 와 결과가 갈린다. 보호 브랜치는 바로 위 규칙이 이미 막는다.
+  { re: /\bgit\b(?![^;&|]*\sbranch\b)[^;&|]*--force\b(?!-with-lease)/, why: "강제 갱신은 남의 커밋을 덮어쓸 수 있다" },
+  // 보호 브랜치 대상 rebase.
+  { re: gitCmd(String.raw`rebase\b[^;&|]*\b` + PROTECTED + String.raw`\b`), why: "공유 브랜치 rebase 는 이력을 갈라놓는다" },
 ];
 
 /** pnpm 이 아닌 패키지 매니저. */

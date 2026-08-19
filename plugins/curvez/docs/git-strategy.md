@@ -239,6 +239,14 @@ release ── A' ── B'        A·B 는 A'·B' 로 재작성됐다
 **push 하나가 라운드 하나를 소비했다.** 그 비용은 매 작업마다 발생하는데, 막아서 피한 사고는
 `--force` 와 원격 삭제뿐이었다. 그래서 규칙을 그 둘로 좁혔다.
 
+로컬 브랜치 삭제(`git branch -D`)도 같은 이유로 좁혔다. 이 명령은 원격에 닿지 않고, ref 하나를
+지울 뿐 커밋은 남는다 — 삭제 명령이 SHA 를 출력하고 reflog 에도 기록되므로
+`git branch <이름> <SHA>` 로 되살린다. 반면 머지가 끝난 브랜치가 쌓이면 `git branch` 출력이
+길어져 **지금 무엇이 살아 있는 작업인지** 읽기 어려워지고, 그 상태에서 잘못된 브랜치에서
+분기하는 사고가 난다 — 가드가 막으려던 사고보다 이쪽이 실제로 더 자주 일어났다. 남긴 것은
+보호 브랜치의 로컬 사본을 지우는 경우뿐이다. 되살릴 수는 있어도 지울 이유가 없고, 지운 뒤의
+혼란(추적 브랜치 소실, 잘못된 base 에서 분기)이 정리 이득보다 크다.
+
 ### 실측 — 무엇이 막히고 무엇이 통과하는가
 
 훅에 명령 문자열을 직접 넣어 exit code 를 확인했다. 아래는 실행 결과다.
@@ -252,7 +260,10 @@ release ── A' ── B'        A·B 는 A'·B' 로 재작성됐다
 | `git push -f origin main` | 2 | 차단 — 축약형도 잡는다 |
 | `git push --delete origin old` | 2 | 차단 |
 | `git push origin :old` | 2 | 차단 — 콜론 문법 브랜치 삭제 |
-| `git reset --hard`, `git clean -fd`, `git branch -D` | 2 | 차단 |
+| `git reset --hard`, `git clean -fd` | 2 | 차단 |
+| `git branch -D feature/x`, `git branch -d old` | 0 | 통과 — 로컬 정리, reflog 로 복구된다 |
+| `git branch -D main`, `git branch -d develop` | 2 | 차단 — 보호 브랜치의 로컬 사본 |
+| `git branch -D main-old`, `git branch -rd origin/main` | 0 | 통과 — 이름이 보호 브랜치와 다르다 |
 | `git rebase main` | 2 | 차단 |
 | `git rebase <main 이 아닌 브랜치>` | 0 | 통과 |
 | `git commit`, `git switch -c`, `git merge <브랜치>` | 0 | 통과 |

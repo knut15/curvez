@@ -299,7 +299,9 @@ cat commitlint.config.* 2>/dev/null  # commitlint 규칙
 | `git push --force`, `git push -f` | 그 브랜치를 받아 간 사람의 커밋을 소리 없이 덮는다 |
 | `git push --delete origin <브랜치>`, `git push origin :<브랜치>` | 원격 브랜치를 지운다. 복구할 방법이 없다 |
 
-`git reset --hard`, `git clean -f…`, `git branch -D`, `main` 대상 rebase 도 같이 막힌다.
+`git reset --hard`, `git clean -f…`, `main` 대상 rebase 도 같이 막힌다.
+머지된 로컬 브랜치 삭제(`git branch -d` / `-D`)는 막히지 않는다 — 보호 브랜치를 대상으로
+했을 때만 걸린다.
 
 **막힌 명령의 우회 명령을 만들지 마라** — 변수에 담아 쪼개거나, 별칭·스크립트 파일로 감싸거나,
 `gh api` 로 대신 밀어 넣는 것 전부 금지다.

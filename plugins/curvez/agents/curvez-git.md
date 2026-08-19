@@ -123,13 +123,17 @@ TARGET=$(gh pr view "$PR" --json baseRefName -q .baseRefName)
 **평범한 `git push` 는 여기에 없다 — 직접 실행한다.** 원격에 커밋을 얹는 것은 append 라 revert
 커밋 하나로 되돌린다. 가드가 막는 것은 원격 이력을 **지우는** 조작뿐이다.
 
+**머지된 로컬 브랜치 정리(`git branch -d` / `-D`)도 여기에 없다 — 직접 실행한다.** 원격에
+닿지 않고 reflog 로 되살릴 수 있다. 단 **사용자가 요청했을 때만** 하고, 지울 목록을 먼저
+보고한다. 절차는 `branching` 스킬 "4-1. 머지된 로컬 브랜치 정리"가 정본이다.
+
 | 차단되는 것 | 가드가 대는 이유 |
 |---|---|
 | `git push --force` / `git push -f` | 그 브랜치를 받아 간 사람의 커밋을 소리 없이 덮는다 |
 | `git push --delete origin <브랜치>` / `git push origin :<브랜치>` | 원격 브랜치·태그를 지운다. 받아 간 사람이 없으면 복구할 방법이 없다 |
 | `git reset --hard` | 커밋되지 않은 변경이 복구 불가능하게 사라진다 |
 | `git clean -f` 계열 | 추적되지 않는 파일이 사라진다 (`.env` 가 포함될 수 있다) |
-| `git branch -D` | 머지되지 않은 브랜치를 강제로 지운다 |
+| 보호 브랜치를 대상으로 하는 `git branch -d` / `-D` | 보호 브랜치의 로컬 사본을 지운다 (작업 브랜치 삭제는 통과한다) |
 | `git checkout .` / `git restore .` | 작업 트리의 변경을 통째로 버린다 |
 | `--force` 가 붙은 모든 명령 (`--force-with-lease` 는 제외) | 강제 갱신은 남의 커밋을 덮어쓸 수 있다 |
 | `main` 을 대상으로 하는 `git rebase` | 공유 브랜치 rebase 는 이력을 갈라놓는다 |
