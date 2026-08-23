@@ -278,6 +278,7 @@ scripts/lib/spec.mjs  (규약 수치의 단일 출처)
 | `done` 을 선언해도 되는 조건은 무엇인가. 검증을 왜 수치로 요구하는가 | [quality-model.md](quality-model.md) |
 | 셸·grep·awk 로 검증 스크립트를 짤 때 조용히 틀리는 지점들 | [shell-pitfalls.md](shell-pitfalls.md) |
 | 내 프로젝트 전용 에이전트·스킬을 어떻게 추가하는가 | [extending.md](extending.md) |
+| 버전을 올렸을 때 내 프로젝트에서 확인하거나 고쳐야 할 것 | [migration.md](migration.md) |
 
 처음이라면 [design-rationale.md](design-rationale.md) → [team-execution.md](team-execution.md) →
 [handoff-contract.md](handoff-contract.md) 순으로 읽으면 나머지가 왜 그렇게 생겼는지 이어진다.
