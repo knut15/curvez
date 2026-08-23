@@ -37,19 +37,11 @@ curvez 는 **user scope 플러그인**이다. 한 번 업데이트하면 그 계
 
 ### 업데이트 절차 (필수)
 
-**1. 플러그인 업데이트** — 계정당 한 번이면 된다.
+절차의 정본은 [README 의 업데이트](README.md#업데이트)다 — 마켓플레이스 갱신이 먼저이고,
+그것을 건너뛰면 업데이트가 "이미 최신" 으로 끝난다. 여기에 옮겨 적지 않는다.
 
-```
-/plugin   → curvez@curvez 를 0.1.4 로 업데이트
-```
-
-**2. 검증**
-
-```bash
-node "$CLAUDE_PLUGIN_ROOT/scripts/doctor.mjs"
-```
-
-에이전트 12/12 · 스킬 15/15 통과, exit 0 을 확인한다.
+끝나면 `installed_plugins.json` 의 `curvez@curvez` 가 `version: "0.1.4"` 인지 확인하고,
+`node "$CLAUDE_PLUGIN_ROOT/scripts/doctor.mjs"` 로 에이전트 12/12 · 스킬 15/15 · exit 0 을 본다.
 
 ### 프로젝트에서 할 일 (조건부)
 

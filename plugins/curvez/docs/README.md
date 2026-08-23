@@ -31,24 +31,63 @@ curvez 자체를 고치면서 쓸 때는 GitHub 대신 로컬 체크아웃을 �
 
 ### 업데이트
 
+**계정당 한 번이면 그 계정의 모든 프로젝트에 동시에 적용된다.** user scope 설치라 프로젝트마다
+반복하지 않는다. 다만 **순서가 둘이고, 1단계를 건너뛰면 아무 일도 일어나지 않는다.**
+
+#### 1. 마켓플레이스를 먼저 갱신한다
+
+```
+/plugin marketplace update curvez
+```
+
+curvez 를 원격(`knut15/curvez`)으로 등록해 쓰면, 로컬에 **마켓플레이스 클론**이 하나 생긴다
+(`~/.claude/plugins/marketplaces/curvez`). 플러그인 업데이트는 원격을 직접 보지 않고
+**이 클론을 보고 버전을 판단한다.** 클론이 옛 커밋에 멈춰 있으면 새 버전이 있다는 사실 자체를
+모르므로, 2단계를 아무리 눌러도 "이미 최신" 으로 끝난다.
+
+슬래시 커맨드가 안 먹으면 클론은 그냥 git 저장소이므로 직접 당겨도 된다.
+
+```bash
+git -C ~/.claude/plugins/marketplaces/curvez pull --ff-only
+grep '"version"' ~/.claude/plugins/marketplaces/curvez/plugins/curvez/.claude-plugin/plugin.json
+```
+
+두 번째 줄이 올리려는 버전을 보여주면 1단계가 끝난 것이다.
+
+#### 2. 플러그인을 업데이트한다
+
 ```
 /plugin
 ```
 
-목록에서 `curvez@curvez` 를 골라 업데이트한다. **계정당 한 번이면 그 계정의 모든 프로젝트에
-동시에 적용된다** — user scope 설치라 프로젝트마다 반복하지 않는다.
+**`curvez@curvez` 는 discover 목록에 없다.** discover 는 **아직 설치하지 않은** 플러그인만
+보여준다. 이미 설치돼 있으므로 **설치된 플러그인(manage/installed) 쪽**에서 골라 업데이트한다.
+discover 에서 찾다가 "curvez 가 사라졌다" 고 판단하지 마라 — 설치돼 있다는 뜻이다.
 
-원격(`knut15/curvez`)을 등록해 쓰는 경우, 업데이트는 **GitHub 기본 브랜치에 머지된 것만** 가져온다.
-로컬에서 고치고 커밋만 한 상태면 반영되지 않는다.
+#### 3. 확인하고 재시작한다
 
-적용됐는지는 `~/.claude/plugins/installed_plugins.json` 의 `curvez@curvez` 항목에서 확인한다 —
-`version` 과 `gitCommitSha` 가 올라가 있어야 한다. 그 다음 설치 상태를 점검한다.
+| 확인할 것 | 되어야 하는 상태 |
+|---|---|
+| `~/.claude/plugins/cache/curvez/curvez/` | 새 버전 디렉터리가 생겼다 |
+| `~/.claude/plugins/installed_plugins.json` 의 `curvez@curvez` | `version` 과 `gitCommitSha` 가 올라갔다 |
 
 ```bash
 node "$CLAUDE_PLUGIN_ROOT/scripts/doctor.mjs"
 ```
 
 에이전트 12/12 · 스킬 15/15 통과, exit 0 이면 된다.
+
+**업데이트 뒤 Claude Code 를 재시작한다.** 돌고 있는 세션은 옛 버전을 물고 있어, 그 세션에서
+에이전트를 띄우면 옛 규약으로 돈다.
+
+#### 반영이 안 될 때
+
+| 증상 | 원인 | 조치 |
+|---|---|---|
+| discover 에 curvez 가 없다 | 정상이다. discover 는 미설치 플러그인만 보여준다 | 설치된 플러그인 쪽에서 찾는다 |
+| 업데이트를 눌러도 버전이 그대로다 | 마켓플레이스 클론이 옛 커밋이다 | 1단계를 실행한다 |
+| 클론을 갱신해도 그대로다 | 고친 것이 GitHub 기본 브랜치에 머지되지 않았다 | 로컬 커밋만으로는 부족하다. push·머지까지 한다 |
+| 버전은 올랐는데 동작이 그대로다 | 세션이 옛 버전을 물고 있다 | Claude Code 를 재시작한다 |
 
 **업데이트 뒤 프로젝트에서 할 일**은 [마이그레이션 노트](migration.md)가 버전별로 정리한다.
 대부분의 버전에서 할 일은 없지만, `.curvez/` 를 손대야 하는 변경이 있으면 거기에 적힌다.
