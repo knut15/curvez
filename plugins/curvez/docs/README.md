@@ -29,6 +29,32 @@ curvez 자체를 고치면서 쓸 때는 GitHub 대신 로컬 체크아웃을 �
 /plugin marketplace add ~/Workspace/curvez
 ```
 
+### 업데이트
+
+```
+/plugin
+```
+
+목록에서 `curvez@curvez` 를 골라 업데이트한다. **계정당 한 번이면 그 계정의 모든 프로젝트에
+동시에 적용된다** — user scope 설치라 프로젝트마다 반복하지 않는다.
+
+원격(`knut15/curvez`)을 등록해 쓰는 경우, 업데이트는 **GitHub 기본 브랜치에 머지된 것만** 가져온다.
+로컬에서 고치고 커밋만 한 상태면 반영되지 않는다.
+
+적용됐는지는 `~/.claude/plugins/installed_plugins.json` 의 `curvez@curvez` 항목에서 확인한다 —
+`version` 과 `gitCommitSha` 가 올라가 있어야 한다. 그 다음 설치 상태를 점검한다.
+
+```bash
+node "$CLAUDE_PLUGIN_ROOT/scripts/doctor.mjs"
+```
+
+에이전트 12/12 · 스킬 15/15 통과, exit 0 이면 된다.
+
+**업데이트 뒤 프로젝트에서 할 일**은 [마이그레이션 노트](migration.md)가 버전별로 정리한다.
+대부분의 버전에서 할 일은 없지만, `.curvez/` 를 손대야 하는 변경이 있으면 거기에 적힌다.
+
+---
+
 설치하면 에이전트 12종이 서브에이전트 이름으로 등록되고, 스킬 15종이 `curvez:` 네임스페이스로 붙는다.
 스킬은 `/curvez:<스킬명>` 으로 직접 부를 수도 있고, 스킬 `description` 의 트리거 문구에 걸려
 자동으로 호출되기도 한다.
