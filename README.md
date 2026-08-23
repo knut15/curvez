@@ -23,14 +23,19 @@ Next.js · React Native 프로젝트를 위한 **Claude Code 오케스트레이�
 ## 업데이트
 
 ```bash
-/plugin
+/plugin marketplace update curvez   # 1. 마켓플레이스를 먼저 갱신한다
+/plugin                             # 2. 설치된 플러그인에서 curvez@curvez 를 업데이트한다
 ```
 
-목록에서 `curvez@curvez` 를 골라 업데이트한다. **계정당 한 번이면 모든 프로젝트에 적용된다** —
-user scope 설치라 프로젝트마다 반복하지 않는다.
+**계정당 한 번이면 모든 프로젝트에 적용된다** — user scope 설치라 프로젝트마다 반복하지 않는다.
 
-버전을 올렸을 때 각 프로젝트에서 확인하거나 고쳐야 할 것은
-[마이그레이션 노트](plugins/curvez/docs/migration.md)에 버전별로 정리돼 있다.
+1단계를 건너뛰면 2단계가 "이미 최신" 으로 끝난다. 업데이트는 원격이 아니라 로컬 마켓플레이스
+클론을 보고 버전을 판단하기 때문이다. 그리고 `curvez@curvez` 는 **discover 목록에 없다** —
+discover 는 미설치 플러그인만 보여주므로 이미 설치된 것은 설치된 플러그인 쪽에서 고른다.
+
+절차와 확인 지점, 반영이 안 될 때의 조치는
+[업데이트](plugins/curvez/docs/README.md#업데이트)에 있다. 버전을 올렸을 때 각 프로젝트에서
+확인하거나 고쳐야 할 것은 [마이그레이션 노트](plugins/curvez/docs/migration.md)에 버전별로 정리돼 있다.
 
 ## 시작
 
