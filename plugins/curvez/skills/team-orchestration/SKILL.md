@@ -56,6 +56,7 @@ curvez 팀 실행의 절차서다. 주 사용 에이전트는 `curvez-orchestrat
 |---|---|---|
 | `curvez-requirements` | 수용 기준 확정 | 1라운드. `curvez-researcher` 와 병렬 |
 | `curvez-researcher` | 1차 출처 조사 | 1라운드 |
+| `curvez-marketer` | 브랜드 코어·네이밍 리딩, 회의 소집과 A/B 수렴 | **요청 시에만.** 1라운드에 `curvez-requirements` 와 병렬 가능. 네이밍 회의는 브리프 → 후보 수집(`blocked` 라우팅) → 수렴의 라운드로 돈다 |
 | `curvez-architect` | 레이어·경계 확정 | 요구사항 뒤. `curvez-designer` 와 병렬 |
 | `curvez-designer` | 화면·토큰 스펙 | 요구사항 뒤 |
 | `curvez-nextjs` | 웹 구현 | 설계 뒤. `curvez-react-native` 와 병렬 |
@@ -119,7 +120,7 @@ curvez 팀 실행의 절차서다. 주 사용 에이전트는 `curvez-orchestrat
      (읽기 전용 2종은 제외 — `## 핸드오프 수합` 참조)
    - 막히면 추측하지 말고 `status: blocked` 로 돌아오라는 지시
    - **이유:** 워커는 팀 명단도 다른 워커의 소유 경로도 모른다. 프롬프트에 없는 것은 워커가 추측한다
-4. **워커에게 `Agent` 도구를 쓰라고 지시하지 마라.** 라인업 11종 중 `tools` 에 `Agent` 가 있는 것은
+4. **워커에게 `Agent` 도구를 쓰라고 지시하지 마라.** 라인업 12종 중 `tools` 에 `Agent` 가 있는 것은
    `curvez-orchestrator` 하나뿐이다
    - **이유:** 서브에이전트가 또 서브에이전트를 띄우면 실행 트리의 깊이를 아무도 통제하지 못한다.
      토큰 소비가 예측 불가능해지고, 실패했을 때 어느 층에서 무엇이 깨졌는지 추적이 끊긴다

@@ -38,7 +38,7 @@ curvez 는 **보일러플레이트**다. 프로젝트 고유의 세부 에이전
 | 배포 형태 | **플러그인 마켓플레이스**. `~/Workspace/curvez` 가 marketplace 저장소, 그 안에 `plugins/curvez` |
 | 병렬 런타임 | **Claude Code 내장 서브에이전트(Agent 툴)**. tmux 워커는 쓰지 않는다. 에이전트 간 통신은 `.curvez/handoff/*.json` 파일 기반 |
 | 아키텍처 설정 | **DDD 프리셋 + 인터뷰**. 3~5문 인터뷰로 레이어명·경계 규칙만 조정해 `.curvez/architecture.md` 확정. 규모가 안 맞으면 다른 구조로 가지 않고 레이어를 줄이거나 컨텍스트를 나눈다 |
-| 에이전트 라인업 | **12종** (4절) |
+| 에이전트 라인업 | **13종** (4절) |
 
 ---
 
@@ -56,7 +56,7 @@ curvez 는 **보일러플레이트**다. 프로젝트 고유의 세부 에이전
 
 ---
 
-## 4. 에이전트 (12종)
+## 4. 에이전트 (13종)
 
 ### 4.1 공통 규칙 — 예외 없이 전부 적용
 
@@ -100,6 +100,7 @@ model: opus
 | 10 | `curvez-structure-reviewer` | 중복 코드·순환 의존·경계 위반 검출 | opus | X |
 | 11 | `curvez-retrospector` | 회고: 어긋난 지점과 규약 수정안 | sonnet | O (`docs/retro/`) |
 | 12 | `curvez-git` | 브랜치·커밋·PR·머지 실행 | sonnet | X (`owns: none`) |
+| 13 | `curvez-marketer` | 브랜드 코어·네이밍 리딩, 회의 소집·A/B 수렴 | opus | O (`.curvez/brand/`) |
 
 읽기 전용 에이전트(9, 10)는 `disallowedTools: Write, Edit, NotebookEdit` 필수.
 **이유:** 리뷰어가 직접 고치기 시작하면 리뷰 대상과 주체가 섞여 검증이 무의미해진다.
@@ -244,7 +245,7 @@ model: opus
 
 1. **골격** — marketplace.json, plugin.json, README, `.curvez/` 템플릿, `bootstrap.mjs`
 2. **규약 확정** ← **현재 단계** — `agent-contract`·`authoring-agents`·`authoring-skills` 스킬 + 검증 스크립트 3종. **여기가 먼저다.** 검증기가 있어야 이후 24개 산출물이 자동으로 품질을 유지한다
-3. **에이전트 12종** — 병렬 작성 (파일 소유권 무충돌)
+3. **에이전트 13종** — 병렬 작성 (파일 소유권 무충돌)
 4. **스킬 나머지 10종** — 병렬 작성
 5. **docs** — 스킬별 상세 문서 + references
 6. **프리셋** — 아키텍처 1종(DDD), 스택 3종
@@ -255,7 +256,7 @@ model: opus
 
 ## 11. 완료 기준
 
-- `node scripts/doctor.mjs` **exit 0**, 에이전트 12/12 · 스킬 15/15 통과
+- `node scripts/doctor.mjs` **exit 0**, 에이전트 13/13 · 스킬 15/15 통과
 - 500줄 초과 SKILL.md **0건**
 - 프론트매터 5필드 누락 **0건**, 본문 7섹션 누락 **0건**
 - `~/Workspace/weather` 설치 → `bootstrap` 실행 → `.curvez/` 생성 확인
