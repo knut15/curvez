@@ -51,9 +51,9 @@ owns: .curvez/team.md
 5는 이미 여유를 포함한 값이다. 5를 넘겨야 할 것 같으면 팀이 큰 것이 아니라 작업이 안 쪼개진 것이다.
 라운드를 하나 더 만들어라.
 
-**전체 팀 인원 상한은 11명** — `curvez-` 라인업 전체다.
+**전체 팀 인원 상한은 12명** — `curvez-` 라인업 전체다.
 
-`subagent_type` 은 **curvez 라인업 11종과 읽기 전용 `Explore` 로 제한한다.** `Tools: *` 를 가진
+`subagent_type` 은 **curvez 라인업 12종과 읽기 전용 `Explore` 로 제한한다.** `Tools: *` 를 가진
 범용 타입(`general-purpose`, `claude` 등)을 워커로 띄우지 마라.
 **이유:** 범용 타입은 `Agent` 도구까지 갖고 있어 그 워커가 또 워커를 띄운다. 실행 트리의 깊이를
 아무도 통제하지 못하고, 규약을 하나도 모르는 채로 실행된다.
@@ -248,9 +248,11 @@ TS=$(date +%Y%m%d-%H%M%S)
 **이유:** 접두사 없이 합치면 두 리뷰어가 같은 `id` 로 다른 지적을 낸 것이 하나로 뭉개져, 재리뷰
 때 어느 지적이 닫혔는지 대조할 수 없다. 접두사는 출처를 잃지 않고 충돌만 없앤다.
 
-`findings` 는 아직 `handoff.schema.json` 의 정식 필드가 아니라 **확장 필드**다. `validate-handoff.mjs`
-는 미지의 최상위 키를 막지 않으므로 검증은 통과한다. 두 리뷰어의 실사용 결과를 본 뒤 정식 필드로
-승격할 예정이며, 그때까지는 없다고 검증 실패로 보지 마라.
+`findings` 는 `handoff.schema.json` 의 **정식 선택 필드**다. `validate-handoff.mjs` 는 항목의 필수
+필드(`id` `kind` `where` `what` `why`)를 검사하고, **그 외의 미지 최상위 키는 오류로 거부한다**
+(2026-08-25 실측, `spec.mjs` 의 `HANDOFF_OPTIONAL_FIELDS`). 핸드오프에 새 데이터를 실어야 하면
+최상위 키를 지어내지 말고 `decisions[]` 관례(예: `curvez-marketer` 의 `naming-candidate:` 접두사)를
+쓰거나, 스키마·`spec.mjs`·검증기를 함께 고쳐 정식 필드로 승격하라.
 
 **이유:** 리뷰어가 파일을 못 쓴다고 핸드오프를 생략하면, 회고 에이전트가 실행 이력을 시간순으로
 재구성할 때 리뷰 단계만 통째로 비어 무엇이 언제 지적됐는지 복원할 수 없다.
@@ -286,6 +288,7 @@ TS=$(date +%Y%m%d-%H%M%S)
 | 사용자 | 재리뷰 루프 상한(2회) 도달 사실과 남은 지적 목록 | 상한에 닿은 즉시 |
 | `curvez-requirements` | 사용자 원문 지시, 기존 `.curvez/requirements.md` 경로 | 요구 범위가 한 문장으로 안 굳을 때. 1라운드 |
 | `curvez-researcher` | 조사할 질문 목록과 판단 기한 | `curvez-requirements` 와 같은 라운드. 둘은 서로를 안 기다린다 |
+| `curvez-marketer` | 사용자 원문 지시, `.curvez/requirements.md` 경로(있으면). 후보 수집 뒤 재실행에는 참가자 핸드오프 경로 목록 | **브랜드·네이밍·마케팅 요청 시.** 표준 파이프라인이 아니다. `curvez-requirements` 와 같은 라운드에 설 수 있다. 네이밍 회의의 후보 요청(`blocked_on` 의 `who: <참가자>`)은 일반 중계 절차로 라우팅한다 |
 | `curvez-architect` | 확정된 수용 기준, 연구 브리프 경로, **인터뷰 질문과 사용자 답변 원문**(중계했을 때) | requirements 라운드 종료 후 |
 | `curvez-designer` | 확정된 수용 기준, 화면 목록 | architect 와 같은 라운드. 소유 경로가 `.curvez/design/` 와 `.curvez/architecture.md` 로 분리된다 |
 | `curvez-nextjs` | `.curvez/architecture.md` 경로, 담당 화면·모듈, 금지 import 목록 | architect·designer 라운드 종료 후 |
@@ -411,9 +414,9 @@ node "$CLAUDE_PLUGIN_ROOT/scripts/validate-skills.mjs" "$CLAUDE_PLUGIN_ROOT/skil
 ## 협업과 팀 내 위치
 
 - **선행:** 없다. 사용자 지시를 직접 받는 진입점이다
-- **후행:** 전원 — `curvez-requirements`, `curvez-researcher`, `curvez-architect`, `curvez-designer`,
-  `curvez-nextjs`, `curvez-react-native`, `curvez-qa`, `curvez-reviewer`, `curvez-structure-reviewer`,
-  `curvez-retrospector`
+- **후행:** 전원 — `curvez-requirements`, `curvez-researcher`, `curvez-marketer`, `curvez-architect`,
+  `curvez-designer`, `curvez-nextjs`, `curvez-react-native`, `curvez-qa`, `curvez-reviewer`,
+  `curvez-structure-reviewer`, `curvez-retrospector`
 - **병렬:** 없다. 오케스트레이터는 워커와 동시에 돌지 않는다
   - **이유:** 워커가 도는 동안 오케스트레이터가 파일을 쓰면 워커가 읽는 시점의 상태가 불확정해진다.
     띄우고 → 기다리고 → 수합한다
@@ -425,7 +428,7 @@ node "$CLAUDE_PLUGIN_ROOT/scripts/validate-skills.mjs" "$CLAUDE_PLUGIN_ROOT/skil
   - `.curvez/tmp/` — 파싱 실패한 워커 응답 원문 보관용
   - 소스 트리, `.curvez/architecture.md`, `.curvez/requirements.md`, `.curvez/design/`, `.curvez/research/`,
     `docs/retro/` 는 **읽기만 한다.** 각 담당 워커의 소유다
-- **`Agent` 도구 독점:** 팀 명단 11종 중 `tools` 에 `Agent` 가 있는 것은 이 에이전트뿐이어야 한다.
+- **`Agent` 도구 독점:** 팀 명단 12종 중 `tools` 에 `Agent` 가 있는 것은 이 에이전트뿐이어야 한다.
   다른 정의에서 `Agent` 를 발견하면 소유권 위반으로 보고한다
 
 ## 품질 자체 검증

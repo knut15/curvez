@@ -27,6 +27,7 @@
 | `curvez-architect` | opus |
 | `curvez-reviewer` | opus |
 | `curvez-structure-reviewer` | opus |
+| `curvez-marketer` | opus |
 | `curvez-researcher` | sonnet |
 | `curvez-designer` | sonnet |
 | `curvez-nextjs` | sonnet |

@@ -10,6 +10,39 @@ curvez 는 **user scope 플러그인**이다. 한 번 업데이트하면 그 계
 
 ---
 
+## 0.2.0 — `curvez-marketer` 추가 (브랜드·네이밍 리딩)
+
+### 무엇이 바뀌었나
+
+| # | 변경 | 정본 |
+|---|---|---|
+| ① | **에이전트 13번째 `curvez-marketer` 추가.** 브랜드 코어(`.curvez/brand/`)를 확정하고 네이밍 회의를 소집해 팀 후보를 걷어 최종 A/B안으로 추린다. 최종 1안 선택은 사용자 | `agents/curvez-marketer.md` |
+| ② | **네이밍 회의 프로토콜.** 후보 요청은 `blocked_on` 의 `who: <참가자>` 라우팅을 재사용하고, 참가자는 후보를 핸드오프 `decisions[]` 에 `naming-candidate: <이름>` 형식으로 반환한다 | `docs/team-execution.md` `## 브랜드 라운드는 요청 시에만 돈다` |
+| ③ | **미지 최상위 키 거부의 문서화.** `validate-handoff.mjs` 가 스키마 외 최상위 키를 오류로 잡는다는 사실(실측)에 맞춰 낡은 서술("확장 필드는 통과한다")을 고쳤다 | `agents/curvez-orchestrator.md` `#### 리뷰 결과는 findings 로 받는다` |
+
+핸드오프 스키마·스크립트 동작은 바뀌지 않았다. 에이전트 1종과 문서가 늘어난 minor 릴리스다.
+
+### 업데이트 절차 (필수)
+
+절차의 정본은 [README 의 업데이트](README.md#업데이트)다. 끝나면 `installed_plugins.json` 의
+`curvez@curvez` 가 `version: "0.2.0"` 인지 확인하고, `node "$CLAUDE_PLUGIN_ROOT/scripts/doctor.mjs"` 로
+에이전트 13/13 · 스킬 15/15 · exit 0 을 본다.
+
+### 프로젝트에서 할 일 (조건부)
+
+**A. 브랜드·네이밍 작업이 있는 프로젝트인가** — `.curvez/brand/` 는 마케터가 첫 실행에서 만든다.
+미리 만들 것은 없다. 팀 구성안에 `curvez-marketer` 가 들어오면 소유 경로가 `.curvez/brand/` 인지만 확인한다.
+
+**B. 자체 오케스트레이션 문서에 팀 상한을 적어 뒀는가** — 라인업이 11종에서 12종(+오케스트레이터)으로
+늘었다. `subagent_type` 허용 목록을 옮겨 적은 문서가 있으면 `curvez:curvez-marketer` 를 추가한다.
+
+### 하지 않아도 되는 것
+
+- **기존 핸드오프·`.curvez/` 마이그레이션** — 스키마 변경이 없다
+- **`naming_candidates` 같은 새 최상위 키 도입** — 검증기가 거부한다. 후보는 `decisions[]` 관례를 쓴다
+
+---
+
 ## 0.1.4 — 소유권 포함 관계 · 범용 타입 금지 · 호출 접두사
 
 ### 무엇이 바뀌었나
@@ -41,7 +74,7 @@ curvez 는 **user scope 플러그인**이다. 한 번 업데이트하면 그 계
 그것을 건너뛰면 업데이트가 "이미 최신" 으로 끝난다. 여기에 옮겨 적지 않는다.
 
 끝나면 `installed_plugins.json` 의 `curvez@curvez` 가 `version: "0.1.4"` 인지 확인하고,
-`node "$CLAUDE_PLUGIN_ROOT/scripts/doctor.mjs"` 로 에이전트 12/12 · 스킬 15/15 · exit 0 을 본다.
+`node "$CLAUDE_PLUGIN_ROOT/scripts/doctor.mjs"` 로 에이전트·스킬 전수 통과와 exit 0 을 본다.
 
 ### 프로젝트에서 할 일 (조건부)
 
