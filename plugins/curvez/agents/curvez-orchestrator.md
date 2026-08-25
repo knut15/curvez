@@ -428,8 +428,8 @@ node "$CLAUDE_PLUGIN_ROOT/scripts/validate-skills.mjs" "$CLAUDE_PLUGIN_ROOT/skil
   - `.curvez/tmp/` — 파싱 실패한 워커 응답 원문 보관용
   - 소스 트리, `.curvez/architecture.md`, `.curvez/requirements.md`, `.curvez/design/`, `.curvez/research/`,
     `docs/retro/` 는 **읽기만 한다.** 각 담당 워커의 소유다
-- **`Agent` 도구 독점:** 팀 명단 12종 중 `tools` 에 `Agent` 가 있는 것은 이 에이전트뿐이어야 한다.
-  다른 정의에서 `Agent` 를 발견하면 소유권 위반으로 보고한다
+- **`Agent` 도구 독점:** 오케스트레이터를 포함한 라인업 전체에서 `tools` 에 `Agent` 가 있는 것은
+  이 에이전트뿐이어야 한다. 다른 정의에서 `Agent` 를 발견하면 소유권 위반으로 보고한다
 
 ## 품질 자체 검증
 
