@@ -11,15 +11,15 @@ curvez 는 보일러플레이트다. 코어에 들어 있는 에이전트 13종�
 
 확장 작업은 문서 넷에 걸쳐 있다. 어느 것을 펴야 하는지부터 정리한다.
 
-| 궁금한 것 | 보는 곳 |
-|---|---|
-| **무엇을 코어에 두고 무엇을 프로젝트에 둘 것인가** | 이 문서 |
-| **확장의 전체 흐름과 흔한 실수** | 이 문서 |
-| 에이전트 정의를 실제로 어떻게 쓰는가 (필드·섹션·검증) | `authoring-agents` 스킬 |
-| 스킬 문서를 실제로 어떻게 쓰는가 (description·경계·분량) | `authoring-skills` 스킬 |
-| 에이전트 7섹션이 왜 그 7개인가 | [에이전트 설계](agent-authoring.md) |
-| 스킬 트리거와 progressive disclosure 의 근거 | [스킬 설계](skill-authoring.md) |
-| 규약 **값** (필수 필드, 허용 모델, 분량 상한) | `scripts/lib/spec.mjs` |
+| 궁금한 것                                                | 보는 곳                             |
+| -------------------------------------------------------- | ----------------------------------- |
+| **무엇을 코어에 두고 무엇을 프로젝트에 둘 것인가**       | 이 문서                             |
+| **확장의 전체 흐름과 흔한 실수**                         | 이 문서                             |
+| 에이전트 정의를 실제로 어떻게 쓰는가 (필드·섹션·검증)    | `authoring-agents` 스킬             |
+| 스킬 문서를 실제로 어떻게 쓰는가 (description·경계·분량) | `authoring-skills` 스킬             |
+| 에이전트 7섹션이 왜 그 7개인가                           | [에이전트 설계](agent-authoring.md) |
+| 스킬 트리거와 progressive disclosure 의 근거             | [스킬 설계](skill-authoring.md)     |
+| 규약 **값** (필수 필드, 허용 모델, 분량 상한)            | `scripts/lib/spec.mjs`              |
 
 **스킬이 정본이고 이 문서는 아니다.** 아래에 나오는 절차는 뼈대만 보여준다.
 각 단계에서 무엇을 어떻게 채우는지는 해당 스킬을 읽는다.
@@ -29,10 +29,10 @@ curvez 는 보일러플레이트다. 코어에 들어 있는 에이전트 13종�
 
 ## 코어 vs 프로젝트 — 어디에 두는가
 
-| 위치 | 무엇을 |
-|---|---|
-| curvez 코어 (`plugins/curvez/agents/`, `plugins/curvez/skills/`) | 모든 프로젝트에 공통인 것 |
-| 프로젝트 (`.claude/agents/`, `.claude/skills/`) | 이 프로젝트에만 해당하는 것 |
+| 위치                                                             | 무엇을                      |
+| ---------------------------------------------------------------- | --------------------------- |
+| curvez 코어 (`plugins/curvez/agents/`, `plugins/curvez/skills/`) | 모든 프로젝트에 공통인 것   |
+| 프로젝트 (`.claude/agents/`, `.claude/skills/`)                  | 이 프로젝트에만 해당하는 것 |
 
 스캐폴더의 기본 출력은 프로젝트 쪽이다. `--dir` 을 붙이지 않으면 `.claude/agents/`,
 `.claude/skills/` 에 생긴다. 코어에 넣으려면 명시적으로 경로를 지정해야 한다.
@@ -64,11 +64,11 @@ curvez 는 보일러플레이트다. 코어에 들어 있는 에이전트 13종�
 프로젝트마다 다른 값을 코어 문서에 하드코딩하지 않는다. 경로·명령·스택은 `.curvez/profile.json` 에 있고,
 에이전트는 거기서 읽는다. 계약의 상세는 [핸드오프 계약](handoff-contract.md)에 있다.
 
-| 이런 것 | 여기에 |
-|---|---|
-| `apps/web`, `pnpm test` 같은 **값** | `.curvez/profile.json` |
-| "값이 없으면 추측하지 말고 blocked" 같은 **규칙** | 코어 에이전트 정의 |
-| "결제 금액은 정수 최소단위" 같은 **이 프로젝트의 도메인 규칙** | 프로젝트 스킬 |
+| 이런 것                                                        | 여기에                 |
+| -------------------------------------------------------------- | ---------------------- |
+| `apps/web`, `pnpm test` 같은 **값**                            | `.curvez/profile.json` |
+| "값이 없으면 추측하지 말고 blocked" 같은 **규칙**              | 코어 에이전트 정의     |
+| "결제 금액은 정수 최소단위" 같은 **이 프로젝트의 도메인 규칙** | 프로젝트 스킬          |
 
 ---
 
@@ -318,13 +318,13 @@ node "$CLAUDE_PLUGIN_ROOT/scripts/doctor.mjs"
 
 동작하는 스크립트는 여덟이다.
 
-| 스크립트 | 역할 |
-|---|---|
-| `validate-agents` `validate-skills` `validate-handoff` | 규약 검증 |
-| `new-agent` `new-skill` | 스캐폴딩 |
-| `bootstrap` | 스택 감지 → 프로파일 → `.curvez/` 스캐폴드 |
-| `quality-gate` | 게이트 실행 → `verification[]` 출력 |
-| `doctor` | 종합 점검 (정적 규약 + 런타임 완비) |
+| 스크립트                                               | 역할                                       |
+| ------------------------------------------------------ | ------------------------------------------ |
+| `validate-agents` `validate-skills` `validate-handoff` | 규약 검증                                  |
+| `new-agent` `new-skill`                                | 스캐폴딩                                   |
+| `bootstrap`                                            | 스택 감지 → 프로파일 → `.curvez/` 스캐폴드 |
+| `quality-gate`                                         | 게이트 실행 → `verification[]` 출력        |
+| `doctor`                                               | 종합 점검 (정적 규약 + 런타임 완비)        |
 
 훅 세 종(`guard-bash` `validate-on-write` `check-handoff`)도 `hooks/hooks.json` 으로 등록된다.
 

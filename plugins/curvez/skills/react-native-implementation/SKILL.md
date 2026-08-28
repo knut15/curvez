@@ -49,13 +49,13 @@ node -p "JSON.stringify({
 }, null, 2)"
 ```
 
-| 키 | 없으면 |
-|---|---|
-| `paths.mobile` | `blocked`. `blocked_on` 에 `who: curvez-orchestrator` + 키 이름 |
-| `expo.sdkVersion` | `blocked`. 같은 방식 |
-| `paths.domain` (`stack` 이 `monorepo` 일 때) | `blocked`. 같은 방식 |
-| `commands.*` | 있는 것만 돌린다. 없는 명령을 지어내지 않는다 |
-| `paths.tests` | 유일하게 폴백 허용 (`*.test.*` / `*.spec.*` / `__tests__/`). 이 스킬은 여기에 쓰지 않는다 |
+| 키                                           | 없으면                                                                                    |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `paths.mobile`                               | `blocked`. `blocked_on` 에 `who: curvez-orchestrator` + 키 이름                           |
+| `expo.sdkVersion`                            | `blocked`. 같은 방식                                                                      |
+| `paths.domain` (`stack` 이 `monorepo` 일 때) | `blocked`. 같은 방식                                                                      |
+| `commands.*`                                 | 있는 것만 돌린다. 없는 명령을 지어내지 않는다                                             |
+| `paths.tests`                                | 유일하게 폴백 허용 (`*.test.*` / `*.spec.*` / `__tests__/`). 이 스킬은 여기에 쓰지 않는다 |
 
 **`app.json` / `app.config.*` / `package.json` 의 `expo` 필드로 소스 경로를 탐색하지 마라.**
 **이유:** 구현 스킬마다 자기 폴백을 만들면 monorepo 에서 두 구현 에이전트가 같은 디렉터리를 소유하게 된다.
@@ -147,15 +147,15 @@ grep -rn 'platform:' .curvez/design/screens .curvez/design/components
 
 아래 항목은 스펙에 명시가 없어도 **누락시키지 않는다.** 모바일에서는 선택 사항이 아니다.
 
-| 항목 | 스펙 키 | 스펙에 없을 때 기본값 | 구현 |
-|---|---|---|---|
-| 터치 타깃 | `a11y:target` | **44×44 pt** | 시각 크기가 그보다 작으면 `hitSlop` 으로 확보한다. 작은 아이콘 버튼에서 가장 자주 깨진다 |
-| 대비 | `a11y:contrast` | 본문 **4.5:1** | 스펙 토큰으로 못 맞추면 토큰 조합을 바꾸지 말고 `blocked_on` 에 `who: curvez-designer` |
-| 안전 영역 | 화면 스펙의 layout | `useSafeAreaInsets` / `SafeAreaView` | 화면 루트와 하단 고정 요소(탭바·CTA)에 적용한다. 상수 여백으로 대체하지 않는다 |
-| 키보드 회피 | 화면 스펙의 layout | `KeyboardAvoidingView` | 입력 필드가 있는 화면에 넣는다. 동작이 플랫폼별로 다르므로 `behavior` 는 `Platform.select`. 폼이 길면 스크롤 컨테이너 안에 둔다 |
-| 스크롤 | responsive | 스크롤 컨테이너 | 작은 기기·큰 글꼴 설정에서 내용이 잘리면 안 된다 |
-| 접근성 | `a11y:role` `a11y:label` `a11y:focus` `focus-order` | 없음 (스펙 필수) | 터치 요소에 `accessibilityRole` / `accessibilityLabel` 을 넣고 값은 스펙 그대로 쓴다 |
-| 하드웨어 뒤로가기(Android) | 화면 스펙의 states | 없음 | 모달·다단계 폼에서 동작이 스펙에 없으면 `blocked_on` 에 `who: curvez-designer` |
+| 항목                       | 스펙 키                                             | 스펙에 없을 때 기본값                | 구현                                                                                                                            |
+| -------------------------- | --------------------------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| 터치 타깃                  | `a11y:target`                                       | **44×44 pt**                         | 시각 크기가 그보다 작으면 `hitSlop` 으로 확보한다. 작은 아이콘 버튼에서 가장 자주 깨진다                                        |
+| 대비                       | `a11y:contrast`                                     | 본문 **4.5:1**                       | 스펙 토큰으로 못 맞추면 토큰 조합을 바꾸지 말고 `blocked_on` 에 `who: curvez-designer`                                          |
+| 안전 영역                  | 화면 스펙의 layout                                  | `useSafeAreaInsets` / `SafeAreaView` | 화면 루트와 하단 고정 요소(탭바·CTA)에 적용한다. 상수 여백으로 대체하지 않는다                                                  |
+| 키보드 회피                | 화면 스펙의 layout                                  | `KeyboardAvoidingView`               | 입력 필드가 있는 화면에 넣는다. 동작이 플랫폼별로 다르므로 `behavior` 는 `Platform.select`. 폼이 길면 스크롤 컨테이너 안에 둔다 |
+| 스크롤                     | responsive                                          | 스크롤 컨테이너                      | 작은 기기·큰 글꼴 설정에서 내용이 잘리면 안 된다                                                                                |
+| 접근성                     | `a11y:role` `a11y:label` `a11y:focus` `focus-order` | 없음 (스펙 필수)                     | 터치 요소에 `accessibilityRole` / `accessibilityLabel` 을 넣고 값은 스펙 그대로 쓴다                                            |
+| 하드웨어 뒤로가기(Android) | 화면 스펙의 states                                  | 없음                                 | 모달·다단계 폼에서 동작이 스펙에 없으면 `blocked_on` 에 `who: curvez-designer`                                                  |
 
 **상수 여백으로 안전 영역을 대체하지 마라.**
 **이유:** 노치·홈 인디케이터 높이는 기기마다 다르고 새 기기가 계속 나온다. 실측값을 쓰면 새 기기에서 자동으로 맞지만,

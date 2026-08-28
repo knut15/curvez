@@ -90,23 +90,40 @@ function validateSkill(file, report) {
   const skillDir = dirname(file);
 
   if (!frontmatter) {
-    report.error(file, 1, "skill/frontmatter-missing", "프론트매터(--- 블록)가 없다.");
+    report.error(
+      file,
+      1,
+      "skill/frontmatter-missing",
+      "프론트매터(--- 블록)가 없다.",
+    );
     return;
   }
 
   // 0. 스캐폴드 TODO 가 남아 있으면 미완성이다.
   //    이유: 호출은 되는데 절차가 비어 있는 스킬이 가장 나쁘다. 실행이 시작된 뒤에 멈춘다.
   for (const todo of findTodoMarkers(raw)) {
-    report.error(file, todo.line, "skill/todo-remaining", `스캐폴드 TODO 가 남아 있다: ${todo.text}`);
+    report.error(
+      file,
+      todo.line,
+      "skill/todo-remaining",
+      `스캐폴드 TODO 가 남아 있다: ${todo.text}`,
+    );
   }
 
   // references 안의 TODO 도 함께 잡는다. 포인터를 따라간 곳이 비어 있으면 절차가 끊긴다.
   const refDirForTodo = join(skillDir, "references");
   if (existsSync(refDirForTodo)) {
-    for (const f of readdirSync(refDirForTodo).filter((n) => n.endsWith(".md"))) {
+    for (const f of readdirSync(refDirForTodo).filter((n) =>
+      n.endsWith(".md"),
+    )) {
       const refPath = join(refDirForTodo, f);
       for (const todo of findTodoMarkers(readFileSync(refPath, "utf8"))) {
-        report.error(file, null, "skill/todo-remaining", `references/${f}:${todo.line} 에 TODO 가 남아 있다.`);
+        report.error(
+          file,
+          null,
+          "skill/todo-remaining",
+          `references/${f}:${todo.line} 에 TODO 가 남아 있다.`,
+        );
       }
     }
   }
@@ -114,7 +131,12 @@ function validateSkill(file, report) {
   // 1. 필수 필드
   for (const field of SKILL_REQUIRED_FIELDS) {
     if (!frontmatter[field]) {
-      report.error(file, 2, "skill/field-required", `프론트매터에 \`${field}\` 가 없거나 비었다.`);
+      report.error(
+        file,
+        2,
+        "skill/field-required",
+        `프론트매터에 \`${field}\` 가 없거나 비었다.`,
+      );
     }
   }
 
@@ -122,50 +144,100 @@ function validateSkill(file, report) {
   //    이유: 스킬은 디렉터리 이름으로 호출된다. name 과 다르면 호출 이름과 문서 정체성이 어긋난다.
   const expectedName = basename(skillDir);
   if (frontmatter.name && frontmatter.name !== expectedName) {
-    report.error(file, 2, "skill/name-mismatch", `name(\`${frontmatter.name}\`) 이 디렉터리명(\`${expectedName}\`) 과 다르다.`);
+    report.error(
+      file,
+      2,
+      "skill/name-mismatch",
+      `name(\`${frontmatter.name}\`) 이 디렉터리명(\`${expectedName}\`) 과 다르다.`,
+    );
   }
 
   // 3. 분량 제한
   //    이유: 길어질수록 주의가 옅어져 뒷부분 지시가 실행되지 않는다. 조건부 상세는 references 로 내린다.
   if (lines.length > SKILL_MAX_LINES) {
-    report.error(file, lines.length, "skill/too-long", `${lines.length}줄로 상한 ${SKILL_MAX_LINES}줄을 넘었다. 조건부 상세·도메인 분기·긴 예시를 references/ 로 분리하라.`);
+    report.error(
+      file,
+      lines.length,
+      "skill/too-long",
+      `${lines.length}줄로 상한 ${SKILL_MAX_LINES}줄을 넘었다. 조건부 상세·도메인 분기·긴 예시를 references/ 로 분리하라.`,
+    );
   }
 
   // 4. description 품질 — 호출 신호
   const desc = frontmatter.description ?? "";
   if (desc && desc.length < DESCRIPTION_MIN_LENGTH) {
-    report.error(file, 2, "skill/description-short", `description 이 ${desc.length}자로 너무 짧다. 최소 ${DESCRIPTION_MIN_LENGTH}자.`);
+    report.error(
+      file,
+      2,
+      "skill/description-short",
+      `description 이 ${desc.length}자로 너무 짧다. 최소 ${DESCRIPTION_MIN_LENGTH}자.`,
+    );
   }
   const triggers = extractQuotedTriggers(desc);
   if (desc && triggers.length < MIN_QUOTED_TRIGGERS) {
-    report.error(file, 2, "skill/triggers-few", `description 의 따옴표 트리거가 ${triggers.length}개다. 최소 ${MIN_QUOTED_TRIGGERS}개를 적어라. 사용자가 실제로 말할 표현을 그대로 넣어야 호출된다.`);
+    report.error(
+      file,
+      2,
+      "skill/triggers-few",
+      `description 의 따옴표 트리거가 ${triggers.length}개다. 최소 ${MIN_QUOTED_TRIGGERS}개를 적어라. 사용자가 실제로 말할 표현을 그대로 넣어야 호출된다.`,
+    );
   }
   if (desc && !hasKorean(desc)) {
-    report.error(file, 2, "skill/description-korean", "description 에 한글 트리거가 없다. 한글 발화에서 호출되지 않는다.");
+    report.error(
+      file,
+      2,
+      "skill/description-korean",
+      "description 에 한글 트리거가 없다. 한글 발화에서 호출되지 않는다.",
+    );
   }
   if (desc && !hasLatinWord(desc)) {
-    report.error(file, 2, "skill/description-latin", "description 에 영어 트리거가 없다. 영어 발화에서 호출되지 않는다.");
+    report.error(
+      file,
+      2,
+      "skill/description-latin",
+      "description 에 영어 트리거가 없다. 영어 발화에서 호출되지 않는다.",
+    );
   }
 
   // 5. 트리거 경계 섹션
   //    이유: "언제 쓰는가"만 있으면 인접 스킬과 경계가 겹쳐 엉뚱한 상황에서 호출된다.
-  const sections = extractSections(body, bodyOffset).filter((s) => s.level === 2);
+  const sections = extractSections(body, bodyOffset).filter(
+    (s) => s.level === 2,
+  );
   const headings = sections.map((s) => s.heading);
   for (const required of SKILL_REQUIRED_SECTIONS) {
     if (!headings.includes(required)) {
-      report.error(file, null, "skill/section-missing", `필수 섹션 \`## ${required}\` 이 없다.`);
+      report.error(
+        file,
+        null,
+        "skill/section-missing",
+        `필수 섹션 \`## ${required}\` 이 없다.`,
+      );
     }
   }
   for (const section of sections) {
-    if (SKILL_REQUIRED_SECTIONS.includes(section.heading) && isSectionEmpty(section)) {
-      report.error(file, section.line, "skill/section-empty", `\`## ${section.heading}\` 이 비었다.`);
+    if (
+      SKILL_REQUIRED_SECTIONS.includes(section.heading) &&
+      isSectionEmpty(section)
+    ) {
+      report.error(
+        file,
+        section.line,
+        "skill/section-empty",
+        `\`## ${section.heading}\` 이 비었다.`,
+      );
     }
   }
 
   // 6. 섹션 비대 경고
   for (const section of sections) {
     if (section.contentLines.length > SECTION_SOFT_LIMIT) {
-      report.warn(file, section.line, "skill/section-bloat", `\`## ${section.heading}\` 이 ${section.contentLines.length}줄이다. ${SECTION_SOFT_LIMIT}줄을 넘으면 references/ 분리를 검토하라.`);
+      report.warn(
+        file,
+        section.line,
+        "skill/section-bloat",
+        `\`## ${section.heading}\` 이 ${section.contentLines.length}줄이다. ${SECTION_SOFT_LIMIT}줄을 넘으면 references/ 분리를 검토하라.`,
+      );
     }
   }
 
@@ -179,7 +251,12 @@ function validateSkill(file, report) {
     const resolved = resolve(skillDir, target.split("#")[0]);
     if (!existsSync(resolved)) {
       const lineNo = bodyOffset + body.slice(0, m.index).split("\n").length;
-      report.error(file, lineNo, "skill/broken-reference", `참조 파일이 없다: ${target}`);
+      report.error(
+        file,
+        lineNo,
+        "skill/broken-reference",
+        `참조 파일이 없다: ${target}`,
+      );
     }
   }
 
@@ -188,24 +265,42 @@ function validateSkill(file, report) {
   if (existsSync(refDir)) {
     for (const f of readdirSync(refDir).filter((f) => f.endsWith(".md"))) {
       if (!body.includes(f)) {
-        report.warn(file, null, "skill/orphan-reference", `references/${f} 를 본문에서 가리키지 않는다. 포인터 없는 참조는 도달하지 않는다.`);
+        report.warn(
+          file,
+          null,
+          "skill/orphan-reference",
+          `references/${f} 를 본문에서 가리키지 않는다. 포인터 없는 참조는 도달하지 않는다.`,
+        );
       }
     }
   }
 
   // 9. why-first — 금지 규칙에 이유가 붙어 있는가
   //    이유: 이유를 모르면 문서에 없는 엣지 케이스에서 판단을 이어갈 수 없다.
-  const hasProhibition = /(하지 ?마라|하지 ?않는다|금지|쓰지 ?마라|안 ?된다|절대)/.test(body);
+  const hasProhibition =
+    /(하지 ?마라|하지 ?않는다|금지|쓰지 ?마라|안 ?된다|절대)/.test(body);
   const hasReason = /(이유:|왜냐|때문이다|근거:)/.test(body);
   if (hasProhibition && !hasReason) {
-    report.error(file, null, "skill/why-missing", "금지 규칙이 있는데 이유가 없다. `이유:` 를 붙여 왜 안 되는지 적어라.");
+    report.error(
+      file,
+      null,
+      "skill/why-missing",
+      "금지 규칙이 있는데 이유가 없다. `이유:` 를 붙여 왜 안 되는지 적어라.",
+    );
   }
 
   // 10. 문체 — 명령형
   //     이유: 설명조는 선택지처럼 읽혀 실행되지 않는다.
-  const politeCount = (body.match(/(합니다|입니다|하세요|해주세요|습니다)/g) ?? []).length;
+  const politeCount = (
+    body.match(/(합니다|입니다|하세요|해주세요|습니다)/g) ?? []
+  ).length;
   if (politeCount > 0) {
-    report.warn(file, null, "skill/tone-not-imperative", `존댓말·설명조 표현이 ${politeCount}건 있다. \`~하라\`, \`~한다\` 명령형으로 고쳐라.`);
+    report.warn(
+      file,
+      null,
+      "skill/tone-not-imperative",
+      `존댓말·설명조 표현이 ${politeCount}건 있다. \`~하라\`, \`~한다\` 명령형으로 고쳐라.`,
+    );
   }
 }
 
@@ -214,7 +309,9 @@ function main() {
   const report = new Report("스킬 검증");
 
   if (targets.length === 0) {
-    console.log("검사할 스킬이 없다. (skills/ 디렉터리가 비었거나 존재하지 않는다)");
+    console.log(
+      "검사할 스킬이 없다. (skills/ 디렉터리가 비었거나 존재하지 않는다)",
+    );
     return 0;
   }
 

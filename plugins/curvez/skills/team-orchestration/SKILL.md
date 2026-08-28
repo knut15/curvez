@@ -52,26 +52,28 @@ curvez 팀 실행의 절차서다. 주 사용 에이전트는 `curvez-orchestrat
 
 1. 워커 후보를 **아래 라인업 안에서만** 고른다. 이름을 지어내지 마라
 
-| 에이전트 | 담당 | 라운드 배치 |
-|---|---|---|
-| `curvez-requirements` | 수용 기준 확정 | 1라운드. `curvez-researcher` 와 병렬 |
-| `curvez-researcher` | 1차 출처 조사 | 1라운드 |
-| `curvez-marketer` | 브랜드 코어·네이밍 리딩, 회의 소집과 A/B 수렴 | **요청 시에만.** 1라운드에 `curvez-requirements` 와 병렬 가능. 네이밍 회의는 브리프 → 후보 수집(`blocked` 라우팅) → 수렴의 라운드로 돈다 |
-| `curvez-architect` | 레이어·경계 확정 | 요구사항 뒤. `curvez-designer` 와 병렬 |
-| `curvez-designer` | 화면·토큰 스펙 | 요구사항 뒤 |
-| `curvez-nextjs` | 웹 구현 | 설계 뒤. `curvez-react-native` 와 병렬 |
-| `curvez-react-native` | 모바일 구현 | 설계 뒤 |
-| `curvez-qa` | 게이트 실행 | 구현 뒤. 단독 |
-| `curvez-reviewer` | 정확성·계약 리뷰 | QA 뒤. `curvez-structure-reviewer` 와 병렬 |
-| `curvez-structure-reviewer` | 구조·중복·순환 | QA 뒤 |
-| `curvez-retrospector` | 회고·규약 수정안 | 마지막. 단독 |
-| `curvez-git` | 커밋·PR·머지 | **자동으로 돌지 않는다.** 아래 참조 |
+| 에이전트                    | 담당                                          | 라운드 배치                                                                                                                              |
+| --------------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `curvez-requirements`       | 수용 기준 확정                                | 1라운드. `curvez-researcher` 와 병렬                                                                                                     |
+| `curvez-researcher`         | 1차 출처 조사                                 | 1라운드                                                                                                                                  |
+| `curvez-marketer`           | 브랜드 코어·네이밍 리딩, 회의 소집과 A/B 수렴 | **요청 시에만.** 1라운드에 `curvez-requirements` 와 병렬 가능. 네이밍 회의는 브리프 → 후보 수집(`blocked` 라우팅) → 수렴의 라운드로 돈다 |
+| `curvez-architect`          | 레이어·경계 확정                              | 요구사항 뒤. `curvez-designer` 와 병렬                                                                                                   |
+| `curvez-designer`           | 화면·토큰 스펙                                | 요구사항 뒤                                                                                                                              |
+| `curvez-nextjs`             | 웹 구현                                       | 설계 뒤. `curvez-react-native` 와 병렬                                                                                                   |
+| `curvez-react-native`       | 모바일 구현                                   | 설계 뒤                                                                                                                                  |
+| `curvez-qa`                 | 게이트 실행                                   | 구현 뒤. 단독                                                                                                                            |
+| `curvez-reviewer`           | 정확성·계약 리뷰                              | QA 뒤. `curvez-structure-reviewer` 와 병렬                                                                                               |
+| `curvez-structure-reviewer` | 구조·중복·순환                                | QA 뒤                                                                                                                                    |
+| `curvez-retrospector`       | 회고·규약 수정안                              | 마지막. 단독                                                                                                                             |
+| `curvez-git`                | 커밋·PR·머지                                  | **자동으로 돌지 않는다.** 아래 참조                                                                                                      |
 
 라인업이 바뀌면 이 표와 `curvez-orchestrator.md` 의 팀 통신 표를 함께 고친다.
-   - **이유:** `Tools: *` 를 가진 범용 타입(`general-purpose`, `claude` 등)은 `Agent` 도구까지
-     갖고 있어 규약을 모르는 채로 실행되고 실행 트리를 한 층 더 만든다. 반면 **지어낸 이름은
-     런타임이 거부하므로 위험하지 않다.** 제한 규칙의 정본은 `curvez-orchestrator.md` 의
-     `### 팀 규모 상한` 이다
+
+- **이유:** `Tools: *` 를 가진 범용 타입(`general-purpose`, `claude` 등)은 `Agent` 도구까지
+  갖고 있어 규약을 모르는 채로 실행되고 실행 트리를 한 층 더 만든다. 반면 **지어낸 이름은
+  런타임이 거부하므로 위험하지 않다.** 제한 규칙의 정본은 `curvez-orchestrator.md` 의
+  `### 팀 규모 상한` 이다
+
 2. 후보마다 정의 파일 `plugins/curvez/agents/<name>.md` 의 `## 협업과 팀 내 위치` 를 열어
    **파일 소유권**을 그대로 옮겨 적는다
 3. `## 병렬 판정` 절차를 돌려 병렬 / 순차를 확정한다
@@ -177,11 +179,11 @@ curvez 팀 실행의 절차서다. 주 사용 에이전트는 `curvez-orchestrat
 라운드가 끝나면 `.curvez/handoff/` 를 읽어 `status` 별로 분류한다. `status` 판정 규칙 자체는
 `agent-contract` 가 정본이다.
 
-| `status` | 행동 |
-|---|---|
-| `done` | `verification` 이 1건 이상인지 확인한다. 비었으면 `done` 을 믿지 말고 `partial` 로 취급한다 |
+| `status`  | 행동                                                                                                   |
+| --------- | ------------------------------------------------------------------------------------------------------ |
+| `done`    | `verification` 이 1건 이상인지 확인한다. 비었으면 `done` 을 믿지 말고 `partial` 로 취급한다            |
 | `partial` | `summary` 의 "남은 것" 을 다음 라운드 작업 목록에 넣는다. 남은 범위가 안 적혀 있으면 그것부터 되묻는다 |
-| `blocked` | `blocked_on[].who` 로 라우팅한다. 아래를 따른다 |
+| `blocked` | `blocked_on[].who` 로 라우팅한다. 아래를 따른다                                                        |
 
 ### `blocked` 라우팅
 

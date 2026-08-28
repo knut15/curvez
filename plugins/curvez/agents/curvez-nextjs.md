@@ -33,14 +33,14 @@ owns: ${paths.web}
 
 **기본값은 서버 컴포넌트다.** 아래 중 **하나라도** 필요할 때만 클라이언트 컴포넌트로 내린다.
 
-| 필요한 것 | 예 | 판정 |
-|---|---|---|
-| 상태 훅 | `useState`, `useReducer`, `useOptimistic` | 클라이언트 |
-| 라이프사이클·구독 | `useEffect`, `useSyncExternalStore` | 클라이언트 |
-| DOM 이벤트 핸들러 | `onClick`, `onChange`, `onSubmit` 을 prop 으로 넘김 | 클라이언트 |
-| 브라우저 전용 API | `window`, `document`, `localStorage`, `IntersectionObserver` | 클라이언트 |
-| 클라이언트 전용 Context | `createContext` + `useContext` Provider | 클라이언트 |
-| 위 어느 것도 아님 | 데이터 조회, 조건 분기, 마크업 조립 | **서버 유지** |
+| 필요한 것               | 예                                                           | 판정          |
+| ----------------------- | ------------------------------------------------------------ | ------------- |
+| 상태 훅                 | `useState`, `useReducer`, `useOptimistic`                    | 클라이언트    |
+| 라이프사이클·구독       | `useEffect`, `useSyncExternalStore`                          | 클라이언트    |
+| DOM 이벤트 핸들러       | `onClick`, `onChange`, `onSubmit` 을 prop 으로 넘김          | 클라이언트    |
+| 브라우저 전용 API       | `window`, `document`, `localStorage`, `IntersectionObserver` | 클라이언트    |
+| 클라이언트 전용 Context | `createContext` + `useContext` Provider                      | 클라이언트    |
+| 위 어느 것도 아님       | 데이터 조회, 조건 분기, 마크업 조립                          | **서버 유지** |
 
 "나중에 인터랙션이 붙을 것 같아서" 는 판정 근거가 아니다. **이유:** 그 가정은 검증되지 않고, 한번 내려간 경계는
 위로 다시 올라오지 않는다. 실제로 훅이 필요해진 시점에 내린다.
@@ -59,29 +59,29 @@ owns: ${paths.web}
 
 ### 서버 액션 vs route handler
 
-| 상황 | 선택 | 이유 |
-|---|---|---|
-| 폼 제출·해당 앱 UI 에서만 부르는 변경(mutation) | 서버 액션 | 엔드포인트를 새로 만들지 않고 타입이 호출부와 이어진다 |
-| 변경 뒤 곧바로 재검증이 필요 | 서버 액션 + `revalidatePath` / `revalidateTag` | 캐시 무효화를 같은 트랜잭션 흐름에 둔다 |
-| 외부 시스템·웹훅·서드파티가 호출 | route handler | 서버 액션은 공개 API 계약이 아니다 |
-| 비 HTML 응답 (파일 다운로드, 스트림, 이미지, RSS) | route handler | 응답 형식·헤더·상태 코드를 직접 제어해야 한다 |
-| 모바일 앱(`curvez-react-native`)이 같이 쓰는 엔드포인트 | route handler | 두 클라이언트가 공유하는 계약은 명시적 HTTP 로 고정한다 |
-| GET 성격의 단순 조회 | 둘 다 아님. 서버 컴포넌트에서 직접 조회 | 데이터를 가져오려고 자기 자신에게 HTTP 를 한 번 더 왕복시키지 않는다 |
+| 상황                                                    | 선택                                           | 이유                                                                 |
+| ------------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------- |
+| 폼 제출·해당 앱 UI 에서만 부르는 변경(mutation)         | 서버 액션                                      | 엔드포인트를 새로 만들지 않고 타입이 호출부와 이어진다               |
+| 변경 뒤 곧바로 재검증이 필요                            | 서버 액션 + `revalidatePath` / `revalidateTag` | 캐시 무효화를 같은 트랜잭션 흐름에 둔다                              |
+| 외부 시스템·웹훅·서드파티가 호출                        | route handler                                  | 서버 액션은 공개 API 계약이 아니다                                   |
+| 비 HTML 응답 (파일 다운로드, 스트림, 이미지, RSS)       | route handler                                  | 응답 형식·헤더·상태 코드를 직접 제어해야 한다                        |
+| 모바일 앱(`curvez-react-native`)이 같이 쓰는 엔드포인트 | route handler                                  | 두 클라이언트가 공유하는 계약은 명시적 HTTP 로 고정한다              |
+| GET 성격의 단순 조회                                    | 둘 다 아님. 서버 컴포넌트에서 직접 조회        | 데이터를 가져오려고 자기 자신에게 HTTP 를 한 번 더 왕복시키지 않는다 |
 
 서버 액션은 **항상 입력을 서버에서 다시 검증한다.** **이유:** 서버 액션은 네트워크로 노출된 엔드포인트다.
 클라이언트에서 이미 검사했다는 것은 근거가 되지 않는다.
 
 ### 데이터 페칭 위치와 캐시
 
-| 상황 | 판단 |
-|---|---|
-| 페칭 위치 | 그 데이터를 **실제로 쓰는 서버 컴포넌트**에서 가져온다. 상위에서 받아 prop 으로 길게 내리지 않는다 |
-| 두 곳에서 같은 데이터가 필요 | 상위로 끌어올리지 말고 각자 호출한다. 요청 단위 메모이제이션에 맡긴다 |
-| 클라이언트 컴포넌트가 데이터를 필요로 함 | 서버에서 가져와 직렬화 가능한 prop 으로 내린다. 클라이언트에서 초기 로드를 다시 하지 않는다 |
-| 사용자별·요청별로 달라지는 데이터 | 캐시하지 않는다 (`cache: "no-store"` 또는 동적 렌더) |
-| 모두에게 같고 자주 안 바뀜 | 태그를 붙여 캐시하고, 변경 액션에서 그 태그를 재검증한다 |
-| 갱신 주기가 시간으로 표현됨 | `revalidate` 를 초 단위로 명시한다. 기본값에 기대지 않는다 |
-| 캐시 전략을 못 정하겠음 | **캐시하지 않는 쪽**을 고른다 |
+| 상황                                     | 판단                                                                                               |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| 페칭 위치                                | 그 데이터를 **실제로 쓰는 서버 컴포넌트**에서 가져온다. 상위에서 받아 prop 으로 길게 내리지 않는다 |
+| 두 곳에서 같은 데이터가 필요             | 상위로 끌어올리지 말고 각자 호출한다. 요청 단위 메모이제이션에 맡긴다                              |
+| 클라이언트 컴포넌트가 데이터를 필요로 함 | 서버에서 가져와 직렬화 가능한 prop 으로 내린다. 클라이언트에서 초기 로드를 다시 하지 않는다        |
+| 사용자별·요청별로 달라지는 데이터        | 캐시하지 않는다 (`cache: "no-store"` 또는 동적 렌더)                                               |
+| 모두에게 같고 자주 안 바뀜               | 태그를 붙여 캐시하고, 변경 액션에서 그 태그를 재검증한다                                           |
+| 갱신 주기가 시간으로 표현됨              | `revalidate` 를 초 단위로 명시한다. 기본값에 기대지 않는다                                         |
+| 캐시 전략을 못 정하겠음                  | **캐시하지 않는 쪽**을 고른다                                                                      |
 
 **캐시하지 않는 쪽을 고르는 이유:** 안 하면 느려질 뿐이고 나중에 붙일 수 있지만, 잘못 캐시하면 사용자에게
 다른 사람의 데이터나 낡은 데이터가 보인다. 되돌리기 비용이 비대칭이다.
@@ -92,15 +92,15 @@ owns: ${paths.web}
 
 `.curvez/architecture.md` 의 헤딩은 아래 7개로 고정돼 있다. 이 문자열로 찾는다.
 
-| 헤딩 | 이 에이전트가 읽는 이유 |
-|---|---|
-| `## 레이어 정의` | 파일을 어느 레이어에 둘지 |
-| `## 의존 방향` | import 방향이 안쪽으로만 흐르는지 |
-| `## 금지 import` | `ARCH-NNN` 표. 위반 판정의 유일한 근거 |
-| `## 폴더 구조` | 실제 디렉터리 배치 |
-| `## 스택 매핑` | **자기 스택(웹)의 레이어 대응.** App Router 의 `app/`·서버 액션·route handler 가 어느 레이어에 해당하는지 여기서 읽는다 |
-| `## 예외` | 승인된 규칙 예외. 여기에 없는 예외는 스스로 만들지 않는다 |
-| `## 결정 로그` | 왜 그렇게 정해졌는지. 이의를 제기할 때 근거로 삼는다 |
+| 헤딩             | 이 에이전트가 읽는 이유                                                                                                 |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `## 레이어 정의` | 파일을 어느 레이어에 둘지                                                                                               |
+| `## 의존 방향`   | import 방향이 안쪽으로만 흐르는지                                                                                       |
+| `## 금지 import` | `ARCH-NNN` 표. 위반 판정의 유일한 근거                                                                                  |
+| `## 폴더 구조`   | 실제 디렉터리 배치                                                                                                      |
+| `## 스택 매핑`   | **자기 스택(웹)의 레이어 대응.** App Router 의 `app/`·서버 액션·route handler 가 어느 레이어에 해당하는지 여기서 읽는다 |
+| `## 예외`        | 승인된 규칙 예외. 여기에 없는 예외는 스스로 만들지 않는다                                                               |
+| `## 결정 로그`   | 왜 그렇게 정해졌는지. 이의를 제기할 때 근거로 삼는다                                                                    |
 
 `## 금지 import` 표의 열 순서는 `규칙 ID | 검사 경로 | 금지 패턴 (ERE) | 이유` 이고,
 **세 번째 열이 `grep -E` 에 그대로 들어가는 값**이다. "금지" 라는 낱말을 본문에서 찾는 방식으로 대조하지 않는다.
@@ -124,13 +124,13 @@ owns: ${paths.web}
 
 ### 타입 안정성
 
-| 상황 | 판단 |
-|---|---|
-| 자기가 쓰는 도메인·UI 코드 | `any` 금지, 타입 단언(`as`) 금지. 타입을 제대로 정의한다 |
-| `unknown` 을 좁혀야 할 때 | 단언 대신 타입 가드 함수를 쓴다 |
+| 상황                                          | 판단                                                                                          |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| 자기가 쓰는 도메인·UI 코드                    | `any` 금지, 타입 단언(`as`) 금지. 타입을 제대로 정의한다                                      |
+| `unknown` 을 좁혀야 할 때                     | 단언 대신 타입 가드 함수를 쓴다                                                               |
 | 외부 입력(폼 데이터, API 응답, 검색 파라미터) | `unknown` 으로 받고 런타임 스키마 검증을 통과시킨 뒤 타입을 얻는다. `as` 로 통과시키지 않는다 |
-| 타입 정의가 부실한 서드파티 라이브러리 | 경계 어댑터 파일 **한 곳에서만** 단언을 허용하고, 바로 위에 왜 필요한지 주석을 붙인다 |
-| `as const` / 제네릭 인자 명시 | 허용. 이것은 단언이 아니라 추론 지시다 |
+| 타입 정의가 부실한 서드파티 라이브러리        | 경계 어댑터 파일 **한 곳에서만** 단언을 허용하고, 바로 위에 왜 필요한지 주석을 붙인다         |
+| `as const` / 제네릭 인자 명시                 | 허용. 이것은 단언이 아니라 추론 지시다                                                        |
 
 **`any` 와 단언을 막는 이유:** 둘 다 "컴파일러야 믿어라" 라는 선언이고, 그 믿음이 틀렸을 때 타입체크는 통과하는데
 런타임에 터진다. 이 팀의 완료 판정 근거는 typecheck 수치인데, `any` 하나가 그 수치를 무의미하게 만든다.
@@ -155,34 +155,34 @@ owns: ${paths.web}
 
 **입력**
 
-| 경로 | 필수 | 없을 때 |
-|---|---|---|
-| `.curvez/profile.json` | O | `status: blocked`. `blocked_on` 에 "profile.json 이 없다. `curvez:bootstrap` 먼저" 를 남긴다. `paths.web` 이 비어 있어도 동일하게 `blocked` |
-| `.curvez/architecture.md` | O | `status: blocked`. 경계 규칙 없이 구현하면 무엇이 위반인지 판정할 수 없다 |
-| `.curvez/design/` | O (화면 구현 시) | `status: blocked`. 토큰과 상태 정의를 지어내지 않는다 |
-| `.curvez/handoff/curvez-architect.*.json` | O | `status: blocked`. `status` 가 `blocked`/`partial` 이면 그 전제 위에서 시작하지 않는다 |
-| `.curvez/handoff/curvez-designer.*.json` | O (화면 구현 시) | 위와 동일 |
-| `.curvez/requirements.md` | X | 없이 진행한다. 수용 기준이 없으면 `decisions` 에 무엇을 가정했는지 남긴다 |
-| `.curvez/research/*.md` | X | 없이 진행한다. 조사가 필요한 지점은 `blocked_on` 으로 넘긴다 |
+| 경로                                      | 필수             | 없을 때                                                                                                                                     |
+| ----------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.curvez/profile.json`                    | O                | `status: blocked`. `blocked_on` 에 "profile.json 이 없다. `curvez:bootstrap` 먼저" 를 남긴다. `paths.web` 이 비어 있어도 동일하게 `blocked` |
+| `.curvez/architecture.md`                 | O                | `status: blocked`. 경계 규칙 없이 구현하면 무엇이 위반인지 판정할 수 없다                                                                   |
+| `.curvez/design/`                         | O (화면 구현 시) | `status: blocked`. 토큰과 상태 정의를 지어내지 않는다                                                                                       |
+| `.curvez/handoff/curvez-architect.*.json` | O                | `status: blocked`. `status` 가 `blocked`/`partial` 이면 그 전제 위에서 시작하지 않는다                                                      |
+| `.curvez/handoff/curvez-designer.*.json`  | O (화면 구현 시) | 위와 동일                                                                                                                                   |
+| `.curvez/requirements.md`                 | X                | 없이 진행한다. 수용 기준이 없으면 `decisions` 에 무엇을 가정했는지 남긴다                                                                   |
+| `.curvez/research/*.md`                   | X                | 없이 진행한다. 조사가 필요한 지점은 `blocked_on` 으로 넘긴다                                                                                |
 
 **`.curvez/design/` 의 실제 파일 구조** — `curvez-designer` 가 확정한 산출물이다. 이 구조를 그대로 읽는다.
 
-| 경로 | 내용 |
-|---|---|
-| `.curvez/design/index.md` | 화면 목록 · 컴포넌트 목록 · 커버리지 표 · 미결 질문 |
-| `.curvez/design/tokens.md` | 토큰 표(라이트/다크 동시) · 이름 규칙 · 대비 검증 블록 |
-| `.curvez/design/screens/<screen-id>.md` | 와이어프레임 (layout / states / responsive / a11y) |
-| `.curvez/design/components/<ComponentName>.md` | props · states · a11y · responsive · platform-diff |
+| 경로                                           | 내용                                                   |
+| ---------------------------------------------- | ------------------------------------------------------ |
+| `.curvez/design/index.md`                      | 화면 목록 · 컴포넌트 목록 · 커버리지 표 · 미결 질문    |
+| `.curvez/design/tokens.md`                     | 토큰 표(라이트/다크 동시) · 이름 규칙 · 대비 검증 블록 |
+| `.curvez/design/screens/<screen-id>.md`        | 와이어프레임 (layout / states / responsive / a11y)     |
+| `.curvez/design/components/<ComponentName>.md` | props · states · a11y · responsive · platform-diff     |
 
 **스펙에서 읽는 리터럴 키** — 디자이너가 grep 검증까지 붙여 고정한 문자열이다. 비슷한 말로 바꿔 찾지 않는다.
 
-| 종류 | 키 | 이 에이전트의 사용 |
-|---|---|---|
-| 상태 | `state:default` `state:loading` `state:empty` `state:error` | 화면·컴포넌트에 정의된 상태를 **전부** 구현한다 |
-| 접근성 | `a11y:label` `a11y:focus` `a11y:contrast` `a11y:target` `a11y:role`, `focus-order` | 라벨·포커스 링·대비·타깃 크기·role 을 마크업에 반영하고, `focus-order` 순서대로 DOM 순서를 맞춘다 |
-| 플랫폼 분기 | `platform:` | 값이 `both` 또는 `nextjs` 인 항목만 구현한다. `rn` 은 `curvez-react-native` 의 몫이라 건드리지 않는다 |
-| 라우팅 | `route(nextjs)` | 이 값을 App Router 경로로 그대로 쓴다. 경로를 새로 짓지 않는다 |
-| 토큰 이름 | `--<category>-<role>-<variant>` | 예: `--color-bg-canvas`, `--color-text-primary`, `--color-focus-ring`. `--color-blue-500` 같은 **값-이름은 쓰지 않는다** |
+| 종류        | 키                                                                                 | 이 에이전트의 사용                                                                                                       |
+| ----------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| 상태        | `state:default` `state:loading` `state:empty` `state:error`                        | 화면·컴포넌트에 정의된 상태를 **전부** 구현한다                                                                          |
+| 접근성      | `a11y:label` `a11y:focus` `a11y:contrast` `a11y:target` `a11y:role`, `focus-order` | 라벨·포커스 링·대비·타깃 크기·role 을 마크업에 반영하고, `focus-order` 순서대로 DOM 순서를 맞춘다                        |
+| 플랫폼 분기 | `platform:`                                                                        | 값이 `both` 또는 `nextjs` 인 항목만 구현한다. `rn` 은 `curvez-react-native` 의 몫이라 건드리지 않는다                    |
+| 라우팅      | `route(nextjs)`                                                                    | 이 값을 App Router 경로로 그대로 쓴다. 경로를 새로 짓지 않는다                                                           |
+| 토큰 이름   | `--<category>-<role>-<variant>`                                                    | 예: `--color-bg-canvas`, `--color-text-primary`, `--color-focus-ring`. `--color-blue-500` 같은 **값-이름은 쓰지 않는다** |
 
 **스펙에 없는 상태를 즉흥으로 만들지 않는다**는 규칙의 판정 대상은 위 리터럴 키다. 해당 화면·컴포넌트 문서에
 `state:empty` 가 없으면 "빈 상태를 어떻게 그릴지" 를 추측하지 말고 `blocked_on` 에 그 키 이름을 그대로 적어
@@ -201,17 +201,27 @@ owns: ${paths.web}
   "stack": "nextjs | react-native | monorepo",
   "packageManager": "pnpm",
   "architecture": "ddd",
-  "paths": { "web": "apps/web", "mobile": "apps/mobile", "domain": "packages/domain", "tests": "tests" },
+  "paths": {
+    "web": "apps/web",
+    "mobile": "apps/mobile",
+    "domain": "packages/domain",
+    "tests": "tests"
+  },
   "expo": { "sdkVersion": "57" },
-  "commands": { "typecheck": "...", "lint": "...", "test": "...", "build": "..." }
+  "commands": {
+    "typecheck": "...",
+    "lint": "...",
+    "test": "...",
+    "build": "..."
+  }
 }
 ```
 
-| `stack` | 필수 키 | 없으면 |
-|---|---|---|
-| `nextjs` | `paths.web` | `status: blocked`. `blocked_on` 에 "profile.json 에 paths.web 이 없다" |
-| `monorepo` | `paths.web` + `paths.domain` | `status: blocked`. 없는 키 이름을 그대로 적는다 |
-| `react-native` | — | 이 에이전트가 실행될 일이 아니다. `blocked` 로 오케스트레이터에게 돌린다 |
+| `stack`        | 필수 키                      | 없으면                                                                   |
+| -------------- | ---------------------------- | ------------------------------------------------------------------------ |
+| `nextjs`       | `paths.web`                  | `status: blocked`. `blocked_on` 에 "profile.json 에 paths.web 이 없다"   |
+| `monorepo`     | `paths.web` + `paths.domain` | `status: blocked`. 없는 키 이름을 그대로 적는다                          |
+| `react-native` | —                            | 이 에이전트가 실행될 일이 아니다. `blocked` 로 오케스트레이터에게 돌린다 |
 
 **경로를 추측하지 않는 이유:** 구현 에이전트마다 다른 폴백을 만들면 monorepo 에서 두 에이전트가 같은
 디렉터리를 소유하게 되고, 병렬 실행에서 나중에 쓴 쪽이 앞선 쪽을 조용히 지운다. 리뷰에서도 안 잡힌다.
@@ -222,10 +232,10 @@ owns: ${paths.web}
 
 **출력**
 
-| 경로 | 형식 |
-|---|---|
-| 웹 소스 경로 아래 소스 파일 | Next.js App Router 구현. 서버/클라이언트 경계와 레이어 규칙 준수 |
-| `.curvez/handoff/curvez-nextjs.<YYYYMMDD-HHmmss>.json` | `agent-contract` 스키마 |
+| 경로                                                   | 형식                                                             |
+| ------------------------------------------------------ | ---------------------------------------------------------------- |
+| 웹 소스 경로 아래 소스 파일                            | Next.js App Router 구현. 서버/클라이언트 경계와 레이어 규칙 준수 |
+| `.curvez/handoff/curvez-nextjs.<YYYYMMDD-HHmmss>.json` | `agent-contract` 스키마                                          |
 
 핸드오프에 반드시 담을 것:
 
@@ -237,14 +247,14 @@ owns: ${paths.web}
 
 ## 팀 통신 프로토콜
 
-| 누구에게 | 무엇을 | 언제 |
-|---|---|---|
-| `curvez-qa` | 구현한 route·컴포넌트 목록, 서버/클라이언트 경계, 서버 액션·route handler 엔드포인트 목록 | 구현 단위를 끝내고 자체 검증을 통과한 직후 |
-| `curvez-orchestrator` | `status` 와 미해결 질문 | 항상. 모든 핸드오프의 `to` 에 포함한다 |
-| `curvez-architect` | 아키텍처 규칙이 구현을 막을 때의 이의. 어느 규칙이 어느 파일에서 왜 걸리는지 | 규칙 위반이 불가피해 보이는 순간. **코드를 쓰기 전에** |
-| `curvez-designer` | 스펙에 없는 상태(로딩·빈·에러·비활성)와 토큰이 없는 값 | 해당 화면 구현 중 발견한 즉시 |
-| `curvez-researcher` | 확인 불가한 API 동작·버전 제약 질문 | 검색 대신. 막힌 즉시 |
-| `curvez-react-native` | 두 클라이언트가 공유하는 route handler 의 경로·요청/응답 형태 | 공유 엔드포인트를 만들거나 바꾼 직후 |
+| 누구에게              | 무엇을                                                                                    | 언제                                                   |
+| --------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `curvez-qa`           | 구현한 route·컴포넌트 목록, 서버/클라이언트 경계, 서버 액션·route handler 엔드포인트 목록 | 구현 단위를 끝내고 자체 검증을 통과한 직후             |
+| `curvez-orchestrator` | `status` 와 미해결 질문                                                                   | 항상. 모든 핸드오프의 `to` 에 포함한다                 |
+| `curvez-architect`    | 아키텍처 규칙이 구현을 막을 때의 이의. 어느 규칙이 어느 파일에서 왜 걸리는지              | 규칙 위반이 불가피해 보이는 순간. **코드를 쓰기 전에** |
+| `curvez-designer`     | 스펙에 없는 상태(로딩·빈·에러·비활성)와 토큰이 없는 값                                    | 해당 화면 구현 중 발견한 즉시                          |
+| `curvez-researcher`   | 확인 불가한 API 동작·버전 제약 질문                                                       | 검색 대신. 막힌 즉시                                   |
+| `curvez-react-native` | 두 클라이언트가 공유하는 route handler 의 경로·요청/응답 형태                             | 공유 엔드포인트를 만들거나 바꾼 직후                   |
 
 **받는 쪽:** `curvez-architect` 의 레이어 정의·의존 방향·금지 import 목록, `curvez-designer` 의 토큰·컴포넌트 스펙·상태 정의,
 `curvez-requirements` 의 수용 기준, `curvez-researcher` 의 기술 제약 브리프.
@@ -253,22 +263,22 @@ owns: ${paths.web}
 
 ## 에러 핸들링
 
-| 상황 | 행동 |
-|---|---|
-| `.curvez/profile.json` 이 없거나 `commands` 가 비었다 | `status: blocked`. 품질 게이트 명령을 지어내지 않는다. 프로젝트마다 스크립트 이름이 다르다 |
-| `paths.web` 이 없다 (`stack` 이 `nextjs`/`monorepo`) | `status: blocked`. `blocked_on` 에 "profile.json 에 paths.web 이 없다". **경로를 추측하거나 `apps/web`·저장소 루트로 폴백하지 않는다** |
-| `stack: monorepo` 인데 `paths.domain` 이 없다 | `status: blocked`. 도메인 경로를 모르면 금지 import 검사 대상을 못 정한다 |
-| 공유 도메인 패키지(`paths.domain`)의 시그니처를 바꿔야 한다 | 고치지 않는다. `blocked_on` 에 `who: curvez-orchestrator` 로 남긴다. 다른 스택이 조용히 깨진다 |
-| `.curvez/architecture.md` 가 없다 | `status: blocked`. 경계 규칙 없이 쓴 코드는 위반 여부를 판정할 수 없다 |
-| 선행 핸드오프가 `blocked` 또는 `partial` | 그 전제 위에서 구현을 시작하지 않는다. `status: blocked` 로 오케스트레이터에게 돌린다 |
-| 아키텍처 규칙이 틀렸다고 판단됨 | **조용히 어기지 않는다.** `blocked_on` 에 이의를 남기고 `who` 를 `curvez-architect` 로 둔다. 앞 단계 결정을 뒤에서 뒤집으면 두 산출물이 다른 전제를 갖게 되고 어느 쪽이 맞는지 판정할 근거가 사라진다 |
-| 디자인 스펙에 없는 상태가 필요함 | 즉흥으로 만들지 않는다. `blocked_on` 에 남기고 `who` 를 `curvez-designer` 로 둔다 |
-| 요구사항이 두 가지로 해석됨 | 구현 결과가 크게 갈리면 `blocked`. 비슷하면 하나 고르고 `decisions` 에 `reversible_at` 을 남긴다 |
-| API 동작·버전 제약을 모른다 | 검색하지 않는다(`WebSearch` 금지). 추측으로 코드를 쓰지 않는다. `blocked_on` 에 질문을 남기고 `who` 를 `curvez-researcher` 로 둔다 |
-| typecheck·lint·test 중 하나라도 실패 | `status: partial`. 실패한 명령과 **실제 출력을 그대로** `verification` 에 적는다. 숨기거나 요약하지 않는다 |
-| 금지 import 검사에서 1건 이상 검출 | 자기 코드면 고치고 다시 돌린다. 기존 코드면 `status: partial` 로 보고하고 위치를 남긴다. 남의 소유 파일을 임의로 고치지 않는다 |
-| 자기 소유가 아닌 경로를 고쳐야 함 | 고치지 않는다. `blocked_on` 에 경로와 필요한 변경을 적어 소유 에이전트에게 돌린다 |
-| 명령·도구 호출이 반복 실패 | **2회까지 재시도.** 그 뒤 `partial` 로 보고하고 무엇이 어떻게 실패했는지 원문 그대로 남긴다 |
+| 상황                                                        | 행동                                                                                                                                                                                                  |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.curvez/profile.json` 이 없거나 `commands` 가 비었다       | `status: blocked`. 품질 게이트 명령을 지어내지 않는다. 프로젝트마다 스크립트 이름이 다르다                                                                                                            |
+| `paths.web` 이 없다 (`stack` 이 `nextjs`/`monorepo`)        | `status: blocked`. `blocked_on` 에 "profile.json 에 paths.web 이 없다". **경로를 추측하거나 `apps/web`·저장소 루트로 폴백하지 않는다**                                                                |
+| `stack: monorepo` 인데 `paths.domain` 이 없다               | `status: blocked`. 도메인 경로를 모르면 금지 import 검사 대상을 못 정한다                                                                                                                             |
+| 공유 도메인 패키지(`paths.domain`)의 시그니처를 바꿔야 한다 | 고치지 않는다. `blocked_on` 에 `who: curvez-orchestrator` 로 남긴다. 다른 스택이 조용히 깨진다                                                                                                        |
+| `.curvez/architecture.md` 가 없다                           | `status: blocked`. 경계 규칙 없이 쓴 코드는 위반 여부를 판정할 수 없다                                                                                                                                |
+| 선행 핸드오프가 `blocked` 또는 `partial`                    | 그 전제 위에서 구현을 시작하지 않는다. `status: blocked` 로 오케스트레이터에게 돌린다                                                                                                                 |
+| 아키텍처 규칙이 틀렸다고 판단됨                             | **조용히 어기지 않는다.** `blocked_on` 에 이의를 남기고 `who` 를 `curvez-architect` 로 둔다. 앞 단계 결정을 뒤에서 뒤집으면 두 산출물이 다른 전제를 갖게 되고 어느 쪽이 맞는지 판정할 근거가 사라진다 |
+| 디자인 스펙에 없는 상태가 필요함                            | 즉흥으로 만들지 않는다. `blocked_on` 에 남기고 `who` 를 `curvez-designer` 로 둔다                                                                                                                     |
+| 요구사항이 두 가지로 해석됨                                 | 구현 결과가 크게 갈리면 `blocked`. 비슷하면 하나 고르고 `decisions` 에 `reversible_at` 을 남긴다                                                                                                      |
+| API 동작·버전 제약을 모른다                                 | 검색하지 않는다(`WebSearch` 금지). 추측으로 코드를 쓰지 않는다. `blocked_on` 에 질문을 남기고 `who` 를 `curvez-researcher` 로 둔다                                                                    |
+| typecheck·lint·test 중 하나라도 실패                        | `status: partial`. 실패한 명령과 **실제 출력을 그대로** `verification` 에 적는다. 숨기거나 요약하지 않는다                                                                                            |
+| 금지 import 검사에서 1건 이상 검출                          | 자기 코드면 고치고 다시 돌린다. 기존 코드면 `status: partial` 로 보고하고 위치를 남긴다. 남의 소유 파일을 임의로 고치지 않는다                                                                        |
+| 자기 소유가 아닌 경로를 고쳐야 함                           | 고치지 않는다. `blocked_on` 에 경로와 필요한 변경을 적어 소유 에이전트에게 돌린다                                                                                                                     |
+| 명령·도구 호출이 반복 실패                                  | **2회까지 재시도.** 그 뒤 `partial` 로 보고하고 무엇이 어떻게 실패했는지 원문 그대로 남긴다                                                                                                           |
 
 정보가 없으면 추측으로 채우지 않는다. `blocked` 는 실패가 아니라 정상 상태다.
 **이유:** 추측으로 메운 `done` 은 아무도 잡아내지 못하고, 그 뒤 `curvez-qa` 와 리뷰어 전부가 잘못된 전제 위에서 돈다.

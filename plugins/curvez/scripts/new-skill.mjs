@@ -86,11 +86,15 @@ function main() {
   const opts = parseArgs(process.argv.slice(2));
 
   if (!opts.name) {
-    console.error("사용법: node new-skill.mjs <name> [--dir <경로>] [--with-references] [--force]");
+    console.error(
+      "사용법: node new-skill.mjs <name> [--dir <경로>] [--with-references] [--force]",
+    );
     return 2;
   }
   if (!/^[a-z][a-z0-9-]*$/.test(opts.name)) {
-    console.error(`name \`${opts.name}\` 이 규칙에 맞지 않는다. 소문자 kebab-case 로 적어라.`);
+    console.error(
+      `name \`${opts.name}\` 이 규칙에 맞지 않는다. 소문자 kebab-case 로 적어라.`,
+    );
     return 2;
   }
 
@@ -122,7 +126,9 @@ function main() {
     }
   }
 
-  console.log(`다음: TODO 를 전부 채운 뒤 \`node ${join("scripts", "validate-skills.mjs")} ${skillDir}\` 로 검증하라.`);
+  console.log(
+    `다음: TODO 를 전부 채운 뒤 \`node ${join("scripts", "validate-skills.mjs")} ${skillDir}\` 로 검증하라.`,
+  );
   return 0;
 }
 

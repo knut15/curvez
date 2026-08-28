@@ -19,7 +19,7 @@
  * exit code: 0 = 전 게이트 통과, 1 = 하나 이상 실패, 2 = 진행 불가(프로파일 없음 등).
  */
 
-import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join, resolve } from "node:path";
 
@@ -30,14 +30,20 @@ const opt = {
   noStop: argv.includes("--no-stop"),
   only: null,
 };
-for (const [flag, key] of [["--dir", "dir"], ["--only", "only"]]) {
+for (const [flag, key] of [
+  ["--dir", "dir"],
+  ["--only", "only"],
+]) {
   const i = argv.indexOf(flag);
   if (i !== -1) {
     if (!argv[i + 1]) {
       console.error(`${flag} 다음에 값이 필요하다.`);
       process.exit(2);
     }
-    opt[key] = key === "dir" ? resolve(argv[i + 1]) : argv[i + 1].split(",").map((s) => s.trim());
+    opt[key] =
+      key === "dir"
+        ? resolve(argv[i + 1])
+        : argv[i + 1].split(",").map((s) => s.trim());
   }
 }
 
@@ -65,7 +71,11 @@ const readJson = (p) => {
 function runCommand(cmd, cwd) {
   // `( ... )` 로 감싸는 이유: commands 값에 `cd` 나 `exit` 가 섞이면
   // 러너 자체가 죽거나 cwd 가 옮겨져 이후 게이트가 엉뚱한 곳에서 돈다.
-  const r = spawnSync("bash", ["-c", `( ${cmd} )`], { cwd, encoding: "utf8", maxBuffer: 32 * 1024 * 1024 });
+  const r = spawnSync("bash", ["-c", `( ${cmd} )`], {
+    cwd,
+    encoding: "utf8",
+    maxBuffer: 32 * 1024 * 1024,
+  });
   return {
     status: r.status ?? -1,
     out: [r.stdout ?? "", r.stderr ?? ""].join("\n"),
@@ -92,7 +102,9 @@ function summarize(out) {
     .split("\n")
     .map((l) => l.trim())
     .filter((l) => l && !/^\$\s/.test(l) && !/^>\s/.test(l));
-  return lines.length ? lines[lines.length - 1].slice(0, 120) : "출력 없음 (성공 시 무출력인 도구)";
+  return lines.length
+    ? lines[lines.length - 1].slice(0, 120)
+    : "출력 없음 (성공 시 무출력인 도구)";
 }
 
 /**
@@ -103,10 +115,12 @@ function summarize(out) {
  * 숫자 경계가 필요한 이유: `0 passed` 패턴은 경계 없이 `10 passed` 에 걸린다.
  */
 function looksZeroRun(out) {
-  return /no tests? (found|to run)/i.test(out)
-    || /(^|[^0-9])0 (tests?|passed)/i.test(out)
-    || /Tests?: *0( |$)/i.test(out)
-    || /Test Files\s+0 passed/i.test(out);
+  return (
+    /no tests? (found|to run)/i.test(out) ||
+    /(^|[^0-9])0 (tests?|passed)/i.test(out) ||
+    /Tests?: *0( |$)/i.test(out) ||
+    /Test Files\s+0 passed/i.test(out)
+  );
 }
 
 // ── 게이트 1: 아키텍처 경계 ──────────────────────────────────────────
@@ -127,14 +141,28 @@ function gateArch() {
   const rules = [];
   for (const line of lines) {
     if (!/^\|\s*ARCH-\d{3}\s*\|/.test(line)) continue;
-    const cells = line.trim().replace(/^\|/, "").replace(/\|$/, "").split(" | ").map((c) => c.trim());
+    const cells = line
+      .trim()
+      .replace(/^\|/, "")
+      .replace(/\|$/, "")
+      .split(" | ")
+      .map((c) => c.trim());
     if (cells.length < 3) continue;
-    rules.push({ id: cells[0], path: cells[1], pattern: cells[2].replace(/\\\|/g, "|") });
+    rules.push({
+      id: cells[0],
+      path: cells[1],
+      pattern: cells[2].replace(/\\\|/g, "|"),
+    });
   }
 
   if (rules.length === 0) {
     // 규칙 0개는 "위반 없음" 이 아니라 "검사 못 함" 이다. 반드시 구분한다.
-    return { parsed: 0, violations: 0, unparsed: true, detail: "`## 금지 import` 표에서 규칙을 하나도 읽지 못했다" };
+    return {
+      parsed: 0,
+      violations: 0,
+      unparsed: true,
+      detail: "`## 금지 import` 표에서 규칙을 하나도 읽지 못했다",
+    };
   }
 
   let total = 0;
@@ -148,7 +176,10 @@ function gateArch() {
       unchecked.push(`${rule.id}(${rule.path})`);
       continue;
     }
-    const r = spawnSync("grep", ["-rInE", rule.pattern, target], { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 });
+    const r = spawnSync("grep", ["-rInE", rule.pattern, target], {
+      encoding: "utf8",
+      maxBuffer: 16 * 1024 * 1024,
+    });
     const n = (r.stdout ?? "").split("\n").filter((l) => l.trim()).length;
     if (n > 0) {
       total += n;
@@ -164,7 +195,8 @@ function main() {
   const profile = readJson(PROFILE);
   if (!profile) {
     const msg = `.curvez/profile.json 이 없다. curvez:bootstrap 을 먼저 실행하라.`;
-    if (opt.json) console.log(JSON.stringify({ ok: false, blocked: msg }, null, 2));
+    if (opt.json)
+      console.log(JSON.stringify({ ok: false, blocked: msg }, null, 2));
     else console.error(`BLOCKED: ${msg}`);
     return 2;
   }
@@ -192,7 +224,11 @@ function main() {
         continue;
       }
       if (a.unparsed) {
-        verification.push({ command: "arch: `## 금지 import` 표 파싱", result: `규칙 0개 파싱 — ${a.detail}`, passed: false });
+        verification.push({
+          command: "arch: `## 금지 import` 표 파싱",
+          result: `규칙 0개 파싱 — ${a.detail}`,
+          passed: false,
+        });
         failed += 1;
         stopped = "arch";
         continue;
@@ -201,16 +237,27 @@ function main() {
       // 아키텍처가 확정됐는데 소스 트리가 아직 그 구조가 아니면 전 규칙이 헛돈다.
       // 이때 PASS 를 내면 경계 검사가 통째로 무력한 채로 라운드가 done 으로 닫힌다.
       const checked = a.parsed - a.unchecked.length;
-      const parts = [`규칙 ${a.parsed}개 파싱`, `검사 ${checked}개`, `위반 ${a.violations}건`];
+      const parts = [
+        `규칙 ${a.parsed}개 파싱`,
+        `검사 ${checked}개`,
+        `위반 ${a.violations}건`,
+      ];
       if (a.hits.length) parts.push(a.hits.join(", "));
-      if (a.unchecked.length) parts.push(`경로 없음: ${a.unchecked.join(", ")}`);
+      if (a.unchecked.length)
+        parts.push(`경로 없음: ${a.unchecked.join(", ")}`);
 
       let ok = a.violations === 0;
       if (checked === 0) {
         ok = false;
-        parts.push("검사한 규칙이 0개다 — 위반 없음이 아니라 검사 못 함이다. 소스 트리가 아키텍처 구조와 맞는지 확인하라");
+        parts.push(
+          "검사한 규칙이 0개다 — 위반 없음이 아니라 검사 못 함이다. 소스 트리가 아키텍처 구조와 맞는지 확인하라",
+        );
       }
-      verification.push({ command: "arch: ARCH-NNN 규칙 검사", result: parts.join(" / "), passed: ok });
+      verification.push({
+        command: "arch: ARCH-NNN 규칙 검사",
+        result: parts.join(" / "),
+        passed: ok,
+      });
       if (!ok) {
         failed += 1;
         stopped = "arch";
@@ -242,7 +289,9 @@ function main() {
   }
 
   if (opt.json) {
-    console.log(JSON.stringify({ ok: failed === 0, verification, notRun }, null, 2));
+    console.log(
+      JSON.stringify({ ok: failed === 0, verification, notRun }, null, 2),
+    );
     return failed === 0 ? 0 : 1;
   }
 
@@ -257,10 +306,12 @@ function main() {
   console.log(
     failed === 0
       ? `\nquality-gate 통과 — ${verification.length}개 게이트 실행, 실패 0건${notRun.length ? `, ${notRun.length}개 미실행` : ""}`
-      : `\nquality-gate 실패 — ${failed}/${verification.length}개 게이트 실패${notRun.length ? `, ${notRun.length}개 미실행` : ""}`
+      : `\nquality-gate 실패 — ${failed}/${verification.length}개 게이트 실패${notRun.length ? `, ${notRun.length}개 미실행` : ""}`,
   );
   if (notRun.length) {
-    console.log("미실행 게이트는 verification 에 항목을 만들지 않는다. 안 돌린 것을 통과로 적지 마라.");
+    console.log(
+      "미실행 게이트는 verification 에 항목을 만들지 않는다. 안 돌린 것을 통과로 적지 마라.",
+    );
   }
   return failed === 0 ? 0 : 1;
 }

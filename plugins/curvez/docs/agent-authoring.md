@@ -6,13 +6,13 @@ curvez 의 에이전트 정의는 프론트매터 5필드와 본문 7섹션을 �
 
 ## 이 문서가 다루지 않는 것
 
-| 알고 싶은 것 | 정본 |
-|---|---|
-| 새 에이전트를 만드는 절차, 검증 명령 | `skills/authoring-agents/SKILL.md` |
-| 각 섹션에 무엇을 어떤 형식으로 쓰는가 | `skills/authoring-agents/references/section-guide.md` |
+| 알고 싶은 것                            | 정본                                                    |
+| --------------------------------------- | ------------------------------------------------------- |
+| 새 에이전트를 만드는 절차, 검증 명령    | `skills/authoring-agents/SKILL.md`                      |
+| 각 섹션에 무엇을 어떤 형식으로 쓰는가   | `skills/authoring-agents/references/section-guide.md`   |
 | 모델·도구를 고르는 표, 역할별 기본 세트 | `skills/authoring-agents/references/model-and-tools.md` |
-| 필수 필드·섹션 목록의 **값** | `scripts/lib/spec.mjs` |
-| 검증 규칙의 **구현** | `scripts/validate-agents.mjs` |
+| 필수 필드·섹션 목록의 **값**            | `scripts/lib/spec.mjs`                                  |
+| 검증 규칙의 **구현**                    | `scripts/validate-agents.mjs`                           |
 
 아래에서 섹션 이름을 인용하지만, 목록의 정본은 `scripts/lib/spec.mjs` 의
 `AGENT_REQUIRED_SECTIONS` 다. 규약을 바꿀 일이 생기면 그쪽을 고치고 이 문서는 근거만 갱신한다.

@@ -52,13 +52,13 @@ curvez 붙여줘        →  스택 감지 → .curvez/profile.json → 디렉�
 
 ## 무엇을 제공하는가
 
-| | |
-|---|---|
+|                   |                                                                                                |
+| ----------------- | ---------------------------------------------------------------------------------------------- |
 | **에이전트 13종** | 요구사항·조사·브랜드/마케팅·아키텍처·디자인·웹·모바일·QA·리뷰·구조리뷰·회고·git·오케스트레이터 |
-| **스킬 15종** | 각 단계의 실행 절차. 사용자 발화로 자동 호출된다 |
-| **실행기** | `bootstrap` `quality-gate` `doctor` + 검증 3종 + 스캐폴더 2종 |
-| **훅 3종** | 파괴적 git·npm 차단, 편집 후 자동 검증, 턴 종료 시 계약 점검 |
-| **프리셋** | 아키텍처 DDD, 스택 `nextjs`·`react-native`·`monorepo` |
+| **스킬 15종**     | 각 단계의 실행 절차. 사용자 발화로 자동 호출된다                                               |
+| **실행기**        | `bootstrap` `quality-gate` `doctor` + 검증 3종 + 스캐폴더 2종                                  |
+| **훅 3종**        | 파괴적 git·npm 차단, 편집 후 자동 검증, 턴 종료 시 계약 점검                                   |
+| **프리셋**        | 아키텍처 DDD, 스택 `nextjs`·`react-native`·`monorepo`                                          |
 
 ## 설계의 뼈대
 
@@ -87,16 +87,16 @@ node plugins/curvez/scripts/doctor.mjs --plugin
 
 ## 문서
 
-| 알고 싶은 것 | 문서 |
-|---|---|
-| 전체 그림과 문서 관계 | [docs/README.md](plugins/curvez/docs/README.md) |
-| 왜 이 구조인가, 버린 대안 | [design-rationale.md](plugins/curvez/docs/design-rationale.md) |
-| 팀을 어떻게 돌리는가 | [team-execution.md](plugins/curvez/docs/team-execution.md) |
-| 에이전트 간 계약 | [handoff-contract.md](plugins/curvez/docs/handoff-contract.md) |
-| 무엇이 "됐다" 인가 | [quality-model.md](plugins/curvez/docs/quality-model.md) |
-| 브랜치·커밋·PR | [git-strategy.md](plugins/curvez/docs/git-strategy.md) |
-| 내 프로젝트에 확장하기 | [extending.md](plugins/curvez/docs/extending.md) |
-| 실측으로 밟은 셸 함정 13건 | [shell-pitfalls.md](plugins/curvez/docs/shell-pitfalls.md) |
+| 알고 싶은 것               | 문서                                                           |
+| -------------------------- | -------------------------------------------------------------- |
+| 전체 그림과 문서 관계      | [docs/README.md](plugins/curvez/docs/README.md)                |
+| 왜 이 구조인가, 버린 대안  | [design-rationale.md](plugins/curvez/docs/design-rationale.md) |
+| 팀을 어떻게 돌리는가       | [team-execution.md](plugins/curvez/docs/team-execution.md)     |
+| 에이전트 간 계약           | [handoff-contract.md](plugins/curvez/docs/handoff-contract.md) |
+| 무엇이 "됐다" 인가         | [quality-model.md](plugins/curvez/docs/quality-model.md)       |
+| 브랜치·커밋·PR             | [git-strategy.md](plugins/curvez/docs/git-strategy.md)         |
+| 내 프로젝트에 확장하기     | [extending.md](plugins/curvez/docs/extending.md)               |
+| 실측으로 밟은 셸 함정 13건 | [shell-pitfalls.md](plugins/curvez/docs/shell-pitfalls.md)     |
 
 제작 기준은 [GOAL.md](GOAL.md) 에 있다.
 

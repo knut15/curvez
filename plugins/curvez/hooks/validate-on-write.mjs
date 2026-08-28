@@ -40,7 +40,8 @@ function pickValidator(p) {
   if (/[/\\]skills[/\\]/.test(p)) {
     // SKILL.md 든 references/*.md 든 스킬 디렉터리 단위로 검사한다.
     const m = p.match(/^(.*[/\\]skills[/\\][^/\\]+)[/\\]/);
-    if (m) return { script: "validate-skills.mjs", target: m[1], label: "스킬" };
+    if (m)
+      return { script: "validate-skills.mjs", target: m[1], label: "스킬" };
   }
   return null;
 }
@@ -51,7 +52,7 @@ if (!pick) process.exit(0);
 const result = spawnSync(
   process.execPath,
   [join(PLUGIN_ROOT, "scripts", pick.script), pick.target],
-  { encoding: "utf8" }
+  { encoding: "utf8" },
 );
 
 if (result.status === 0) process.exit(0);
@@ -60,6 +61,6 @@ const out = [result.stdout, result.stderr].filter(Boolean).join("\n").trim();
 process.stderr.write(
   `curvez ${pick.label} 검증 실패 — 방금 편집한 파일이 규약을 어긴다.\n${out}\n` +
     `위 오류를 고친 뒤 다음 명령으로 재확인하라:\n` +
-    `  node "$CLAUDE_PLUGIN_ROOT/scripts/${pick.script}" ${pick.target}\n`
+    `  node "$CLAUDE_PLUGIN_ROOT/scripts/${pick.script}" ${pick.target}\n`,
 );
 process.exit(0);

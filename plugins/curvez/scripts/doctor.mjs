@@ -26,7 +26,7 @@ function run(label, script, args) {
   const result = spawnSync(
     process.execPath,
     [join(__dirname, script), ...args],
-    { stdio: "inherit" }
+    { stdio: "inherit" },
   );
   return result.status === 0;
 }
@@ -54,7 +54,8 @@ function checkOrphanDocs() {
       if (["node_modules", ".git", ".omc"].includes(e.name)) continue;
       const full = join(dir, e.name);
       if (e.isDirectory()) walk(full);
-      else if (/\.(md|mjs|json)$/.test(e.name)) corpus.push({ path: full, text: readFileSync(full, "utf8") });
+      else if (/\.(md|mjs|json)$/.test(e.name))
+        corpus.push({ path: full, text: readFileSync(full, "utf8") });
     }
   };
   walk(PLUGIN_ROOT);
@@ -67,8 +68,13 @@ function checkOrphanDocs() {
       const own = join(skillsDir, e.name, "SKILL.md");
       if (!existsSync(own)) continue;
       const re = new RegExp(`curvez:${e.name}|\`${e.name}\`|skills/${e.name}`);
-      const found = corpus.some((c) => !c.path.startsWith(join(skillsDir, e.name)) && re.test(c.text));
-      if (!found) problems.push(`스킬 \`${e.name}\` 을 아무도 가리키지 않는다. 호출 경로가 없다`);
+      const found = corpus.some(
+        (c) => !c.path.startsWith(join(skillsDir, e.name)) && re.test(c.text),
+      );
+      if (!found)
+        problems.push(
+          `스킬 \`${e.name}\` 을 아무도 가리키지 않는다. 호출 경로가 없다`,
+        );
     }
   }
 
@@ -77,8 +83,13 @@ function checkOrphanDocs() {
   const readmePath = join(docsDir, "README.md");
   if (existsSync(readmePath)) {
     const readme = readFileSync(readmePath, "utf8");
-    for (const f of readdirSync(docsDir).filter((n) => n.endsWith(".md") && n !== "README.md")) {
-      if (!readme.includes(f)) problems.push(`docs/${f} 가 README 인덱스에 없다. 아무도 찾아가지 못한다`);
+    for (const f of readdirSync(docsDir).filter(
+      (n) => n.endsWith(".md") && n !== "README.md",
+    )) {
+      if (!readme.includes(f))
+        problems.push(
+          `docs/${f} 가 README 인덱스에 없다. 아무도 찾아가지 못한다`,
+        );
     }
   }
 
@@ -96,9 +107,16 @@ function checkOrphanDocs() {
  */
 function checkDocDrift() {
   const counts = {
-    에이전트: readdirSync(join(PLUGIN_ROOT, "agents")).filter((f) => f.endsWith(".md")).length,
-    스킬: readdirSync(join(PLUGIN_ROOT, "skills"), { withFileTypes: true })
-      .filter((d) => d.isDirectory() && existsSync(join(PLUGIN_ROOT, "skills", d.name, "SKILL.md"))).length,
+    에이전트: readdirSync(join(PLUGIN_ROOT, "agents")).filter((f) =>
+      f.endsWith(".md"),
+    ).length,
+    스킬: readdirSync(join(PLUGIN_ROOT, "skills"), {
+      withFileTypes: true,
+    }).filter(
+      (d) =>
+        d.isDirectory() &&
+        existsSync(join(PLUGIN_ROOT, "skills", d.name, "SKILL.md")),
+    ).length,
   };
 
   // 실제로 존재하는데 문서가 "없다" 고 말하면 안 되는 것들
@@ -122,10 +140,12 @@ function checkDocDrift() {
       else if (e.name.endsWith(".md")) docs.push(full);
     }
   };
-  for (const r of ["docs", "agents", "skills", "presets"]) collect(join(PLUGIN_ROOT, r));
+  for (const r of ["docs", "agents", "skills", "presets"])
+    collect(join(PLUGIN_ROOT, r));
   const repoRoot = resolve(PLUGIN_ROOT, "..", "..");
   if (existsSync(repoRoot)) {
-    for (const f of readdirSync(repoRoot).filter((n) => n.endsWith(".md"))) docs.push(join(repoRoot, f));
+    for (const f of readdirSync(repoRoot).filter((n) => n.endsWith(".md")))
+      docs.push(join(repoRoot, f));
   }
 
   const problems = [];
@@ -163,10 +183,10 @@ function checkDocDrift() {
           const gap = idx === 0 ? m[1] : m[2];
           const said = Number(idx === 0 ? m[2] : m[1]);
           if (said === actual) continue;
-          if (others.some((o) => gap.includes(o))) continue;   // 표 행 가로지름
-          if (JOINER.test(gap)) continue;                       // 다른 항목으로 넘어감
-          if (SUBSET.test(gap)) continue;                       // 부분집합 수식어
-          if (said < actual / 2) continue;                      // 부분집합 추정
+          if (others.some((o) => gap.includes(o))) continue; // 표 행 가로지름
+          if (JOINER.test(gap)) continue; // 다른 항목으로 넘어감
+          if (SUBSET.test(gap)) continue; // 부분집합 수식어
+          if (said < actual / 2) continue; // 부분집합 추정
           problems.push(`${rel}: "${label}…${said}종" → 실제 ${actual}종`);
         }
       }
@@ -183,7 +203,9 @@ function checkDocDrift() {
         // 분모가 전체 개수를 뜻하는 표기만 본다. 분자 < 분모면 진행률이라 대상이 아니다.
         if (num !== den) continue;
         if (den === actual) continue;
-        problems.push(`${rel}: "${label}…${num}/${den}" → 실제 ${actual}/${actual}`);
+        problems.push(
+          `${rel}: "${label}…${num}/${den}" → 실제 ${actual}/${actual}`,
+        );
       }
     }
 
@@ -198,11 +220,15 @@ function checkDocDrift() {
     // migration.md 는 버전 시점에 얼린 이력이라 제외한다.
     if (!file.endsWith("migration.md")) {
       const workers = counts.에이전트 - 1;
-      for (const m of text.matchAll(/(에이전트\s*)?(라인업|팀 명단|팀 인원)[^\n]{0,10}?(\d+)\s*[종명]/g)) {
+      for (const m of text.matchAll(
+        /(에이전트\s*)?(라인업|팀 명단|팀 인원)[^\n]{0,10}?(\d+)\s*[종명]/g,
+      )) {
         if (m[1]) continue;
         const said = Number(m[3]);
         if (said !== workers) {
-          problems.push(`${rel}: "${m[2]}…${said}" → 워커는 오케스트레이터를 뺀 ${workers}. 전체를 세는 문장이면 수를 빼고 쓴다`);
+          problems.push(
+            `${rel}: "${m[2]}…${said}" → 워커는 오케스트레이터를 뺀 ${workers}. 전체를 세는 문장이면 수를 빼고 쓴다`,
+          );
         }
       }
     }
@@ -210,7 +236,9 @@ function checkDocDrift() {
     // 빌드 시점 서술 — "N단계 산출물이라 아직 없다" 류.
     // 이유: 파일명 리터럴만 보면 `presets/architecture/<이름>.md` 같은 플레이스홀더나
     // "6단계 산출물" 같은 표현을 놓친다. 실제로 이 형태로 6곳이 남아 있었다.
-    for (const m of text.matchAll(/[^\n]*(빌드 \d단계|\d단계 산출물|아직 생성 전|아직 존재하지 않는|지금은 존재하지 않는|늦게 생긴다)[^\n]*/g)) {
+    for (const m of text.matchAll(
+      /[^\n]*(빌드 \d단계|\d단계 산출물|아직 생성 전|아직 존재하지 않는|지금은 존재하지 않는|늦게 생긴다)[^\n]*/g,
+    )) {
       problems.push(`${rel}: 빌드 시점 서술 — "${m[0].trim().slice(0, 60)}…"`);
     }
 
@@ -255,7 +283,9 @@ function checkControlPlane() {
   for (const f of readdirSync(dir).filter((n) => n.endsWith(".md"))) {
     const name = f.slice(0, -3);
     if (name === "curvez-orchestrator") continue;
-    const missing = texts.filter((t) => !t.text.includes(name)).map((t) => t.rel);
+    const missing = texts
+      .filter((t) => !t.text.includes(name))
+      .map((t) => t.rel);
     if (missing.length) orphans.push({ name, missing });
   }
   return { ok: orphans.length === 0, orphans };
@@ -280,7 +310,10 @@ function checkHookManifest() {
   }
 
   if (!d.hooks || typeof d.hooks !== "object") {
-    return { ok: false, why: "최상위 `hooks` 키가 없다. 이벤트를 루트에 두면 로더가 읽지 못한다" };
+    return {
+      ok: false,
+      why: "최상위 `hooks` 키가 없다. 이벤트를 루트에 두면 로더가 읽지 못한다",
+    };
   }
 
   const problems = [];
@@ -295,12 +328,18 @@ function checkHookManifest() {
         return;
       }
       e.hooks.forEach((h, j) => {
-        if (h.type !== "command") problems.push(`${event}[${i}].hooks[${j}].type 이 "command" 가 아니다`);
-        if (typeof h.command !== "string" || !h.command.trim()) problems.push(`${event}[${i}].hooks[${j}].command 가 비었다`);
+        if (h.type !== "command")
+          problems.push(
+            `${event}[${i}].hooks[${j}].type 이 "command" 가 아니다`,
+          );
+        if (typeof h.command !== "string" || !h.command.trim())
+          problems.push(`${event}[${i}].hooks[${j}].command 가 비었다`);
       });
     });
   }
-  return problems.length ? { ok: false, why: problems.join(", ") } : { ok: true, events: Object.keys(d.hooks) };
+  return problems.length
+    ? { ok: false, why: problems.join(", ") }
+    : { ok: true, events: Object.keys(d.hooks) };
 }
 
 /**
@@ -321,12 +360,32 @@ function checkRuntimeReadiness() {
   // 이유: 디렉터리만 확인하면 프리셋이 1종이든 4종이든 "완비" 가 나온다.
   // 실제로 3종을 지운 뒤에도 3/3 완비가 출력됐다.
   const expected = [
-    { path: "presets/architecture/ddd.md", what: "DDD 아키텍처 프리셋", fallback: "curvez-architect 의 내장 폴백 레이어" },
-    { path: "presets/stack/nextjs.md", what: "Next.js 스택 프리셋", fallback: "curvez:bootstrap 의 감지 절차만으로 진행" },
-    { path: "presets/stack/react-native.md", what: "RN 스택 프리셋", fallback: "위와 같음" },
-    { path: "presets/stack/monorepo.md", what: "모노레포 스택 프리셋", fallback: "위와 같음" },
+    {
+      path: "presets/architecture/ddd.md",
+      what: "DDD 아키텍처 프리셋",
+      fallback: "curvez-architect 의 내장 폴백 레이어",
+    },
+    {
+      path: "presets/stack/nextjs.md",
+      what: "Next.js 스택 프리셋",
+      fallback: "curvez:bootstrap 의 감지 절차만으로 진행",
+    },
+    {
+      path: "presets/stack/react-native.md",
+      what: "RN 스택 프리셋",
+      fallback: "위와 같음",
+    },
+    {
+      path: "presets/stack/monorepo.md",
+      what: "모노레포 스택 프리셋",
+      fallback: "위와 같음",
+    },
     { path: "docs/README.md", what: "문서 인덱스", fallback: "없음" },
-    { path: "hooks/tests/guard-bash.test.py", what: "가드 회귀 테스트", fallback: "없음 — 우회가 조용히 다시 뚫린다" },
+    {
+      path: "hooks/tests/guard-bash.test.py",
+      what: "가드 회귀 테스트",
+      fallback: "없음 — 우회가 조용히 다시 뚫린다",
+    },
   ];
 
   const missing = [];
@@ -345,7 +404,7 @@ function checkRuntimeReadiness() {
   console.log(
     missing.length === 0
       ? `완비 ${have}/${total} — 런타임 구성요소 전부 존재`
-      : `완비 ${have}/${total} — ${missing.length}개 미구현. 정적 규약과 별개이며 exit code 에 반영하지 않는다`
+      : `완비 ${have}/${total} — ${missing.length}개 미구현. 정적 규약과 별개이며 exit code 에 반영하지 않는다`,
   );
   return { have, total, missing };
 }
@@ -386,7 +445,7 @@ function checkStructure() {
   console.log(
     missing === 0
       ? `OK 플러그인 구조 — 필수 파일 ${required.length}개 전부 존재`
-      : `FAILED 플러그인 구조 — ${missing}개 누락`
+      : `FAILED 플러그인 구조 — ${missing}개 누락`,
   );
   return missing === 0;
 }
@@ -400,18 +459,24 @@ function main() {
   console.log(
     hookManifest.ok
       ? `OK 훅 매니페스트 — 이벤트 ${hookManifest.events.join(", ")} 등록 가능`
-      : `FAIL 훅 매니페스트 — ${hookManifest.why}`
+      : `FAIL 훅 매니페스트 — ${hookManifest.why}`,
   );
   results.push(["훅 매니페스트", hookManifest.ok]);
 
   const cp = checkControlPlane();
   if (cp.ok) {
-    console.log("OK 제어면 등록 — 모든 에이전트가 오케스트레이터·팀 스킬·docs 에 등록됨");
+    console.log(
+      "OK 제어면 등록 — 모든 에이전트가 오케스트레이터·팀 스킬·docs 에 등록됨",
+    );
   } else {
     for (const o of cp.orphans) {
-      console.log(`FAIL 제어면 등록 — ${o.name} 이 등록되지 않았다: ${o.missing.join(", ")}`);
+      console.log(
+        `FAIL 제어면 등록 — ${o.name} 이 등록되지 않았다: ${o.missing.join(", ")}`,
+      );
     }
-    console.log("     정의만으로는 호출되지 않는다. authoring-agents 의 `### 4. 제어면에 등록한다` 를 따르라.");
+    console.log(
+      "     정의만으로는 호출되지 않는다. authoring-agents 의 `### 4. 제어면에 등록한다` 를 따르라.",
+    );
   }
   results.push(["제어면 등록", cp.ok]);
 
@@ -448,19 +513,28 @@ function main() {
   const existingSkills = skillTargets.filter(existsSync);
 
   if (existingAgents.length > 0) {
-    results.push(["에이전트", run("에이전트 검증", "validate-agents.mjs", existingAgents)]);
+    results.push([
+      "에이전트",
+      run("에이전트 검증", "validate-agents.mjs", existingAgents),
+    ]);
   } else {
     console.log("\n── 에이전트 검증 ──\n건너뜀 — agents/ 디렉터리가 없다.");
   }
 
   if (existingSkills.length > 0) {
-    results.push(["스킬", run("스킬 검증", "validate-skills.mjs", existingSkills)]);
+    results.push([
+      "스킬",
+      run("스킬 검증", "validate-skills.mjs", existingSkills),
+    ]);
   } else {
     console.log("\n── 스킬 검증 ──\n건너뜀 — skills/ 디렉터리가 없다.");
   }
 
   if (handoffTargets.length > 0) {
-    results.push(["핸드오프", run("핸드오프 검증", "validate-handoff.mjs", handoffTargets)]);
+    results.push([
+      "핸드오프",
+      run("핸드오프 검증", "validate-handoff.mjs", handoffTargets),
+    ]);
   } else {
     console.log("\n── 핸드오프 검증 ──\n건너뜀 — .curvez/handoff/ 가 없다.");
   }
@@ -476,14 +550,14 @@ function main() {
   console.log(
     failed.length === 0
       ? `    통과 — 검사 ${results.length}종 전부 정상`
-      : `    실패 — ${failed.length}/${results.length}종: ${failed.map(([l]) => l).join(", ")}`
+      : `    실패 — ${failed.length}/${results.length}종: ${failed.map(([l]) => l).join(", ")}`,
   );
 
   console.log("\n[B] 런타임 완비 — 참고 정보. exit code 와 무관하다");
   console.log(
     readiness.missing.length === 0
       ? `    완비 ${readiness.have}/${readiness.total}`
-      : `    완비 ${readiness.have}/${readiness.total} — 미구현: ${readiness.missing.join(", ")}`
+      : `    완비 ${readiness.have}/${readiness.total} — 미구현: ${readiness.missing.join(", ")}`,
   );
 
   // 두 등급을 한 문장으로 다시 못 박는다.
@@ -491,7 +565,7 @@ function main() {
   // B 가 비어 있어도 "통과" 로 읽힌다 — doctor 의 이름이 실제 검사 범위보다 넓게 들린다.
   if (failed.length === 0 && readiness.missing.length > 0) {
     console.log(
-      `\ndoctor: 정적 규약 통과. 다만 런타임 ${readiness.missing.length}개가 미구현이라 "설치 후 즉시 자동 실행" 은 아직 성립하지 않는다.`
+      `\ndoctor: 정적 규약 통과. 다만 런타임 ${readiness.missing.length}개가 미구현이라 "설치 후 즉시 자동 실행" 은 아직 성립하지 않는다.`,
     );
   } else if (failed.length === 0) {
     console.log("\ndoctor: 정적 규약 통과, 런타임 완비.");

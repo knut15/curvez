@@ -146,7 +146,7 @@ export function extractSections(body, bodyOffset = 0) {
 /** 섹션 본문이 비었는지 판정한다. 공백·주석만 있으면 빈 것으로 본다. */
 export function isSectionEmpty(section) {
   return section.contentLines.every(
-    (l) => l.trim() === "" || l.trim().startsWith("<!--")
+    (l) => l.trim() === "" || l.trim().startsWith("<!--"),
   );
 }
 

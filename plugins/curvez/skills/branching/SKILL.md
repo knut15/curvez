@@ -76,15 +76,15 @@ echo "tier=$TIER base=$BASE release=$RELEASE strategy=$STRATEGY protected=[$PROT
 
 **`baseBranch === releaseBranch` 면 1단이다.** 위 스크립트의 `TIER` 가 그 판정이다.
 
-| | 1단 (`TIER=1`) | 2단 (`TIER=2`) |
-|---|---|---|
-| 예 | `main ← 작업` (GitHub Flow) | `main ← release ← 작업` |
-| 작업 브랜치를 따는 곳 | `$BASE` (= `$RELEASE`) | `$BASE` |
-| PR 타겟 | `$BASE` 하나뿐 | `$BASE` (릴리스·hotfix 는 `$RELEASE`) |
-| 릴리스 PR | **없다.** 작업 PR 머지가 곧 릴리스다 | `$BASE → $RELEASE` PR 이 따로 있다 |
-| back-merge | **없다.** 갈라질 브랜치가 없다 | 릴리스 후 `$BASE` 를 `$RELEASE` 로 맞춘다 |
-| `hotfix/` 를 따는 곳 | `$RELEASE` (= `$BASE`, 일반 브랜치와 같다) | `$RELEASE`. 일반 작업과 출발점이 다르다 |
-| 작업 PR 머지 권한 | `humanMergeTargets` 가 정한다 (아래) | `humanMergeTargets` 가 정한다 (아래) |
+|                       | 1단 (`TIER=1`)                             | 2단 (`TIER=2`)                            |
+| --------------------- | ------------------------------------------ | ----------------------------------------- |
+| 예                    | `main ← 작업` (GitHub Flow)                | `main ← release ← 작업`                   |
+| 작업 브랜치를 따는 곳 | `$BASE` (= `$RELEASE`)                     | `$BASE`                                   |
+| PR 타겟               | `$BASE` 하나뿐                             | `$BASE` (릴리스·hotfix 는 `$RELEASE`)     |
+| 릴리스 PR             | **없다.** 작업 PR 머지가 곧 릴리스다       | `$BASE → $RELEASE` PR 이 따로 있다        |
+| back-merge            | **없다.** 갈라질 브랜치가 없다             | 릴리스 후 `$BASE` 를 `$RELEASE` 로 맞춘다 |
+| `hotfix/` 를 따는 곳  | `$RELEASE` (= `$BASE`, 일반 브랜치와 같다) | `$RELEASE`. 일반 작업과 출발점이 다르다   |
+| 작업 PR 머지 권한     | `humanMergeTargets` 가 정한다 (아래)       | `humanMergeTargets` 가 정한다 (아래)      |
 
 ### 머지 권한은 `humanMergeTargets` 가 정한다
 
@@ -108,7 +108,6 @@ case " $HUMAN " in *" $TARGET "*) echo "사람이 누른다: $TARGET" ;; *) echo
 **기본 상태에서는 에이전트가 머지하지 않는다.** 그 프로젝트에서 `$RELEASE` 머지가 배포가
 아니라면 사용자가 `humanMergeTargets` 를 비워 열어 준다. 안전한 쪽을 기본으로 두고 명시적으로
 여는 구조다. **배열을 고치는 것은 사용자의 결정이다 — 에이전트는 읽기만 한다.**
-
 
 ## 절대 규칙
 
@@ -135,13 +134,13 @@ case " $HUMAN " in *" $TARGET "*) echo "사람이 누른다: $TARGET" ;; *) echo
 
 **타겟이 `$HUMAN`(= `humanMergeTargets`)에 있는지로 갈린다. 누가 요청했는지로 갈리지 않는다.**
 
-| PR | 누가 머지하는가 | 기본 프로파일에서 |
-|---|---|---|
-| 작업 브랜치 → `$BASE`, `$BASE` 가 `$HUMAN` 에 없다 | **요청받으면 실행한다** | 2단 구조가 여기 온다 |
-| 작업 브랜치 → `$BASE`, `$BASE` 가 `$HUMAN` 에 있다 | 사람이 한다. PR URL 을 보고하고 멈춘다 | 1단 구조(`$BASE = $RELEASE`)가 여기 온다 |
-| `$BASE` → `$RELEASE` (릴리스 PR) | 사람이 한다 | `$RELEASE` 는 기본값에 들어 있다 |
-| `hotfix/` → `$RELEASE` | 사람이 한다 | 위와 같다 |
-| back-merge (`$BASE` 를 `$RELEASE` 로 맞추기) | 사람이 한다. PR 이 아니라 포인터 이동이다 (5절) | 가드가 `reset --hard` 를 막는다 |
+| PR                                                 | 누가 머지하는가                                 | 기본 프로파일에서                        |
+| -------------------------------------------------- | ----------------------------------------------- | ---------------------------------------- |
+| 작업 브랜치 → `$BASE`, `$BASE` 가 `$HUMAN` 에 없다 | **요청받으면 실행한다**                         | 2단 구조가 여기 온다                     |
+| 작업 브랜치 → `$BASE`, `$BASE` 가 `$HUMAN` 에 있다 | 사람이 한다. PR URL 을 보고하고 멈춘다          | 1단 구조(`$BASE = $RELEASE`)가 여기 온다 |
+| `$BASE` → `$RELEASE` (릴리스 PR)                   | 사람이 한다                                     | `$RELEASE` 는 기본값에 들어 있다         |
+| `hotfix/` → `$RELEASE`                             | 사람이 한다                                     | 위와 같다                                |
+| back-merge (`$BASE` 를 `$RELEASE` 로 맞추기)       | 사람이 한다. PR 이 아니라 포인터 이동이다 (5절) | 가드가 `reset --hard` 를 막는다          |
 
 **기본값이 `[$RELEASE]` 인 근거는 되돌리기 비용의 비대칭이다.** `$RELEASE` 가 아닌 곳으로 가는
 머지는 잘못돼도 revert PR 한 번으로 걷어낸다 — 아무것도 배포되지 않았고 이력은 그대로 앞으로만
@@ -163,10 +162,10 @@ case " $HUMAN " in *" $TARGET "*) echo "사람이 누른다: $TARGET" ;; *) echo
 4. **사용자가 그 작업에서 머지까지 요청했다**
 
 | `mergeStrategy` | `gh pr merge` 플래그 |
-|---|---|
-| `rebase` | `--rebase` |
-| `squash` | `--squash` |
-| `merge` | `--merge` |
+| --------------- | -------------------- |
+| `rebase`        | `--rebase`           |
+| `squash`        | `--squash`           |
+| `merge`         | `--merge`            |
 
 ```bash
 case "$STRATEGY" in
@@ -187,11 +186,11 @@ gh pr merge "$PR" "$MERGE_FLAG" --delete-branch
 **4번이 없으면 실행하지 않는다.** "PR 만들어줘" 라고 한 사람에게 머지까지 해 주면 요청하지 않은
 범위로 넘어간다. **요청받았을 때 해도 된다**는 것이지 알아서 하라는 것이 아니다.
 
-| 사용자가 이렇게 말하면 | 어디까지 |
-|---|---|
-| "브랜치 따줘" | 브랜치 생성까지 |
-| "PR 만들어줘" | PR 생성까지 |
-| "머지까지 해줘" | 머지 (타겟이 `$HUMAN` 에 없는 PR 만) |
+| 사용자가 이렇게 말하면 | 어디까지                             |
+| ---------------------- | ------------------------------------ |
+| "브랜치 따줘"          | 브랜치 생성까지                      |
+| "PR 만들어줘"          | PR 생성까지                          |
+| "머지까지 해줘"        | 머지 (타겟이 `$HUMAN` 에 없는 PR 만) |
 
 머지한 뒤에도 PR URL 과 CI 결과를 보고한다. 무엇이 통합됐는지는 사용자가 알아야 한다.
 
@@ -200,15 +199,15 @@ gh pr merge "$PR" "$MERGE_FLAG" --delete-branch
 `plugins/curvez/hooks/guard-bash.mjs` 가 **PreToolUse 에서 exit 2 로 차단한다.** 아래 명령은
 **에이전트가 실행할 수 없다.**
 
-| 차단되는 것 | 이 스킬에서 걸리는 자리 |
-|---|---|
-| `git push --force` · `git push -f` | 5절 back-merge |
-| `git push --delete origin <브랜치>` · `git push origin :<브랜치>` | 브랜치 정리 |
-| `--force` 가 붙은 git 명령 (`--force-with-lease` 는 통과) | 5절 |
-| `git reset --hard` | 5절 back-merge |
-| 보호 브랜치(`main` 등)를 대상으로 하는 `git branch -D` · `-d` | 로컬 브랜치 정리 |
-| `git clean -f` · `git checkout .` · `git restore .` | 작업 트리 되돌리기 |
-| `git rebase` 로서 명령에 `main` 이 섞인 것 | 작업 브랜치를 최신 기반 위로 올릴 때 |
+| 차단되는 것                                                       | 이 스킬에서 걸리는 자리              |
+| ----------------------------------------------------------------- | ------------------------------------ |
+| `git push --force` · `git push -f`                                | 5절 back-merge                       |
+| `git push --delete origin <브랜치>` · `git push origin :<브랜치>` | 브랜치 정리                          |
+| `--force` 가 붙은 git 명령 (`--force-with-lease` 는 통과)         | 5절                                  |
+| `git reset --hard`                                                | 5절 back-merge                       |
+| 보호 브랜치(`main` 등)를 대상으로 하는 `git branch -D` · `-d`     | 로컬 브랜치 정리                     |
+| `git clean -f` · `git checkout .` · `git restore .`               | 작업 트리 되돌리기                   |
+| `git rebase` 로서 명령에 `main` 이 섞인 것                        | 작업 브랜치를 최신 기반 위로 올릴 때 |
 
 **평범한 `git push` 는 막히지 않는다 — 에이전트가 직접 실행한다.** 원격에 커밋을 얹는 것은
 append 라 revert 커밋 하나로 되돌린다. 가드가 막는 것은 원격에 **있던** 이력을 지우는
@@ -266,15 +265,15 @@ git switch -c feature/attendance-calendar
 <타입>/<무엇을-하는지>
 ```
 
-| 타입 | 언제 |
-|---|---|
-| `feature/` | 새 기능 |
-| `fix/` | 버그 수정 |
-| `refactor/` | 동작을 바꾸지 않는 구조 변경 |
-| `docs/` | 문서만 |
-| `test/` | 테스트 |
-| `chore/` | 빌드·설정·의존성 |
-| `hotfix/` | 배포된 것의 긴급 수정 (`$RELEASE` 에서 딴다) |
+| 타입        | 언제                                         |
+| ----------- | -------------------------------------------- |
+| `feature/`  | 새 기능                                      |
+| `fix/`      | 버그 수정                                    |
+| `refactor/` | 동작을 바꾸지 않는 구조 변경                 |
+| `docs/`     | 문서만                                       |
+| `test/`     | 테스트                                       |
+| `chore/`    | 빌드·설정·의존성                             |
+| `hotfix/`   | 배포된 것의 긴급 수정 (`$RELEASE` 에서 딴다) |
 
 **영문 소문자·숫자·하이픈만 쓴다. 한글·공백·대문자를 쓰지 않는다.**
 **이유:** 브랜치 이름은 CI 잡 이름·아티팩트 경로·URL 로 흘러간다. 한글과 공백은 그 경로에서

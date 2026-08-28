@@ -20,22 +20,22 @@
 
 `package.json` 의 `dependencies` + `devDependencies` **만** 본다.
 
-| 키 | 의미 |
-|---|---|
-| `expo` | Expo SDK. 값이 `expo.sdkVersion` 의 유일한 출처다 |
-| `react-native` | RN 자체. `expo` 없이 이것만 있으면 bare 다 |
+| 키             | 의미                                              |
+| -------------- | ------------------------------------------------- |
+| `expo`         | Expo SDK. 값이 `expo.sdkVersion` 의 유일한 출처다 |
+| `react-native` | RN 자체. `expo` 없이 이것만 있으면 bare 다        |
 
 ### 오탐 케이스
 
-| 형태 | 왜 오탐인가 | 어떻게 거른다 |
-|---|---|---|
-| `package.json` 최상위에 `"expo": { ... }` **객체** | 구버전 Expo 의 앱 설정 블록이다. 의존성이 아니다 | 문자열 범위인지 확인한다. 객체면 의존성 신호가 아니다 |
-| `expo-*` 만 있고 `expo` 가 없다 | `expo-crypto` 같은 개별 모듈은 웹 프로젝트도 쓴다 | `expo` 정확 일치만 신호로 센다. 접두사 매칭을 쓰지 마라 |
-| `@types/react-native` 만 있다 | 타입만 참조하는 라이브러리 저장소일 수 있다 | `react-native` 정확 일치만 센다 |
-| `react-native-web` 만 있고 `react-native` 가 없다 | 웹 전용 호환 레이어다 | `react-native` 정확 일치만 센다 |
-| `next` 와 `expo`(또는 `react-native`)가 **같은** `package.json` 에 있다 | Expo Router 웹 빌드를 곁들인 RN 앱일 수도, 마이그레이션 중인 웹 앱일 수도 있다 | 판정하지 말고 인터뷰 1번 문항으로 올린다. `references/stack-detection.md` 가 정본이다 |
-| `workspace: true` | 앱이 하위 패키지에 있어 루트 의존성만으로는 안 보인다 | `skills/bootstrap/references/stack-detection.md` 의 순회 절차를 따른다. `monorepo` 가 될 수 있다 |
-| `react-native` 가 `peerDependencies` 에만 있다 | RN 용 라이브러리 저장소지 앱이 아니다 | `peerDependencies` 를 감지에 넣지 않는다 |
+| 형태                                                                    | 왜 오탐인가                                                                    | 어떻게 거른다                                                                                    |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `package.json` 최상위에 `"expo": { ... }` **객체**                      | 구버전 Expo 의 앱 설정 블록이다. 의존성이 아니다                               | 문자열 범위인지 확인한다. 객체면 의존성 신호가 아니다                                            |
+| `expo-*` 만 있고 `expo` 가 없다                                         | `expo-crypto` 같은 개별 모듈은 웹 프로젝트도 쓴다                              | `expo` 정확 일치만 신호로 센다. 접두사 매칭을 쓰지 마라                                          |
+| `@types/react-native` 만 있다                                           | 타입만 참조하는 라이브러리 저장소일 수 있다                                    | `react-native` 정확 일치만 센다                                                                  |
+| `react-native-web` 만 있고 `react-native` 가 없다                       | 웹 전용 호환 레이어다                                                          | `react-native` 정확 일치만 센다                                                                  |
+| `next` 와 `expo`(또는 `react-native`)가 **같은** `package.json` 에 있다 | Expo Router 웹 빌드를 곁들인 RN 앱일 수도, 마이그레이션 중인 웹 앱일 수도 있다 | 판정하지 말고 인터뷰 1번 문항으로 올린다. `references/stack-detection.md` 가 정본이다            |
+| `workspace: true`                                                       | 앱이 하위 패키지에 있어 루트 의존성만으로는 안 보인다                          | `skills/bootstrap/references/stack-detection.md` 의 순회 절차를 따른다. `monorepo` 가 될 수 있다 |
+| `react-native` 가 `peerDependencies` 에만 있다                          | RN 용 라이브러리 저장소지 앱이 아니다                                          | `peerDependencies` 를 감지에 넣지 않는다                                                         |
 
 ### Expo 관리형과 bare RN 을 가른다
 
@@ -44,15 +44,15 @@ expo-router 기본값·`expo install` 정렬·`expo-doctor`·Expo Go 리로드�
 `skills/quality-gate/references/react-native.md` 의 대체 build 검사도 Expo CLI 를 쓴다.
 bare 에서는 그 전제가 통째로 성립하지 않으므로 **감지 단계에서 반드시 갈라 두고 완료 보고에 남긴다.**
 
-| 신호 | 판정 |
-|---|---|
-| `expo` 의존성 있음 + `ios/`·`android/` 디렉터리 없음 | **Expo 관리형(CNG).** `curvez-react-native` 의 전제가 그대로 맞는다 |
+| 신호                                                           | 판정                                                                                                                                                         |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `expo` 의존성 있음 + `ios/`·`android/` 디렉터리 없음           | **Expo 관리형(CNG).** `curvez-react-native` 의 전제가 그대로 맞는다                                                                                          |
 | `expo` 의존성 있음 + `ios/`·`android/` 가 저장소에 커밋돼 있음 | **prebuild 산출물이 들어온 상태.** 관리형 API 는 그대로 쓰지만 Expo Go 가 아니라 dev client 로 돈다. SDK 업그레이드마다 네이티브 디렉터리 수동 병합이 생긴다 |
-| `expo-dev-client` 의존성 있음 | Expo Go 로 못 돌린다. QA 루프가 빌드 대기로 바뀐다는 사실을 보고에 남긴다 |
-| `expo` 없음 + `react-native` 있음 | **bare RN.** 아래 `## expo.sdkVersion` 의 bare 규칙으로 간다 |
-| `app.json` 의 최상위 키가 `expo` | Expo |
-| `app.json` 의 최상위 키가 `name` / `displayName` 뿐 | bare RN (`AppRegistry` 용 설정이다) |
-| `react-native.config.js` / `ios/Podfile` 이 있고 `expo` 없음 | bare 확정 |
+| `expo-dev-client` 의존성 있음                                  | Expo Go 로 못 돌린다. QA 루프가 빌드 대기로 바뀐다는 사실을 보고에 남긴다                                                                                    |
+| `expo` 없음 + `react-native` 있음                              | **bare RN.** 아래 `## expo.sdkVersion` 의 bare 규칙으로 간다                                                                                                 |
+| `app.json` 의 최상위 키가 `expo`                               | Expo                                                                                                                                                         |
+| `app.json` 의 최상위 키가 `name` / `displayName` 뿐            | bare RN (`AppRegistry` 용 설정이다)                                                                                                                          |
+| `react-native.config.js` / `ios/Podfile` 이 있고 `expo` 없음   | bare 확정                                                                                                                                                    |
 
 ```bash
 node -e '
@@ -83,11 +83,11 @@ console.log(JSON.stringify({
 네이티브 설정이 전부 프로젝트 루트 기준이라 소스 디렉터리로 좁히면 등록해야 할 파일이 쓰기 범위 밖으로 나간다.
 `monorepo` 의 `apps/mobile` 과도 같은 의미가 된다.
 
-| 저장소 형태 | `paths.mobile` |
-|---|---|
-| 단일 저장소 (루트가 곧 RN 앱) | `"."` |
-| 앱을 하위 디렉터리에 둔 단일 저장소 | `"mobile"` / `"app"` 등 실제 디렉터리 |
-| 워크스페이스 | `"apps/mobile"` · `"apps/native"` · `"apps/app"` · `"packages/mobile"` — 순회 결과 그대로 |
+| 저장소 형태                         | `paths.mobile`                                                                            |
+| ----------------------------------- | ----------------------------------------------------------------------------------------- |
+| 단일 저장소 (루트가 곧 RN 앱)       | `"."`                                                                                     |
+| 앱을 하위 디렉터리에 둔 단일 저장소 | `"mobile"` / `"app"` 등 실제 디렉터리                                                     |
+| 워크스페이스                        | `"apps/mobile"` · `"apps/native"` · `"apps/app"` · `"packages/mobile"` — 순회 결과 그대로 |
 
 **확인 방법 — `app.json` / `app.config.js` / `app.config.ts` 가 있는 디렉터리가 RN 프로젝트 루트다.**
 셋 중 하나라도 있는 디렉터리를 찾고, 그 디렉터리에 `package.json` 이 함께 있는지 확인한다.
@@ -97,11 +97,11 @@ find . -maxdepth 3 \( -name node_modules -o -name .git -o -name ios -o -name and
   \( -name 'app.json' -o -name 'app.config.js' -o -name 'app.config.ts' \) -print
 ```
 
-| 결과 | 행동 |
-|---|---|
-| 정확히 1개 | 그 파일이 있는 디렉터리를 `paths.mobile` 로 쓴다 |
-| 0개 | **추측하지 마라.** bare RN 이거나 설정이 다른 위치다. 인터뷰 2번 문항으로 묻는다 |
-| 2개 이상 | 어느 것이 주 앱인지 인터뷰로 고르게 한다. 첫 번째를 집지 마라 |
+| 결과       | 행동                                                                             |
+| ---------- | -------------------------------------------------------------------------------- |
+| 정확히 1개 | 그 파일이 있는 디렉터리를 `paths.mobile` 로 쓴다                                 |
+| 0개        | **추측하지 마라.** bare RN 이거나 설정이 다른 위치다. 인터뷰 2번 문항으로 묻는다 |
+| 2개 이상   | 어느 것이 주 앱인지 인터뷰로 고르게 한다. 첫 번째를 집지 마라                    |
 
 `app.config.ts` 와 `app.json` 이 **같은 디렉터리에** 함께 있는 것은 정상이다(정적 설정 + 동적 확장).
 하나의 앱으로 센다.
@@ -117,11 +117,11 @@ find . -maxdepth 3 \( -name node_modules -o -name .git -o -name ios -o -name and
 ls -d __tests__ tests test e2e .maestro 2>/dev/null | head -3
 ```
 
-| 결과 | 행동 |
-|---|---|
-| 디렉터리 1개 | 그것을 쓴다 |
-| 여러 개 | 단위 테스트가 있는 쪽을 쓴다. `e2e/`·`.maestro/` 는 Detox·Maestro 시나리오라 단위 테스트 위치가 아니다 |
-| 0개 | **키째로 생략한다.** RN 은 `__tests__/` 가 소스 옆에 흩어지는 관례가 흔하다. 빈 문자열을 넣지 마라 |
+| 결과         | 행동                                                                                                   |
+| ------------ | ------------------------------------------------------------------------------------------------------ |
+| 디렉터리 1개 | 그것을 쓴다                                                                                            |
+| 여러 개      | 단위 테스트가 있는 쪽을 쓴다. `e2e/`·`.maestro/` 는 Detox·Maestro 시나리오라 단위 테스트 위치가 아니다 |
+| 0개          | **키째로 생략한다.** RN 은 `__tests__/` 가 소스 옆에 흩어지는 관례가 흔하다. 빈 문자열을 넣지 마라     |
 
 ### paths.web / paths.domain
 
@@ -139,12 +139,12 @@ ls -d __tests__ tests test e2e .maestro 2>/dev/null | head -3
 
 `package.json` 의 `scripts` **키 이름**에서만 고른다. 위에서부터 먼저 맞는 하나를 쓰고, 값은 `pnpm <스크립트명>` 이다.
 
-| `commands` 키 | `scripts` 후보 (이 순서) |
-|---|---|
-| `typecheck` | `typecheck` → `type-check` → `tsc` |
-| `lint` | `lint` |
-| `test` | `test` |
-| `build` | `build` |
+| `commands` 키 | `scripts` 후보 (이 순서)           |
+| ------------- | ---------------------------------- |
+| `typecheck`   | `typecheck` → `type-check` → `tsc` |
+| `lint`        | `lint`                             |
+| `test`        | `test`                             |
+| `build`       | `build`                            |
 
 **후보가 하나도 없으면 그 키를 통째로 생략한다.** 빈 문자열도 `null` 도 아니다.
 `typecheck` / `lint` / `test` 가 셋 다 비면 인터뷰 4번 문항으로 올린다.
@@ -161,11 +161,11 @@ ls -d __tests__ tests test e2e .maestro 2>/dev/null | head -3
 
 RN 에서 "빌드" 는 세 가지 서로 다른 것을 가리킨다.
 
-| `scripts.build` 의 실제 값 | 무엇인가 | `commands.build` 에 넣는가 |
-|---|---|---|
-| `eas build ...` | **클라우드 큐.** 수 분~수십 분, 네트워크·크레딧 의존 | 스크립트가 실제로 있으면 값은 적는다. 다만 게이트로 쓰이지 않는다 |
-| `expo export ...` | 로컬 metro 번들 산출 | 넣는다 |
-| `tsc -b` / `tsup` 등 | 라이브러리 빌드 | 넣는다 |
+| `scripts.build` 의 실제 값 | 무엇인가                                             | `commands.build` 에 넣는가                                        |
+| -------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------- |
+| `eas build ...`            | **클라우드 큐.** 수 분~수십 분, 네트워크·크레딧 의존 | 스크립트가 실제로 있으면 값은 적는다. 다만 게이트로 쓰이지 않는다 |
+| `expo export ...`          | 로컬 metro 번들 산출                                 | 넣는다                                                            |
+| `tsc -b` / `tsup` 등       | 라이브러리 빌드                                      | 넣는다                                                            |
 
 **`eas build` 를 로컬 게이트로 쓰지 마라.** `skills/quality-gate/references/react-native.md` 가
 `commands.build` 가 `eas build` 계열이면 **기본 게이트에서 뺀다**고 정해 두었다.
@@ -204,12 +204,12 @@ console.log(range===null ? "NO_EXPO_DEP" : ((range.match(/\d+/)||[])[0] || "UNKN
 ' "$(node -p "require('./.curvez/profile.json').paths.mobile")"
 ```
 
-| 범위 문자열 | 결과 |
-|---|---|
-| `~57.0.9` | `"57"` |
-| `^57.0.0` | `"57"` |
-| `57.0.9` | `"57"` |
-| `npm:expo@~57.0.9` | `"57"` |
+| 범위 문자열                                                   | 결과                        |
+| ------------------------------------------------------------- | --------------------------- |
+| `~57.0.9`                                                     | `"57"`                      |
+| `^57.0.0`                                                     | `"57"`                      |
+| `57.0.9`                                                      | `"57"`                      |
+| `npm:expo@~57.0.9`                                            | `"57"`                      |
 | `*` · `latest` · `canary` · `workspace:*` · `git+https://...` | `UNKNOWN` → 인터뷰 3번 문항 |
 
 git URL 이나 tarball URL 은 형태에 따라 URL 안의 숫자가 잡혀 `UNKNOWN` 이 아닌 값이 나올 수 있다.
@@ -274,20 +274,20 @@ Expo 는 SDK 메이저마다 `react-native` · `react` · `expo-*` 모듈 버전
 
 셋 다 "있으면 좋은 것" 이 아니라 **누락되면 결함**이다. `.curvez/design/` 스펙에 값이 있으면 스펙이 우선이다.
 
-| 항목 | 기본값 (스펙에 그 항목이 없을 때만) | 실패 형태 |
-|---|---|---|
-| 터치 타깃 | 최소 44×44 pt. 시각 크기가 작으면 `hitSlop` 으로 확보 | 작은 아이콘 버튼에서 가장 자주 깨진다. 시뮬레이터 마우스 클릭으로는 재현되지 않는다 |
-| 안전 영역 | 화면 루트와 하단 고정 요소에 `useSafeAreaInsets` / `SafeAreaView` | 상수 여백으로 대체하면 노치·홈 인디케이터 기기에서 잘린다 |
-| 키보드 회피 | 입력이 있는 화면에 `KeyboardAvoidingView`(동작은 `Platform.select`) 또는 동등 처리 | 키보드가 입력 필드를 가려도 개발 기기 화면 크기에서는 안 보인다 |
+| 항목        | 기본값 (스펙에 그 항목이 없을 때만)                                                | 실패 형태                                                                           |
+| ----------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| 터치 타깃   | 최소 44×44 pt. 시각 크기가 작으면 `hitSlop` 으로 확보                              | 작은 아이콘 버튼에서 가장 자주 깨진다. 시뮬레이터 마우스 클릭으로는 재현되지 않는다 |
+| 안전 영역   | 화면 루트와 하단 고정 요소에 `useSafeAreaInsets` / `SafeAreaView`                  | 상수 여백으로 대체하면 노치·홈 인디케이터 기기에서 잘린다                           |
+| 키보드 회피 | 입력이 있는 화면에 `KeyboardAvoidingView`(동작은 `Platform.select`) 또는 동등 처리 | 키보드가 입력 필드를 가려도 개발 기기 화면 크기에서는 안 보인다                     |
 
 ### 플랫폼 분기 — 인라인이냐 파일 분리냐
 
-| 갈리는 것 | 방법 |
-|---|---|
+| 갈리는 것                                         | 방법                                     |
+| ------------------------------------------------- | ---------------------------------------- |
 | 값 하나 (숫자·문자열·스타일 토큰·애니메이션 상수) | `Platform.select` / `Platform.OS` 인라인 |
-| JSX 트리 구조 · 훅 호출 순서 · import 대상 모듈 | `.ios.tsx` / `.android.tsx` 파일 분리 |
-| 한 컴포넌트 안 분기가 3곳 이상 | 파일 분리 |
-| 노치·홈 인디케이터 여백 | 분기하지 않고 `useSafeAreaInsets` |
+| JSX 트리 구조 · 훅 호출 순서 · import 대상 모듈   | `.ios.tsx` / `.android.tsx` 파일 분리    |
+| 한 컴포넌트 안 분기가 3곳 이상                    | 파일 분리                                |
+| 노치·홈 인디케이터 여백                           | 분기하지 않고 `useSafeAreaInsets`        |
 
 **이유:** 값 하나 때문에 파일을 나누면 같은 컴포넌트가 두 벌이 되어 이후 수정이 한쪽에만 들어간다.
 반대로 훅 호출 순서가 플랫폼별로 달라지는데 인라인으로 처리하면 조건부 훅이 되어 런타임에 깨진다.
@@ -295,13 +295,13 @@ Expo 는 SDK 메이저마다 `react-native` · `react` · `expo-*` 모듈 버전
 
 ### 리스트 가상화가 필요해지는 지점
 
-| 항목 수 | 판단 |
-|---|---|
-| 고정 20개 이하이고 서버 데이터로 늘지 않는다 | `map` + `ScrollView`. 가상화하지 않는다 |
-| 21개 이상이거나 개수가 서버 응답에 달렸다 | `FlatList` / `SectionList` + `keyExtractor` |
-| 100개 초과, 또는 항목에 이미지·차트가 있다 | 위에 더해 `getItemLayout` / `windowSize` / `removeClippedSubviews` |
-| 무한 스크롤·페이지네이션이 스펙에 있다 | 항목 수와 무관하게 처음부터 가상화 |
-| 중첩 스크롤 | 바깥을 `FlatList` 로 두고 헤더/푸터 prop. `ScrollView` 안에 `FlatList` 를 넣지 않는다 |
+| 항목 수                                      | 판단                                                                                  |
+| -------------------------------------------- | ------------------------------------------------------------------------------------- |
+| 고정 20개 이하이고 서버 데이터로 늘지 않는다 | `map` + `ScrollView`. 가상화하지 않는다                                               |
+| 21개 이상이거나 개수가 서버 응답에 달렸다    | `FlatList` / `SectionList` + `keyExtractor`                                           |
+| 100개 초과, 또는 항목에 이미지·차트가 있다   | 위에 더해 `getItemLayout` / `windowSize` / `removeClippedSubviews`                    |
+| 무한 스크롤·페이지네이션이 스펙에 있다       | 항목 수와 무관하게 처음부터 가상화                                                    |
+| 중첩 스크롤                                  | 바깥을 `FlatList` 로 두고 헤더/푸터 prop. `ScrollView` 안에 `FlatList` 를 넣지 않는다 |
 
 `ScrollView` 는 자식을 전부 마운트한다. 20개는 저가 안드로이드 기기에서도 프레임 예산 안에 들어오지만
 그 위로는 첫 렌더 지연이 눈에 보인다. 반대로 20개 이하를 가상화하면 얻는 것 없이 코드만 복잡해진다.
@@ -342,8 +342,8 @@ RN 은 transform 계층이 두꺼워 **수집 자체가 실패한 파일이 실�
 각 프리셋의 레이어 정의와 금지 import 는 그 프리셋 파일이 정본이다. 아래는 `react-native` 에서
 어느 절을 읽어야 하는지의 색인이다. **상세는 각 파일의 `## 스택 매핑` 을 읽어라.**
 
-| 프리셋 | RN 에서의 요점 | 정본 |
-|---|---|---|
+| 프리셋       | RN 에서의 요점                                                                                                                                                                        | 정본                                            |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
 | `ddd` (기본) | 가장 안쪽 `domain` 이 `react-native`·`expo-*`·`@react-navigation/*` 를 참조하지 않으면 웹과 그대로 공유된다. 플랫폼 API 는 도메인이 포트만 선언하고 어댑터를 `paths.mobile` 아래 둔다 | `presets/architecture/ddd.md` 의 `## 스택 매핑` |
 
 ### `architecture` 초기값
