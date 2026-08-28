@@ -1,6 +1,6 @@
 {
   "name": "curvez",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Next.js·React Native 프로젝트를 위한 오케스트레이션 하네스. 아키텍처 확정, 에이전트 세팅, 팀 병렬 실행, 품질 게이트를 제공한다.",
   "author": {
     "name": "kim"
