@@ -36,7 +36,7 @@ description: 새 프로젝트에 curvez 를 붙인다. 스택을 감지하고 �
 3. `commands` 를 `scripts` 에서 읽는다
 4. 못 채운 것만 인터뷰한다 (최대 5문)
 5. `profile.json` 을 쓴다
-6. `.curvez/` 를 스캐폴드하고 `.gitignore` 와 CI 워크플로를 손본다
+6. `.curvez/` 를 스캐폴드하고 `.gitignore`·CI 워크플로·lint 설정·CLAUDE.md 를 손본다
 7. 검증하고 `architecture-setup` 으로 넘긴다
 
 ## 1. 이미 있는지 본다
@@ -45,9 +45,9 @@ description: 새 프로젝트에 curvez 를 붙인다. 스택을 감지하고 �
 test -e .curvez/profile.json && echo "EXISTS" || echo "NEW"
 ```
 
-| 결과 | 행동 |
-|---|---|
-| `NEW` | 절차 2 로 간다 |
+| 결과     | 행동                                           |
+| -------- | ---------------------------------------------- |
+| `NEW`    | 절차 2 로 간다                                 |
 | `EXISTS` | **덮어쓰지 않는다.** 아래 보충 규칙만 적용한다 |
 
 ### 이미 있을 때의 보충 규칙
@@ -89,11 +89,11 @@ console.log(JSON.stringify({
 
 출력으로 판정한다. 세 줄에 안 걸리면 판정하지 마라.
 
-| 출력 | 판정 |
-|---|---|
-| `workspace: false`, `next` 있음, `expo`·`reactNative` 없음 | `nextjs` |
-| `workspace: false`, `expo` 또는 `reactNative` 있음, `next` 없음 | `react-native` |
-| `workspace: true` | **아직 확정하지 않는다.** 워크스페이스를 순회해야 한다 |
+| 출력                                                            | 판정                                                   |
+| --------------------------------------------------------------- | ------------------------------------------------------ |
+| `workspace: false`, `next` 있음, `expo`·`reactNative` 없음      | `nextjs`                                               |
+| `workspace: false`, `expo` 또는 `reactNative` 있음, `next` 없음 | `react-native`                                         |
+| `workspace: true`                                               | **아직 확정하지 않는다.** 워크스페이스를 순회해야 한다 |
 
 `workspace: true` 이거나 위 세 줄 중 어느 것에도 안 맞으면
 [references/stack-detection.md](references/stack-detection.md) 를 읽고 그 절차를 따른다.
@@ -102,12 +102,12 @@ console.log(JSON.stringify({
 
 아래는 전부 **추측 금지**다. 절차 4 의 인터뷰 문항으로 올린다.
 
-| 상황 | 왜 추측하면 안 되는가 |
-|---|---|
+| 상황                                                | 왜 추측하면 안 되는가                                                                                                 |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | `next` 와 `expo` 가 **같은** `package.json` 에 있다 | 웹을 곁들인 RN 앱인지, RN 을 곁들인 웹인지 의존성만으로 갈리지 않는다. 판정이 틀리면 담당 구현 에이전트 자체가 틀린다 |
-| 셋 다 없다 | curvez 대상이 아닌 저장소일 수 있다. 스택을 지어내면 존재하지 않는 경로에 코드를 쓴다 |
-| `NO_PACKAGE_JSON` | Node 프로젝트가 아니거나 루트가 아니다. 루트 위치부터 확인한다 |
-| `workspace: true` 인데 웹·모바일 앱이 한쪽만 있다 | 모노레포 구조여도 `stack` 은 실제 앱 구성으로 갈린다 |
+| 셋 다 없다                                          | curvez 대상이 아닌 저장소일 수 있다. 스택을 지어내면 존재하지 않는 경로에 코드를 쓴다                                 |
+| `NO_PACKAGE_JSON`                                   | Node 프로젝트가 아니거나 루트가 아니다. 루트 위치부터 확인한다                                                        |
+| `workspace: true` 인데 웹·모바일 앱이 한쪽만 있다   | 모노레포 구조여도 `stack` 은 실제 앱 구성으로 갈린다                                                                  |
 
 ### 스택이 정해지면 해당 스택 프리셋을 읽는다
 
@@ -118,11 +118,11 @@ console.log(JSON.stringify({
 $CLAUDE_PLUGIN_ROOT/presets/stack/<stack>.md
 ```
 
-| `stack` | 프리셋 | 거기서만 알 수 있는 것 |
-|---|---|---|
-| `nextjs` | `presets/stack/nextjs.md` | App Router / Pages Router 판정을 디렉터리 이름이 아니라 파일 규약(`layout.*` / `_app.*`)으로 해야 하는 이유 |
+| `stack`        | 프리셋                          | 거기서만 알 수 있는 것                                                                                       |
+| -------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `nextjs`       | `presets/stack/nextjs.md`       | App Router / Pages Router 판정을 디렉터리 이름이 아니라 파일 규약(`layout.*` / `_app.*`)으로 해야 하는 이유  |
 | `react-native` | `presets/stack/react-native.md` | `package.json` 최상위 `expo` 키가 레거시 설정 블록일 수 있어 의존성만 봐야 한다는 것, `expo.sdkVersion` 추출 |
-| `monorepo` | `presets/stack/monorepo.md` | `paths.domain` 을 이름이 아니라 **의존 관계**로 판정하는 방법 |
+| `monorepo`     | `presets/stack/monorepo.md`     | `paths.domain` 을 이름이 아니라 **의존 관계**로 판정하는 방법                                                |
 
 **이 파일이 없어도 멈추지 마라.** 정상 설치에는 있지만, 없으면 이 스킬의 절차만으로
 진행할 수 있다. 다만 위 표의 함정들은 프리셋에만 적혀 있으므로, 없이 진행했다면 그 사실을
@@ -135,12 +135,12 @@ $CLAUDE_PLUGIN_ROOT/presets/stack/<stack>.md
 
 절차 2 출력의 `scripts` 배열에서만 고른다. 위에서부터 먼저 맞는 이름 하나를 쓴다.
 
-| `commands` 키 | `scripts` 후보 (이 순서) | 값 형식 |
-|---|---|---|
-| `typecheck` | `typecheck` → `type-check` → `tsc` | `pnpm <스크립트명>` |
-| `lint` | `lint` | `pnpm <스크립트명>` |
-| `test` | `test` | `pnpm <스크립트명>` |
-| `build` | `build` | `pnpm <스크립트명>` |
+| `commands` 키 | `scripts` 후보 (이 순서)           | 값 형식             |
+| ------------- | ---------------------------------- | ------------------- |
+| `typecheck`   | `typecheck` → `type-check` → `tsc` | `pnpm <스크립트명>` |
+| `lint`        | `lint`                             | `pnpm <스크립트명>` |
+| `test`        | `test`                             | `pnpm <스크립트명>` |
+| `build`       | `build`                            | `pnpm <스크립트명>` |
 
 **후보가 하나도 없으면 그 키를 통째로 생략한다. 명령을 지어내지 마라.**
 **이유:** `commands` 는 `curvez-qa` 가 그대로 실행하는 값이다. 없는 스크립트를 적어 두면 매 라운드
@@ -164,14 +164,14 @@ QA 가 "검증 실패" 로 보고하고 구현 에이전트가 멀쩡한 코드�
 
 문항 후보는 아래가 전부다. 감지로 이미 채운 것은 묻지 마라.
 
-| 순위 | 문항 | 나오는 조건 |
-|---|---|---|
-| 1 | 이 프로젝트의 스택은 `nextjs` / `react-native` / `monorepo` 중 무엇인가 | 절차 2 가 애매로 끝났을 때 |
-| 2 | 웹/모바일/도메인 소스 경로가 각각 어디인가 | 필수 `paths` 키를 감지로 못 채웠을 때 |
-| 3 | Expo SDK 메이저 버전이 몇인가 | `stack` 이 `react-native`·`monorepo` 인데 `expo` 범위를 못 읽었을 때 |
-| 4 | 원격 목록이 이렇다 — 작업 브랜치를 `baseBranch` 에서 따고 PR 도 거기로 여는 게 맞는가 | **2단으로 판정됐을 때**(이름만 보고 정한 값이라 확인받는다) 또는 원격 브랜치를 아예 못 읽었을 때 |
-| 5 | 타입 체크·린트·테스트를 어떤 명령으로 도는가 | 절차 3 에서 셋 다 비었을 때 |
-| 6 | 테스트 파일이 어디 있는가 | 아래 폴백으로도 못 찾았을 때 |
+| 순위 | 문항                                                                                  | 나오는 조건                                                                                      |
+| ---- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| 1    | 이 프로젝트의 스택은 `nextjs` / `react-native` / `monorepo` 중 무엇인가               | 절차 2 가 애매로 끝났을 때                                                                       |
+| 2    | 웹/모바일/도메인 소스 경로가 각각 어디인가                                            | 필수 `paths` 키를 감지로 못 채웠을 때                                                            |
+| 3    | Expo SDK 메이저 버전이 몇인가                                                         | `stack` 이 `react-native`·`monorepo` 인데 `expo` 범위를 못 읽었을 때                             |
+| 4    | 원격 목록이 이렇다 — 작업 브랜치를 `baseBranch` 에서 따고 PR 도 거기로 여는 게 맞는가 | **2단으로 판정됐을 때**(이름만 보고 정한 값이라 확인받는다) 또는 원격 브랜치를 아예 못 읽었을 때 |
+| 5    | 타입 체크·린트·테스트를 어떤 명령으로 도는가                                          | 절차 3 에서 셋 다 비었을 때                                                                      |
+| 6    | 테스트 파일이 어디 있는가                                                             | 아래 폴백으로도 못 찾았을 때                                                                     |
 
 **한 번에 다 던지고 한 번에 받는다.** 한 문항씩 왕복하지 않는다.
 
@@ -201,7 +201,12 @@ ls -d tests test __tests__ e2e 2>/dev/null | head -3
   "stack": "monorepo",
   "packageManager": "pnpm",
   "architecture": "ddd",
-  "paths": { "web": "apps/web", "mobile": "apps/mobile", "domain": "packages/domain", "tests": "tests" },
+  "paths": {
+    "web": "apps/web",
+    "mobile": "apps/mobile",
+    "domain": "packages/domain",
+    "tests": "tests"
+  },
   "expo": { "sdkVersion": "57" },
   "git": {
     "baseBranch": "release",
@@ -210,27 +215,39 @@ ls -d tests test __tests__ e2e 2>/dev/null | head -3
     "protectedBranches": ["main", "release"],
     "humanMergeTargets": ["main"]
   },
-  "commands": { "typecheck": "pnpm typecheck", "lint": "pnpm lint", "test": "pnpm test", "build": "pnpm build" }
+  "commands": {
+    "typecheck": "pnpm typecheck",
+    "lint": "pnpm lint",
+    "test": "pnpm test",
+    "build": "pnpm build"
+  }
 }
 ```
 
-| `stack` | 필수 키 | 선택 키 |
-|---|---|---|
-| `nextjs` | `paths.web` | `paths.tests` |
-| `react-native` | `paths.mobile`, `expo.sdkVersion` | `paths.tests` |
-| `monorepo` | `paths.web`, `paths.mobile`, `paths.domain` | `paths.tests`, `expo.sdkVersion` |
+| `stack`        | 필수 키                                     | 선택 키                          |
+| -------------- | ------------------------------------------- | -------------------------------- |
+| `nextjs`       | `paths.web`                                 | `paths.tests`                    |
+| `react-native` | `paths.mobile`, `expo.sdkVersion`           | `paths.tests`                    |
+| `monorepo`     | `paths.web`, `paths.mobile`, `paths.domain` | `paths.tests`, `expo.sdkVersion` |
 
 **`git` 블록 — 다섯 키 전부 쓴다.** 감지는 `git branch -r` 로 한다. 원격에 `release` 또는
-`develop` 이 있으면 그것이 `baseBranch`(2단), 없으면 `releaseBranch` 와 같은 값(1단)이다.
+`develop` 이 있으면 그것이 `baseBranch` 다. 없으면 `release` 브랜치를 **새로 만들어** 2단으로
+간다 (아래 불릿).
 
-| 키 | 값 | 채우는 법 |
-|---|---|---|
-| `baseBranch` | 작업 브랜치를 따는 곳이자 PR 타겟 | 원격의 `release` \| `develop`, 없으면 `releaseBranch` 와 같게 |
-| `releaseBranch` | 배포된 것 | 원격의 `main` \| `master` |
-| `mergeStrategy` | `rebase` \| `merge` \| `squash` | 초기값 `"rebase"` |
-| `protectedBranches` | 직접 커밋 금지 | 1단이면 `[releaseBranch]`, 2단이면 `[releaseBranch, baseBranch]` |
-| `humanMergeTargets` | **이 타겟으로 가는 PR 은 사람이 누른다** | 초기값 `[releaseBranch]` |
+| 키                  | 값                                       | 채우는 법                                                 |
+| ------------------- | ---------------------------------------- | --------------------------------------------------------- |
+| `baseBranch`        | 작업 브랜치를 따는 곳이자 PR 타겟        | 원격의 `release` \| `develop`. 없으면 새로 만든 `release` |
+| `releaseBranch`     | 배포된 것                                | 원격의 `main` \| `master`                                 |
+| `mergeStrategy`     | `rebase` \| `merge` \| `squash`          | 초기값 `"rebase"`                                         |
+| `protectedBranches` | 직접 커밋 금지                           | `[releaseBranch, baseBranch]`                             |
+| `humanMergeTargets` | **이 타겟으로 가는 PR 은 사람이 누른다** | 초기값 `[releaseBranch]`                                  |
 
+- **통합 브랜치가 원격에 없으면 `release` 를 새로 만들어 2단으로 간다.** `scripts/bootstrap.mjs` 가
+  로컬에 `release` 브랜치를 만들고(원격 `main` 기준), **push 는 이 스킬이 한다**:
+  `git push -u origin release`. push 전까지 `baseBranch` 는 원격에 없는 브랜치라 절차 7 의
+  완료 기준을 통과할 수 없다 — 만들었으면 push 까지가 한 단위다.
+  **이유:** 1단은 모든 작업 PR 이 배포 브랜치로 직행하는 구조다. 통합 지점을 기본으로 두면
+  `main` 으로 가는 머지는 사람이 누른다는 `humanMergeTargets` 기본값이 그대로 성립한다
 - **원격 브랜치를 읽지 못하면 `git` 블록을 지어내지 말고 인터뷰 문항으로 돌린다**(절차 4).
   **이유:** 브랜치를 잘못 짚으면 배포된 것 위에서 작업하거나 남의 작업 위에 커밋이 쌓인다.
   경로를 잘못 짚는 것과 달리 파일을 옮기듯 분리할 수 없다
@@ -242,7 +259,8 @@ ls -d tests test __tests__ e2e 2>/dev/null | head -3
   통합 브랜치라고 정한 값이기 때문이다. 그 브랜치가 오래된 유물인 저장소에서는 작업 브랜치가
   아무도 보지 않는 곳에서 나고 PR 도 거기로 열린다 — 오류가 나지 않아 리뷰 화면을 열어야 드러난다.
   `scripts/bootstrap.mjs` 는 이 경우 `git.baseBranch` 문항을 원격 목록과 함께 `questions[]` 로
-  돌려준다. **1단은 확인 문항이 없다** — 통합 브랜치 후보가 원격에 아예 없어 추정한 것이 없다
+  돌려준다. **새로 만든 `release` 는 확인 문항이 없다** — 이름을 보고 추정한 것이 없고,
+  빈자리에 기본 전략을 세운 것이라 확인할 대상이 없다
 
 - `paths` 값은 **저장소 루트 기준 상대 경로**다. 끝에 `/` 를 붙이지 않는다
 - `expo.sdkVersion` 은 메이저 숫자만 문자열로 쓴다 (`"~57.0.9"` → `"57"`)
@@ -306,29 +324,65 @@ grep -qxF '.curvez/tmp/' .gitignore 2>/dev/null \
 
 담기는 것은 다섯이다.
 
-| 무엇 | 어디서 온 값 |
-|---|---|
-| 트리거 브랜치 (`pull_request` · `push`) | `git.baseBranch` · `git.releaseBranch`. 하드코딩된 `main` 을 쓰지 않는다 |
-| 게이트 스텝 | `commands` 의 `typecheck` → `lint` → `test` → `build` 중 **있는 것만**, 이 순서로 |
-| Node 버전 | `package.json` 의 `engines.node` 에서 메이저만. 없으면 `22` |
-| pnpm | `pnpm/action-setup@v4`. `packageManager` 필드가 있으면 그것을 읽으므로 버전을 주지 않고, 없을 때만 `version: 10` |
-| 설치 | `pnpm install --frozen-lockfile` — lockfile 이 어긋나면 조용히 맞추지 말고 실패한다 |
+| 무엇                                    | 어디서 온 값                                                                                                     |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| 트리거 브랜치 (`pull_request` · `push`) | `git.baseBranch` · `git.releaseBranch`. 하드코딩된 `main` 을 쓰지 않는다                                         |
+| 게이트 스텝                             | `commands` 의 `typecheck` → `lint` → `test` → `build` 중 **있는 것만**, 이 순서로                                |
+| Node 버전                               | `package.json` 의 `engines.node` 에서 메이저만. 없으면 `22`                                                      |
+| pnpm                                    | `pnpm/action-setup@v4`. `packageManager` 필드가 있으면 그것을 읽으므로 버전을 주지 않고, 없을 때만 `version: 10` |
+| 설치                                    | `pnpm install --frozen-lockfile` — lockfile 이 어긋나면 조용히 맞추지 말고 실패한다                              |
 
 게이트 순서를 싼 것부터 두는 이유: 먼저 깨지는 것이 먼저 보고돼야 실패 원인을 좁히는 비용이 싸다.
 `build` 가 먼저 돌면 타입 오류 하나 때문에 몇 분을 기다린 뒤에야 그 사실을 알게 된다.
 
 **아래 넷 중 하나라도 해당하면 만들지 않는다. 이유를 보고하고 넘어간다.**
 
-| 만들지 않는 경우 | 왜 |
-|---|---|
-| `.github/workflows/` 에 이미 워크플로가 있다 (**이름이 달라도**) | 워크플로는 시크릿·배포·환경 승인과 얽혀 있다. 게이트가 두 번 도는 것 자체가 비용이고, 어느 쪽이 정본인지는 사람이 판단한다 |
-| 원격이 GitHub 이 아니다 | GitLab·Bitbucket 은 파일 위치와 문법이 통째로 다르다. 형식을 지어내면 **안 도는 파일이 저장소에 남고 사용자는 CI 가 있다고 믿는다** |
-| 원격 `origin` 이 없다 | 어느 CI 를 쓰는지 알 근거가 없다 |
-| `commands` 에 게이트가 하나도 없다 | 돌릴 것이 없다 |
+| 만들지 않는 경우                                                 | 왜                                                                                                                                  |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `.github/workflows/` 에 이미 워크플로가 있다 (**이름이 달라도**) | 워크플로는 시크릿·배포·환경 승인과 얽혀 있다. 게이트가 두 번 도는 것 자체가 비용이고, 어느 쪽이 정본인지는 사람이 판단한다          |
+| 원격이 GitHub 이 아니다                                          | GitLab·Bitbucket 은 파일 위치와 문법이 통째로 다르다. 형식을 지어내면 **안 도는 파일이 저장소에 남고 사용자는 CI 가 있다고 믿는다** |
+| 원격 `origin` 이 없다                                            | 어느 CI 를 쓰는지 알 근거가 없다                                                                                                    |
+| `commands` 에 게이트가 하나도 없다                               | 돌릴 것이 없다                                                                                                                      |
 
 **기존 워크플로는 `--force` 로도 덮지 않는다.** `--force` 는 `.curvez/profile.json` 에만 걸린다.
 **이유:** 프로파일을 덮는 것은 이 저장소 안의 전제를 바꾸는 일이고, 워크플로를 덮는 것은
 **배포 파이프라인을 바꾸는 일**이다. 되돌리기 비용이 같은 등급이 아니다.
+
+### lint·prettier 설정이 없으면 기본값을 만든다
+
+루트에 ESLint·Prettier 설정이 하나도 없으면 기본 설정을 만든다. 어떤 형태든 이미 있으면
+(`eslint.config.*` / `.eslintrc*` / `.prettierrc*` / `prettier.config.*` / `package.json` 의
+`eslintConfig`·`prettier` 키) 그쪽은 손대지 않는다 — `--force` 로도 덮지 않는다.
+**이유:** lint 설정은 프로젝트가 이미 고른 규칙의 집합이다. 덮으면 전 소스의 위반 목록이 한 번에
+바뀌고, 어느 위반이 코드 문제이고 어느 것이 설정 교체 탓인지 가려낼 수 없게 된다.
+
+| 파일                | 내용                                                                             |
+| ------------------- | -------------------------------------------------------------------------------- |
+| `eslint.config.mjs` | flat config. `@eslint/js` recommended + node·browser globals. JS 계열만 검사한다 |
+| `.prettierrc.json`  | `{}` — prettier 기본값                                                           |
+| `.prettierignore`   | lockfile 과 빌드 산출물(`.next/`, `dist/` 등) 제외                               |
+
+**스크립트는 파일만 만든다. 설치·등록은 이 스킬의 몫이다.** 위 파일이 새로 만들어졌으면 이어서:
+
+1. `pnpm add -D eslint @eslint/js globals prettier`
+2. `package.json` 의 `scripts` 에 `"lint": "eslint ."` · `"format": "prettier --write ."` 를 등록한다
+3. `pnpm lint` 를 실제로 돌려 결과를 확인한 뒤 profile 의 `commands.lint` 를 `pnpm lint` 로 채운다 —
+   절차 3 의 규칙 그대로, `scripts` 에 실제로 생긴 뒤에만 적는다
+
+**이유:** 스크립트가 설치 없이 `scripts` 만 등록하면 게이트가 매 라운드
+`eslint: command not found` 로 실패하고, 그 실패는 코드가 깨진 실패와 출력만으로 구분되지 않는다.
+네트워크를 타는 설치는 스크립트가 아니라 에이전트가 사용자에게 보이는 자리에서 한다.
+
+TypeScript 프로젝트면 `typescript-eslint` 추가를 완료 보고에 **제안으로만** 남긴다 — 기본 설정은
+JS 계열(`js/mjs/cjs/jsx`)만 검사한다.
+
+### CLAUDE.md 가 없으면 코딩 지침 템플릿을 복제한다
+
+프로젝트 루트에 `CLAUDE.md` 가 없으면 `$CLAUDE_PLUGIN_ROOT/templates/CLAUDE.md`
+(Karpathy 코딩 지침 12항)를 그대로 복제한다. **이미 있으면 내용과 무관하게 손대지 않는다 —
+`--force` 로도 덮지 않는다.**
+**이유:** CLAUDE.md 는 사용자가 프로젝트 규칙을 직접 쌓아 가는 파일이다. 병합·갱신을 시도하면
+사용자 규칙과 템플릿 문장이 섞여 어느 쪽이 의도인지 가려낼 수 없다. 복제는 빈자리에만 한다.
 
 ## 7. 검증하고 넘긴다
 
@@ -377,10 +431,15 @@ bootstrap 이 끝나면 **`architecture-setup` 을 부른다.** `.curvez/archite
 - [ ] `stack` 이 `nextjs` / `react-native` / `monorepo` 중 하나
 - [ ] `commands` 의 모든 값이 `package.json` 의 `scripts` 에 실제로 있는 이름
 - [ ] `git` 의 다섯 키가 전부 있고, `baseBranch` · `releaseBranch` 가 원격에 실제로 있는 브랜치다
-      (원격을 못 읽었다면 그 키를 지어내지 않고 `blocked` 로 남겼다)
+      (`release` 를 새로 만든 경우 `git push -u origin release` 까지 끝냈다.
+      원격을 못 읽었다면 그 키를 지어내지 않고 `blocked` 로 남겼다)
 - [ ] `.curvez/` 아래 `profile.json` `architecture.md` `team.md` `research/` `handoff/` `tmp/` 6개가 전부 존재
 - [ ] `.gitignore` 에 `.curvez/tmp/` 가 **정확히 1줄**, `.curvez/` 통째 무시 줄은 **0줄**
 - [ ] `.github/workflows/ci.yml` 을 만들었거나, **만들지 않은 이유를 보고했다**. 만들었으면 그
       스텝의 명령이 `commands` 의 값과 문자열까지 같고, 기존 워크플로를 덮은 곳은 0곳이다
+- [ ] lint·prettier 설정이 이미 있어 손대지 않았거나, 새로 만들었다. 만들었으면
+      `pnpm add -D eslint @eslint/js globals prettier` 와 `scripts` 등록까지 끝냈고,
+      `commands.lint` 가 실제로 도는 명령이다
+- [ ] `CLAUDE.md` 가 프로젝트 루트에 있다 — 원래 있었거나, 템플릿을 복제했다
 - [ ] 인터뷰 문항 수 **5문 이하**
 - [ ] 감지·인터뷰로 확인하지 못한 값을 채운 곳 **0곳**

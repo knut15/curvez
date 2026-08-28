@@ -10,6 +10,39 @@ curvez 는 **user scope 플러그인**이다. 한 번 업데이트하면 그 계
 
 ---
 
+## 0.3.0 — bootstrap 스캐폴드 확장: CLAUDE.md · lint 설정 · release 브랜치
+
+### 무엇이 바뀌었나
+
+| #   | 변경                                                                                                                                                                                        | 정본                                                                              |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| ①   | **CLAUDE.md 복제.** 프로젝트 루트에 없으면 코딩 지침 12항 템플릿을 복제한다. 있으면 내용과 무관하게 손대지 않는다                                                                           | `skills/bootstrap/SKILL.md` `### CLAUDE.md 가 없으면 코딩 지침 템플릿을 복제한다` |
+| ②   | **lint/prettier 기본 설정 생성.** 어떤 형태의 설정도 없을 때만 `eslint.config.mjs`·`.prettierrc.json`·`.prettierignore` 를 만든다. devDependencies 설치와 scripts 등록은 스킬 절차가 잇는다 | `skills/bootstrap/SKILL.md` `### lint·prettier 설정이 없으면 기본값을 만든다`     |
+| ③   | **통합 브랜치 자동 생성.** 원격에 `release`/`develop` 이 없으면 로컬에 `release` 를 만들고 프로파일을 2단으로 세운다. push 는 스킬이 한다. **1단 판정은 bootstrap 기본에서 사라졌다**       | `skills/bootstrap/SKILL.md` 절차 5 `git` 블록                                     |
+| ④   | **ci 계획 순서 버그 수정.** scaffold 가 방금 만든 ci.yml 을 보고 단계가 "이미 있다" 로 잘못 읽던 문제                                                                                       | `scripts/bootstrap.mjs`                                                           |
+
+에이전트·스킬 라인업, 핸드오프 스키마, 훅은 그대로다.
+
+### 업데이트 절차 (필수)
+
+절차의 정본은 [README 의 업데이트](README.md#업데이트)다. 끝나면 `installed_plugins.json` 의
+`curvez@curvez` 가 `version: "0.3.0"` 인지 확인하고, `node "$CLAUDE_PLUGIN_ROOT/scripts/doctor.mjs"` 로
+exit 0 을 본다.
+
+### 프로젝트에서 할 일 (조건부)
+
+- **이미 붙인 프로젝트에서 bootstrap 을 다시 돌리면** 없는 산출물(CLAUDE.md·lint 설정)만 생긴다.
+  기존 파일은 `--force` 로도 덮지 않으므로 마이그레이션이 필요 없다
+- **1단(`git.baseBranch` == `git.releaseBranch`)으로 세팅된 기존 프로젝트** — 그대로 두면 그대로
+  돈다. 새 기본(2단)으로 옮기려면 `release` 브랜치를 만들어 push 하고 `profile.json` 의 `git`
+  블록(`baseBranch`·`protectedBranches`)을 갱신한다
+
+### 하지 않아도 되는 것
+
+- **기존 핸드오프·`.curvez/` 마이그레이션** — 스키마 변경이 없다
+
+---
+
 ## 0.2.1 — 라인업 개수 드리프트 수정 · doctor 워커 수 검사
 
 ### 무엇이 바뀌었나

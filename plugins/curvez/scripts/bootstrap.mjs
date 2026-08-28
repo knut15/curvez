@@ -20,7 +20,14 @@
  * exit code: 0 = 진행 가능(질문이 남아 있어도 0), 1 = 진행 불가, 2 = 사용법 오류.
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, appendFileSync } from "node:fs";
+import {
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  appendFileSync,
+} from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join, resolve } from "node:path";
 
@@ -67,7 +74,8 @@ const readJson = (p) => {
   }
 };
 
-const getPath = (obj, dotted) => dotted.split(".").reduce((o, k) => o?.[k], obj);
+const getPath = (obj, dotted) =>
+  dotted.split(".").reduce((o, k) => o?.[k], obj);
 
 /**
  * `pnpm-workspace.yaml` 이 실제로 워크스페이스를 정의하는지 본다.
@@ -119,7 +127,10 @@ function scanWorkspaces() {
       const pkg = readJson(pkgPath);
       if (!pkg) continue;
       const rel = `${r}/${entry}`;
-      const dep = { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) };
+      const dep = {
+        ...(pkg.dependencies ?? {}),
+        ...(pkg.devDependencies ?? {}),
+      };
       found.packages[pkg.name ?? rel] = { rel, deps: Object.keys(dep) };
       if (dep.next) found.web.push(rel);
       if (dep.expo || dep["react-native"]) found.mobile.push(rel);
@@ -129,12 +140,20 @@ function scanWorkspaces() {
   // paths.domain 은 이름이 아니라 의존 관계로 판정한다.
   // 이유: `domain`/`core`/`shared` 같은 이름 규칙은 저장소마다 다르지만,
   // "웹과 모바일이 둘 다 의존한다" 는 구조적 사실이다.
-  const webPkgs = Object.entries(found.packages).filter(([, v]) => found.web.includes(v.rel));
-  const mobilePkgs = Object.entries(found.packages).filter(([, v]) => found.mobile.includes(v.rel));
+  const webPkgs = Object.entries(found.packages).filter(([, v]) =>
+    found.web.includes(v.rel),
+  );
+  const mobilePkgs = Object.entries(found.packages).filter(([, v]) =>
+    found.mobile.includes(v.rel),
+  );
   const internal = new Set(Object.keys(found.packages));
 
-  const usedByWeb = new Set(webPkgs.flatMap(([, v]) => v.deps.filter((d) => internal.has(d))));
-  const usedByMobile = new Set(mobilePkgs.flatMap(([, v]) => v.deps.filter((d) => internal.has(d))));
+  const usedByWeb = new Set(
+    webPkgs.flatMap(([, v]) => v.deps.filter((d) => internal.has(d))),
+  );
+  const usedByMobile = new Set(
+    mobilePkgs.flatMap(([, v]) => v.deps.filter((d) => internal.has(d))),
+  );
   const domainCandidates = [...usedByWeb]
     .filter((d) => usedByMobile.has(d))
     .map((d) => found.packages[d].rel);
@@ -154,35 +173,51 @@ function scanWorkspaces() {
  */
 function detectGit() {
   const r = spawnSync("git", ["branch", "-r", "--format=%(refname:short)"], {
-    cwd: ROOT, encoding: "utf8",
+    cwd: ROOT,
+    encoding: "utf8",
   });
   if (r.status !== 0) return null;
 
-  const remote = r.stdout.split("\n").map((b) => b.trim().replace(/^origin\//, "")).filter(Boolean);
+  const remote = r.stdout
+    .split("\n")
+    .map((b) => b.trim().replace(/^origin\//, ""))
+    .filter(Boolean);
   const has = (n) => remote.includes(n);
 
   const releaseBranch = has("main") ? "main" : has("master") ? "master" : null;
   if (!releaseBranch) return null;
 
   // 통합 브랜치가 따로 있으면 2단이다.
-  const integration = has("release") ? "release" : has("develop") ? "develop" : null;
-  const baseBranch = integration ?? releaseBranch;
+  const integration = has("release")
+    ? "release"
+    : has("develop")
+      ? "develop"
+      : null;
+  // 통합 브랜치가 없으면 release 를 새로 만들어 2단으로 올린다.
+  // 이유: 1단은 모든 작업 PR 이 배포 브랜치로 직행하는 구조다. 통합 지점을 기본으로 두면
+  // "releaseBranch 로 가는 머지는 사람이 누른다" 는 humanMergeTargets 기본값이 그대로 성립한다.
+  // 여기서는 계획만 세운다 — 로컬 생성은 scaffold(), 원격 push 는 스킬 절차(에이전트)의 몫이다.
+  const createBranch = integration
+    ? null
+    : { name: "release", from: releaseBranch };
+  const baseBranch = integration ?? createBranch.name;
 
   return {
     git: {
       baseBranch,
       releaseBranch,
       mergeStrategy: "rebase",
-      protectedBranches: baseBranch === releaseBranch ? [releaseBranch] : [releaseBranch, baseBranch],
+      protectedBranches: [releaseBranch, baseBranch],
       // 이 브랜치로 가는 PR 은 사람이 머지한다.
       // 기본값이 releaseBranch 인 이유: 그 머지가 곧 배포인지는 프로젝트의 CD 설정에 달렸고
       // curvez 는 알 수 없다. 모르면 안전한 쪽 — 에이전트가 배포를 누르지 않는 쪽 — 으로 둔다.
-      // 1단 구조에서 에이전트 머지를 허용하려면 이 배열을 비운다.
       humanMergeTargets: [releaseBranch],
     },
     remote,
     // 이름만 보고 통합 브랜치라고 단정한 자리. 여기가 틀릴 수 있어 확인 문항이 나간다.
     inferred: integration,
+    // 통합 브랜치가 없어 새로 만들 계획. scaffold() 가 로컬 생성을 실행한다.
+    createBranch,
   };
 }
 
@@ -204,7 +239,11 @@ function decide(d) {
   const decisions = [];
 
   if (d.error === "NO_PACKAGE_JSON") {
-    return { blocked: "package.json 이 없다. 프로젝트 루트가 맞는지 확인하라.", questions, decisions };
+    return {
+      blocked: "package.json 이 없다. 프로젝트 루트가 맞는지 확인하라.",
+      questions,
+      decisions,
+    };
   }
 
   let stack = null;
@@ -248,14 +287,27 @@ function decide(d) {
 
   if (stack === "monorepo" && ws) {
     if (ws.web.length === 1) paths.web = ws.web[0];
-    else questions.push({ key: "paths.web", ask: `웹 앱 후보가 ${ws.web.length}개다: ${ws.web.join(", ") || "없음"}. 어느 것인가?`, why: "경로를 추측하면 소유권이 겹친다" });
+    else
+      questions.push({
+        key: "paths.web",
+        ask: `웹 앱 후보가 ${ws.web.length}개다: ${ws.web.join(", ") || "없음"}. 어느 것인가?`,
+        why: "경로를 추측하면 소유권이 겹친다",
+      });
 
     if (ws.mobile.length === 1) paths.mobile = ws.mobile[0];
-    else questions.push({ key: "paths.mobile", ask: `모바일 앱 후보가 ${ws.mobile.length}개다: ${ws.mobile.join(", ") || "없음"}. 어느 것인가?`, why: "경로를 추측하면 소유권이 겹친다" });
+    else
+      questions.push({
+        key: "paths.mobile",
+        ask: `모바일 앱 후보가 ${ws.mobile.length}개다: ${ws.mobile.join(", ") || "없음"}. 어느 것인가?`,
+        why: "경로를 추측하면 소유권이 겹친다",
+      });
 
     if (ws.domainCandidates.length === 1) {
       paths.domain = ws.domainCandidates[0];
-      decisions.push({ what: `paths.domain 을 ${paths.domain} 으로 판정`, why: "웹과 모바일이 둘 다 의존하는 유일한 내부 패키지" });
+      decisions.push({
+        what: `paths.domain 을 ${paths.domain} 으로 판정`,
+        why: "웹과 모바일이 둘 다 의존하는 유일한 내부 패키지",
+      });
     } else {
       questions.push({
         key: "paths.domain",
@@ -265,19 +317,35 @@ function decide(d) {
     }
   } else if (stack === "nextjs") {
     paths.web = ".";
-    decisions.push({ what: "paths.web 을 저장소 루트로 판정", why: "워크스페이스가 아닌 단일 저장소" });
+    decisions.push({
+      what: "paths.web 을 저장소 루트로 판정",
+      why: "워크스페이스가 아닌 단일 저장소",
+    });
   } else if (stack === "react-native") {
     paths.mobile = ".";
-    decisions.push({ what: "paths.mobile 을 저장소 루트로 판정", why: "워크스페이스가 아닌 단일 저장소" });
+    decisions.push({
+      what: "paths.mobile 을 저장소 루트로 판정",
+      why: "워크스페이스가 아닌 단일 저장소",
+    });
   }
 
   // expo.sdkVersion — react-native / monorepo 에서 필요
   if (stack === "react-native" || stack === "monorepo") {
-    const range = d.expo ?? (ws ? readJson(join(ROOT, paths.mobile ?? "", "package.json"))?.dependencies?.expo : null);
+    const range =
+      d.expo ??
+      (ws
+        ? readJson(join(ROOT, paths.mobile ?? "", "package.json"))?.dependencies
+            ?.expo
+        : null);
     if (range) {
       const m = String(range).match(/(\d+)\./);
       if (m) expo.sdkVersion = m[1];
-      else questions.push({ key: "expo.sdkVersion", ask: `expo 버전 범위 "${range}" 에서 메이저를 뽑지 못했다. SDK 버전은?`, why: "SDK 마다 지원 라이브러리 버전이 고정돼 어긋나면 런타임에서만 드러난다" });
+      else
+        questions.push({
+          key: "expo.sdkVersion",
+          ask: `expo 버전 범위 "${range}" 에서 메이저를 뽑지 못했다. SDK 버전은?`,
+          why: "SDK 마다 지원 라이브러리 버전이 고정돼 어긋나면 런타임에서만 드러난다",
+        });
     } else if (stack === "react-native") {
       questions.push({
         key: "expo.sdkVersion",
@@ -314,11 +382,17 @@ function decide(d) {
       why: "브랜치를 잘못 짚으면 배포된 것 위에서 작업하거나 남의 작업 위에 커밋이 쌓인다",
     });
   } else {
-    const tier = git.baseBranch === git.releaseBranch ? "1단" : "2단";
     decisions.push({
-      what: `git 전략을 ${tier}(base=${git.baseBranch}, release=${git.releaseBranch})으로 판정`,
+      what: `git 전략을 2단(base=${git.baseBranch}, release=${git.releaseBranch})으로 판정`,
       why: "원격 브랜치 목록에서 통합 브랜치 존재 여부로 갈랐다",
     });
+
+    if (gitDetected.createBranch) {
+      decisions.push({
+        what: `통합 브랜치가 없어 ${gitDetected.createBranch.name} 를 ${gitDetected.createBranch.from} 에서 만들기로 계획`,
+        why: "작업 PR 이 배포 브랜치로 직행하지 않게 2단으로 올린다. 로컬 생성은 스캐폴드가, push 는 에이전트가 한다",
+      });
+    }
 
     // 2단 판정은 브랜치 **이름**만 보고 내린 추정이다. 그래서 쓰기 전에 확인받는다.
     // 이유: `release` 가 통합 지점이 아니라 오래된 유물인 저장소가 있다. 그 경우 작업 브랜치가
@@ -348,11 +422,21 @@ function decide(d) {
     commands,
   };
 
-  const missing = stack && REQUIRED_KEYS[stack]
-    ? REQUIRED_KEYS[stack].filter((k) => !getPath(profile, k))
-    : [];
+  const missing =
+    stack && REQUIRED_KEYS[stack]
+      ? REQUIRED_KEYS[stack].filter((k) => !getPath(profile, k))
+      : [];
 
-  return { stack, profile, questions, decisions, missing, detected: d, workspace: ws };
+  return {
+    stack,
+    profile,
+    questions,
+    decisions,
+    missing,
+    detected: d,
+    workspace: ws,
+    gitPlan: gitDetected?.createBranch ?? null,
+  };
 }
 
 // ── 절차 6: 스캐폴드 ────────────────────────────────────────────────
@@ -400,13 +484,21 @@ const CI_GATES = ["typecheck", "lint", "test", "build"];
  * `{ skip: 이유 }` 또는 `{ rel, content }` 를 돌려준다.
  */
 function ciPlan(profile) {
-  const r = spawnSync("git", ["remote", "get-url", "origin"], { cwd: ROOT, encoding: "utf8" });
+  const r = spawnSync("git", ["remote", "get-url", "origin"], {
+    cwd: ROOT,
+    encoding: "utf8",
+  });
   const origin = r.status === 0 ? r.stdout.trim() : "";
-  if (!origin) return { skip: "원격 origin 이 없다. 어느 CI 를 쓰는지 알 수 없어 만들지 않는다" };
+  if (!origin)
+    return {
+      skip: "원격 origin 이 없다. 어느 CI 를 쓰는지 알 수 없어 만들지 않는다",
+    };
   if (!/github\.com/.test(origin)) {
     // GitLab·Bitbucket 은 파일 위치와 문법이 통째로 다르다. 형식을 지어내면 조용히 안 도는
     // 파일이 저장소에 남고, 사용자는 CI 가 있다고 믿는다.
-    return { skip: `원격이 GitHub 이 아니다 (${origin}). 다른 CI 형식을 지어내지 않는다` };
+    return {
+      skip: `원격이 GitHub 이 아니다 (${origin}). 다른 CI 형식을 지어내지 않는다`,
+    };
   }
 
   const wfDir = join(ROOT, ".github", "workflows");
@@ -415,24 +507,31 @@ function ciPlan(profile) {
     if (existing.length) {
       // 덮어쓰지 않는 이유: 워크플로는 시크릿·배포·환경 승인과 얽혀 있다. 이름이 겹치지 않아도
       // 게이트가 두 번 도는 것 자체가 비용이고, 어느 쪽이 정본인지 사람이 판단해야 한다.
-      return { skip: `.github/workflows/ 에 이미 워크플로가 있다 (${existing.join(", ")}). 손대지 않는다` };
+      return {
+        skip: `.github/workflows/ 에 이미 워크플로가 있다 (${existing.join(", ")}). 손대지 않는다`,
+      };
     }
   }
 
   const gates = CI_GATES.filter((k) => profile.commands?.[k]);
-  if (!gates.length) return { skip: "commands 에 게이트가 하나도 없다. 돌릴 것이 없다" };
+  if (!gates.length)
+    return { skip: "commands 에 게이트가 하나도 없다. 돌릴 것이 없다" };
 
   // 브랜치 필터는 프로파일에서 읽는다. 하드코딩된 main 을 쓰지 않는다.
   const base = profile.git?.baseBranch;
   const release = profile.git?.releaseBranch;
   const branches = [...new Set([base, release].filter(Boolean))];
-  const filter = branches.length ? `\n    branches: [${branches.join(", ")}]` : "";
+  const filter = branches.length
+    ? `\n    branches: [${branches.join(", ")}]`
+    : "";
 
   const pkg = readJson(join(ROOT, "package.json")) ?? {};
   // engines.node 를 그대로 따른다. 없으면 22 (LTS). 프로젝트가 정한 값이 있으면 그것이 정본이다.
   const nodeMajor = String(pkg.engines?.node ?? "").match(/(\d+)/)?.[1] ?? "22";
   // packageManager 필드가 있으면 pnpm/action-setup 이 그 버전을 읽는다. 없을 때만 버전을 준다.
-  const pnpmVersion = /^pnpm@/.test(String(pkg.packageManager ?? "")) ? null : "10";
+  const pnpmVersion = /^pnpm@/.test(String(pkg.packageManager ?? ""))
+    ? null
+    : "10";
 
   const steps = gates
     .map((k) => `      - name: ${k}\n        run: ${profile.commands[k]}`)
@@ -470,10 +569,119 @@ jobs:
 ${steps}
 `;
 
-  return { rel: ".github/workflows/ci.yml", content, gates, branches, nodeMajor };
+  return {
+    rel: ".github/workflows/ci.yml",
+    content,
+    gates,
+    branches,
+    nodeMajor,
+  };
 }
 
-function scaffold(profile) {
+// ── lint/prettier 설정 ──────────────────────────────────────────────
+/** 루트에서 ESLint 설정으로 인정하는 파일들. package.json 의 `eslintConfig` 키도 설정이다. */
+const ESLINT_CONFIG_FILES = [
+  "eslint.config.js",
+  "eslint.config.mjs",
+  "eslint.config.cjs",
+  "eslint.config.ts",
+  "eslint.config.mts",
+  "eslint.config.cts",
+  ".eslintrc",
+  ".eslintrc.js",
+  ".eslintrc.cjs",
+  ".eslintrc.json",
+  ".eslintrc.yml",
+  ".eslintrc.yaml",
+];
+
+/** 루트에서 Prettier 설정으로 인정하는 파일들. package.json 의 `prettier` 키도 설정이다. */
+const PRETTIER_CONFIG_FILES = [
+  ".prettierrc",
+  ".prettierrc.json",
+  ".prettierrc.json5",
+  ".prettierrc.yml",
+  ".prettierrc.yaml",
+  ".prettierrc.js",
+  ".prettierrc.cjs",
+  ".prettierrc.mjs",
+  ".prettierrc.toml",
+  "prettier.config.js",
+  "prettier.config.cjs",
+  "prettier.config.mjs",
+];
+
+// 스켈레톤 두 개는 prettier 기본 스타일로 적어 둔다 — 생성 직후의 format:check 가
+// 초록이어야 한다. 여기를 고치면 prettier 로 한 번 돌려 정규형을 유지하라.
+const ESLINT_SKELETON = `// curvez:bootstrap 이 만들었다 — 루트에 ESLint 설정이 없어서다.
+// 실행에는 devDependencies 가 필요하다: pnpm add -D eslint @eslint/js globals
+// TypeScript 소스까지 검사하려면 typescript-eslint 를 더해 files 를 넓힌다.
+import js from "@eslint/js";
+import globals from "globals";
+
+export default [
+  { ignores: [".next/", ".expo/", "dist/", "build/", "coverage/", ".curvez/"] },
+  {
+    files: ["**/*.{js,mjs,cjs,jsx}"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      globals: { ...globals.node, ...globals.browser },
+    },
+    rules: js.configs.recommended.rules,
+  },
+];
+`;
+
+// `.curvez/` 통째 제외인 이유: profile.json·handoff 등은 기계(스크립트·에이전트)가 쓰는
+// 산출물이라, 포맷 게이트에 넣으면 curvez 가 파일을 쓸 때마다 format:check 가 빨개진다.
+const PRETTIERIGNORE_SKELETON = `# curvez:bootstrap 이 만들었다. lockfile·빌드 산출물·curvez 산출물은 포맷 대상이 아니다.
+pnpm-lock.yaml
+.next/
+.expo/
+dist/
+build/
+coverage/
+.curvez/
+`;
+
+/**
+ * lint/prettier 설정을 계획한다. 쓰지는 않는다 (`--dry-run` 에서도 계획은 나온다).
+ *
+ * 루트만 본다. 워크스페이스 하위 패키지의 설정까지 판정하면 "일부만 있다" 는 케이스가 생기는데,
+ * 그때 루트 공통 설정을 둘지 말지는 스크립트가 아니라 에이전트가 판단할 일이다.
+ *
+ * 파일만 계획한다 — devDependencies 설치와 scripts 등록은 스킬 절차(에이전트)의 몫이다.
+ * 이유: 네트워크를 타는 설치를 스크립트가 하지 않는 것이 원칙이고, 설치 없이 scripts 만
+ * 등록하면 게이트가 매 라운드 "eslint: command not found" 로 실패한다 — 그 실패는 코드가
+ * 깨진 실패와 출력만으로 구분되지 않는다.
+ */
+function lintPlan() {
+  const pkg = readJson(join(ROOT, "package.json")) ?? {};
+  const files = [];
+  const skips = [];
+
+  const eslintFound =
+    ESLINT_CONFIG_FILES.find((f) => existsSync(join(ROOT, f))) ??
+    (pkg.eslintConfig ? "package.json 의 eslintConfig" : null);
+  if (eslintFound) skips.push(`eslint 설정 (${eslintFound} 이 이미 있다)`);
+  else files.push({ rel: "eslint.config.mjs", content: ESLINT_SKELETON });
+
+  const prettierFound =
+    PRETTIER_CONFIG_FILES.find((f) => existsSync(join(ROOT, f))) ??
+    (pkg.prettier ? "package.json 의 prettier" : null);
+  if (prettierFound)
+    skips.push(`prettier 설정 (${prettierFound} 가 이미 있다)`);
+  else {
+    files.push({ rel: ".prettierrc.json", content: "{}\n" });
+    if (!existsSync(join(ROOT, ".prettierignore")))
+      files.push({ rel: ".prettierignore", content: PRETTIERIGNORE_SKELETON });
+  }
+
+  return { files, skips };
+}
+
+function scaffold(profile, ci, lint, branch) {
   const created = [];
   const skipped = [];
 
@@ -510,13 +718,83 @@ function scaffold(profile) {
   }
 
   // CI 워크플로. 이미 있으면 손대지 않는다 — --force 로도 덮지 않는다.
-  const ci = ciPlan(profile);
+  // 계획(ci·lint)은 main 이 스캐폴드 전에 세워 넘긴다 — 여기서 다시 세우면
+  // 방금 만든 파일을 "이미 있다" 로 읽는다.
   if (ci.skip) {
     skipped.push(`.github/workflows/ci.yml (${ci.skip})`);
   } else {
     mkdirSync(join(ROOT, ".github", "workflows"), { recursive: true });
     writeFileSync(join(ROOT, ci.rel), ci.content);
     created.push(`${ci.rel} (게이트 ${ci.gates.join("·")})`);
+  }
+
+  // lint/prettier 설정 — 없을 때만 만든다. 있으면 --force 로도 덮지 않는다 (판정은 lintPlan).
+  for (const f of lint.files) {
+    writeFileSync(join(ROOT, f.rel), f.content);
+    created.push(f.rel);
+  }
+  skipped.push(...lint.skips);
+
+  // CLAUDE.md — 코딩 지침 템플릿 복제. 이미 있으면 내용과 무관하게 손대지 않는다 —
+  // --force 로도 덮지 않는다.
+  // 이유: CLAUDE.md 는 사용자가 프로젝트 규칙을 직접 쌓아 가는 파일이다. 병합·갱신을 시도하면
+  // 사용자 규칙과 템플릿 문장이 섞여 어느 쪽이 의도인지 가려낼 수 없다. 복제는 빈자리에만 한다.
+  const claudeMd = join(ROOT, "CLAUDE.md");
+  if (existsSync(claudeMd)) {
+    skipped.push("CLAUDE.md (이미 있다)");
+  } else {
+    let tpl = null;
+    try {
+      // 프리셋과 같은 원칙 — 템플릿이 없어도 멈추지 않는다. 없으면 없다고 보고만 한다.
+      tpl = readFileSync(
+        new URL("../templates/CLAUDE.md", import.meta.url),
+        "utf8",
+      );
+    } catch {
+      /* 아래에서 보고한다 */
+    }
+    if (tpl) {
+      writeFileSync(claudeMd, tpl);
+      created.push("CLAUDE.md (코딩 지침 템플릿)");
+    } else {
+      skipped.push(
+        "CLAUDE.md (플러그인 templates/CLAUDE.md 가 없어 만들지 못했다)",
+      );
+    }
+  }
+
+  // 통합 브랜치 — 계획이 있으면 로컬에만 만든다. push 는 하지 않는다.
+  // 이유: push 는 원격 상태를 바꾸는 바깥 행위라 자격·정책이 얽힌다. 로컬 생성까지가
+  // 스크립트 몫이고, 원격 반영은 스킬 절차(에이전트)가 사용자에게 보이는 자리에서 한다.
+  if (branch) {
+    const exists =
+      spawnSync(
+        "git",
+        ["rev-parse", "--verify", "--quiet", `refs/heads/${branch.name}`],
+        { cwd: ROOT, encoding: "utf8" },
+      ).status === 0;
+    if (exists) {
+      skipped.push(`${branch.name} 브랜치 (로컬에 이미 있다 — push 만 남았다)`);
+    } else {
+      let r = spawnSync("git", ["branch", branch.name, branch.from], {
+        cwd: ROOT,
+        encoding: "utf8",
+      });
+      // 로컬에 from 브랜치가 없으면 (클론 직후 등) 원격 추적 브랜치에서 딴다.
+      if (r.status !== 0)
+        r = spawnSync("git", ["branch", branch.name, `origin/${branch.from}`], {
+          cwd: ROOT,
+          encoding: "utf8",
+        });
+      if (r.status === 0)
+        created.push(
+          `${branch.name} 브랜치 (${branch.from} 에서 로컬 생성 — git push -u origin ${branch.name} 필요)`,
+        );
+      else
+        skipped.push(
+          `${branch.name} 브랜치 (생성 실패: ${(r.stderr ?? "").trim() || "원인 불명"})`,
+        );
+    }
   }
 
   // .gitignore — tmp 만 막는다. .curvez/ 자체는 커밋 대상이다.
@@ -533,17 +811,25 @@ function scaffold(profile) {
 
 // ── main ────────────────────────────────────────────────────────────
 function main() {
-  const already = existsSync(PROFILE);
   const result = decide(detect());
 
   if (result.blocked) {
-    if (opt.json) console.log(JSON.stringify({ ok: false, blocked: result.blocked }, null, 2));
+    if (opt.json)
+      console.log(
+        JSON.stringify({ ok: false, blocked: result.blocked }, null, 2),
+      );
     else console.error(`BLOCKED: ${result.blocked}`);
     return 1;
   }
 
   let scaffoldResult = null;
   const canWrite = result.stack && result.missing.length === 0;
+
+  // 계획(ci·lint)은 스캐폴드보다 먼저 세운다 — 스캐폴드가 방금 만든 파일을 계획이
+  // "이미 있다" 로 읽으면 안 된다. 보고는 쓰기와 무관하다 — --dry-run 에서도
+  // 무엇이 만들어질지 보여야 한다.
+  const ci = canWrite ? ciPlan(result.profile) : null;
+  const lint = canWrite ? lintPlan() : null;
 
   if (!opt.dryRun && canWrite) {
     // 이미 프로파일이 있어도 스캐폴드를 돌린다. scaffold() 는 파일마다 존재 여부를 보고
@@ -556,14 +842,32 @@ function main() {
     //
     // 덮어쓰지 않는 이유: paths 는 이미 architecture·design·소유권 판정에 참조돼 있다.
     // 값이 바뀌면 그 참조들이 조용히 어긋난다.
-    scaffoldResult = scaffold(result.profile);
+    scaffoldResult = scaffold(result.profile, ci, lint, result.gitPlan);
   }
 
-  // CI 계획은 쓰기와 무관하게 보고한다 — --dry-run 에서도 무엇이 만들어질지 보여야 한다.
-  const ci = canWrite ? ciPlan(result.profile) : null;
-  const ciSummary = !ci ? null
-    : ci.skip ? { skip: ci.skip }
-    : { path: ci.rel, gates: ci.gates, branches: ci.branches, nodeMajor: ci.nodeMajor };
+  const ciSummary = !ci
+    ? null
+    : ci.skip
+      ? { skip: ci.skip }
+      : {
+          path: ci.rel,
+          gates: ci.gates,
+          branches: ci.branches,
+          nodeMajor: ci.nodeMajor,
+        };
+
+  const lintSummary = !lint
+    ? null
+    : {
+        create: lint.files.map((f) => f.rel),
+        skip: lint.skips,
+        ...(lint.files.length
+          ? {
+              followUp:
+                "pnpm add -D eslint @eslint/js globals prettier 를 설치하고 package.json scripts 에 lint·format 을 등록한 뒤 profile 의 commands.lint 를 채운다",
+            }
+          : {}),
+      };
 
   const payload = {
     ok: true,
@@ -574,6 +878,7 @@ function main() {
     decisions: result.decisions,
     scaffold: scaffoldResult,
     ci: ciSummary,
+    lint: lintSummary,
     dryRun: opt.dryRun,
   };
 
@@ -584,8 +889,10 @@ function main() {
 
   console.log(`스택        ${result.stack ?? "판정 불가"}`);
   console.log(`프로파일    ${JSON.stringify(result.profile.commands)}`);
-  if (result.profile.paths) console.log(`경로        ${JSON.stringify(result.profile.paths)}`);
-  if (result.profile.expo) console.log(`expo        ${JSON.stringify(result.profile.expo)}`);
+  if (result.profile.paths)
+    console.log(`경로        ${JSON.stringify(result.profile.paths)}`);
+  if (result.profile.expo)
+    console.log(`expo        ${JSON.stringify(result.profile.expo)}`);
 
   if (result.decisions.length) {
     console.log("\n판정 근거");
@@ -594,12 +901,15 @@ function main() {
 
   if (result.missing.length) {
     console.log(`\n필수 키 누락  ${result.missing.join(", ")}`);
-    console.log("  추측하지 않는다. 아래 질문에 답을 받아 채운 뒤 다시 실행하라.");
+    console.log(
+      "  추측하지 않는다. 아래 질문에 답을 받아 채운 뒤 다시 실행하라.",
+    );
   }
 
   if (result.questions.length) {
     console.log(`\n사용자에게 물을 것 ${result.questions.length}건`);
-    for (const q of result.questions) console.log(`  [${q.key}] ${q.ask}\n      이유: ${q.why}`);
+    for (const q of result.questions)
+      console.log(`  [${q.key}] ${q.ask}\n      이유: ${q.why}`);
   }
 
   if (ciSummary) {
@@ -607,13 +917,30 @@ function main() {
       ciSummary.skip
         ? `\nCI    만들지 않는다 — ${ciSummary.skip}`
         : `\nCI    ${ciSummary.path} (게이트 ${ciSummary.gates.join("·")} / node ${ciSummary.nodeMajor}` +
-          `${ciSummary.branches.length ? ` / 브랜치 ${ciSummary.branches.join(", ")}` : ""})`
+            `${ciSummary.branches.length ? ` / 브랜치 ${ciSummary.branches.join(", ")}` : ""})`,
     );
   }
 
+  if (lintSummary) {
+    const parts = [];
+    if (lintSummary.create.length)
+      parts.push(`${lintSummary.create.join(", ")} 를 만든다`);
+    if (lintSummary.skip.length)
+      parts.push(`유지 — ${lintSummary.skip.join("; ")}`);
+    if (parts.length) {
+      console.log(`\nlint  ${parts.join(" / ")}`);
+      if (lintSummary.followUp)
+        console.log(`      다음 단계: ${lintSummary.followUp}`);
+    }
+  }
+
   if (scaffoldResult) {
-    if (scaffoldResult.created.length) console.log(`\n생성  ${scaffoldResult.created.join(", ")}`);
-    if (scaffoldResult.skipped.length) console.log(`유지  ${scaffoldResult.skipped.join(", ")} (덮어쓰지 않았다. --force 로 덮어쓴다)`);
+    if (scaffoldResult.created.length)
+      console.log(`\n생성  ${scaffoldResult.created.join(", ")}`);
+    if (scaffoldResult.skipped.length)
+      console.log(
+        `유지  ${scaffoldResult.skipped.join(", ")} (덮어쓰지 않았다. --force 로 덮어쓴다)`,
+      );
   } else if (opt.dryRun) {
     console.log("\n--dry-run — 파일을 만들지 않았다.");
   } else if (!canWrite) {
@@ -623,7 +950,7 @@ function main() {
   console.log(
     result.questions.length === 0 && result.missing.length === 0
       ? "\nbootstrap: 자동 판정으로 프로파일이 완성됐다."
-      : `\nbootstrap: 질문 ${result.questions.length}건이 남았다. 답을 받아 profile.json 을 채운 뒤 curvez:architecture-setup 으로 넘어간다.`
+      : `\nbootstrap: 질문 ${result.questions.length}건이 남았다. 답을 받아 profile.json 을 채운 뒤 curvez:architecture-setup 으로 넘어간다.`,
   );
   return 0;
 }
