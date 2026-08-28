@@ -433,6 +433,7 @@ function checkStructure() {
     "hooks/guard-bash.mjs",
     "hooks/validate-on-write.mjs",
     "hooks/check-handoff.mjs",
+    "hooks/notify-update.mjs",
   ];
 
   let missing = 0;

@@ -204,14 +204,14 @@ curvez-orchestrator ── 팀 구성안 → 사용자 승인 ──┐   (승�
 
 **실제로 실행해서 확인한 현재 상태다.** 없는 것을 있는 것처럼 쓰면 실행하다 막히므로 그대로 적는다.
 
-| 항목          | 상태                                                                                             |
-| ------------- | ------------------------------------------------------------------------------------------------ |
-| 에이전트 13종 | 있음 (`plugins/curvez/agents/`)                                                                  |
-| 스킬 15종     | 있음 (`plugins/curvez/skills/`)                                                                  |
-| 검증·스캐폴딩 | 있음 — `validate-agents` `validate-skills` `validate-handoff` `new-agent` `new-skill` `doctor`   |
-| 실행기        | 있음 — `bootstrap.mjs` (스택 감지·프로파일·스캐폴드), `quality-gate.mjs` (게이트 실행·수치 출력) |
-| 프리셋        | 있음 — 아키텍처 `ddd` 1종, 스택 3종 (`nextjs` `react-native` `monorepo`)                         |
-| 훅            | 있음 — `guard-bash` `validate-on-write` `check-handoff`. `hooks/hooks.json` 으로 등록            |
+| 항목          | 상태                                                                                                  |
+| ------------- | ----------------------------------------------------------------------------------------------------- |
+| 에이전트 13종 | 있음 (`plugins/curvez/agents/`)                                                                       |
+| 스킬 15종     | 있음 (`plugins/curvez/skills/`)                                                                       |
+| 검증·스캐폴딩 | 있음 — `validate-agents` `validate-skills` `validate-handoff` `new-agent` `new-skill` `doctor`        |
+| 실행기        | 있음 — `bootstrap.mjs` (스택 감지·프로파일·스캐폴드), `quality-gate.mjs` (게이트 실행·수치 출력)      |
+| 프리셋        | 있음 — 아키텍처 `ddd` 1종, 스택 3종 (`nextjs` `react-native` `monorepo`)                              |
+| 훅            | 있음 — `guard-bash` `validate-on-write` `check-handoff` `notify-update`. `hooks/hooks.json` 으로 등록 |
 
 **아직 확인되지 않은 것 하나:** `/plugin marketplace add` + `/plugin install` 로 실제 설치했을 때
 로더가 에이전트·스킬·훅을 인식하는지는 검증되지 않았다. 스크립트를 직접 호출한 검증만 마쳤고,

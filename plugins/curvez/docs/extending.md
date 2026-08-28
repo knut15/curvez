@@ -326,7 +326,7 @@ node "$CLAUDE_PLUGIN_ROOT/scripts/doctor.mjs"
 | `quality-gate`                                         | 게이트 실행 → `verification[]` 출력        |
 | `doctor`                                               | 종합 점검 (정적 규약 + 런타임 완비)        |
 
-훅 세 종(`guard-bash` `validate-on-write` `check-handoff`)도 `hooks/hooks.json` 으로 등록된다.
+훅 네 종(`guard-bash` `validate-on-write` `check-handoff` `notify-update`)도 `hooks/hooks.json` 으로 등록된다.
 
 **아직 확인되지 않은 것 하나:** `/plugin marketplace add` + `/plugin install` 로 실제 설치했을 때
 로더가 에이전트·스킬·훅을 인식하는지는 검증되지 않았다. 스크립트를 직접 호출한 검증만 마쳤다.
