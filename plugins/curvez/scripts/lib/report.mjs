@@ -54,21 +54,22 @@ export class Report {
     for (const e of this.errors) {
       const loc = e.line ? `${rel(e.file)}:${e.line}` : rel(e.file);
       console.log(
-        `${color(RED)}FAIL${color(RESET)} ${loc} ${color(DIM)}${e.rule}${color(RESET)} ${e.message}`
+        `${color(RED)}FAIL${color(RESET)} ${loc} ${color(DIM)}${e.rule}${color(RESET)} ${e.message}`,
       );
     }
     for (const w of this.warnings) {
       const loc = w.line ? `${rel(w.file)}:${w.line}` : rel(w.file);
       console.log(
-        `${color(YELLOW)}WARN${color(RESET)} ${loc} ${color(DIM)}${w.rule}${color(RESET)} ${w.message}`
+        `${color(YELLOW)}WARN${color(RESET)} ${loc} ${color(DIM)}${w.rule}${color(RESET)} ${w.message}`,
       );
     }
 
     const passed = this.passedFiles.size;
     const failed = this.failedFiles.size;
-    const mark = this.errors.length === 0 ? color(GREEN) + "OK" : color(RED) + "FAILED";
+    const mark =
+      this.errors.length === 0 ? color(GREEN) + "OK" : color(RED) + "FAILED";
     console.log(
-      `${mark}${color(RESET)} ${this.title} — 검사 ${this.checked}건, 통과 ${passed}건, 실패 ${failed}건, 오류 ${this.errors.length}개, 경고 ${this.warnings.length}개`
+      `${mark}${color(RESET)} ${this.title} — 검사 ${this.checked}건, 통과 ${passed}건, 실패 ${failed}건, 오류 ${this.errors.length}개, 경고 ${this.warnings.length}개`,
     );
 
     return this.errors.length === 0 ? 0 : 1;

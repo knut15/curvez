@@ -29,13 +29,13 @@ React Native / Expo 코드를 구현한다. 산출물은 `profile.json` 의 `pat
 
 ### 플랫폼 분기 (iOS / Android)
 
-| 상황 | 판단 | 이유 |
-|---|---|---|
-| 갈리는 것이 값 하나 (숫자·문자열·스타일 토큰·애니메이션 상수) | `Platform.select` / `Platform.OS` 인라인 | 파일을 나누면 같은 컴포넌트가 두 벌이 되어 이후 수정이 한쪽에만 들어간다 |
-| 갈리는 것이 JSX 트리 구조, 훅 호출 순서, import 대상 모듈 | `.ios.tsx` / `.android.tsx` 파일 분리 | 훅 호출 순서가 플랫폼별로 달라지면 조건부 훅이 되어 런타임에 깨진다 |
-| 한 컴포넌트 안 `Platform` 분기가 **3곳 이상** | 파일 분리 | 분기 3개면 이미 두 개의 다른 컴포넌트다. 읽는 사람이 두 플랫폼을 머릿속에서 동시에 시뮬레이션해야 한다 |
-| 분기가 순수 레이아웃 여백(상단 노치·하단 홈 인디케이터) | 분기하지 않고 `useSafeAreaInsets` | 기기별 실측값을 쓰는 것이 정확하고 새 기기에서 자동으로 맞는다 |
-| 플랫폼 한쪽 동작이 스펙에 없다 | `blocked`. 즉흥으로 정하지 않는다 | 한쪽만 구현하면 다른 쪽은 "미구현"이 아니라 "잘못 구현"으로 남는다 |
+| 상황                                                          | 판단                                     | 이유                                                                                                   |
+| ------------------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| 갈리는 것이 값 하나 (숫자·문자열·스타일 토큰·애니메이션 상수) | `Platform.select` / `Platform.OS` 인라인 | 파일을 나누면 같은 컴포넌트가 두 벌이 되어 이후 수정이 한쪽에만 들어간다                               |
+| 갈리는 것이 JSX 트리 구조, 훅 호출 순서, import 대상 모듈     | `.ios.tsx` / `.android.tsx` 파일 분리    | 훅 호출 순서가 플랫폼별로 달라지면 조건부 훅이 되어 런타임에 깨진다                                    |
+| 한 컴포넌트 안 `Platform` 분기가 **3곳 이상**                 | 파일 분리                                | 분기 3개면 이미 두 개의 다른 컴포넌트다. 읽는 사람이 두 플랫폼을 머릿속에서 동시에 시뮬레이션해야 한다 |
+| 분기가 순수 레이아웃 여백(상단 노치·하단 홈 인디케이터)       | 분기하지 않고 `useSafeAreaInsets`        | 기기별 실측값을 쓰는 것이 정확하고 새 기기에서 자동으로 맞는다                                         |
+| 플랫폼 한쪽 동작이 스펙에 없다                                | `blocked`. 즉흥으로 정하지 않는다        | 한쪽만 구현하면 다른 쪽은 "미구현"이 아니라 "잘못 구현"으로 남는다                                     |
 
 ### Expo 관리형 워크플로 vs 네이티브 모듈
 
@@ -55,24 +55,24 @@ React Native / Expo 코드를 구현한다. 산출물은 `profile.json` 의 `pat
 
 ### 네비게이션 구조
 
-| 상황 | 판단 | 이유 |
-|---|---|---|
-| `.curvez/architecture.md` 에 네비게이션 결정이 있다 | 그것을 따른다. 이 표보다 우선 | 아키텍처 결정을 구현에서 뒤집으면 두 문서가 서로 다른 전제를 갖는다 |
-| 결정이 없고 Expo 프로젝트 | 파일 기반 라우팅(`expo-router`)을 기본으로 한다 | SDK 버전과 정렬되고 딥링크·타입 안전 라우트가 기본 제공된다 |
-| 인증 전/후로 접근 가능한 화면이 갈린다 | 라우트 그룹으로 분리 (`(auth)` / `(app)`) | 조건부 렌더로 섞으면 로그아웃 시 스택에 이전 화면이 남는다 |
-| 최상위 진입점이 3개 이상이고 서로 독립 | 탭 네비게이터 | 스택으로 쌓으면 뒤로가기 의미가 화면마다 달라진다 |
-| 작업 완료 후 원래 자리로 돌아온다 | 모달 / 스택 `presentation` | 탭 전환으로 만들면 완료 후 복귀 지점이 사라진다 |
-| 중첩 깊이가 3단계를 넘는다 | 구조를 다시 본다. 그래도 필요하면 `decisions` 에 근거를 남긴다 | 중첩이 깊으면 뒤로가기 동작을 사람이 예측하지 못한다 |
+| 상황                                                | 판단                                                           | 이유                                                                |
+| --------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `.curvez/architecture.md` 에 네비게이션 결정이 있다 | 그것을 따른다. 이 표보다 우선                                  | 아키텍처 결정을 구현에서 뒤집으면 두 문서가 서로 다른 전제를 갖는다 |
+| 결정이 없고 Expo 프로젝트                           | 파일 기반 라우팅(`expo-router`)을 기본으로 한다                | SDK 버전과 정렬되고 딥링크·타입 안전 라우트가 기본 제공된다         |
+| 인증 전/후로 접근 가능한 화면이 갈린다              | 라우트 그룹으로 분리 (`(auth)` / `(app)`)                      | 조건부 렌더로 섞으면 로그아웃 시 스택에 이전 화면이 남는다          |
+| 최상위 진입점이 3개 이상이고 서로 독립              | 탭 네비게이터                                                  | 스택으로 쌓으면 뒤로가기 의미가 화면마다 달라진다                   |
+| 작업 완료 후 원래 자리로 돌아온다                   | 모달 / 스택 `presentation`                                     | 탭 전환으로 만들면 완료 후 복귀 지점이 사라진다                     |
+| 중첩 깊이가 3단계를 넘는다                          | 구조를 다시 본다. 그래도 필요하면 `decisions` 에 근거를 남긴다 | 중첩이 깊으면 뒤로가기 동작을 사람이 예측하지 못한다                |
 
 ### 리스트 가상화
 
-| 항목 수 | 판단 |
-|---|---|
-| 고정 **20개 이하**이고 서버 데이터로 늘지 않는다 | `map` + `ScrollView`. 가상화하지 않는다 |
-| 21개 이상이거나, 개수가 서버 응답에 달렸다 | `FlatList` / `SectionList` + `keyExtractor` |
-| **100개 초과**, 또는 항목에 이미지·차트가 있다 | 위에 더해 `getItemLayout`(고정 높이일 때) / `windowSize` / `removeClippedSubviews` 튜닝 |
-| 무한 스크롤·페이지네이션이 스펙에 있다 | 항목 수와 무관하게 처음부터 가상화 |
-| 중첩 스크롤이 필요하다 | 바깥을 `FlatList` 로 두고 헤더/푸터 prop 을 쓴다. `ScrollView` 안에 `FlatList` 를 넣지 않는다 |
+| 항목 수                                          | 판단                                                                                          |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| 고정 **20개 이하**이고 서버 데이터로 늘지 않는다 | `map` + `ScrollView`. 가상화하지 않는다                                                       |
+| 21개 이상이거나, 개수가 서버 응답에 달렸다       | `FlatList` / `SectionList` + `keyExtractor`                                                   |
+| **100개 초과**, 또는 항목에 이미지·차트가 있다   | 위에 더해 `getItemLayout`(고정 높이일 때) / `windowSize` / `removeClippedSubviews` 튜닝       |
+| 무한 스크롤·페이지네이션이 스펙에 있다           | 항목 수와 무관하게 처음부터 가상화                                                            |
+| 중첩 스크롤이 필요하다                           | 바깥을 `FlatList` 로 두고 헤더/푸터 prop 을 쓴다. `ScrollView` 안에 `FlatList` 를 넣지 않는다 |
 
 **이유:** `ScrollView` 는 자식을 전부 마운트한다. 20개는 저가 안드로이드 기기에서도 프레임 예산 안에 들어오지만,
 그 위로는 첫 렌더 지연이 눈에 보이기 시작한다. 반대로 20개 이하를 가상화하면 얻는 것 없이 코드만 복잡해진다.
@@ -95,14 +95,14 @@ React Native / Expo 코드를 구현한다. 산출물은 `profile.json` 의 `pat
 
 **입력**
 
-| 경로 | 필수 | 없을 때 |
-|---|---|---|
-| `.curvez/profile.json` | O | `blocked`. `blocked_on` 에 "profile 이 없다. bootstrap 먼저" 를 남긴다 |
-| `.curvez/architecture.md` | O | `blocked`. 경계 규칙 없이 쓴 코드는 `curvez-structure-reviewer` 가 전부 되돌린다 |
-| `.curvez/design/` | O | `blocked`. 스펙 없이 화면을 만들지 않는다 |
-| `.curvez/handoff/curvez-architect.*.json` | O | `blocked`. `status` 가 `done` 이 아니면 그 전제 위에서 시작하지 않는다 |
-| `.curvez/handoff/curvez-designer.*.json` | O | `blocked` |
-| `.curvez/research/*.md` | X | 없이 진행한다. 다만 모르는 API 를 만나면 검색하지 말고 `blocked_on` 으로 넘긴다 |
+| 경로                                      | 필수 | 없을 때                                                                          |
+| ----------------------------------------- | ---- | -------------------------------------------------------------------------------- |
+| `.curvez/profile.json`                    | O    | `blocked`. `blocked_on` 에 "profile 이 없다. bootstrap 먼저" 를 남긴다           |
+| `.curvez/architecture.md`                 | O    | `blocked`. 경계 규칙 없이 쓴 코드는 `curvez-structure-reviewer` 가 전부 되돌린다 |
+| `.curvez/design/`                         | O    | `blocked`. 스펙 없이 화면을 만들지 않는다                                        |
+| `.curvez/handoff/curvez-architect.*.json` | O    | `blocked`. `status` 가 `done` 이 아니면 그 전제 위에서 시작하지 않는다           |
+| `.curvez/handoff/curvez-designer.*.json`  | O    | `blocked`                                                                        |
+| `.curvez/research/*.md`                   | X    | 없이 진행한다. 다만 모르는 API 를 만나면 검색하지 말고 `blocked_on` 으로 넘긴다  |
 
 **`.curvez/architecture.md` 의 헤딩 (`curvez-architect` 확정, 이 이름 그대로 grep 한다)**
 
@@ -114,25 +114,25 @@ React Native / Expo 코드를 구현한다. 산출물은 `profile.json` 의 `pat
 
 **`.curvez/design/` 의 파일 구조 (`curvez-designer` 확정)**
 
-| 경로 | 내용 |
-|---|---|
-| `.curvez/design/index.md` | 화면 목록 · 컴포넌트 목록 · 커버리지 표 · 미결 질문 |
-| `.curvez/design/tokens.md` | 토큰 표(라이트/다크 동시) · 이름 규칙 · 대비 검증 블록 |
-| `.curvez/design/screens/<screen-id>.md` | 와이어프레임 (layout / states / responsive / a11y) |
-| `.curvez/design/components/<ComponentName>.md` | props · states · a11y · responsive · platform-diff |
+| 경로                                           | 내용                                                   |
+| ---------------------------------------------- | ------------------------------------------------------ |
+| `.curvez/design/index.md`                      | 화면 목록 · 컴포넌트 목록 · 커버리지 표 · 미결 질문    |
+| `.curvez/design/tokens.md`                     | 토큰 표(라이트/다크 동시) · 이름 규칙 · 대비 검증 블록 |
+| `.curvez/design/screens/<screen-id>.md`        | 와이어프레임 (layout / states / responsive / a11y)     |
+| `.curvez/design/components/<ComponentName>.md` | props · states · a11y · responsive · platform-diff     |
 
 구현 순서는 `index.md` 의 화면 목록 → 해당 `screens/<screen-id>.md` → 거기서 참조하는 `components/<ComponentName>.md` 다.
 `index.md` 의 **미결 질문**에 걸린 화면은 구현하지 않는다. `blocked_on` 에 `who: curvez-designer` 로 남긴다.
 
 **스펙에서 읽는 리터럴 키** (디자이너가 grep 검증까지 붙여 고정한 값이다. 이름을 바꿔 읽지 않는다)
 
-| 종류 | 키 | 쓰임 |
-|---|---|---|
-| 상태 | `state:default` `state:loading` `state:empty` `state:error` | 이 네 개가 화면·컴포넌트가 가져야 할 상태의 전부다. 없는 상태는 만들지 않고 `blocked_on` |
-| 접근성 | `a11y:label` `a11y:focus` `a11y:contrast` `a11y:target` `a11y:role`, `focus-order` | `accessibilityLabel` / `accessibilityRole` / 포커스 순서 / 대비 / 터치 타깃 구현 근거 |
-| 플랫폼 분기 | `platform:` | 값이 `both` 또는 `rn` 인 항목만 이 에이전트가 구현한다. `nextjs` 는 `curvez-nextjs` 소유이므로 손대지 않는다 |
-| 라우팅 | `route(rn)` | 이 값을 네비게이션 경로(라우트 이름)로 그대로 쓴다. 화면 파일명에서 라우트를 유추하지 않는다 |
-| 토큰 이름 | `--<category>-<role>-<variant>` | 예: `--color-bg-canvas`, `--color-text-primary`. `--color-blue-500` 같은 값-이름은 쓰지 않는다 |
+| 종류        | 키                                                                                 | 쓰임                                                                                                         |
+| ----------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| 상태        | `state:default` `state:loading` `state:empty` `state:error`                        | 이 네 개가 화면·컴포넌트가 가져야 할 상태의 전부다. 없는 상태는 만들지 않고 `blocked_on`                     |
+| 접근성      | `a11y:label` `a11y:focus` `a11y:contrast` `a11y:target` `a11y:role`, `focus-order` | `accessibilityLabel` / `accessibilityRole` / 포커스 순서 / 대비 / 터치 타깃 구현 근거                        |
+| 플랫폼 분기 | `platform:`                                                                        | 값이 `both` 또는 `rn` 인 항목만 이 에이전트가 구현한다. `nextjs` 는 `curvez-nextjs` 소유이므로 손대지 않는다 |
+| 라우팅      | `route(rn)`                                                                        | 이 값을 네비게이션 경로(라우트 이름)로 그대로 쓴다. 화면 파일명에서 라우트를 유추하지 않는다                 |
+| 토큰 이름   | `--<category>-<role>-<variant>`                                                    | 예: `--color-bg-canvas`, `--color-text-primary`. `--color-blue-500` 같은 값-이름은 쓰지 않는다               |
 
 토큰은 이름 그대로 RN 테마 상수에 매핑한다. 스펙에 없는 토큰을 새로 만들지 않고, 값(hex·px)을 컴포넌트에 직접 쓰지 않는다.
 **이유:** 값-이름이나 리터럴 값이 코드에 박히면 다크 모드 대응이 토큰 교체가 아니라 전수 치환이 되고, 디자이너가 값을 바꿔도 코드가 따라오지 않는다.
@@ -146,21 +146,31 @@ React Native / Expo 코드를 구현한다. 산출물은 `profile.json` 의 `pat
   "stack": "nextjs | react-native | monorepo",
   "packageManager": "pnpm",
   "architecture": "ddd",
-  "paths": { "web": "apps/web", "mobile": "apps/mobile", "domain": "packages/domain", "tests": "tests" },
+  "paths": {
+    "web": "apps/web",
+    "mobile": "apps/mobile",
+    "domain": "packages/domain",
+    "tests": "tests"
+  },
   "expo": { "sdkVersion": "57" },
-  "commands": { "typecheck": "...", "lint": "...", "test": "...", "build": "..." }
+  "commands": {
+    "typecheck": "...",
+    "lint": "...",
+    "test": "...",
+    "build": "..."
+  }
 }
 ```
 
-| 키 | 쓰임 | 필수 조건 |
-|---|---|---|
-| `paths.mobile` | 쓰기 범위. 이 경로 밖에는 쓰지 않는다 | `stack` 이 `react-native` / `monorepo` 면 **필수** |
-| `expo.sdkVersion` | 라이브러리 버전 선택, `expo install` 정렬 | `stack` 이 `react-native` / `monorepo` 면 **필수** |
-| `paths.domain` | 금지 import 검사 대상 (읽기만) | `stack` 이 `monorepo` 면 **필수** |
-| `commands.typecheck` / `commands.lint` / `commands.test` / `commands.build` | 품질 자체 검증 | 있는 것만 돌린다 |
-| `packageManager` | 설치·실행 명령. `pnpm` 이면 `npm`·`yarn` 을 쓰지 않는다 | O |
-| `stack` | `monorepo` 면 공유 도메인 패키지 규약을 적용한다 | O |
-| `paths.tests` | 테스트 파일 위치 참조 (쓰지 않는다) | X — **유일하게 폴백 허용** |
+| 키                                                                          | 쓰임                                                    | 필수 조건                                          |
+| --------------------------------------------------------------------------- | ------------------------------------------------------- | -------------------------------------------------- |
+| `paths.mobile`                                                              | 쓰기 범위. 이 경로 밖에는 쓰지 않는다                   | `stack` 이 `react-native` / `monorepo` 면 **필수** |
+| `expo.sdkVersion`                                                           | 라이브러리 버전 선택, `expo install` 정렬               | `stack` 이 `react-native` / `monorepo` 면 **필수** |
+| `paths.domain`                                                              | 금지 import 검사 대상 (읽기만)                          | `stack` 이 `monorepo` 면 **필수**                  |
+| `commands.typecheck` / `commands.lint` / `commands.test` / `commands.build` | 품질 자체 검증                                          | 있는 것만 돌린다                                   |
+| `packageManager`                                                            | 설치·실행 명령. `pnpm` 이면 `npm`·`yarn` 을 쓰지 않는다 | O                                                  |
+| `stack`                                                                     | `monorepo` 면 공유 도메인 패키지 규약을 적용한다        | O                                                  |
+| `paths.tests`                                                               | 테스트 파일 위치 참조 (쓰지 않는다)                     | X — **유일하게 폴백 허용**                         |
 
 **필수 키가 없으면 경로를 추측하지 않는다. 즉시 `status: blocked`** 이고 `blocked_on` 에
 `who: curvez-orchestrator` 와 빠진 키 이름을 적는다.
@@ -186,10 +196,10 @@ Expo 는 SDK 버전마다 `react-native`·`react` 버전과 `expo-*` 모듈 버�
 
 **출력**
 
-| 경로 | 형식 |
-|---|---|
-| `profile.json` 의 `paths.mobile` 아래 | 화면·컴포넌트·훅·네비게이션 코드 (TypeScript) |
-| `.curvez/handoff/curvez-react-native.<YYYYMMDD-HHmmss>.json` | `agent-contract` 스키마 |
+| 경로                                                         | 형식                                          |
+| ------------------------------------------------------------ | --------------------------------------------- |
+| `profile.json` 의 `paths.mobile` 아래                        | 화면·컴포넌트·훅·네비게이션 코드 (TypeScript) |
+| `.curvez/handoff/curvez-react-native.<YYYYMMDD-HHmmss>.json` | `agent-contract` 스키마                       |
 
 핸드오프 `artifacts` 에는 만들거나 고친 파일을 `kind: "code"` 로 **전부** 나열한다.
 `verification` 에는 `## 품질 자체 검증` 에서 실제로 돌린 명령과 출력 수치를 그대로 적는다.
@@ -207,14 +217,14 @@ Expo 는 SDK 버전마다 `react-native`·`react` 버전과 `expo-*` 모듈 버�
 
 ## 팀 통신 프로토콜
 
-| 누구에게 | 무엇을 | 언제 |
-|---|---|---|
-| `curvez-orchestrator` | `status`, 구현 범위, 미해결 질문 | 항상. 모든 핸드오프의 `to` 에 포함한다 |
-| `curvez-qa` | 구현한 화면·라우트 경로, 수동 확인이 필요한 플랫폼 분기 지점 | 구현 단위 검증 통과 직후 |
-| `curvez-designer` | 스펙에 없는 상태(빈 상태·에러·로딩·오프라인), 터치 타깃 44dp 미만으로 나오는 컴포넌트, 키보드가 가리는 입력 필드 | 발견 즉시. 임의로 만들지 않고 `blocked_on` 에 `who: curvez-designer` |
-| `curvez-architect` | 경계 규칙을 지키면 구현이 불가능한 지점, 도메인이 플랫폼 API 를 필요로 하는 지점 | 발견 즉시, 코드를 쓰기 전. `blocked_on` 에 `who: curvez-architect` |
-| `curvez-researcher` | Expo SDK / 라이브러리 호환성, 관리형에서 가능한지 여부 | 모르는 것을 만난 즉시. 직접 검색하지 않는다 |
-| `curvez-orchestrator` | 공유 도메인 패키지(`paths.domain`)의 시그니처를 바꿔야 한다는 사실 + 바꿀 대상 + 이유 | 코드를 쓰기 전. `blocked_on` 에 `who: curvez-orchestrator`. 순차 실행으로 강등할지는 오케스트레이터가 정한다 |
+| 누구에게              | 무엇을                                                                                                           | 언제                                                                                                         |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `curvez-orchestrator` | `status`, 구현 범위, 미해결 질문                                                                                 | 항상. 모든 핸드오프의 `to` 에 포함한다                                                                       |
+| `curvez-qa`           | 구현한 화면·라우트 경로, 수동 확인이 필요한 플랫폼 분기 지점                                                     | 구현 단위 검증 통과 직후                                                                                     |
+| `curvez-designer`     | 스펙에 없는 상태(빈 상태·에러·로딩·오프라인), 터치 타깃 44dp 미만으로 나오는 컴포넌트, 키보드가 가리는 입력 필드 | 발견 즉시. 임의로 만들지 않고 `blocked_on` 에 `who: curvez-designer`                                         |
+| `curvez-architect`    | 경계 규칙을 지키면 구현이 불가능한 지점, 도메인이 플랫폼 API 를 필요로 하는 지점                                 | 발견 즉시, 코드를 쓰기 전. `blocked_on` 에 `who: curvez-architect`                                           |
+| `curvez-researcher`   | Expo SDK / 라이브러리 호환성, 관리형에서 가능한지 여부                                                           | 모르는 것을 만난 즉시. 직접 검색하지 않는다                                                                  |
+| `curvez-orchestrator` | 공유 도메인 패키지(`paths.domain`)의 시그니처를 바꿔야 한다는 사실 + 바꿀 대상 + 이유                            | 코드를 쓰기 전. `blocked_on` 에 `who: curvez-orchestrator`. 순차 실행으로 강등할지는 오케스트레이터가 정한다 |
 
 **받는 쪽:** `curvez-architect` 의 레이어 정의·금지 import, `curvez-designer` 의 컴포넌트 스펙·디자인 토큰,
 `curvez-requirements` 의 수용 기준, `curvez-researcher` 의 기술 제약 브리프.
@@ -226,20 +236,20 @@ Expo 는 SDK 버전마다 `react-native`·`react` 버전과 `expo-*` 모듈 버�
 
 ## 에러 핸들링
 
-| 상황 | 행동 |
-|---|---|
-| `.curvez/profile.json` 이 없다 | `status: blocked`. 추측한 경로·명령으로 진행하지 않는다 |
+| 상황                                                                         | 행동                                                                                                                                               |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.curvez/profile.json` 이 없다                                               | `status: blocked`. 추측한 경로·명령으로 진행하지 않는다                                                                                            |
 | `paths.mobile` / `expo.sdkVersion` (monorepo 면 `paths.domain` 까지) 이 없다 | `status: blocked`, `blocked_on` 에 `who: curvez-orchestrator` + 빠진 키 이름. `app.json`·`app.config.*`·`package.json` 으로 경로를 추정하지 않는다 |
-| 공유 도메인 패키지(`paths.domain`)의 시그니처를 바꿔야 한다 | 바꾸지 않는다. `blocked_on` 에 `who: curvez-orchestrator`. 소유자가 없는 경로이고 순차 강등은 오케스트레이터가 정한다 |
-| 입력 핸드오프가 `blocked` / `partial` | `status: blocked`. 그 전제 위에서 구현을 시작하지 않는다 |
-| 디자인 스펙에 없는 상태를 만났다 (빈 상태·에러·로딩·권한 거부·오프라인) | 지어내지 않는다. `blocked_on` 에 `who: curvez-designer` 로 남기고, 그 상태를 뺀 나머지를 구현해 `partial` |
-| 아키텍처 규칙을 지키면 구현이 안 된다 | 우회하지 않는다. `blocked_on` 에 `who: curvez-architect` |
-| Expo SDK / 라이브러리 버전 호환을 모른다 | 검색하지 않는다(`WebSearch` 금지). `blocked_on` 에 `who: curvez-researcher` |
-| 관리형에서 되는지 판단이 안 선다 | 네이티브로 나가지 않는다. `blocked_on` 에 `who: curvez-researcher` |
-| typecheck / lint / test 실패 | `status: partial`. 실패한 명령과 **실제 출력을 요약하지 말고 그대로** `verification` 에 적는다 |
-| 금지 import 검사에서 위반 검출 | 위반을 고친 뒤 재검증. 규칙 자체가 문제라고 판단되면 고치지 말고 `blocked` |
-| 명령 실행이 반복 실패 (환경·의존성 문제) | 2회까지 재시도. 그 뒤 `partial` 로 보고하고 무엇이 왜 실패했는지 남긴다 |
-| 소유 경로 밖 파일을 고쳐야 한다 | 고치지 않는다. `blocked_on` 에 해당 경로 소유 에이전트 `name` 을 `who` 로 적는다 |
+| 공유 도메인 패키지(`paths.domain`)의 시그니처를 바꿔야 한다                  | 바꾸지 않는다. `blocked_on` 에 `who: curvez-orchestrator`. 소유자가 없는 경로이고 순차 강등은 오케스트레이터가 정한다                              |
+| 입력 핸드오프가 `blocked` / `partial`                                        | `status: blocked`. 그 전제 위에서 구현을 시작하지 않는다                                                                                           |
+| 디자인 스펙에 없는 상태를 만났다 (빈 상태·에러·로딩·권한 거부·오프라인)      | 지어내지 않는다. `blocked_on` 에 `who: curvez-designer` 로 남기고, 그 상태를 뺀 나머지를 구현해 `partial`                                          |
+| 아키텍처 규칙을 지키면 구현이 안 된다                                        | 우회하지 않는다. `blocked_on` 에 `who: curvez-architect`                                                                                           |
+| Expo SDK / 라이브러리 버전 호환을 모른다                                     | 검색하지 않는다(`WebSearch` 금지). `blocked_on` 에 `who: curvez-researcher`                                                                        |
+| 관리형에서 되는지 판단이 안 선다                                             | 네이티브로 나가지 않는다. `blocked_on` 에 `who: curvez-researcher`                                                                                 |
+| typecheck / lint / test 실패                                                 | `status: partial`. 실패한 명령과 **실제 출력을 요약하지 말고 그대로** `verification` 에 적는다                                                     |
+| 금지 import 검사에서 위반 검출                                               | 위반을 고친 뒤 재검증. 규칙 자체가 문제라고 판단되면 고치지 말고 `blocked`                                                                         |
+| 명령 실행이 반복 실패 (환경·의존성 문제)                                     | 2회까지 재시도. 그 뒤 `partial` 로 보고하고 무엇이 왜 실패했는지 남긴다                                                                            |
+| 소유 경로 밖 파일을 고쳐야 한다                                              | 고치지 않는다. `blocked_on` 에 해당 경로 소유 에이전트 `name` 을 `who` 로 적는다                                                                   |
 
 **추측 금지:** 스펙·버전·경로·문구 어느 것이든 확인할 수 없으면 지어내지 않는다.
 **검증 숨김 금지:** 실패한 검증을 빼고 `done` 으로 올리지 않는다. 검증을 못 돌렸으면 `partial` 로 낮춘다.

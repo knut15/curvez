@@ -38,12 +38,12 @@ PROFILE=.curvez/profile.json
 node -p "JSON.stringify({stack:require('./$PROFILE').stack, web:require('./$PROFILE').paths?.web, domain:require('./$PROFILE').paths?.domain, commands:require('./$PROFILE').commands})"
 ```
 
-| 확인 | 없을 때 |
-|---|---|
-| `paths.web` | `status: blocked`. `blocked_on` 에 "profile.json 에 paths.web 이 없다" |
-| `commands` (`typecheck`/`lint`/`test`) | `status: blocked`. 명령을 지어내지 않는다 |
-| `stack: monorepo` 일 때 `paths.domain` | `status: blocked`. 금지 import 검사 대상을 못 정한다 |
-| `stack: react-native` | 이 에이전트가 실행될 자리가 아니다. `blocked` 로 오케스트레이터에게 돌린다 |
+| 확인                                   | 없을 때                                                                    |
+| -------------------------------------- | -------------------------------------------------------------------------- |
+| `paths.web`                            | `status: blocked`. `blocked_on` 에 "profile.json 에 paths.web 이 없다"     |
+| `commands` (`typecheck`/`lint`/`test`) | `status: blocked`. 명령을 지어내지 않는다                                  |
+| `stack: monorepo` 일 때 `paths.domain` | `status: blocked`. 금지 import 검사 대상을 못 정한다                       |
+| `stack: react-native`                  | 이 에이전트가 실행될 자리가 아니다. `blocked` 로 오케스트레이터에게 돌린다 |
 
 **경로와 명령을 추측하지 않는다.** 폴백을 만들지 않는다.
 **이유:** 구현 에이전트마다 다른 폴백을 만들면 monorepo 에서 두 에이전트가 같은 디렉터리를 소유하게 되고,
@@ -175,15 +175,15 @@ node -p "JSON.stringify({stack:require('./$PROFILE').stack, web:require('./$PROF
 멈추는 것이 정상이다. `blocked` 는 실패가 아니다.
 **이유:** 추측으로 메운 `done` 은 아무도 잡아내지 못하고, 그 뒤 QA 와 리뷰어 전부가 잘못된 전제 위에서 돈다.
 
-| 상황 | 행동 |
-|---|---|
-| `paths.web` · `commands` 가 없다 | `blocked`. 없는 키 이름을 그대로 적는다 |
-| 디자인 스펙에 상태 키가 없다 | `blocked_on`, `who: curvez-designer`. 리터럴 키 이름을 그대로 적는다 |
-| 아키텍처 규칙이 구현을 막는다 | `blocked_on`, `who: curvez-architect`. **코드를 쓰기 전에** 남긴다 |
-| API 동작·버전 제약을 모른다 | `blocked_on`, `who: curvez-researcher` |
+| 상황                                                        | 행동                                                                                                |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `paths.web` · `commands` 가 없다                            | `blocked`. 없는 키 이름을 그대로 적는다                                                             |
+| 디자인 스펙에 상태 키가 없다                                | `blocked_on`, `who: curvez-designer`. 리터럴 키 이름을 그대로 적는다                                |
+| 아키텍처 규칙이 구현을 막는다                               | `blocked_on`, `who: curvez-architect`. **코드를 쓰기 전에** 남긴다                                  |
+| API 동작·버전 제약을 모른다                                 | `blocked_on`, `who: curvez-researcher`                                                              |
 | 공유 도메인 패키지(`paths.domain`)의 시그니처를 바꿔야 한다 | 고치지 않는다. `blocked_on`, `who: curvez-orchestrator` 로 현재 시그니처와 필요한 시그니처를 적는다 |
-| `paths.web` 밖의 파일을 고쳐야 한다 | 고치지 않는다. 경로와 필요한 변경을 적어 소유 에이전트에게 돌린다 |
-| 기존 코드에서 ARCH 위반이 검출됐다 | 자기 코드면 고치고 다시 돌린다. 남의 소유면 `partial` 로 위치를 보고한다 |
+| `paths.web` 밖의 파일을 고쳐야 한다                         | 고치지 않는다. 경로와 필요한 변경을 적어 소유 에이전트에게 돌린다                                   |
+| 기존 코드에서 ARCH 위반이 검출됐다                          | 자기 코드면 고치고 다시 돌린다. 남의 소유면 `partial` 로 위치를 보고한다                            |
 
 **남의 소유 파일을 고치지 않는 이유:** 병렬 실행에서 두 에이전트가 같은 파일을 고치면 나중에 쓴 쪽이
 앞선 쪽을 조용히 지운다. 사라진 변경은 리뷰에서도 안 잡힌다.

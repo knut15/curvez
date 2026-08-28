@@ -1,0 +1,5 @@
+.build/
+.omc/
+**/.omc/
+result.html
+pnpm-lock.yaml

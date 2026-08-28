@@ -43,7 +43,11 @@ description: 에이전트가 작업을 마치고 다음 담당에게 넘기는 �
   "status": "done",
   "summary": "DDD 4레이어로 확정. 도메인은 프레임워크 import 금지.",
   "artifacts": [
-    { "path": ".curvez/architecture.md", "kind": "decision", "note": "레이어 경계 규칙 포함" }
+    {
+      "path": ".curvez/architecture.md",
+      "kind": "decision",
+      "note": "레이어 경계 규칙 포함"
+    }
   ],
   "decisions": [
     {
@@ -54,7 +58,11 @@ description: 에이전트가 작업을 마치고 다음 담당에게 넘기는 �
   ],
   "blocked_on": [],
   "verification": [
-    { "command": "node scripts/validate-handoff.mjs", "result": "오류 0개", "passed": true }
+    {
+      "command": "node scripts/validate-handoff.mjs",
+      "result": "오류 0개",
+      "passed": true
+    }
   ]
 }
 ```
@@ -65,11 +73,11 @@ description: 에이전트가 작업을 마치고 다음 담당에게 넘기는 �
 
 세 값 중 하나를 고른다. 판정을 흐리지 마라.
 
-| status | 조건 | 강제 규칙 |
-|---|---|---|
-| `done` | 맡은 범위를 끝냈고 검증까지 마쳤다 | `verification` 최소 1건 필수. `blocked_on` 이 비어야 한다 |
-| `partial` | 일부만 끝냈다. 남은 것을 알고 있다 | 무엇까지 됐고 무엇이 남았는지 `summary` 에 적는다 |
-| `blocked` | 답 없이는 더 못 간다 | `blocked_on` 최소 1건 필수 |
+| status    | 조건                               | 강제 규칙                                                 |
+| --------- | ---------------------------------- | --------------------------------------------------------- |
+| `done`    | 맡은 범위를 끝냈고 검증까지 마쳤다 | `verification` 최소 1건 필수. `blocked_on` 이 비어야 한다 |
+| `partial` | 일부만 끝냈다. 남은 것을 알고 있다 | 무엇까지 됐고 무엇이 남았는지 `summary` 에 적는다         |
+| `blocked` | 답 없이는 더 못 간다               | `blocked_on` 최소 1건 필수                                |
 
 **`done` 은 `verification` 없이 쓸 수 없다.**
 **이유:** 수신 에이전트는 송신 에이전트의 `done` 을 믿고 자기 작업을 시작한다. 검증되지 않은

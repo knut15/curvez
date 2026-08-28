@@ -21,7 +21,13 @@ import { join, resolve } from "node:path";
 import { ALLOWED_MODELS, WRITE_TOOLS } from "./lib/spec.mjs";
 
 function parseArgs(argv) {
-  const opts = { model: "sonnet", readonly: false, force: false, dir: null, name: null };
+  const opts = {
+    model: "sonnet",
+    readonly: false,
+    force: false,
+    dir: null,
+    name: null,
+  };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === "--dir") opts.dir = argv[++i];
@@ -116,15 +122,21 @@ function main() {
   const opts = parseArgs(process.argv.slice(2));
 
   if (!opts.name) {
-    console.error("사용법: node new-agent.mjs <name> [--dir <경로>] [--model <값>] [--readonly] [--force]");
+    console.error(
+      "사용법: node new-agent.mjs <name> [--dir <경로>] [--model <값>] [--readonly] [--force]",
+    );
     return 2;
   }
   if (!/^[a-z][a-z0-9-]*$/.test(opts.name)) {
-    console.error(`name \`${opts.name}\` 이 규칙에 맞지 않는다. 소문자 kebab-case 로 적어라.`);
+    console.error(
+      `name \`${opts.name}\` 이 규칙에 맞지 않는다. 소문자 kebab-case 로 적어라.`,
+    );
     return 2;
   }
   if (!ALLOWED_MODELS.includes(opts.model)) {
-    console.error(`model \`${opts.model}\` 은 허용값이 아니다. 허용: ${ALLOWED_MODELS.join(", ")}`);
+    console.error(
+      `model \`${opts.model}\` 은 허용값이 아니다. 허용: ${ALLOWED_MODELS.join(", ")}`,
+    );
     return 2;
   }
 
@@ -139,7 +151,9 @@ function main() {
 
   writeFileSync(outFile, template(opts), "utf8");
   console.log(`생성: ${outFile}`);
-  console.log(`다음: TODO 를 전부 채운 뒤 \`node ${join("scripts", "validate-agents.mjs")} ${outFile}\` 로 검증하라.`);
+  console.log(
+    `다음: TODO 를 전부 채운 뒤 \`node ${join("scripts", "validate-agents.mjs")} ${outFile}\` 로 검증하라.`,
+  );
   return 0;
 }
 

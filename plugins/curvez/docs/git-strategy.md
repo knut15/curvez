@@ -85,10 +85,10 @@ CD 가 없는 1단 프로젝트에서는 모든 머지를 불필요하게 사람
 
 실측으로 두 저장소를 확인했다. `git branch -r` 의 출력이다.
 
-| 저장소 | 원격 브랜치 | 판정 |
-|---|---|---|
-| `~/Workspace/weather` | `origin/main` 만 | 1단 — `baseBranch` 와 `releaseBranch` 가 모두 `main` |
-| `~/Workspace/stamp` | `origin/main`, `origin/release` | 2단 — `baseBranch=release`, `releaseBranch=main` |
+| 저장소                | 원격 브랜치                     | 판정                                                 |
+| --------------------- | ------------------------------- | ---------------------------------------------------- |
+| `~/Workspace/weather` | `origin/main` 만                | 1단 — `baseBranch` 와 `releaseBranch` 가 모두 `main` |
+| `~/Workspace/stamp`   | `origin/main`, `origin/release` | 2단 — `baseBranch=release`, `releaseBranch=main`     |
 
 브랜치 목록은 **추정의 근거일 뿐 확정이 아니다.** `release` 라는 이름의 브랜치가 통합 지점이
 아니라 오래된 유물일 수도 있다. 그래서 판정 결과는 프로파일에 쓰기 전에 사용자에게 확인받는다.
@@ -131,10 +131,10 @@ git 관련 규칙 대부분은 하나의 문장에서 파생된다.
 
 ### 두 머지가 다른 이유
 
-| 어디로 가는 머지 | 틀렸을 때 | 기본 프로파일에서 누가 |
-|---|---|---|
-| `baseBranch` 로 (2단) | revert PR 하나를 열어 걷어낸다. 이력에 남지만 전방향이다 | `humanMergeTargets` 에 없다 → 요청받으면 에이전트가 실행해도 된다 |
-| `releaseBranch` 로 | 이미 배포된 것을 건드린다. 되돌린 뒤 뒤처진 통합 브랜치를 다시 맞춰야 하고, 그 맞춤에는 포인터 강제 이동이 따라온다 | 목록에 있다 → 사람이 한다 |
+| 어디로 가는 머지      | 틀렸을 때                                                                                                           | 기본 프로파일에서 누가                                            |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `baseBranch` 로 (2단) | revert PR 하나를 열어 걷어낸다. 이력에 남지만 전방향이다                                                            | `humanMergeTargets` 에 없다 → 요청받으면 에이전트가 실행해도 된다 |
+| `releaseBranch` 로    | 이미 배포된 것을 건드린다. 되돌린 뒤 뒤처진 통합 브랜치를 다시 맞춰야 하고, 그 맞춤에는 포인터 강제 이동이 따라온다 | 목록에 있다 → 사람이 한다                                         |
 
 **표는 기본값이 내는 결과이지 판정 규칙이 아니다.** 실행 시점의 판정은 언제나
 `humanMergeTargets` 를 읽어서 한다(1절). 아래 근거는 그 기본값이 왜 그 모양인지를 설명한다.
@@ -210,11 +210,11 @@ release ── A' ── B'        A·B 는 A'·B' 로 재작성됐다
 
 앞 작업의 코드가 정말 필요할 때 고를 수 있는 것은 셋이다. 어느 것도 공짜가 아니다.
 
-| 방법 | 대가 |
-|---|---|
-| 앞 작업을 먼저 머지시키고 갱신된 `baseBranch` 에서 새로 딴다 | 앞 작업의 리뷰·머지를 기다려야 한다. 가장 안전하지만 가장 느리다 |
-| 두 작업을 하나의 브랜치로 합쳐 진행한다 | PR 이 커진다. 리뷰 품질이 떨어지고, 한쪽에 문제가 있으면 다른 쪽까지 같이 막힌다 |
-| 앞 작업 없이 되는 부분만 먼저 만든다 | 나중에 합칠 때 인터페이스가 어긋날 수 있다. 두 번 작업하게 될 수 있다 |
+| 방법                                                         | 대가                                                                             |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| 앞 작업을 먼저 머지시키고 갱신된 `baseBranch` 에서 새로 딴다 | 앞 작업의 리뷰·머지를 기다려야 한다. 가장 안전하지만 가장 느리다                 |
+| 두 작업을 하나의 브랜치로 합쳐 진행한다                      | PR 이 커진다. 리뷰 품질이 떨어지고, 한쪽에 문제가 있으면 다른 쪽까지 같이 막힌다 |
+| 앞 작업 없이 되는 부분만 먼저 만든다                         | 나중에 합칠 때 인터페이스가 어긋날 수 있다. 두 번 작업하게 될 수 있다            |
 
 세 번째가 가장 자주 정답인데 가장 덜 선택된다. "지금 다 만들 수 있는데 왜 쪼개나" 로 보이기
 때문이다. 그러나 위 표의 대가는 전부 **예측 가능하고 앞에서 지불하는** 비용인 반면, 분기해서
@@ -251,26 +251,26 @@ release ── A' ── B'        A·B 는 A'·B' 로 재작성됐다
 
 훅에 명령 문자열을 직접 넣어 exit code 를 확인했다. 아래는 실행 결과다.
 
-| 명령 | exit | |
-|---|---|---|
-| `git push`, `git push -u origin main` | 0 | 통과 |
-| `git push --dry-run` | 0 | 통과 |
-| `git push --force-with-lease` | 0 | 통과 — 남의 커밋을 덮어쓰기 전에 실패한다 |
-| `git push --force` | 2 | 차단 |
-| `git push -f origin main` | 2 | 차단 — 축약형도 잡는다 |
-| `git push --delete origin old` | 2 | 차단 |
-| `git push origin :old` | 2 | 차단 — 콜론 문법 브랜치 삭제 |
-| `git reset --hard`, `git clean -fd` | 2 | 차단 |
-| `git branch -D feature/x`, `git branch -d old` | 0 | 통과 — 로컬 정리, reflog 로 복구된다 |
-| `git branch -D main`, `git branch -d develop` | 2 | 차단 — 보호 브랜치의 로컬 사본 |
-| `git branch -D main-old`, `git branch -rd origin/main` | 0 | 통과 — 이름이 보호 브랜치와 다르다 |
-| `git rebase main` | 2 | 차단 |
-| `git rebase <main 이 아닌 브랜치>` | 0 | 통과 |
-| `git commit`, `git switch -c`, `git merge <브랜치>` | 0 | 통과 |
-| `gh pr create`, `gh pr merge` | 0 | 통과 |
-| `git pull` (인자 없음) | 0 | 통과 |
-| `npm install` | 2 | 차단 — pnpm 고정 |
-| `pnpm install --force` | 0 | 통과 |
+| 명령                                                   | exit |                                           |
+| ------------------------------------------------------ | ---- | ----------------------------------------- |
+| `git push`, `git push -u origin main`                  | 0    | 통과                                      |
+| `git push --dry-run`                                   | 0    | 통과                                      |
+| `git push --force-with-lease`                          | 0    | 통과 — 남의 커밋을 덮어쓰기 전에 실패한다 |
+| `git push --force`                                     | 2    | 차단                                      |
+| `git push -f origin main`                              | 2    | 차단 — 축약형도 잡는다                    |
+| `git push --delete origin old`                         | 2    | 차단                                      |
+| `git push origin :old`                                 | 2    | 차단 — 콜론 문법 브랜치 삭제              |
+| `git reset --hard`, `git clean -fd`                    | 2    | 차단                                      |
+| `git branch -D feature/x`, `git branch -d old`         | 0    | 통과 — 로컬 정리, reflog 로 복구된다      |
+| `git branch -D main`, `git branch -d develop`          | 2    | 차단 — 보호 브랜치의 로컬 사본            |
+| `git branch -D main-old`, `git branch -rd origin/main` | 0    | 통과 — 이름이 보호 브랜치와 다르다        |
+| `git rebase main`                                      | 2    | 차단                                      |
+| `git rebase <main 이 아닌 브랜치>`                     | 0    | 통과                                      |
+| `git commit`, `git switch -c`, `git merge <브랜치>`    | 0    | 통과                                      |
+| `gh pr create`, `gh pr merge`                          | 0    | 통과                                      |
+| `git pull` (인자 없음)                                 | 0    | 통과                                      |
+| `npm install`                                          | 2    | 차단 — pnpm 고정                          |
+| `pnpm install --force`                                 | 0    | 통과                                      |
 
 `-f` 축약형 케이스가 회귀 테스트에 고정돼 있다(`hooks/tests/guard-bash.test.py`).
 push 규칙을 통째로 빼면 `--force` 규칙이 문자열 `--force` 만 보기 때문에 `-f` 가 조용히
@@ -338,10 +338,10 @@ push 규칙을 통째로 빼면 `--force` 규칙이 문자열 `--force` 만 보�
 
 git 은 다르다. **되돌리기가 이력을 남긴다.**
 
-| 되돌린 것 | 남는 것 |
-|---|---|
-| 요청하지 않은 머지 | 머지 커밋 + revert 커밋. 둘 다 영구히 남는다 |
-| 요청하지 않은 push | 원격 이력. 지우려면 강제 갱신이 필요하고, 그 사이 누군가 받아 갔을 수 있다 |
+| 되돌린 것                 | 남는 것                                                                    |
+| ------------------------- | -------------------------------------------------------------------------- |
+| 요청하지 않은 머지        | 머지 커밋 + revert 커밋. 둘 다 영구히 남는다                               |
+| 요청하지 않은 push        | 원격 이력. 지우려면 강제 갱신이 필요하고, 그 사이 누군가 받아 갔을 수 있다 |
 | 요청하지 않은 브랜치 삭제 | 지운 사실이 남지 않는다. 되살릴 수 있는지는 reflog 가 살아 있는지에 달렸다 |
 
 세 번째 줄이 특히 나쁘다. 다른 둘은 흔적이 남아서 최소한 **무슨 일이 있었는지 재구성할 수 있는데**,
@@ -413,16 +413,16 @@ blame, 릴리스 노트, 이력 검색. 이 자리들에서는 **제목만 보�
 
 ## 관련 문서
 
-| 찾는 것 | 어디에 |
-|---|---|
-| 브랜치 생성·PR·머지 절차, 이름 규칙, 단계별 완료 조건 | `skills/branching/SKILL.md` |
-| 커밋 단위·메시지 작성·푸시·PR 생성 절차, 요청 범위별 정지 지점 | `skills/commit/SKILL.md` |
-| `curvez-git` 의 역할·도구 권한·다른 에이전트와의 경계 | `agents/curvez-git.md` |
-| `.curvez/profile.json` 의 `git` 키 형식과 부트스트랩 절차 | `skills/bootstrap/SKILL.md` |
-| 가드가 실제로 막는 패턴 목록 | `hooks/guard-bash.mjs` |
-| 병렬 실행 중 브랜치 전환 제약, 승인 게이트, 질문 중계 | [팀 실행 모델](team-execution.md) |
-| `done` 의 조건, 검증을 수치로 요구하는 이유, 명령을 하드코딩하지 않는 이유 | [품질 모델](quality-model.md) |
-| 핸드오프 필드·상태 전이·`artifacts` 형식 | [핸드오프 계약](handoff-contract.md) |
-| 왜 프로파일에서 읽는가 — 단일 출처 원칙의 전체 근거 | [설계 근거](design-rationale.md) |
-| 셸·문자열 매칭에서 조용히 틀리는 지점들 | [셸 함정](shell-pitfalls.md) |
-| 자기 프로젝트에 맞게 규칙을 바꾸는 법 | [확장 가이드](extending.md) |
+| 찾는 것                                                                    | 어디에                               |
+| -------------------------------------------------------------------------- | ------------------------------------ |
+| 브랜치 생성·PR·머지 절차, 이름 규칙, 단계별 완료 조건                      | `skills/branching/SKILL.md`          |
+| 커밋 단위·메시지 작성·푸시·PR 생성 절차, 요청 범위별 정지 지점             | `skills/commit/SKILL.md`             |
+| `curvez-git` 의 역할·도구 권한·다른 에이전트와의 경계                      | `agents/curvez-git.md`               |
+| `.curvez/profile.json` 의 `git` 키 형식과 부트스트랩 절차                  | `skills/bootstrap/SKILL.md`          |
+| 가드가 실제로 막는 패턴 목록                                               | `hooks/guard-bash.mjs`               |
+| 병렬 실행 중 브랜치 전환 제약, 승인 게이트, 질문 중계                      | [팀 실행 모델](team-execution.md)    |
+| `done` 의 조건, 검증을 수치로 요구하는 이유, 명령을 하드코딩하지 않는 이유 | [품질 모델](quality-model.md)        |
+| 핸드오프 필드·상태 전이·`artifacts` 형식                                   | [핸드오프 계약](handoff-contract.md) |
+| 왜 프로파일에서 읽는가 — 단일 출처 원칙의 전체 근거                        | [설계 근거](design-rationale.md)     |
+| 셸·문자열 매칭에서 조용히 틀리는 지점들                                    | [셸 함정](shell-pitfalls.md)         |
+| 자기 프로젝트에 맞게 규칙을 바꾸는 법                                      | [확장 가이드](extending.md)          |

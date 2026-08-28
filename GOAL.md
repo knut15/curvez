@@ -17,14 +17,14 @@ curvez 는 **보일러플레이트**다. 프로젝트 고유의 세부 에이전
 
 ## 1. 네이밍 규약 (확정)
 
-| 대상 | 이름 | 예시 |
-|---|---|---|
-| 마켓플레이스 | `curvez` | `/plugin marketplace add knut15/curvez` |
-| 플러그인 | `curvez` | `/plugin install curvez@curvez` |
-| 에이전트 | `curvez-<역할>` | `curvez-architect`, `curvez-nextjs` |
-| 스킬 | 역할명 (prefix 없음) | 호출 시 `curvez:bootstrap` 로 자동 네임스페이스 |
-| 프로젝트 상태 디렉터리 | `.curvez/` | `.curvez/architecture.md` |
-| 슬래시 커맨드 | `/curvez:<스킬명>` | `/curvez:bootstrap` |
+| 대상                   | 이름                 | 예시                                            |
+| ---------------------- | -------------------- | ----------------------------------------------- |
+| 마켓플레이스           | `curvez`             | `/plugin marketplace add knut15/curvez`         |
+| 플러그인               | `curvez`             | `/plugin install curvez@curvez`                 |
+| 에이전트               | `curvez-<역할>`      | `curvez-architect`, `curvez-nextjs`             |
+| 스킬                   | 역할명 (prefix 없음) | 호출 시 `curvez:bootstrap` 로 자동 네임스페이스 |
+| 프로젝트 상태 디렉터리 | `.curvez/`           | `.curvez/architecture.md`                       |
+| 슬래시 커맨드          | `/curvez:<스킬명>`   | `/curvez:bootstrap`                             |
 
 에이전트 이름에만 `curvez-` prefix 를 붙인다. **이유:** 에이전트 이름은 전역 네임스페이스라 다른 플러그인과 충돌한다.
 스킬은 플러그인 네임스페이스가 자동으로 붙으므로 prefix 를 또 붙이면 `curvez:curvez-init` 처럼 중복된다.
@@ -33,26 +33,26 @@ curvez 는 **보일러플레이트**다. 프로젝트 고유의 세부 에이전
 
 ## 2. 확정 사항 (변경 금지)
 
-| 항목 | 결정 |
-|---|---|
-| 배포 형태 | **플러그인 마켓플레이스**. `~/Workspace/curvez` 가 marketplace 저장소, 그 안에 `plugins/curvez` |
-| 병렬 런타임 | **Claude Code 내장 서브에이전트(Agent 툴)**. tmux 워커는 쓰지 않는다. 에이전트 간 통신은 `.curvez/handoff/*.json` 파일 기반 |
-| 아키텍처 설정 | **DDD 프리셋 + 인터뷰**. 3~5문 인터뷰로 레이어명·경계 규칙만 조정해 `.curvez/architecture.md` 확정. 규모가 안 맞으면 다른 구조로 가지 않고 레이어를 줄이거나 컨텍스트를 나눈다 |
-| 에이전트 라인업 | **13종** (4절) |
+| 항목            | 결정                                                                                                                                                                           |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 배포 형태       | **플러그인 마켓플레이스**. `~/Workspace/curvez` 가 marketplace 저장소, 그 안에 `plugins/curvez`                                                                                |
+| 병렬 런타임     | **Claude Code 내장 서브에이전트(Agent 툴)**. tmux 워커는 쓰지 않는다. 에이전트 간 통신은 `.curvez/handoff/*.json` 파일 기반                                                    |
+| 아키텍처 설정   | **DDD 프리셋 + 인터뷰**. 3~5문 인터뷰로 레이어명·경계 규칙만 조정해 `.curvez/architecture.md` 확정. 규모가 안 맞으면 다른 구조로 가지 않고 레이어를 줄이거나 컨텍스트를 나눈다 |
+| 에이전트 라인업 | **13종** (4절)                                                                                                                                                                 |
 
 ---
 
 ## 3. 기본값 (바꾸려면 이 표만 고친다)
 
-| 항목 | 값 | 근거 |
-|---|---|---|
-| 산출물 언어 | 본문·주석·문서 전부 **한글** | `~/Workspace/CLAUDE.md` 규칙 1 |
-| 스킬 `description` | **한글 트리거 + 영어 트리거 병기** | 스킬 매칭은 사용자 발화와의 유사도로 결정된다. 한쪽 언어만 쓰면 반대 언어 발화에서 안 잡힌다 |
-| 패키지 매니저 | **pnpm 고정** | CLAUDE.md 규칙 6 |
-| 스크립트 런타임 | **node ESM(`.mjs`), 외부 의존성 0** | 설치 시점에 `pnpm install` 을 강요하지 않기 위함 |
-| 상태 저장 | 프로젝트 루트 `.curvez/` (git 커밋 대상, `.curvez/tmp/` 만 gitignore) | 에이전트 간 계약이 리뷰 가능해야 한다 |
-| 회고 산출물 | `docs/retro/YYYY-MM-DD-<주제>.md`. Obsidian 반출은 `note` 스킬 호출로 옵션 | 프로젝트 지식은 프로젝트에 남는다 |
-| 모델 배정 | 판단·설계·리뷰 = `opus` / 구현·조사·QA = `sonnet` | 4.2 표 |
+| 항목               | 값                                                                         | 근거                                                                                         |
+| ------------------ | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| 산출물 언어        | 본문·주석·문서 전부 **한글**                                               | `~/Workspace/CLAUDE.md` 규칙 1                                                               |
+| 스킬 `description` | **한글 트리거 + 영어 트리거 병기**                                         | 스킬 매칭은 사용자 발화와의 유사도로 결정된다. 한쪽 언어만 쓰면 반대 언어 발화에서 안 잡힌다 |
+| 패키지 매니저      | **pnpm 고정**                                                              | CLAUDE.md 규칙 6                                                                             |
+| 스크립트 런타임    | **node ESM(`.mjs`), 외부 의존성 0**                                        | 설치 시점에 `pnpm install` 을 강요하지 않기 위함                                             |
+| 상태 저장          | 프로젝트 루트 `.curvez/` (git 커밋 대상, `.curvez/tmp/` 만 gitignore)      | 에이전트 간 계약이 리뷰 가능해야 한다                                                        |
+| 회고 산출물        | `docs/retro/YYYY-MM-DD-<주제>.md`. Obsidian 반출은 `note` 스킬 호출로 옵션 | 프로젝트 지식은 프로젝트에 남는다                                                            |
+| 모델 배정          | 판단·설계·리뷰 = `opus` / 구현·조사·QA = `sonnet`                          | 4.2 표                                                                                       |
 
 ---
 
@@ -74,33 +74,33 @@ model: opus
 
 **본문 필수 7섹션** — 헤딩 문자열과 순서 고정:
 
-| 순서 | 헤딩 | 담을 것 |
-|---|---|---|
-| 1 | `## 핵심 역할` | 책임지는 단 하나의 것. **무엇을 하지 않는가**도 명시 |
-| 2 | `## 판단 기준` | 무엇을 보고 무엇을 우선하는가. 우선순위 충돌 시 tie-break 규칙까지 |
-| 3 | `## 입출력 프로토콜` | 받는 입력과 내보내는 출력의 **정확한 스키마**. 에이전트 간 API 계약 |
-| 4 | `## 팀 통신 프로토콜` | 누구에게 / 무엇을 / 언제. 대상 에이전트 `name` 명시 |
-| 5 | `## 에러 핸들링` | 입력이 계약 위반일 때, 정보가 없을 때, 작업이 실패할 때. **추측으로 채우지 않고 blocked 보고**가 기본 |
-| 6 | `## 협업과 팀 내 위치` | 선행/후행/병렬 에이전트, 파일 소유권 경계 |
-| 7 | `## 품질 자체 검증` | 완료 선언 전 스스로 돌리는 체크. **명령과 기대 결과를 구체적으로** |
+| 순서 | 헤딩                   | 담을 것                                                                                               |
+| ---- | ---------------------- | ----------------------------------------------------------------------------------------------------- |
+| 1    | `## 핵심 역할`         | 책임지는 단 하나의 것. **무엇을 하지 않는가**도 명시                                                  |
+| 2    | `## 판단 기준`         | 무엇을 보고 무엇을 우선하는가. 우선순위 충돌 시 tie-break 규칙까지                                    |
+| 3    | `## 입출력 프로토콜`   | 받는 입력과 내보내는 출력의 **정확한 스키마**. 에이전트 간 API 계약                                   |
+| 4    | `## 팀 통신 프로토콜`  | 누구에게 / 무엇을 / 언제. 대상 에이전트 `name` 명시                                                   |
+| 5    | `## 에러 핸들링`       | 입력이 계약 위반일 때, 정보가 없을 때, 작업이 실패할 때. **추측으로 채우지 않고 blocked 보고**가 기본 |
+| 6    | `## 협업과 팀 내 위치` | 선행/후행/병렬 에이전트, 파일 소유권 경계                                                             |
+| 7    | `## 품질 자체 검증`    | 완료 선언 전 스스로 돌리는 체크. **명령과 기대 결과를 구체적으로**                                    |
 
 ### 4.2 라인업
 
-| # | name | 역할 | model | 쓰기 |
-|---|---|---|---|---|
-| 1 | `curvez-orchestrator` | 팀 구성 제안 → 승인 → 분배 → 핸드오프 수합 | opus | O |
-| 2 | `curvez-requirements` | 기획·요구사항 확정, acceptance criteria 도출 | opus | O |
-| 3 | `curvez-researcher` | 1차 출처 기술 조사, 근거 링크 필수 | sonnet | O (`.curvez/research/`) |
-| 4 | `curvez-architect` | 프리셋 선택·인터뷰·경계 규칙 확정 | opus | O (`.curvez/architecture.md`) |
-| 5 | `curvez-designer` | 와이어프레임·디자인 토큰·컴포넌트 스펙 | sonnet | O |
-| 6 | `curvez-nextjs` | Next.js 구현 (App Router, RSC 경계) | sonnet | O |
-| 7 | `curvez-react-native` | React Native / Expo 구현 | sonnet | O |
-| 8 | `curvez-qa` | 테스트 전략 + **실제 실행·검증** | sonnet | O |
-| 9 | `curvez-reviewer` | 코드 리뷰 (정확성·계약 준수·심각도 등급) | opus | X |
-| 10 | `curvez-structure-reviewer` | 중복 코드·순환 의존·경계 위반 검출 | opus | X |
-| 11 | `curvez-retrospector` | 회고: 어긋난 지점과 규약 수정안 | sonnet | O (`docs/retro/`) |
-| 12 | `curvez-git` | 브랜치·커밋·PR·머지 실행 | sonnet | X (`owns: none`) |
-| 13 | `curvez-marketer` | 브랜드 코어·네이밍 리딩, 회의 소집·A/B 수렴 | opus | O (`.curvez/brand/`) |
+| #   | name                        | 역할                                         | model  | 쓰기                          |
+| --- | --------------------------- | -------------------------------------------- | ------ | ----------------------------- |
+| 1   | `curvez-orchestrator`       | 팀 구성 제안 → 승인 → 분배 → 핸드오프 수합   | opus   | O                             |
+| 2   | `curvez-requirements`       | 기획·요구사항 확정, acceptance criteria 도출 | opus   | O                             |
+| 3   | `curvez-researcher`         | 1차 출처 기술 조사, 근거 링크 필수           | sonnet | O (`.curvez/research/`)       |
+| 4   | `curvez-architect`          | 프리셋 선택·인터뷰·경계 규칙 확정            | opus   | O (`.curvez/architecture.md`) |
+| 5   | `curvez-designer`           | 와이어프레임·디자인 토큰·컴포넌트 스펙       | sonnet | O                             |
+| 6   | `curvez-nextjs`             | Next.js 구현 (App Router, RSC 경계)          | sonnet | O                             |
+| 7   | `curvez-react-native`       | React Native / Expo 구현                     | sonnet | O                             |
+| 8   | `curvez-qa`                 | 테스트 전략 + **실제 실행·검증**             | sonnet | O                             |
+| 9   | `curvez-reviewer`           | 코드 리뷰 (정확성·계약 준수·심각도 등급)     | opus   | X                             |
+| 10  | `curvez-structure-reviewer` | 중복 코드·순환 의존·경계 위반 검출           | opus   | X                             |
+| 11  | `curvez-retrospector`       | 회고: 어긋난 지점과 규약 수정안              | sonnet | O (`docs/retro/`)             |
+| 12  | `curvez-git`                | 브랜치·커밋·PR·머지 실행                     | sonnet | X (`owns: none`)              |
+| 13  | `curvez-marketer`           | 브랜드 코어·네이밍 리딩, 회의 소집·A/B 수렴  | opus   | O (`.curvez/brand/`)          |
 
 읽기 전용 에이전트(9, 10)는 `disallowedTools: Write, Edit, NotebookEdit` 필수.
 **이유:** 리뷰어가 직접 고치기 시작하면 리뷰 대상과 주체가 섞여 검증이 무의미해진다.
@@ -120,23 +120,23 @@ model: opus
 
 ### 5.2 만들 스킬 (15종)
 
-| 스킬 | 주 사용 에이전트 | 하는 일 |
-|---|---|---|
-| `bootstrap` | orchestrator | 프로젝트 부트스트랩. 스택 감지 → 프로파일 인터뷰 → `.curvez/` 생성 |
-| `architecture-setup` | architect | DDD 프리셋 확인 → 인터뷰 → `.curvez/architecture.md` 확정 |
-| `team-orchestration` | orchestrator | 팀 필요 판정 → 구성안 **승인** → 병렬 Agent 실행 → 핸드오프 수합 |
-| `agent-contract` | 전체 | 입출력 계약 작성·검증. 핸드오프 스키마의 단일 출처 |
-| `authoring-agents` | 프로젝트 담당자 | 새 에이전트 작성 규약 + 스캐폴딩 + 검증 |
-| `authoring-skills` | 프로젝트 담당자 | 새 스킬 작성 규약 + 스캐폴딩 + 검증 |
-| `research-brief` | researcher | 1차 출처 조사 → 근거 링크 붙은 브리프 |
-| `wireframe-spec` | designer | 와이어프레임·디자인 토큰·컴포넌트 스펙 |
-| `nextjs-implementation` | nextjs | 아키텍처 규칙 준수 구현. RSC/클라이언트 경계 |
-| `react-native-implementation` | react-native | Expo/RN 구현. 플랫폼 분기 |
-| `quality-gate` | qa, reviewer | typecheck·lint·test 를 **실제로 돌리고** 수치 보고 |
-| `structure-audit` | structure-reviewer | 중복 코드·순환 의존·경계 위반 검출 |
-| `retrospective` | retrospector | 회고 + **규약 자체를 고치는 액션 아이템** |
-| `branching` | git | 브랜치 생성·PR·머지 절차. 전략은 프로파일에서 읽는다 |
-| `commit` | git | 커밋·푸시·PR 생성. 요청 범위를 넘지 않는다 |
+| 스킬                          | 주 사용 에이전트   | 하는 일                                                            |
+| ----------------------------- | ------------------ | ------------------------------------------------------------------ |
+| `bootstrap`                   | orchestrator       | 프로젝트 부트스트랩. 스택 감지 → 프로파일 인터뷰 → `.curvez/` 생성 |
+| `architecture-setup`          | architect          | DDD 프리셋 확인 → 인터뷰 → `.curvez/architecture.md` 확정          |
+| `team-orchestration`          | orchestrator       | 팀 필요 판정 → 구성안 **승인** → 병렬 Agent 실행 → 핸드오프 수합   |
+| `agent-contract`              | 전체               | 입출력 계약 작성·검증. 핸드오프 스키마의 단일 출처                 |
+| `authoring-agents`            | 프로젝트 담당자    | 새 에이전트 작성 규약 + 스캐폴딩 + 검증                            |
+| `authoring-skills`            | 프로젝트 담당자    | 새 스킬 작성 규약 + 스캐폴딩 + 검증                                |
+| `research-brief`              | researcher         | 1차 출처 조사 → 근거 링크 붙은 브리프                              |
+| `wireframe-spec`              | designer           | 와이어프레임·디자인 토큰·컴포넌트 스펙                             |
+| `nextjs-implementation`       | nextjs             | 아키텍처 규칙 준수 구현. RSC/클라이언트 경계                       |
+| `react-native-implementation` | react-native       | Expo/RN 구현. 플랫폼 분기                                          |
+| `quality-gate`                | qa, reviewer       | typecheck·lint·test 를 **실제로 돌리고** 수치 보고                 |
+| `structure-audit`             | structure-reviewer | 중복 코드·순환 의존·경계 위반 검출                                 |
+| `retrospective`               | retrospector       | 회고 + **규약 자체를 고치는 액션 아이템**                          |
+| `branching`                   | git                | 브랜치 생성·PR·머지 절차. 전략은 프로파일에서 읽는다               |
+| `commit`                      | git                | 커밋·푸시·PR 생성. 요청 범위를 넘지 않는다                         |
 
 ---
 
@@ -158,6 +158,7 @@ model: opus
 ```
 
 **규칙:**
+
 - `status: done` 은 `verification` 이 비면 쓸 수 없다. **이유:** 검증 없는 완료 선언이 하네스 전체의 신뢰를 무너뜨린다
 - `blocked` 는 실패가 아니다. 추측으로 채우고 done 하는 것이 실패다
 - 파일 소유권은 겹치지 않게 분배한다. 겹치면 orchestrator 가 순차 실행으로 강등한다
@@ -190,17 +191,22 @@ model: opus
     "tests": "tests"
   },
   "expo": { "sdkVersion": "57" },
-  "commands": { "typecheck": "pnpm typecheck", "lint": "pnpm lint", "test": "pnpm test", "build": "pnpm build" }
+  "commands": {
+    "typecheck": "pnpm typecheck",
+    "lint": "pnpm lint",
+    "test": "pnpm test",
+    "build": "pnpm build"
+  }
 }
 ```
 
 ### paths 필수 규칙
 
-| `stack` | 필수 키 | 선택 키 |
-|---|---|---|
-| `nextjs` | `paths.web` | `paths.tests` |
-| `react-native` | `paths.mobile`, `expo.sdkVersion` | `paths.tests` |
-| `monorepo` | `paths.web`, `paths.mobile`, `paths.domain` | `paths.tests`, `expo.sdkVersion` |
+| `stack`        | 필수 키                                     | 선택 키                          |
+| -------------- | ------------------------------------------- | -------------------------------- |
+| `nextjs`       | `paths.web`                                 | `paths.tests`                    |
+| `react-native` | `paths.mobile`, `expo.sdkVersion`           | `paths.tests`                    |
+| `monorepo`     | `paths.web`, `paths.mobile`, `paths.domain` | `paths.tests`, `expo.sdkVersion` |
 
 - 필수 키가 없으면 에이전트는 **경로를 추측하지 않고 `status: blocked`** 로 보고한다.
   **이유:** 구현 에이전트마다 다른 폴백 규칙을 만들면 monorepo 에서 두 에이전트가 같은 디렉터리를 소유하게 되고,
@@ -216,17 +222,17 @@ model: opus
 
 ## 8. 스크립트
 
-| 파일 | 역할 |
-|---|---|
-| `scripts/lib/frontmatter.mjs` | 프론트매터·섹션 파서 (공용) |
-| `scripts/validate-agents.mjs` | 프론트매터 5필드 + 본문 7섹션 검증 |
-| `scripts/validate-skills.mjs` | 500줄 제한, 트리거 경계 섹션, references 링크 유효성 |
+| 파일                           | 역할                                                    |
+| ------------------------------ | ------------------------------------------------------- |
+| `scripts/lib/frontmatter.mjs`  | 프론트매터·섹션 파서 (공용)                             |
+| `scripts/validate-agents.mjs`  | 프론트매터 5필드 + 본문 7섹션 검증                      |
+| `scripts/validate-skills.mjs`  | 500줄 제한, 트리거 경계 섹션, references 링크 유효성    |
 | `scripts/validate-handoff.mjs` | 핸드오프 스키마 검증 (done 인데 verification 비면 실패) |
-| `scripts/new-agent.mjs` | 7섹션 뼈대 에이전트 생성 |
-| `scripts/new-skill.mjs` | SKILL.md + references 뼈대 생성 |
-| `scripts/bootstrap.mjs` | 스택 감지 → 프로파일 생성 → `.curvez/` 스캐폴드 |
-| `scripts/quality-gate.mjs` | `profile.json` 의 commands 실행, 결과를 수치로 출력 |
-| `scripts/doctor.mjs` | 위 검증 전부 + 설치 상태 점검 |
+| `scripts/new-agent.mjs`        | 7섹션 뼈대 에이전트 생성                                |
+| `scripts/new-skill.mjs`        | SKILL.md + references 뼈대 생성                         |
+| `scripts/bootstrap.mjs`        | 스택 감지 → 프로파일 생성 → `.curvez/` 스캐폴드         |
+| `scripts/quality-gate.mjs`     | `profile.json` 의 commands 실행, 결과를 수치로 출력     |
+| `scripts/doctor.mjs`           | 위 검증 전부 + 설치 상태 점검                           |
 
 전부 `node <path>` 로 바로 실행 가능, 외부 의존성 0.
 

@@ -16,10 +16,10 @@
 
 대신 **로컬에서 몇 초~수십 초에 끝나는 대체 검사**로 build 축을 채운다.
 
-| 대체 검사 | 무엇을 잡는가 |
-|---|---|
-| `npx expo-doctor` | 설치된 패키지 버전이 `expo.sdkVersion` 과 어긋난 것. 네이티브 설정 불일치 |
-| `npx expo export --platform ios --output-dir /tmp/expo-export` | metro 번들 해석 실패, 존재하지 않는 모듈 import, 순환 import |
+| 대체 검사                                                      | 무엇을 잡는가                                                             |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `npx expo-doctor`                                              | 설치된 패키지 버전이 `expo.sdkVersion` 과 어긋난 것. 네이티브 설정 불일치 |
+| `npx expo export --platform ios --output-dir /tmp/expo-export` | metro 번들 해석 실패, 존재하지 않는 모듈 import, 순환 import              |
 
 - 대체 검사를 썼으면 `verification` 의 `command` 에 **실제로 돌린 그 명령**을 적는다.
   `commands.build` 값을 적지 마라 — 돌리지 않은 명령이다
@@ -46,11 +46,11 @@
 
 ## 0개 실행 함정 — 모바일판
 
-| 형태 | 어떻게 드러나는가 |
-|---|---|
-| `jest-expo` preset 미설정 | RN 컴포넌트 테스트가 transform 실패로 통째로 제외되고 exit 0 |
-| `transformIgnorePatterns` 가 `node_modules` 전체를 막음 | RN 패키지 import 하는 테스트가 전부 수집 실패 |
-| `testEnvironment` 가 node 로 남아 있음 | 렌더 테스트만 조용히 빠짐 |
+| 형태                                                    | 어떻게 드러나는가                                            |
+| ------------------------------------------------------- | ------------------------------------------------------------ |
+| `jest-expo` preset 미설정                               | RN 컴포넌트 테스트가 transform 실패로 통째로 제외되고 exit 0 |
+| `transformIgnorePatterns` 가 `node_modules` 전체를 막음 | RN 패키지 import 하는 테스트가 전부 수집 실패                |
+| `testEnvironment` 가 node 로 남아 있음                  | 렌더 테스트만 조용히 빠짐                                    |
 
 RN 은 transform 계층이 두꺼워 **"수집 자체가 실패한 파일"** 이 실패가 아니라 제외로 처리되는
 경우가 많다. 실행 개수뿐 아니라 **수집한 스위트 파일 수**도 함께 확인한다.

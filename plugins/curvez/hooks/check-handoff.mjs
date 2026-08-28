@@ -26,7 +26,7 @@ if (!existsSync(handoffDir)) process.exit(0);
 const result = spawnSync(
   process.execPath,
   [join(PLUGIN_ROOT, "scripts", "validate-handoff.mjs"), handoffDir],
-  { encoding: "utf8" }
+  { encoding: "utf8" },
 );
 
 if (result.status === 0) process.exit(0);
@@ -34,6 +34,6 @@ if (result.status === 0) process.exit(0);
 const out = [result.stdout, result.stderr].filter(Boolean).join("\n").trim();
 process.stderr.write(
   `curvez 핸드오프 검증 실패 — 계약을 어긴 핸드오프가 남아 있다.\n${out}\n` +
-    `\`status: done\` 인데 \`verification\` 이 비었다면, 검증을 실제로 돌려 채우거나 status 를 partial 로 낮춰라.\n`
+    `\`status: done\` 인데 \`verification\` 이 비었다면, 검증을 실제로 돌려 채우거나 status 를 partial 로 낮춰라.\n`,
 );
 process.exit(0);

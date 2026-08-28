@@ -13,11 +13,11 @@
 lint 는 **강제용**이다. ESLint 가 실제 import 구문을 파싱하므로 우회가 어렵고,
 위반이 편집 시점에 에디터에 뜨며, CI 에서 빌드를 막는다.
 
-| | ARCH 표 (grep) | ESLint |
-|---|---|---|
-| 언제 | 감사·리뷰 시점 | 편집 시점, 커밋, CI |
-| 정확도 | 문자열 매칭 | 구문 파싱 |
-| 역할 | 규칙이 무엇인지 **선언** | 규칙을 **집행** |
+|        | ARCH 표 (grep)           | ESLint              |
+| ------ | ------------------------ | ------------------- |
+| 언제   | 감사·리뷰 시점           | 편집 시점, 커밋, CI |
+| 정확도 | 문자열 매칭              | 구문 파싱           |
+| 역할   | 규칙이 무엇인지 **선언** | 규칙을 **집행**     |
 
 **둘 다 둔다.** ARCH 표는 사람과 에이전트가 읽는 규칙의 정본이고, lint 는 그 집행기다.
 lint 설정이 없는 초기 단계나 ESLint 를 안 쓰는 프로젝트에서는 grep 검사가 유일한 방어선이다.
@@ -63,20 +63,52 @@ const PARENT_RELATIVE = {
 
 /** 프레임워크·상태 라이브러리. domain 과 application 이 모르는 것들. */
 const FRAMEWORK = [
-  "react", "react/*", "react-dom", "react-dom/*",
-  "next", "next/*",
-  "react-native", "react-native/*", "expo", "expo-*", "@react-navigation/*",
-  "zustand", "zustand/*", "jotai", "recoil", "redux", "@reduxjs/*",
+  "react",
+  "react/*",
+  "react-dom",
+  "react-dom/*",
+  "next",
+  "next/*",
+  "react-native",
+  "react-native/*",
+  "expo",
+  "expo-*",
+  "@react-navigation/*",
+  "zustand",
+  "zustand/*",
+  "jotai",
+  "recoil",
+  "redux",
+  "@reduxjs/*",
   "@tanstack/react-query",
 ];
 
 /** I/O — domain 이 직접 부르면 단위 테스트가 통합 테스트가 된다. */
 const IO_MODULES = [
-  "node:fs", "node:fs/promises", "node:path", "node:http", "node:https",
-  "node:child_process", "fs", "path", "http", "https",
-  "@prisma/client", "prisma", "drizzle-orm", "drizzle-orm/*",
-  "typeorm", "mongoose", "mongodb", "pg", "mysql2", "redis", "ioredis",
-  "axios", "ky", "got",
+  "node:fs",
+  "node:fs/promises",
+  "node:path",
+  "node:http",
+  "node:https",
+  "node:child_process",
+  "fs",
+  "path",
+  "http",
+  "https",
+  "@prisma/client",
+  "prisma",
+  "drizzle-orm",
+  "drizzle-orm/*",
+  "typeorm",
+  "mongoose",
+  "mongodb",
+  "pg",
+  "mysql2",
+  "redis",
+  "ioredis",
+  "axios",
+  "ky",
+  "got",
 ];
 
 /**
@@ -86,7 +118,9 @@ const IO_MODULES = [
  * 빈 배열을 넘기면 ESLint 가 설정 스키마 오류로 죽는다.
  */
 function restrict(...groups) {
-  const patterns = [...groups, PARENT_RELATIVE].filter((g) => g.group.length > 0);
+  const patterns = [...groups, PARENT_RELATIVE].filter(
+    (g) => g.group.length > 0,
+  );
   return ["error", { patterns }];
 }
 
@@ -98,7 +132,12 @@ const layerRules = [
         { group: FRAMEWORK, message: MSG.domainNoFramework },
         { group: IO_MODULES, message: MSG.domainNoIO },
         {
-          group: ["@/application/**", "@/infrastructure/**", "@/presentation/**", "@/app/**"],
+          group: [
+            "@/application/**",
+            "@/infrastructure/**",
+            "@/presentation/**",
+            "@/app/**",
+          ],
           message: MSG.domainNoOuter,
         },
       ),
@@ -119,17 +158,19 @@ const layerRules = [
   {
     files: ["src/infrastructure/**/*.{ts,tsx}"],
     rules: {
-      "no-restricted-imports": restrict(
-        { group: ["@/presentation/**", "@/app/**"], message: MSG.infraNoPresentation },
-      ),
+      "no-restricted-imports": restrict({
+        group: ["@/presentation/**", "@/app/**"],
+        message: MSG.infraNoPresentation,
+      }),
     },
   },
   {
     files: ["src/presentation/**/*.{ts,tsx}"],
     rules: {
-      "no-restricted-imports": restrict(
-        { group: ["@/infrastructure/**"], message: MSG.presentationNoInfra },
-      ),
+      "no-restricted-imports": restrict({
+        group: ["@/infrastructure/**"],
+        message: MSG.presentationNoInfra,
+      }),
     },
   },
 ];
@@ -200,7 +241,9 @@ const CONTEXT_ORDER = ["identity", "workplace", "attendance"];
 /** 이 컨텍스트보다 하류인 것들의 배럴 */
 function downstreamBarrels(self) {
   const i = CONTEXT_ORDER.indexOf(self);
-  return i === -1 ? [] : CONTEXT_ORDER.slice(i + 1).map((c) => `@/domains/${c}`);
+  return i === -1
+    ? []
+    : CONTEXT_ORDER.slice(i + 1).map((c) => `@/domains/${c}`);
 }
 ```
 

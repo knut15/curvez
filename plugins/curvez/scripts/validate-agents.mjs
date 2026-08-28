@@ -69,7 +69,10 @@ function listMarkdown(dir) {
 function toList(value) {
   if (Array.isArray(value)) return value;
   if (typeof value !== "string") return [];
-  return value.split(",").map((v) => v.trim()).filter(Boolean);
+  return value
+    .split(",")
+    .map((v) => v.trim())
+    .filter(Boolean);
 }
 
 function validateAgent(file, report) {
@@ -78,7 +81,12 @@ function validateAgent(file, report) {
   const { frontmatter, body, bodyOffset, raw } = readMarkdown(file);
 
   if (!frontmatter) {
-    report.error(file, 1, "agent/frontmatter-missing", "프론트매터(--- 블록)가 없다.");
+    report.error(
+      file,
+      1,
+      "agent/frontmatter-missing",
+      "프론트매터(--- 블록)가 없다.",
+    );
     return;
   }
 
@@ -86,15 +94,28 @@ function validateAgent(file, report) {
   //    이유: 빈 계약을 든 에이전트는 실행 시점에 그 자리를 추측으로 메운다.
   const todos = findTodoMarkers(raw);
   for (const todo of todos) {
-    report.error(file, todo.line, "agent/todo-remaining", `스캐폴드 TODO 가 남아 있다: ${todo.text}`);
+    report.error(
+      file,
+      todo.line,
+      "agent/todo-remaining",
+      `스캐폴드 TODO 가 남아 있다: ${todo.text}`,
+    );
   }
 
   // 1. 필수 5필드
   for (const field of AGENT_REQUIRED_FIELDS) {
     const value = frontmatter[field];
-    const empty = value === undefined || value === "" || (Array.isArray(value) && value.length === 0);
+    const empty =
+      value === undefined ||
+      value === "" ||
+      (Array.isArray(value) && value.length === 0);
     if (empty) {
-      report.error(file, 2, "agent/field-required", `프론트매터에 \`${field}\` 가 없거나 비었다. 필수 5필드: ${AGENT_REQUIRED_FIELDS.join(", ")}`);
+      report.error(
+        file,
+        2,
+        "agent/field-required",
+        `프론트매터에 \`${field}\` 가 없거나 비었다. 필수 5필드: ${AGENT_REQUIRED_FIELDS.join(", ")}`,
+      );
     }
   }
 
@@ -102,30 +123,64 @@ function validateAgent(file, report) {
   //    이유: Claude Code 는 name 으로 에이전트를 부르고 사람은 파일명으로 찾는다. 둘이 다르면 추적이 끊긴다.
   const expectedName = basename(file, ".md");
   if (frontmatter.name && frontmatter.name !== expectedName) {
-    report.error(file, 2, "agent/name-mismatch", `name(\`${frontmatter.name}\`) 이 파일명(\`${expectedName}\`) 과 다르다.`);
+    report.error(
+      file,
+      2,
+      "agent/name-mismatch",
+      `name(\`${frontmatter.name}\`) 이 파일명(\`${expectedName}\`) 과 다르다.`,
+    );
   }
 
   // 3. curvez 코어 에이전트는 이름 충돌을 피하려고 prefix 를 강제한다.
   const isCoreAgent = file.startsWith(join(PLUGIN_ROOT, "agents"));
-  if (isCoreAgent && frontmatter.name && !frontmatter.name.startsWith("curvez-")) {
-    report.error(file, 2, "agent/name-prefix", "curvez 코어 에이전트의 name 은 `curvez-` 로 시작해야 한다. 에이전트 이름은 전역 네임스페이스라 다른 플러그인과 충돌한다.");
+  if (
+    isCoreAgent &&
+    frontmatter.name &&
+    !frontmatter.name.startsWith("curvez-")
+  ) {
+    report.error(
+      file,
+      2,
+      "agent/name-prefix",
+      "curvez 코어 에이전트의 name 은 `curvez-` 로 시작해야 한다. 에이전트 이름은 전역 네임스페이스라 다른 플러그인과 충돌한다.",
+    );
   }
 
   // 4. model 허용값
   if (frontmatter.model && !ALLOWED_MODELS.includes(frontmatter.model)) {
-    report.error(file, 2, "agent/model-invalid", `model \`${frontmatter.model}\` 은 허용값이 아니다. 허용: ${ALLOWED_MODELS.join(", ")}`);
+    report.error(
+      file,
+      2,
+      "agent/model-invalid",
+      `model \`${frontmatter.model}\` 은 허용값이 아니다. 허용: ${ALLOWED_MODELS.join(", ")}`,
+    );
   }
 
   // 5. description 품질
   const desc = frontmatter.description ?? "";
   if (desc && desc.length < DESCRIPTION_MIN_LENGTH) {
-    report.error(file, 2, "agent/description-short", `description 이 ${desc.length}자로 너무 짧다. 최소 ${DESCRIPTION_MIN_LENGTH}자. 어떤 상황에서 이 에이전트를 부르는지 적어라.`);
+    report.error(
+      file,
+      2,
+      "agent/description-short",
+      `description 이 ${desc.length}자로 너무 짧다. 최소 ${DESCRIPTION_MIN_LENGTH}자. 어떤 상황에서 이 에이전트를 부르는지 적어라.`,
+    );
   }
   if (desc && !hasKorean(desc)) {
-    report.warn(file, 2, "agent/description-korean", "description 에 한글 트리거가 없다. 한글 발화에서 선택되지 않는다.");
+    report.warn(
+      file,
+      2,
+      "agent/description-korean",
+      "description 에 한글 트리거가 없다. 한글 발화에서 선택되지 않는다.",
+    );
   }
   if (desc && !hasLatinWord(desc)) {
-    report.warn(file, 2, "agent/description-latin", "description 에 영어 트리거가 없다. 영어 발화에서 선택되지 않는다.");
+    report.warn(
+      file,
+      2,
+      "agent/description-latin",
+      "description 에 영어 트리거가 없다. 영어 발화에서 선택되지 않는다.",
+    );
   }
 
   // 6. tools / disallowedTools 정합성
@@ -134,19 +189,36 @@ function validateAgent(file, report) {
   const disallowed = toList(frontmatter.disallowedTools);
   const overlap = tools.filter((t) => disallowed.includes(t));
   if (overlap.length > 0) {
-    report.error(file, 2, "agent/tools-conflict", `tools 와 disallowedTools 에 같은 도구가 있다: ${overlap.join(", ")}`);
+    report.error(
+      file,
+      2,
+      "agent/tools-conflict",
+      `tools 와 disallowedTools 에 같은 도구가 있다: ${overlap.join(", ")}`,
+    );
   }
   if (disallowed.length === 0) {
-    report.error(file, 2, "agent/disallowed-empty", "disallowedTools 가 비었다. 금지할 도구가 없다면 `none` 이라고 명시적으로 적어 의도를 남겨라.");
+    report.error(
+      file,
+      2,
+      "agent/disallowed-empty",
+      "disallowedTools 가 비었다. 금지할 도구가 없다면 `none` 이라고 명시적으로 적어 의도를 남겨라.",
+    );
   }
 
   // 7. 읽기 전용 의도 검사: 리뷰 계열 에이전트는 쓰기 도구를 막아야 한다.
   //    이유: 리뷰어가 직접 고치기 시작하면 리뷰 대상과 리뷰 주체가 섞여 검증이 무의미해진다.
-  const looksReviewer = /review|reviewer|audit|critic/i.test(frontmatter.name ?? "");
+  const looksReviewer = /review|reviewer|audit|critic/i.test(
+    frontmatter.name ?? "",
+  );
   if (looksReviewer) {
     const missing = WRITE_TOOLS.filter((t) => !disallowed.includes(t));
     if (missing.length > 0) {
-      report.error(file, 2, "agent/reviewer-must-be-readonly", `리뷰 계열 에이전트는 쓰기 도구를 disallowedTools 에 넣어야 한다. 빠진 것: ${missing.join(", ")}`);
+      report.error(
+        file,
+        2,
+        "agent/reviewer-must-be-readonly",
+        `리뷰 계열 에이전트는 쓰기 도구를 disallowedTools 에 넣어야 한다. 빠진 것: ${missing.join(", ")}`,
+      );
     }
   }
 
@@ -159,15 +231,30 @@ function validateAgent(file, report) {
       for (const p of ownsList) {
         // 심볼은 정해진 것만 쓴다. 오타가 나면 아무와도 겹치지 않아 검사가 조용히 통과한다.
         if (p.startsWith("${") && !OWNS_SYMBOLS.includes(p)) {
-          report.error(file, 2, "agent/owns-symbol", `owns 의 \`${p}\` 는 허용된 심볼이 아니다. 허용: ${OWNS_SYMBOLS.join(", ")}`);
+          report.error(
+            file,
+            2,
+            "agent/owns-symbol",
+            `owns 의 \`${p}\` 는 허용된 심볼이 아니다. 허용: ${OWNS_SYMBOLS.join(", ")}`,
+          );
         }
         // 소유자를 둘 수 없는 경로
         if (UNOWNED_PATHS.includes(p)) {
-          report.error(file, 2, "agent/owns-unowned", `\`${p}\` 는 소유자를 둘 수 없는 경로다. 한쪽 스택이 공유 시그니처를 바꾸면 다른 스택이 조용히 깨진다. 이 경로를 건드리는 작업은 순차로 강등한다.`);
+          report.error(
+            file,
+            2,
+            "agent/owns-unowned",
+            `\`${p}\` 는 소유자를 둘 수 없는 경로다. 한쪽 스택이 공유 시그니처를 바꾸면 다른 스택이 조용히 깨진다. 이 경로를 건드리는 작업은 순차로 강등한다.`,
+          );
         }
         // 핸드오프는 파일명이 고유해 충돌하지 않는다. owns 에 넣으면 전원이 충돌로 잡힌다.
         if (OWNS_SHARED_EXEMPT.some((e) => p === e || p.startsWith(e))) {
-          report.error(file, 2, "agent/owns-shared", `\`${p}\` 는 owns 에 넣지 않는다. 파일명이 \`<from>.<timestamp>.json\` 으로 고유해 충돌하지 않으며, 넣으면 모든 에이전트가 서로 충돌로 잡힌다.`);
+          report.error(
+            file,
+            2,
+            "agent/owns-shared",
+            `\`${p}\` 는 owns 에 넣지 않는다. 파일명이 \`<from>.<timestamp>.json\` 으로 고유해 충돌하지 않으며, 넣으면 모든 에이전트가 서로 충돌로 잡힌다.`,
+          );
         }
       }
     }
@@ -175,32 +262,66 @@ function validateAgent(file, report) {
     // 쓰기 도구가 막힌 에이전트가 경로를 소유하면 모순이다.
     const writeBlocked = WRITE_TOOLS.every((t) => disallowed.includes(t));
     if (writeBlocked && !isNone) {
-      report.error(file, 2, "agent/owns-readonly", `쓰기 도구가 전부 막혀 있는데 owns 에 경로가 있다: ${ownsList.join(", ")}. 읽기 전용이면 \`none\` 으로 적어라.`);
+      report.error(
+        file,
+        2,
+        "agent/owns-readonly",
+        `쓰기 도구가 전부 막혀 있는데 owns 에 경로가 있다: ${ownsList.join(", ")}. 읽기 전용이면 \`none\` 으로 적어라.`,
+      );
     }
     if (!writeBlocked && isNone) {
-      report.warn(file, 2, "agent/owns-none-writable", "owns 가 none 인데 쓰기 도구가 열려 있다. 어디에 쓰는지 선언하거나 쓰기 도구를 막아라.");
+      report.warn(
+        file,
+        2,
+        "agent/owns-none-writable",
+        "owns 가 none 인데 쓰기 도구가 열려 있다. 어디에 쓰는지 선언하거나 쓰기 도구를 막아라.",
+      );
     }
   }
 
   // 8. 본문 7섹션 — 존재·순서·내용
-  const sections = extractSections(body, bodyOffset).filter((s) => s.level === 2);
+  const sections = extractSections(body, bodyOffset).filter(
+    (s) => s.level === 2,
+  );
   const headings = sections.map((s) => s.heading);
 
   for (const required of AGENT_REQUIRED_SECTIONS) {
     if (!headings.includes(required)) {
-      report.error(file, null, "agent/section-missing", `필수 섹션 \`## ${required}\` 이 없다.`);
+      report.error(
+        file,
+        null,
+        "agent/section-missing",
+        `필수 섹션 \`## ${required}\` 이 없다.`,
+      );
     }
   }
 
-  const presentRequired = headings.filter((h) => AGENT_REQUIRED_SECTIONS.includes(h));
-  const expectedOrder = AGENT_REQUIRED_SECTIONS.filter((h) => presentRequired.includes(h));
+  const presentRequired = headings.filter((h) =>
+    AGENT_REQUIRED_SECTIONS.includes(h),
+  );
+  const expectedOrder = AGENT_REQUIRED_SECTIONS.filter((h) =>
+    presentRequired.includes(h),
+  );
   if (presentRequired.join("|") !== expectedOrder.join("|")) {
-    report.error(file, null, "agent/section-order", `섹션 순서가 규약과 다르다. 규약 순서: ${AGENT_REQUIRED_SECTIONS.join(" → ")}`);
+    report.error(
+      file,
+      null,
+      "agent/section-order",
+      `섹션 순서가 규약과 다르다. 규약 순서: ${AGENT_REQUIRED_SECTIONS.join(" → ")}`,
+    );
   }
 
   for (const section of sections) {
-    if (AGENT_REQUIRED_SECTIONS.includes(section.heading) && isSectionEmpty(section)) {
-      report.error(file, section.line, "agent/section-empty", `\`## ${section.heading}\` 이 비었다. 빈 섹션은 규약을 지킨 것이 아니다.`);
+    if (
+      AGENT_REQUIRED_SECTIONS.includes(section.heading) &&
+      isSectionEmpty(section)
+    ) {
+      report.error(
+        file,
+        section.line,
+        "agent/section-empty",
+        `\`## ${section.heading}\` 이 비었다. 빈 섹션은 규약을 지킨 것이 아니다.`,
+      );
     }
   }
 
@@ -209,9 +330,17 @@ function validateAgent(file, report) {
   const selfCheck = sections.find((s) => s.heading === "품질 자체 검증");
   if (selfCheck && !isSectionEmpty(selfCheck)) {
     const text = selfCheck.contentLines.join("\n");
-    const hasCommand = /`[^`]*(pnpm|node|npx|tsc|eslint|vitest|jest|playwright|git)[^`]*`/.test(text) || /```/.test(text);
+    const hasCommand =
+      /`[^`]*(pnpm|node|npx|tsc|eslint|vitest|jest|playwright|git)[^`]*`/.test(
+        text,
+      ) || /```/.test(text);
     if (!hasCommand) {
-      report.error(file, selfCheck.line, "agent/self-check-not-executable", "`## 품질 자체 검증` 에 실행 가능한 명령이 없다. 백틱으로 감싼 명령이나 코드블록으로 적어라.");
+      report.error(
+        file,
+        selfCheck.line,
+        "agent/self-check-not-executable",
+        "`## 품질 자체 검증` 에 실행 가능한 명령이 없다. 백틱으로 감싼 명령이나 코드블록으로 적어라.",
+      );
     }
   }
 }
@@ -265,8 +394,18 @@ function checkOwnershipConflicts(targets, report) {
         a.path === b.path
           ? `둘 다 \`${a.path}\` 를 소유한다`
           : `\`${a.path}\` 와 \`${b.path}\` 가 겹친다`;
-      report.error(a.file, 2, "agent/owns-conflict", `${b.name} 과 소유 경로가 충돌한다 — ${detail}. 병렬 실행에서 나중에 쓴 쪽이 앞선 쪽을 조용히 지운다.`);
-      report.error(b.file, 2, "agent/owns-conflict", `${a.name} 과 소유 경로가 충돌한다 — ${detail}. 병렬 실행에서 나중에 쓴 쪽이 앞선 쪽을 조용히 지운다.`);
+      report.error(
+        a.file,
+        2,
+        "agent/owns-conflict",
+        `${b.name} 과 소유 경로가 충돌한다 — ${detail}. 병렬 실행에서 나중에 쓴 쪽이 앞선 쪽을 조용히 지운다.`,
+      );
+      report.error(
+        b.file,
+        2,
+        "agent/owns-conflict",
+        `${a.name} 과 소유 경로가 충돌한다 — ${detail}. 병렬 실행에서 나중에 쓴 쪽이 앞선 쪽을 조용히 지운다.`,
+      );
     }
   }
 }
@@ -297,7 +436,12 @@ function checkDuplicateNames(targets, report) {
     if (files.length < 2) continue;
     for (const file of files) {
       const others = files.filter((f) => f !== file);
-      report.error(file, 2, "agent/name-duplicate", `name \`${name}\` 이 다른 파일과 겹친다: ${others.join(", ")}. 에이전트 이름은 전역이라 어느 쪽이 로드될지 예측할 수 없다.`);
+      report.error(
+        file,
+        2,
+        "agent/name-duplicate",
+        `name \`${name}\` 이 다른 파일과 겹친다: ${others.join(", ")}. 에이전트 이름은 전역이라 어느 쪽이 로드될지 예측할 수 없다.`,
+      );
     }
   }
 }
@@ -307,7 +451,9 @@ function main() {
   const report = new Report("에이전트 검증");
 
   if (targets.length === 0) {
-    console.log("검사할 에이전트 파일이 없다. (agents/ 디렉터리가 비었거나 존재하지 않는다)");
+    console.log(
+      "검사할 에이전트 파일이 없다. (agents/ 디렉터리가 비었거나 존재하지 않는다)",
+    );
     return 0;
   }
 

@@ -6,12 +6,12 @@
 
 ## model
 
-| 값 | 쓰는 곳 | 판정 기준 |
-|---|---|---|
-| `opus` | 설계·리뷰·요구사항 확정·팀 편성 | 되돌리기 비싼 판단을 내린다. 틀리면 뒤의 작업이 전부 무효가 된다 |
-| `sonnet` | 구현·조사·QA·문서 작성 | 정답 형태가 정해져 있고 검증 수단이 있다 |
-| `haiku` | 기계적 변환·형식 정리 | 판단이 거의 없고 규칙이 전부 명시돼 있다 |
-| `inherit` | 세션 모델을 따라야 하는 범용 에이전트 | 특별한 이유가 없고 사용자의 세션 설정을 존중한다 |
+| 값        | 쓰는 곳                               | 판정 기준                                                        |
+| --------- | ------------------------------------- | ---------------------------------------------------------------- |
+| `opus`    | 설계·리뷰·요구사항 확정·팀 편성       | 되돌리기 비싼 판단을 내린다. 틀리면 뒤의 작업이 전부 무효가 된다 |
+| `sonnet`  | 구현·조사·QA·문서 작성                | 정답 형태가 정해져 있고 검증 수단이 있다                         |
+| `haiku`   | 기계적 변환·형식 정리                 | 판단이 거의 없고 규칙이 전부 명시돼 있다                         |
+| `inherit` | 세션 모델을 따라야 하는 범용 에이전트 | 특별한 이유가 없고 사용자의 세션 설정을 존중한다                 |
 
 ### 판정 질문
 
@@ -20,20 +20,20 @@
 
 ### curvez 코어 배정
 
-| 에이전트 | model |
-|---|---|
-| `curvez-orchestrator` | opus |
-| `curvez-requirements` | opus |
-| `curvez-architect` | opus |
-| `curvez-reviewer` | opus |
-| `curvez-structure-reviewer` | opus |
-| `curvez-marketer` | opus |
-| `curvez-researcher` | sonnet |
-| `curvez-designer` | sonnet |
-| `curvez-nextjs` | sonnet |
-| `curvez-react-native` | sonnet |
-| `curvez-qa` | sonnet |
-| `curvez-retrospector` | sonnet |
+| 에이전트                    | model  |
+| --------------------------- | ------ |
+| `curvez-orchestrator`       | opus   |
+| `curvez-requirements`       | opus   |
+| `curvez-architect`          | opus   |
+| `curvez-reviewer`           | opus   |
+| `curvez-structure-reviewer` | opus   |
+| `curvez-marketer`           | opus   |
+| `curvez-researcher`         | sonnet |
+| `curvez-designer`           | sonnet |
+| `curvez-nextjs`             | sonnet |
+| `curvez-react-native`       | sonnet |
+| `curvez-qa`                 | sonnet |
+| `curvez-retrospector`       | sonnet |
 
 ---
 
@@ -46,13 +46,13 @@
 
 ### 역할별 기본 세트
 
-| 역할 | tools |
-|---|---|
+| 역할 | tools                                   |
+| ---- | --------------------------------------- |
 | 조사 | `Read, Grep, Glob, WebFetch, WebSearch` |
-| 설계 | `Read, Grep, Glob, Write, Bash` |
-| 구현 | `Read, Write, Edit, Grep, Glob, Bash` |
-| 리뷰 | `Read, Grep, Glob, Bash` |
-| QA | `Read, Write, Edit, Grep, Glob, Bash` |
+| 설계 | `Read, Grep, Glob, Write, Bash`         |
+| 구현 | `Read, Write, Edit, Grep, Glob, Bash`   |
+| 리뷰 | `Read, Grep, Glob, Bash`                |
+| QA   | `Read, Write, Edit, Grep, Glob, Bash`   |
 
 `Bash` 는 자체 검증을 돌려야 하는 에이전트에 반드시 넣는다.
 **이유:** `## 품질 자체 검증` 의 명령을 실행하지 못하면 `verification` 을 채울 수 없고,
@@ -77,10 +77,10 @@
 
 ### 반드시 막아야 하는 조합
 
-| 에이전트 유형 | disallowedTools |
-|---|---|
-| 리뷰·감사·비평 계열 | `Write, Edit, NotebookEdit` |
-| 조사 전용 | `Write, Edit` (조사 브리프 경로만 예외로 열려면 `Write` 는 허용하고 소유권으로 제한) |
+| 에이전트 유형       | disallowedTools                                                                      |
+| ------------------- | ------------------------------------------------------------------------------------ |
+| 리뷰·감사·비평 계열 | `Write, Edit, NotebookEdit`                                                          |
+| 조사 전용           | `Write, Edit` (조사 브리프 경로만 예외로 열려면 `Write` 는 허용하고 소유권으로 제한) |
 
 리뷰 계열은 검증기가 강제한다. `name` 에 `review`·`audit`·`critic` 이 있으면 쓰기 도구 3종이
 `disallowedTools` 에 전부 있어야 통과한다.

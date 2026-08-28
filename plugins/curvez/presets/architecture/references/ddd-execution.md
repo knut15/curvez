@@ -108,13 +108,13 @@ import { payFor } from "./daily-wage";
 
 ## 4. 명명
 
-| 대상 | 규칙 | 예 |
-|---|---|---|
-| 파일 | kebab-case | `work-record.ts` |
-| 유스케이스 파일 | **동사로 시작** | `approve-request.ts` |
-| 포트 인터페이스 | 역할 이름 | `OrderRepository`, `AuthPort` |
-| 엔티티·값 객체 | PascalCase 명사 | `Order`, `Email` |
-| 훅 | `use` + 동작 | `useMonthlyOrders` |
+| 대상            | 규칙            | 예                            |
+| --------------- | --------------- | ----------------------------- |
+| 파일            | kebab-case      | `work-record.ts`              |
+| 유스케이스 파일 | **동사로 시작** | `approve-request.ts`          |
+| 포트 인터페이스 | 역할 이름       | `OrderRepository`, `AuthPort` |
+| 엔티티·값 객체  | PascalCase 명사 | `Order`, `Email`              |
+| 훅              | `use` + 동작    | `useMonthlyOrders`            |
 
 유스케이스 파일이 동사로 시작해야 하는 이유: 명사로 지으면(`order-service.ts`) 무엇이든 들어가는
 서랍이 되고, 곧 파일 하나에 시나리오 열 개가 쌓인다. 동사는 파일 하나가 시나리오 하나임을 강제한다.
@@ -153,10 +153,12 @@ fetch(...);                               // ✗
 
 ```tsx
 // ✗ 도메인 규칙이 컴포넌트로 새어 나왔다
-if (workedMinutes > 480) { overtimePay = base * 1.5; }
+if (workedMinutes > 480) {
+  overtimePay = base * 1.5;
+}
 
 // ✓ 도메인이 계산한 결과를 표시만 한다
-<span>{breakdown.overtimePay.toLocaleString()}원</span>
+<span>{breakdown.overtimePay.toLocaleString()}원</span>;
 ```
 
 - `infrastructure/` 직접 import 금지 — 유스케이스를 통한다

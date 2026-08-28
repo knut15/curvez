@@ -7,12 +7,12 @@ curvez 팀 실행에서 에이전트끼리 주고받는 유일한 통신 수단�
 
 핸드오프에 관한 정본은 네 군데에 나뉘어 있다. 값을 찾으러 왔다면 이 문서가 아니라 아래를 봐야 한다.
 
-| 알고 싶은 것 | 정본 |
-|---|---|
-| 필드 목록, 타입, 허용값 | `scripts/schema/handoff.schema.json` |
-| 언제·어떤 순서로 쓰고 읽는가 | `skills/agent-contract/SKILL.md` |
-| 특정 필드를 어떻게 채우는가 | `skills/agent-contract/references/field-reference.md` |
-| 검사 규칙의 구현 | `scripts/validate-handoff.mjs`, `scripts/lib/spec.mjs` |
+| 알고 싶은 것                 | 정본                                                   |
+| ---------------------------- | ------------------------------------------------------ |
+| 필드 목록, 타입, 허용값      | `scripts/schema/handoff.schema.json`                   |
+| 언제·어떤 순서로 쓰고 읽는가 | `skills/agent-contract/SKILL.md`                       |
+| 특정 필드를 어떻게 채우는가  | `skills/agent-contract/references/field-reference.md`  |
+| 검사 규칙의 구현             | `scripts/validate-handoff.mjs`, `scripts/lib/spec.mjs` |
 
 이 문서가 정본인 것은 그 위의 층이다 — 왜 계약이 필요한가, 상태가 왜 셋인가,
 검증기가 무엇을 왜 막는가, 실제로 무엇이 깨졌는가.
@@ -50,10 +50,10 @@ API 호출의 조건에 가깝다. 파일에 남긴 계약이 그 API의 역할�
 `status` 는 세 값뿐이다. 셋으로 자른 이유는 **수신 쪽의 행동이 세 갈래로 갈리기 때문**이다.
 값이 더 많아도 수신 에이전트가 할 수 있는 일은 늘지 않는다.
 
-| status | 수신 쪽이 할 일 |
-|---|---|
-| `done` | 이 결과를 전제로 자기 작업을 시작한다 |
-| `partial` | 남은 범위를 확인하고, 그 범위에 의존하지 않는 부분만 진행한다 |
+| status    | 수신 쪽이 할 일                                                 |
+| --------- | --------------------------------------------------------------- |
+| `done`    | 이 결과를 전제로 자기 작업을 시작한다                           |
+| `partial` | 남은 범위를 확인하고, 그 범위에 의존하지 않는 부분만 진행한다   |
 | `blocked` | 시작하지 않는다. 오케스트레이터가 질문을 풀어줄 때까지 기다린다 |
 
 ### 강제되는 세 규칙
@@ -307,7 +307,11 @@ curvez 를 확장하며 필드를 추가한다면 두 곳을 같이 고쳐야 �
 실패한 검증도 그대로 적는다. `passed: false` 를 붙이면 된다.
 
 ```json
-{ "command": "pnpm test", "result": "10 passed, 2 failed (order.spec.ts)", "passed": false }
+{
+  "command": "pnpm test",
+  "result": "10 passed, 2 failed (order.spec.ts)",
+  "passed": false
+}
 ```
 
 이 경우 `status` 는 `partial` 이거나 `blocked` 다.
