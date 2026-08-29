@@ -10,6 +10,48 @@ curvez 는 **user scope 플러그인**이다. 한 번 업데이트하면 그 계
 
 ---
 
+## 0.3.2 — bootstrap `--ddd-lint`: DDD 레이어 경계 lint
+
+### 무엇이 바뀌었나
+
+| #   | 변경                                                                                                                                                                                                                                                                                                                        | 정본                                          |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| ①   | **`bootstrap --ddd-lint` 추가.** 이 플래그로 재실행하면 스캐폴드 `eslint.config.mjs` 가 DDD 레이어 경계 규칙 포함본으로 깔린다. domain 의 프레임워크·I/O·바깥 레이어 참조, application→infrastructure, presentation→infrastructure, infrastructure→presentation, 상위 상대 경로(`../*`)를 `no-restricted-imports` 로 막는다 | `scripts/bootstrap.mjs` `ESLINT_DDD_SKELETON` |
+| ②   | **스캐폴드 `.prettierrc.json` 이 값을 명시한다.** `{}` 대신 8개 옵션을 적는다 — 팀이 규칙을 설정 파일에서 읽을 수 있고, prettier 메이저 업에 스타일이 흔들리지 않는다                                                                                                                                                       | `scripts/bootstrap.mjs` `PRETTIERRC_SKELETON` |
+
+플러그인 의존성은 늘지 않았다 — 코어 규칙 `no-restricted-imports` 만 쓴다.
+에이전트·스킬 라인업, 핸드오프 스키마, 훅은 그대로다.
+
+### 업데이트 절차 (필수)
+
+절차의 정본은 [README 의 업데이트](README.md#업데이트)다. 끝나면 `installed_plugins.json` 의
+`curvez@curvez` 가 `version: "0.3.2"` 인지 확인하고, `node "$CLAUDE_PLUGIN_ROOT/scripts/doctor.mjs"` 로
+exit 0 을 본다.
+
+### 프로젝트에서 할 일 (조건부)
+
+- **DDD 로 세팅했고 경계를 lint 로 걸고 싶은 프로젝트** — `eslint.config.mjs` 가 **아직 없으면**
+  `node "$CLAUDE_PLUGIN_ROOT/scripts/bootstrap.mjs" --ddd-lint` 로 재실행하면 포함본이 깔린다.
+  **이미 있으면 덮지 않는다** — 프로젝트가 고른 규칙을 덮으면 위반 목록이 통째로 바뀌어 원인
+  판정 근거가 사라진다. 이때는 `presets/architecture/references/eslint-layer-rules.md` 를 보고
+  기존 설정에 직접 더한다. bootstrap 이 그 안내를 "유지" 항목에 출력한다
+- **경계 규칙을 처음 켠 프로젝트는 기존 위반이 한꺼번에 터진다.** 위반을 고치기 전에는
+  `pnpm lint` 가 빨갛다 — 게이트를 통과시키려고 규칙을 지우지 말고, 위반을 레이어 이동으로
+  해소한다. 한 번에 못 고치면 해당 레이어의 `files` 를 좁혀 단계적으로 넓힌다
+- **경로 별칭(`@/`)이 없는 프로젝트** — 레이어 간 참조 규칙은 별칭 패턴으로 검사한다.
+  별칭을 쓰지 않으면 `../*` 금지만 걸리고 레이어 규칙은 잡히지 않는다.
+  `tsconfig.json`/`jsconfig.json` 의 `paths` 에 `@/*` 를 세운다
+
+### 하지 않아도 되는 것
+
+- **기존 핸드오프·`.curvez/` 마이그레이션** — 스키마 변경이 없다
+- **이미 깔린 `eslint.config.mjs`·`.prettierrc.json` 교체** — 0.3.2 의 스캐폴드 변경은
+  **새로 만드는 파일에만** 적용된다. 기존 파일은 `--force` 로도 덮지 않는다
+- **`--ddd-lint` 없이 쓰던 프로젝트** — 플래그를 주지 않으면 기존과 같은 기본 설정이 깔린다.
+  동작 변화 없다
+
+---
+
 ## 0.3.1 — 버전 업데이트 알림 훅
 
 ### 무엇이 바뀌었나
