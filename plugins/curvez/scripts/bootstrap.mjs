@@ -5,9 +5,11 @@
  * 사용법:
  *   node bootstrap.mjs [--dir <프로젝트 루트>] [--json] [--dry-run] [--force]
  *
- *   --json     판정 결과를 JSON 으로만 출력한다 (에이전트가 파싱해 인터뷰 문항을 만든다)
- *   --dry-run  판정만 하고 파일을 만들지 않는다
- *   --force    이미 있는 .curvez/profile.json 을 덮어쓴다
+ *   --json      판정 결과를 JSON 으로만 출력한다 (에이전트가 파싱해 인터뷰 문항을 만든다)
+ *   --dry-run   판정만 하고 파일을 만들지 않는다
+ *   --force     이미 있는 .curvez/profile.json 을 덮어쓴다
+ *   --ddd-lint  스캐폴드 eslint 설정에 DDD 레이어 경계 규칙을 넣는다. 인터뷰에서
+ *               사용자가 DDD 를 확정한 뒤 스킬이 이 플래그로 재실행한다
  *
  * `curvez:bootstrap` 스킬의 절차 1~7 을 그대로 옮긴 것이다. 스킬이 절차의 정본이고
  * 이 스크립트는 그 실행기다. 절차가 바뀌면 양쪽을 함께 고친다.
@@ -37,6 +39,7 @@ const opt = {
   json: argv.includes("--json"),
   dryRun: argv.includes("--dry-run"),
   force: argv.includes("--force"),
+  dddLint: argv.includes("--ddd-lint"),
 };
 const dirIdx = argv.indexOf("--dir");
 if (dirIdx !== -1) {
@@ -633,6 +636,187 @@ export default [
 ];
 `;
 
+/**
+ * DDD 레이어 경계 포함본. `--ddd-lint` 로 재실행하면 이것이 깔린다.
+ *
+ * 규칙의 정본은 presets/architecture/references/eslint-layer-rules.md 의
+ * "단일 컨텍스트 설정"이다 — 여기서는 그 설정을 JS 대상(files 가 js 계열)으로 옮겨
+ * 심는 것뿐이고, 레이어명 조정·컨텍스트 분리·TS 확장은 전부 그 문서를 따른다.
+ * 의존성 0 원칙 그대로 no-restricted-imports(코어 규칙)만 쓴다: 상위 상대 경로를
+ * 전부 막아 레이어 간 참조를 별칭(@/...)으로 모으고, 별칭을 패턴으로 검사한다.
+ */
+const ESLINT_DDD_SKELETON = `// curvez:bootstrap 이 만들었다 — DDD 레이어 경계 lint 포함본이다.
+// 실행에는 devDependencies 가 필요하다: pnpm add -D eslint @eslint/js globals
+// TypeScript 소스까지 검사하려면 typescript-eslint 를 더해 각 files 를 넓힌다.
+// 레이어명을 바꾸거나 컨텍스트를 나눈 뒤에는 curvez 플러그인의
+// presets/architecture/references/eslint-layer-rules.md 가 정본이다.
+import js from "@eslint/js";
+import globals from "globals";
+
+/** 위반 메시지. 무엇을 어디로 옮기라는 지시까지 담는다. */
+const MSG = {
+  domainNoFramework:
+    "domain 은 프레임워크를 모른다. React·Next·RN·상태 라이브러리가 필요하면 presentation 이나 infrastructure 로 옮겨라.",
+  domainNoOuter:
+    "domain 이 바깥 레이어를 참조한다. 의존은 안쪽으로만 흐른다. 필요한 것은 인터페이스로 선언하고 주입받아라.",
+  domainNoIO:
+    "domain 이 I/O 를 직접 부른다. fetch·DB·파일시스템은 infrastructure 의 몫이다. 포트로 선언하고 구현을 주입받아라.",
+  applicationNoInfra:
+    "application 은 구현체를 모른다. 필요한 것을 ports 에 인터페이스로 선언하고 주입받아라.",
+  presentationNoInfra:
+    "presentation 은 infrastructure 를 직접 쓰지 않는다. 유스케이스를 통해라.",
+  infraNoPresentation:
+    "infrastructure 가 화면을 참조한다. 의존이 바깥에서 바깥으로 흐르고 있다.",
+  noParentRelative:
+    "상위로 올라가는 상대 경로를 쓰지 않는다. 경로 별칭 @/ 로 적어라 — 어느 레이어를 참조하는지 한눈에 보인다. 같은 폴더의 './x' 는 허용한다.",
+};
+
+// 상위로 올라가는 상대 경로. 모든 레이어에 공통이다 — 이것을 막아야 레이어 간
+// 참조가 전부 별칭(@/...)으로 모여 아래 레이어 패턴에 걸린다.
+const PARENT_RELATIVE = {
+  group: ["../*", "../../*", "../../../*", "../../../../*"],
+  message: MSG.noParentRelative,
+};
+
+/** 프레임워크·상태 라이브러리. domain 과 application 이 모르는 것들. */
+const FRAMEWORK = [
+  "react",
+  "react/*",
+  "react-dom",
+  "react-dom/*",
+  "next",
+  "next/*",
+  "react-native",
+  "react-native/*",
+  "expo",
+  "expo-*",
+  "@react-navigation/*",
+  "zustand",
+  "zustand/*",
+  "jotai",
+  "recoil",
+  "redux",
+  "@reduxjs/*",
+  "@tanstack/react-query",
+];
+
+/** I/O — domain 이 직접 부르면 단위 테스트가 통합 테스트가 된다. */
+const IO_MODULES = [
+  "node:fs",
+  "node:fs/promises",
+  "node:path",
+  "node:http",
+  "node:https",
+  "node:child_process",
+  "fs",
+  "path",
+  "http",
+  "https",
+  "@prisma/client",
+  "prisma",
+  "drizzle-orm",
+  "drizzle-orm/*",
+  "typeorm",
+  "mongoose",
+  "mongodb",
+  "pg",
+  "mysql2",
+  "redis",
+  "ioredis",
+  "axios",
+  "ky",
+  "got",
+];
+
+// 빈 group 을 버리는 이유: 빈 배열을 넘기면 ESLint 가 설정 스키마 오류로 죽는다.
+function restrict(...groups) {
+  const patterns = [...groups, PARENT_RELATIVE].filter(
+    (g) => g.group.length > 0,
+  );
+  return ["error", { patterns }];
+}
+
+// DDD 레이어 경계 — 의존은 안쪽(domain)으로만 흐른다. 역방향·양방향 참조는 에러다.
+const layerRules = [
+  {
+    files: ["src/domain/**/*.{js,mjs,cjs,jsx}"],
+    rules: {
+      "no-restricted-imports": restrict(
+        { group: FRAMEWORK, message: MSG.domainNoFramework },
+        { group: IO_MODULES, message: MSG.domainNoIO },
+        {
+          group: [
+            "@/application/**",
+            "@/infrastructure/**",
+            "@/presentation/**",
+            "@/app/**",
+          ],
+          message: MSG.domainNoOuter,
+        },
+      ),
+    },
+  },
+  {
+    files: ["src/application/**/*.{js,mjs,cjs,jsx}"],
+    rules: {
+      "no-restricted-imports": restrict(
+        { group: FRAMEWORK, message: MSG.domainNoFramework },
+        {
+          group: ["@/infrastructure/**", "@/presentation/**", "@/app/**"],
+          message: MSG.applicationNoInfra,
+        },
+      ),
+    },
+  },
+  {
+    files: ["src/infrastructure/**/*.{js,mjs,cjs,jsx}"],
+    rules: {
+      "no-restricted-imports": restrict({
+        group: ["@/presentation/**", "@/app/**"],
+        message: MSG.infraNoPresentation,
+      }),
+    },
+  },
+  {
+    files: ["src/presentation/**/*.{js,mjs,cjs,jsx}"],
+    rules: {
+      "no-restricted-imports": restrict({
+        group: ["@/infrastructure/**"],
+        message: MSG.presentationNoInfra,
+      }),
+    },
+  },
+];
+
+export default [
+  { ignores: [".next/", ".expo/", "dist/", "build/", "coverage/", ".curvez/"] },
+  {
+    files: ["**/*.{js,mjs,cjs,jsx}"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      globals: { ...globals.node, ...globals.browser },
+    },
+    rules: js.configs.recommended.rules,
+  },
+  ...layerRules,
+];
+`;
+
+// 값 전부 prettier 기본값이지만 명시한다 — 팀이 규칙을 설정 파일에서 읽을 수 있어야
+// 하고, prettier 메이저 업이 기본값을 바꿔도 스타일이 흔들리지 않는다.
+const PRETTIERRC_SKELETON = `{
+  "printWidth": 80,
+  "tabWidth": 2,
+  "useTabs": false,
+  "semi": true,
+  "singleQuote": false,
+  "trailingComma": "all",
+  "arrowParens": "always",
+  "endOfLine": "lf"
+}
+`;
+
 // `.curvez/` 통째 제외인 이유: profile.json·handoff 등은 기계(스크립트·에이전트)가 쓰는
 // 산출물이라, 포맷 게이트에 넣으면 curvez 가 파일을 쓸 때마다 format:check 가 빨개진다.
 const PRETTIERIGNORE_SKELETON = `# curvez:bootstrap 이 만들었다. lockfile·빌드 산출물·curvez 산출물은 포맷 대상이 아니다.
@@ -664,8 +848,20 @@ function lintPlan() {
   const eslintFound =
     ESLINT_CONFIG_FILES.find((f) => existsSync(join(ROOT, f))) ??
     (pkg.eslintConfig ? "package.json 의 eslintConfig" : null);
-  if (eslintFound) skips.push(`eslint 설정 (${eslintFound} 이 이미 있다)`);
-  else files.push({ rel: "eslint.config.mjs", content: ESLINT_SKELETON });
+  // --ddd-lint 인데 설정이 이미 있으면 덮지 않는다 (이 파일의 원칙). 대신 어디를 보고
+  // 직접 더해야 하는지 skips 에 남긴다 — 조용히 건너뛰면 경계가 안 걸린 채로 굳는다.
+  if (eslintFound)
+    skips.push(
+      `eslint 설정 (${eslintFound} 이 이미 있다` +
+        (opt.dddLint
+          ? " — DDD 경계 규칙은 presets/architecture/references/eslint-layer-rules.md 를 보고 직접 더한다)"
+          : ")"),
+    );
+  else
+    files.push({
+      rel: "eslint.config.mjs",
+      content: opt.dddLint ? ESLINT_DDD_SKELETON : ESLINT_SKELETON,
+    });
 
   const prettierFound =
     PRETTIER_CONFIG_FILES.find((f) => existsSync(join(ROOT, f))) ??
@@ -673,7 +869,7 @@ function lintPlan() {
   if (prettierFound)
     skips.push(`prettier 설정 (${prettierFound} 가 이미 있다)`);
   else {
-    files.push({ rel: ".prettierrc.json", content: "{}\n" });
+    files.push({ rel: ".prettierrc.json", content: PRETTIERRC_SKELETON });
     if (!existsSync(join(ROOT, ".prettierignore")))
       files.push({ rel: ".prettierignore", content: PRETTIERIGNORE_SKELETON });
   }
