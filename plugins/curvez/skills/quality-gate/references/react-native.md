@@ -1,7 +1,7 @@
-# React Native / Expo 스택의 게이트 차이
+# React Native 스택의 게이트 차이
 
 `profile.json` 의 `stack` 이 `react-native` 이거나 `monorepo` 일 때 읽는다.
-검사 경로는 `paths.mobile` 이고, `expo.sdkVersion` 이 필수 키다. 둘 중 하나라도 없으면
+검사 경로는 `paths.mobile` 이고 이것이 필수 키다. 없으면
 추측하지 말고 `status: blocked` 다.
 **이유:** SDK 버전에 따라 러너 preset 과 번들 명령이 달라진다. 추측한 버전으로 돌린 게이트는
 다른 프로젝트를 검사한 것과 같다.
@@ -16,17 +16,16 @@
 
 대신 **로컬에서 몇 초~수십 초에 끝나는 대체 검사**로 build 축을 채운다.
 
-| 대체 검사                                                      | 무엇을 잡는가                                                             |
-| -------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `npx expo-doctor`                                              | 설치된 패키지 버전이 `expo.sdkVersion` 과 어긋난 것. 네이티브 설정 불일치 |
-| `npx expo export --platform ios --output-dir /tmp/expo-export` | metro 번들 해석 실패, 존재하지 않는 모듈 import, 순환 import              |
+| 대체 검사                                                      | 무엇을 잡는가                                                |
+| -------------------------------------------------------------- | ------------------------------------------------------------ |
+| `npx expo export --platform ios --output-dir /tmp/expo-export` | metro 번들 해석 실패, 존재하지 않는 모듈 import, 순환 import |
 
 - 대체 검사를 썼으면 `verification` 의 `command` 에 **실제로 돌린 그 명령**을 적는다.
   `commands.build` 값을 적지 마라 — 돌리지 않은 명령이다
 - 대체로 채웠다는 사실과 근거를 `decisions` 에 남긴다 (`reversible_at`: `profile.json` 의 `commands.build`)
 - EAS 빌드는 릴리스 직전에만 돌린다
 
-**네이티브 모듈이나 `app.json` 의 네이티브 설정이 바뀐 라운드에서만** `npx expo prebuild --clean` 을
+**네이티브 모듈이나 네이티브 설정이 바뀐 라운드에서만** 네이티브 빌드를
 추가로 돌린다. JS 만 바뀐 라운드에서 prebuild 를 돌리지 마라.
 **이유:** prebuild 는 `ios/`·`android/` 를 재생성한다. 바뀔 이유가 없는 라운드에 돌리면
 게이트가 소스 트리를 변형시키고, 그 변형이 다음 게이트의 입력이 된다. 검사기가 검사 대상을
@@ -36,19 +35,13 @@
 
 ## typecheck 가 SDK 불일치를 못 잡는다
 
-`node_modules` 에 설치된 Expo 패키지 버전이 `expo.sdkVersion` 과 달라도 타입은 통과한다.
-타입 정의는 설치된 쪽을 따르고, 런타임 네이티브 모듈은 앱 바이너리 쪽을 따르기 때문이다.
-
-- 그래서 **`expo-doctor` 를 typecheck 와 함께** 돌린다. 순서상 typecheck 직후다
-- `result` 예: `expo-doctor: 15 checks, 1 failed (expo-router 버전 불일치)`
-
 ---
 
 ## 0개 실행 함정 — 모바일판
 
 | 형태                                                    | 어떻게 드러나는가                                            |
 | ------------------------------------------------------- | ------------------------------------------------------------ |
-| `jest-expo` preset 미설정                               | RN 컴포넌트 테스트가 transform 실패로 통째로 제외되고 exit 0 |
+| RN transform preset 미설정                              | RN 컴포넌트 테스트가 transform 실패로 통째로 제외되고 exit 0 |
 | `transformIgnorePatterns` 가 `node_modules` 전체를 막음 | RN 패키지 import 하는 테스트가 전부 수집 실패                |
 | `testEnvironment` 가 node 로 남아 있음                  | 렌더 테스트만 조용히 빠짐                                    |
 
@@ -66,12 +59,12 @@ grep -Eio '[0-9]+ +(test suites?|tests?|passed|failed|skipped)' .curvez/qa/test.
 
 ## arch 게이트 적용
 
-검사 경로는 `paths.mobile` 이다. `ios/`, `android/`, `.expo/` 는 검사에서 뺀다.
+검사 경로는 `paths.mobile` 이다. `ios/`, `android/` 는 검사에서 뺀다.
 **이유:** 네이티브 프로젝트 디렉터리는 생성물이라 규칙 위반이 당연히 들어 있고,
 그 잡음이 실제 위반을 덮는다.
 
 ```bash
-grep -rnE --exclude-dir=node_modules --exclude-dir=ios --exclude-dir=android --exclude-dir=.expo -- "$pat" "$path"
+grep -rnE --exclude-dir=node_modules --exclude-dir=ios --exclude-dir=android -- "$pat" "$path"
 ```
 
 `monorepo` 스택에서 `paths.domain` 은 웹·모바일 양쪽 규칙의 검사 대상이 된다.

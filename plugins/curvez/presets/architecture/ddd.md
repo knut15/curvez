@@ -281,7 +281,7 @@ App Router 는 `presentation` **안쪽의 구분**이다. 레이어를 가르지
 - **화면 이동은 유스케이스의 결과가 아니다.** `application` 이 `navigate()` 를 부르면 그 유스케이스는 화면 없이 테스트할 수 없다. 유스케이스는 결과를 반환하고, 무엇으로 이동할지는 `presentation` 이 정한다
 - 딥링크 스킴 정의는 `presentation`, 딥링크가 실어 오는 식별자의 유효성은 `domain` 이다
 - 플랫폼 분기(`Platform.OS`, `.ios.tsx`/`.android.tsx`)는 `presentation` 과 `infrastructure` 에서만 한다. `domain` 에 플랫폼 분기가 생기면 그 규칙은 두 플랫폼에서 다르게 동작하는 규칙이 된다
-- Expo 모듈(`expo-secure-store`, `expo-file-system` 등)은 전부 `infrastructure` 의 래퍼 뒤에 둔다. `domain` 은 그 래퍼의 인터페이스만 안다
+- 네이티브 모듈(`react-native-keychain`, `react-native-fs` 등)은 전부 `infrastructure` 의 래퍼 뒤에 둔다. `domain` 은 그 래퍼의 인터페이스만 안다
 - `paths.mobile` 아래에 `src/` 를 두지 않는 템플릿이 흔하다. 확정 전에 실제 경로를 확인하고 검사 경로를 맞춰라
 
 ### `monorepo` — `domain` 이 `paths.domain` 으로 빠진다
@@ -296,7 +296,7 @@ App Router 는 `presentation` **안쪽의 구분**이다. 레이어를 가르지
 - ARCH-003·ARCH-004 의 검사 경로는 `packages/domain/src/ apps/web/src/application/ apps/mobile/src/application/` 처럼 앱별 경로를 함께 나열한다
 - **패키지 경계는 상대 경로로 뚫린다.** 워크스페이스 프로토콜을 쓰더라도 `../../packages/...` 같은 import 가 가능하므로 금지 import 규칙은 여전히 필요하다
 - 앱 간 공유를 패키지로 자를지 폴더로 자를지는 인터뷰 문항이다. 패키지는 경계가 빌드 도구로 강제되지만 초기 설정과 빌드 시간이 늘고, 폴더는 반대다
-- `expo.sdkVersion` 이 있으면 RN 앱이 존재한다는 뜻이다. `paths.domain` 에서 RN 의존 검사(ARCH-002)를 절대 끄지 마라
+- `paths.mobile` 이 있으면 RN 앱이 존재한다는 뜻이다. `paths.domain` 에서 RN 의존 검사(ARCH-002)를 절대 끄지 마라
 
 ## 예외
 

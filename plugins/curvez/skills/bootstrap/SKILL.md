@@ -118,11 +118,11 @@ console.log(JSON.stringify({
 $CLAUDE_PLUGIN_ROOT/presets/stack/<stack>.md
 ```
 
-| `stack`        | 프리셋                          | 거기서만 알 수 있는 것                                                                                       |
-| -------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `nextjs`       | `presets/stack/nextjs.md`       | App Router / Pages Router 판정을 디렉터리 이름이 아니라 파일 규약(`layout.*` / `_app.*`)으로 해야 하는 이유  |
-| `react-native` | `presets/stack/react-native.md` | `package.json` 최상위 `expo` 키가 레거시 설정 블록일 수 있어 의존성만 봐야 한다는 것, `expo.sdkVersion` 추출 |
-| `monorepo`     | `presets/stack/monorepo.md`     | `paths.domain` 을 이름이 아니라 **의존 관계**로 판정하는 방법                                                |
+| `stack`        | 프리셋                          | 거기서만 알 수 있는 것                                                                                      |
+| -------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `nextjs`       | `presets/stack/nextjs.md`       | App Router / Pages Router 판정을 디렉터리 이름이 아니라 파일 규약(`layout.*` / `_app.*`)으로 해야 하는 이유 |
+| `react-native` | `presets/stack/react-native.md` | `package.json` 최상위 `expo` 키가 레거시 설정 블록일 수 있어 의존성만 봐야 한다는 것                        |
+| `monorepo`     | `presets/stack/monorepo.md`     | `paths.domain` 을 이름이 아니라 **의존 관계**로 판정하는 방법                                               |
 
 **이 파일이 없어도 멈추지 마라.** 정상 설치에는 있지만, 없으면 이 스킬의 절차만으로
 진행할 수 있다. 다만 위 표의 함정들은 프리셋에만 적혀 있으므로, 없이 진행했다면 그 사실을
@@ -168,7 +168,6 @@ QA 가 "검증 실패" 로 보고하고 구현 에이전트가 멀쩡한 코드�
 | ---- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | 1    | 이 프로젝트의 스택은 `nextjs` / `react-native` / `monorepo` 중 무엇인가               | 절차 2 가 애매로 끝났을 때                                                                       |
 | 2    | 웹/모바일/도메인 소스 경로가 각각 어디인가                                            | 필수 `paths` 키를 감지로 못 채웠을 때                                                            |
-| 3    | Expo SDK 메이저 버전이 몇인가                                                         | `stack` 이 `react-native`·`monorepo` 인데 `expo` 범위를 못 읽었을 때                             |
 | 4    | 원격 목록이 이렇다 — 작업 브랜치를 `baseBranch` 에서 따고 PR 도 거기로 여는 게 맞는가 | **2단으로 판정됐을 때**(이름만 보고 정한 값이라 확인받는다) 또는 원격 브랜치를 아예 못 읽었을 때 |
 | 5    | 타입 체크·린트·테스트를 어떤 명령으로 도는가                                          | 절차 3 에서 셋 다 비었을 때                                                                      |
 | 6    | 테스트 파일이 어디 있는가                                                             | 아래 폴백으로도 못 찾았을 때                                                                     |
@@ -207,7 +206,6 @@ ls -d tests test __tests__ e2e 2>/dev/null | head -3
     "domain": "packages/domain",
     "tests": "tests"
   },
-  "expo": { "sdkVersion": "57" },
   "git": {
     "baseBranch": "release",
     "releaseBranch": "main",
@@ -224,11 +222,11 @@ ls -d tests test __tests__ e2e 2>/dev/null | head -3
 }
 ```
 
-| `stack`        | 필수 키                                     | 선택 키                          |
-| -------------- | ------------------------------------------- | -------------------------------- |
-| `nextjs`       | `paths.web`                                 | `paths.tests`                    |
-| `react-native` | `paths.mobile`, `expo.sdkVersion`           | `paths.tests`                    |
-| `monorepo`     | `paths.web`, `paths.mobile`, `paths.domain` | `paths.tests`, `expo.sdkVersion` |
+| `stack`        | 필수 키                                     | 선택 키       |
+| -------------- | ------------------------------------------- | ------------- |
+| `nextjs`       | `paths.web`                                 | `paths.tests` |
+| `react-native` | `paths.mobile`                              | `paths.tests` |
+| `monorepo`     | `paths.web`, `paths.mobile`, `paths.domain` | `paths.tests` |
 
 **`git` 블록 — 다섯 키 전부 쓴다.** 감지는 `git branch -r` 로 한다. 원격에 `release` 또는
 `develop` 이 있으면 그것이 `baseBranch` 다. 없으면 `release` 브랜치를 **새로 만들어** 2단으로
@@ -263,7 +261,6 @@ ls -d tests test __tests__ e2e 2>/dev/null | head -3
   빈자리에 기본 전략을 세운 것이라 확인할 대상이 없다
 
 - `paths` 값은 **저장소 루트 기준 상대 경로**다. 끝에 `/` 를 붙이지 않는다
-- `expo.sdkVersion` 은 메이저 숫자만 문자열로 쓴다 (`"~57.0.9"` → `"57"`)
 - `architecture` 초기값은 `"ddd"` 다. 확정은 `architecture-setup` 이 한다
 - 값을 모르는 선택 키는 **키째로 생략한다.** 빈 문자열·`null` 을 넣지 마라
   - **이유:** 후속 에이전트는 키 존재 여부로 분기한다. `""` 는 "없음" 이 아니라 "빈 경로" 로 읽혀
@@ -390,7 +387,7 @@ JS 계열(`js/mjs/cjs/jsx`)만 검사한다.
 node -e '
 const fs = require("fs");
 const p = JSON.parse(fs.readFileSync(".curvez/profile.json", "utf8"));
-const NEED = { nextjs: ["paths.web"], "react-native": ["paths.mobile", "expo.sdkVersion"], monorepo: ["paths.web", "paths.mobile", "paths.domain"] };
+const NEED = { nextjs: ["paths.web"], "react-native": ["paths.mobile"], monorepo: ["paths.web", "paths.mobile", "paths.domain"] };
 const need = NEED[p.stack];
 if (!need) { console.error("stack 값이 계약 밖이다: " + p.stack); process.exit(1); }
 const get = (o, k) => k.split(".").reduce((a, c) => (a == null ? a : a[c]), o);

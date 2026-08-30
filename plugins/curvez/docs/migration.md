@@ -12,6 +12,50 @@ curvez 는 **user scope 플러그인**이다. 한 번 업데이트하면 그 계
 
 ---
 
+## 0.4.0 — Expo 전제 제거 (파괴적 변경) · 외부 스킬 7종 벤더링
+
+### 무엇이 바뀌었나
+
+| #   | 변경                                                                                                                                                                                                                                   | 정본                                                                                                    |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| ①   | **`expo.sdkVersion` 이 필수 키에서 빠졌다.** `react-native` 스택의 필수 키는 `paths.mobile` 하나다. RN 지원이 특정 툴체인을 전제하지 않는다                                                                                            | `scripts/bootstrap.mjs` `REQUIRED_KEYS`                                                                 |
+| ②   | **Expo 전용 절차가 전부 빠졌다.** 관리형/bare 구분, SDK 정렬 설치, `expo-doctor`, `expo install --check`, `expo-router` 기본값이 사라졌다. 네비게이션 기본값은 `@react-navigation/native` 다                                           | `agents/curvez-react-native.md`, `skills/react-native-implementation/`, `presets/stack/react-native.md` |
+| ③   | **스택 탐지는 그대로다.** `package.json` 의 `expo` 의존성은 여전히 RN 프로젝트 신호로 읽는다. 지우면 그 도구로 만든 프로젝트가 감지되지 않는다                                                                                         | `scripts/bootstrap.mjs` 감지부                                                                          |
+| ④   | **도메인 금지 import 목록도 그대로다.** `expo-*` 는 여전히 차단 대상이다. 차단은 지원이 아니다                                                                                                                                         | `presets/architecture/ddd.md` ARCH-002                                                                  |
+| ⑤   | **외부 스킬 7종 벤더링.** `mattpocock-skills` 1.2.3 에서 `grill-me` `grill-with-docs` `code-review` `tdd` `improve-codebase-architecture` `handoff` `writing-for-agents` 를 복사했다. MIT 라이선스 원문과 출처·버전·복사일을 함께 둔다 | `vendor/mattpocock-skills/VENDOR.md`                                                                    |
+
+에이전트 13종·스킬 15종 라인업과 핸드오프 스키마는 그대로다. 벤더 스킬은 `skills/` 가 아니라
+`vendor/` 아래에 있어 curvez 스킬 개수에 들어가지 않는다.
+
+### 업데이트 절차 (필수)
+
+절차의 정본은 [README 의 업데이트](README.md#업데이트)다. 끝나면 `installed_plugins.json` 의
+`curvez@curvez` 가 `version: "0.4.0"` 인지 확인하고, `node "$CLAUDE_PLUGIN_ROOT/scripts/doctor.mjs"` 로
+exit 0 을 본다.
+
+### 프로젝트에서 할 일 (필수 — RN·모노레포 프로젝트만)
+
+- **`.curvez/profile.json` 의 `expo` 블록은 지워도 된다.** 아무도 읽지 않는다. 남겨 둬도 검증이
+  깨지지는 않지만, 읽는 사람이 아직 쓰이는 값으로 오해한다
+- **`.curvez/architecture.md` 의 ARCH-002 는 그대로 둔다.** 도메인에서 네이티브 모듈을 막는 규칙은
+  유지된다. 이 규칙을 지우면 도메인이 웹과 공유되지 않는다
+- **SDK 정렬에 기대던 검증이 있으면 대체한다.** `expo install --check` 를 `verification` 에 적던
+  프로젝트는 이제 그 항목이 없다. `commands.test`·`commands.build` 로 대체하거나, 필요하면
+  프로젝트 자체 스킬로 그 검사를 되살린다
+
+### 프로젝트에서 할 일 (조건부)
+
+- **벤더 스킬을 쓰려면** `plugins/curvez/vendor/mattpocock-skills/` 를 읽는다. curvez 스킬처럼
+  발화로 자동 호출되지는 않는다 — 사본을 그대로 두는 것이 목적이라 `skills/` 에 등록하지 않았다
+- **사본을 고치지 마라.** 고치면 원본과 대조할 수 없고 그때부터 벤더링이 아니라 포크다
+
+### 하지 않아도 되는 것
+
+- **핸드오프·`.curvez/` 스키마 마이그레이션** — 핸드오프 스키마는 그대로다
+- **`nextjs` 스택 프로젝트** — 이번 변경은 `react-native`·`monorepo` 스택에만 닿는다
+
+---
+
 ## 0.3.3 — 금지어 가드: 단독 '벽' 을 쓰는 시점에 막는다
 
 ### 무엇이 바뀌었나

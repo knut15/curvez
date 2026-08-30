@@ -1,6 +1,6 @@
 ---
 name: react-native-implementation
-description: React Native / Expo 화면·컴포넌트·네비게이션을 아키텍처 경계와 디자인 스펙대로 구현한다. "모바일 화면 만들어줘", "RN 구현해줘", "Expo 화면 붙여줘", "네이티브 화면 붙여줘", "implement mobile screen", "react native implementation" 이라고 하거나 `paths.mobile` 아래 소스를 쓸 때 실행한다.
+description: React Native 화면·컴포넌트·네비게이션을 아키텍처 경계와 디자인 스펙대로 구현한다. "모바일 화면 만들어줘", "RN 구현해줘", "네이티브 화면 붙여줘", "implement mobile screen", "react native implementation" 이라고 하거나 `paths.mobile` 아래 소스를 쓸 때 실행한다.
 ---
 
 모바일 구현이 깨지는 자리는 코드가 아니라 전제다. 소스 경로·SDK 버전·경계 규칙·스펙 값을 **어디서 읽는지**가
@@ -13,7 +13,7 @@ description: React Native / Expo 화면·컴포넌트·네비게이션을 아키
 
 ## 언제 이 스킬을 쓰는가
 
-- `.curvez/design/` 의 화면·컴포넌트를 React Native / Expo 코드로 옮길 때
+- `.curvez/design/` 의 화면·컴포넌트를 React Native 코드로 옮길 때
 - `profile.json` 의 `paths.mobile` 아래에 화면·컴포넌트·훅·네비게이션 파일을 쓰거나 고칠 때
 - 모바일 라우트를 등록하거나 네비게이션 구조를 코드에 반영할 때
 - 구현한 모바일 코드가 `## 금지 import` 규칙을 어기지 않는지 스스로 검사할 때
@@ -43,7 +43,6 @@ P=.curvez/profile.json
 node -p "JSON.stringify({
   stack: require('$PWD/$P').stack,
   mobile: require('$PWD/$P').paths && require('$PWD/$P').paths.mobile,
-  sdk: require('$PWD/$P').expo && require('$PWD/$P').expo.sdkVersion,
   domain: require('$PWD/$P').paths && require('$PWD/$P').paths.domain,
   commands: require('$PWD/$P').commands
 }, null, 2)"
@@ -52,21 +51,18 @@ node -p "JSON.stringify({
 | 키                                           | 없으면                                                                                    |
 | -------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | `paths.mobile`                               | `blocked`. `blocked_on` 에 `who: curvez-orchestrator` + 키 이름                           |
-| `expo.sdkVersion`                            | `blocked`. 같은 방식                                                                      |
 | `paths.domain` (`stack` 이 `monorepo` 일 때) | `blocked`. 같은 방식                                                                      |
 | `commands.*`                                 | 있는 것만 돌린다. 없는 명령을 지어내지 않는다                                             |
 | `paths.tests`                                | 유일하게 폴백 허용 (`*.test.*` / `*.spec.*` / `__tests__/`). 이 스킬은 여기에 쓰지 않는다 |
 
-**`app.json` / `app.config.*` / `package.json` 의 `expo` 필드로 소스 경로를 탐색하지 마라.**
+**`app.json` / `app.config.*` / `package.json` 으로 소스 경로를 탐색하지 마라.**
 **이유:** 구현 스킬마다 자기 폴백을 만들면 monorepo 에서 두 구현 에이전트가 같은 디렉터리를 소유하게 된다.
 병렬 실행에서 나중에 쓴 쪽이 앞선 쪽을 조용히 지우고, 이 손실은 diff 에 "삭제"로 보이지 않아 리뷰에서도 안 잡힌다.
 
-**Expo SDK 버전은 `expo.sdkVersion` 한 곳에서만 읽는다. 모바일 `package.json` 실측으로 대체하지 마라.**
-**이유:** Expo 는 SDK 버전마다 `react-native`·`react`·`expo-*` 버전이 고정 짝이다. 버전이 어긋나면
+**라이브러리 버전을 추측하지 마라. 모바일 `package.json` 에 있는 것을 따른다.**
+**이유:** React Native 는 `react-native`·`react` 와 네이티브 모듈 버전이 짝을 이룬다. 버전이 어긋나면
 타입 에러가 아니라 네이티브 링크 실패·런타임 크래시로 나타나 증상과 원인이 멀다.
-게다가 실측 폴백을 허용하면 "프로파일이 실제와 맞는가"를 검사할 기준 자체가 사라진다 —
-`expo.sdkVersion` 과 실측이 다르다는 사실이 문제로 보고되지 않고 조용히 실측 쪽으로 흡수된다.
-설치는 버전을 직접 쓰지 말고 SDK 정렬 설치 명령(`expo install`)을 쓴다.
+새 의존성이 필요하면 `blocked_on` 에 `who: curvez-researcher` 로 호환 범위 확인을 남긴다.
 
 ### 2. `architecture.md` 에서 배치 기준과 금지 패턴을 읽는다
 
@@ -172,7 +168,7 @@ grep -rn 'platform:' .curvez/design/screens .curvez/design/components
 3. 모노레포에서 같은 도메인 패키지를 Next.js 가 가져다 쓰면 서버 번들에 네이티브 모듈이 들어가 빌드가 깨진다
 
 플랫폼 API 가 필요하면 도메인은 **인터페이스(포트)만 선언**하고, 구현체(어댑터)를 `paths.mobile` 아래에 두어 주입한다.
-예: 도메인은 `TokenStore` 인터페이스만 알고 `expo-secure-store` 구현체는 모바일 인프라 레이어에 둔다.
+예: 도메인은 `TokenStore` 인터페이스만 알고 `react-native-keychain` 구현체는 모바일 인프라 레이어에 둔다.
 
 **규칙에 이의가 있어도 코드로 우회하지 마라.** `blocked_on` 에 규칙 ID·왜 막히는지·대안을 적어
 `who: curvez-architect` 로 돌린다.
@@ -215,12 +211,10 @@ ARCH=.curvez/architecture.md
 STACK=$(node -p "require('$PWD/$P').stack || ''")
 MOBILE=$(node -p "(require('$PWD/$P').paths||{}).mobile || ''")
 DOMAIN=$(node -p "(require('$PWD/$P').paths||{}).domain || ''")
-SDK=$(node -p "(require('$PWD/$P').expo||{}).sdkVersion || ''")
-echo "stack=$STACK mobile=$MOBILE domain=$DOMAIN expoSdk=$SDK"
+echo "stack=$STACK mobile=$MOBILE domain=$DOMAIN"
 
 MISSING=""
 [ -n "$MOBILE" ] || MISSING="$MISSING paths.mobile"
-[ -n "$SDK" ] || MISSING="$MISSING expo.sdkVersion"
 if [ "$STACK" = "monorepo" ] && [ -z "$DOMAIN" ]; then MISSING="$MISSING paths.domain"; fi
 [ -z "$MISSING" ] || { echo "profile 필수 키 없음 ->$MISSING -> blocked"; exit 1; }
 
@@ -261,8 +255,6 @@ echo "터치 타깃 미확보 $(grep -rlE 'Pressable|TouchableOpacity|TouchableH
   | xargs -r grep -LE 'hitSlop|min(Height|Width): *(4[4-9]|[5-9][0-9]|[1-9][0-9][0-9]+)' \
   | wc -l | tr -d ' ') 개"
 
-# 6) Expo SDK 정렬 — 버전을 추측하지 않고 SDK 기준으로 확인한다
-(cd "$MOBILE" && npx --no-install expo install --check 2>&1 | tail -5)
 ```
 
 `ARCH_RULES` 가 **0 이면 통과가 아니라 `blocked`** 다.
@@ -279,7 +271,6 @@ echo "터치 타깃 미확보 $(grep -rlE 'Pressable|TouchableOpacity|TouchableH
 - [ ] 검증 3번 `ARCH 규칙` **1개 이상**이고 `위반 합계` **0건**
 - [ ] 검증 4번 웹 전역 참조 **0건**
 - [ ] 검증 5번 터치 타깃 미확보 파일 **0개**
-- [ ] 검증 6번 `expo install --check` 의 버전 변경 권고 **0건** (네트워크 불가로 못 돌리면 "실행 불가"를 그대로 적고 `partial`)
 - [ ] 이번 단위의 모든 화면에 안전 영역 처리가 들어갔고, 입력이 있는 화면에는 키보드 회피가 들어갔다
 - [ ] 구현한 항목이 전부 `platform:` 이 `both` 또는 `rn` 인 스펙에서 나왔다
 - [ ] `paths.mobile` 밖에 쓴 파일이 없다
