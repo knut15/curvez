@@ -386,6 +386,11 @@ function checkRuntimeReadiness() {
       what: "가드 회귀 테스트",
       fallback: "없음 — 우회가 조용히 다시 뚫린다",
     },
+    {
+      path: "hooks/tests/guard-forbidden-words.test.py",
+      what: "금지어 가드 회귀 테스트",
+      fallback: "없음 — 합성어 오탐이 조용히 늘어난다",
+    },
   ];
 
   const missing = [];
@@ -431,6 +436,7 @@ function checkStructure() {
     "scripts/quality-gate.mjs",
     "hooks/hooks.json",
     "hooks/guard-bash.mjs",
+    "hooks/guard-forbidden-words.mjs",
     "hooks/validate-on-write.mjs",
     "hooks/check-handoff.mjs",
     "hooks/notify-update.mjs",
