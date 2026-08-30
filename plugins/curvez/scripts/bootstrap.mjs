@@ -65,7 +65,7 @@ const COMMAND_CANDIDATES = {
 /** 스택별 필수 프로파일 키. 없으면 진행 불가다. */
 const REQUIRED_KEYS = {
   nextjs: ["paths.web"],
-  "react-native": ["paths.mobile", "expo.sdkVersion"],
+  "react-native": ["paths.mobile"],
   monorepo: ["paths.web", "paths.mobile", "paths.domain"],
 };
 
@@ -286,7 +286,6 @@ function decide(d) {
   }
 
   const paths = {};
-  const expo = {};
 
   if (stack === "monorepo" && ws) {
     if (ws.web.length === 1) paths.web = ws.web[0];
@@ -330,32 +329,6 @@ function decide(d) {
       what: "paths.mobile 을 저장소 루트로 판정",
       why: "워크스페이스가 아닌 단일 저장소",
     });
-  }
-
-  // expo.sdkVersion — react-native / monorepo 에서 필요
-  if (stack === "react-native" || stack === "monorepo") {
-    const range =
-      d.expo ??
-      (ws
-        ? readJson(join(ROOT, paths.mobile ?? "", "package.json"))?.dependencies
-            ?.expo
-        : null);
-    if (range) {
-      const m = String(range).match(/(\d+)\./);
-      if (m) expo.sdkVersion = m[1];
-      else
-        questions.push({
-          key: "expo.sdkVersion",
-          ask: `expo 버전 범위 "${range}" 에서 메이저를 뽑지 못했다. SDK 버전은?`,
-          why: "SDK 마다 지원 라이브러리 버전이 고정돼 어긋나면 런타임에서만 드러난다",
-        });
-    } else if (stack === "react-native") {
-      questions.push({
-        key: "expo.sdkVersion",
-        ask: "expo 의존성이 없다. bare React Native 인가?",
-        why: "현재 계약은 react-native 스택에 expo.sdkVersion 을 필수로 요구한다. bare 라면 계약 확장이 필요하다",
-      });
-    }
   }
 
   // paths.tests — 유일하게 폴백이 허용된다
@@ -420,7 +393,6 @@ function decide(d) {
     packageManager: "pnpm",
     architecture: "ddd",
     ...(Object.keys(paths).length ? { paths } : {}),
-    ...(Object.keys(expo).length ? { expo } : {}),
     ...(git ? { git } : {}),
     commands,
   };
@@ -1087,8 +1059,6 @@ function main() {
   console.log(`프로파일    ${JSON.stringify(result.profile.commands)}`);
   if (result.profile.paths)
     console.log(`경로        ${JSON.stringify(result.profile.paths)}`);
-  if (result.profile.expo)
-    console.log(`expo        ${JSON.stringify(result.profile.expo)}`);
 
   if (result.decisions.length) {
     console.log("\n판정 근거");

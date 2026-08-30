@@ -207,7 +207,6 @@ owns: ${paths.web}
     "domain": "packages/domain",
     "tests": "tests"
   },
-  "expo": { "sdkVersion": "57" },
   "commands": {
     "typecheck": "...",
     "lint": "...",

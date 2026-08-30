@@ -19,7 +19,7 @@ description: Next.js App Router 코드를 확정된 아키텍처 경계와 디�
 
 ## 언제 쓰지 않는가
 
-- 모바일(Expo/React Native) 코드를 쓸 때 → `react-native-implementation` 을 쓴다
+- 모바일(React Native) 코드를 쓸 때 → `react-native-implementation` 을 쓴다
 - 화면·컴포넌트 스펙과 토큰을 **확정**할 때 → `wireframe-spec` 을 쓴다. 이 스킬은 확정된 스펙을 읽기만 한다
 - 코드를 쓰지 않고 검증·리뷰만 할 때 → `quality-gate` 를 쓴다
 - 레이어 경계 위반·중복을 훑어 구조를 정리할 때 → `structure-audit` 을 쓴다

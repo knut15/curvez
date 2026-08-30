@@ -34,12 +34,12 @@ packages/domain/            (paths.domain — 소유자 없음, 읽기만)
   ports/TokenStore.ts       인터페이스만. import 는 타입뿐
 
 apps/mobile/                (paths.mobile — 이 스킬의 쓰기 범위)
-  infrastructure/ExpoTokenStore.ts   expo-secure-store 구현체
+  infrastructure/KeychainTokenStore.ts   react-native-keychain 구현체
 ```
 
-- 어댑터는 `paths.mobile` 아래에 둔다. 도메인 쪽에 두면 도메인이 `expo-*` 를 참조하게 된다
+- 어댑터는 `paths.mobile` 아래에 둔다. 도메인 쪽에 두면 도메인이 네이티브 모듈을 참조하게 된다
 - 주입은 화면이 아니라 앱 진입점(프로바이더·컨테이너)에서 한 번 한다. 화면마다 주입하면 테스트에서 화면 수만큼 목을 만들어야 한다
-- 어댑터 파일명에 플랫폼을 드러낸다(`Expo*`, `Native*`). 웹 어댑터와 이름이 같으면 import 를 잘못 바꿔도 타입이 통과한다
+- 어댑터 파일명에 플랫폼을 드러낸다(`Native*`, `Web*`). 웹 어댑터와 이름이 같으면 import 를 잘못 바꿔도 타입이 통과한다
 
 ---
 

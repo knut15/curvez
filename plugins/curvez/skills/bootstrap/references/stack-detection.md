@@ -36,7 +36,6 @@ const shared = pkgs.filter((p) => !p.next && !p.expo && !p.rn &&
 console.log(JSON.stringify({
   web: web.map((p) => p.dir),
   mobile: mobile.map((p) => p.dir),
-  expoRange: mobile.map((p) => p.expo).filter(Boolean),
   domainCandidates: shared.map((p) => p.dir)
 }, null, 2));
 '
@@ -83,25 +82,11 @@ console.log(JSON.stringify({
 
 ---
 
-## expo.sdkVersion
-
-`expoRange` 의 값(`"~57.0.9"`, `"^57.0.0"`, `"57.0.9"`)에서 **첫 숫자 묶음**만 뽑아 문자열로 쓴다.
-
-```bash
-node -e 'console.log((process.argv[1].match(/\d+/) || [])[0] || "UNKNOWN")' "~57.0.9"
-```
-
-`UNKNOWN` 이 나오거나 `expoRange` 가 비면 인터뷰 3번 문항으로 묻는다.
-설치본에서 읽는 방법도 있지만 `node_modules` 가 없는 클론 직후에는 실패한다 — 범위 문자열이
-더 안정적인 출처다.
-
----
-
-## 한 package.json 에 next 와 expo 가 같이 있을 때
+## 한 package.json 에 next 와 react-native 가 같이 있을 때
 
 판정하지 말고 인터뷰 1번 문항으로 올린다.
 
-**이유:** 이 배치는 두 가지 서로 다른 프로젝트에서 나온다 — Expo Router 웹 빌드를 곁들인 RN 앱,
+**이유:** 이 배치는 두 가지 서로 다른 프로젝트에서 나온다 — 웹 빌드를 곁들인 RN 앱,
 그리고 마이그레이션 중간 상태의 웹 앱이다. 의존성 목록만으로는 구분되지 않는데, 판정이 틀리면
 `curvez-nextjs` 와 `curvez-react-native` 중 **엉뚱한 에이전트가 담당**이 되어 그 라운드의
 산출물 전체가 다른 프레임워크 관례로 쓰인다. 코드 리뷰 단계까지 가서야 드러난다.
