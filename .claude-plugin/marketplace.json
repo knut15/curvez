@@ -5,14 +5,14 @@
   },
   "metadata": {
     "description": "프로젝트 오케스트레이션 하네스. 기술 스펙·아키텍처·담당 에이전트를 세팅하고 팀 병렬 개발을 시작한다.",
-    "version": "0.4.0"
+    "version": "0.4.1"
   },
   "plugins": [
     {
       "name": "curvez",
       "source": "./plugins/curvez",
       "description": "Next.js·React Native 프로젝트를 위한 오케스트레이션 하네스. 아키텍처 확정, 에이전트 세팅, 팀 병렬 실행, 품질 게이트를 제공한다.",
-      "version": "0.4.0",
+      "version": "0.4.1",
       "author": {
         "name": "kim"
       },

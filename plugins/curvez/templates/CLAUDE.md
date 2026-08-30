@@ -1,6 +1,16 @@
 # 코딩 지침 (Karpathy Guidelines)
 
-출처: `andrej-karpathy-skills:karpathy-guidelines` 스킬. 코드를 작성·리뷰·리팩터링할 때 항상 적용한다. 사소한 작업에는 융통성 있게.
+코드를 작성·리뷰·리팩터링할 때 항상 적용한다. 사소한 작업에는 융통성 있게.
+
+<!-- 출처 표기 — 원본이 개정됐는지 대조하려면 이 세 값이 있어야 한다.
+     원본:      andrej-karpathy-skills:karpathy-guidelines (marketplace: karpathy-skills)
+     원본 버전: 1.0.0
+     복사 시점: 2026-08-28
+     라이선스:  MIT
+
+     1~4절만 원본에서 왔고, 그것도 영문 원문의 한글 번역이다. 원본 1.0.0 은 4절까지뿐이다.
+     5~12절은 원본에 대응이 없는 자체 작성분이다.
+     대조: grep '^## ' ~/.claude/plugins/marketplaces/karpathy-skills/skills/karpathy-guidelines/SKILL.md -->
 
 ## 1. 코딩 전에 생각한다
 
