@@ -3,57 +3,55 @@
 platform: nextjs
 route(nextjs): /
 route(rn): 해당 없음 — profile 의 stack 이 nextjs 라 모바일 앱이 없다
-goal: 방문자가 첫 스크롤 안에 "무엇을 하는 사람인가"를 읽고, 근거가 되는 케이스 3건 중 하나로 들어간다
+goal: 방문자가 스크롤 없이 한 화면에서 이름·한 문장·연락처를 받는다. 이 화면은 브랜드 화면이고 목록이 아니다
 entry: 직접 방문 · 이력서/프로필의 링크
-exit: 케이스 카드 클릭 → case-detail · "전체 보기" → case-index
+exit: "케이스" → case-index · GitHub → 외부
 
 ## layout
 
-- region: header
-  - fixed: false
-  - role: 사이트 이름과 케이스 목록으로 가는 링크. 스크롤을 따라오지 않는다
-  - component: SiteHeader
-  - tokens: bg=--background, border-b=--border
-- region: main
-  - scroll: true
-  - role: 페이지 본문. landmark=main
-  - region: hero
-    - role: 한 문장 포지셔닝. 이 화면에서 가장 먼저 읽혀야 한다
-    - priority: 1
-    - content: h1 한 문장(최대 2줄) + 보조 문단 1개(최대 3줄) + 연락 링크 2개
-    - h1(초안): "여러 서비스가 가져다 쓰는 프론트엔드 시스템을 만듭니다."
-    - 보조(초안): 무엇을 만들었는지가 아니라 어떤 제약에서 무엇을 고르고 무엇을 버렸는지를 씁니다.
-    - tokens: fg=--foreground, 보조=--muted-foreground, 제목=text-4xl
-  - region: featured-cases
-    - role: 포지셔닝의 근거. 케이스 3건을 카드로 보여준다
-    - priority: 2
-    - 1차 3건: token-store-race-condition · middleware-proxy-split · shared-sdk-design
-    - component: CaseCard (3회 반복)
-    - layout: <768 1열 / >=768 3열 grid, gap-4
-    - tail: "전체 보기" 링크 1개 → /cases
-  - region: contact
-    - role: 다음 행동. 이메일과 GitHub 링크
-    - priority: 3
-    - github: https://github.com/knut15 (확정)
-    - email: 주소 미정. `mailto:` 자리만 두고 값은 사용자가 넣는다. 공개 레포에 개인 주소를 박는 결정이라 스펙이 대신 정하지 않는다
-- region: footer
-  - role: 저작권 한 줄. 링크 없음
-  - tokens: fg=--muted-foreground
+**스크롤이 없다.** `h-dvh` 안에서 끝나고 넘치는 것은 자른다. 케이스 카드는 이 화면에 두지 않는다 —
+목록을 얹는 순간 브랜드 화면이 아니라 인덱스가 된다.
+
+- region: image
+  - role: 화면 전체를 채우는 브랜드 이미지. 옅은 민트 종이 조각이 가득하고 오른쪽에서 손이 하나를 놓는다
+  - priority: 1
+  - fit: `fill` + `object-cover`, 초점 `center`
+  - source: `public/brand/hero-highkey.webp` (2400px · 125KB). 원본은 `apps/handwork/brand-src/hero-highkey-source.png` 2688×1520 (서빙되지 않는 자리)
+  - **하이키(밝기 폭이 좁은 밝은 면)여야 한다.** 짙은 버전으로 바꾸면 아래 워드마크가 성립하지 않는다
+- region: bar
+  - role: 화면 전체를 가로지르는 상단 바. 좌측에 `handwork®`, 우측에 케이스 링크와 테마 토글
+  - priority: 3
+  - tokens: bg `#101514` · 글자 `#E4E8E7` — **테마와 무관하게 고정한다**
+  - **이유:** 사진이 테마를 따라 바뀌지 않는다. 바까지 밝아지면 라이트에서 밝은 띠와 밝은 사진이 겹쳐 프레임이 사라진다
+- region: wordmark
+  - role: 화면 한가운데. 사진 위에 면 없이 직접 얹는다
+  - priority: 2
+  - content: `HANDWORK` `clamp(3.5rem, 15vw, 11rem)` · 그 아래 줄무늬 띠 · 캡션 `FRONTEND SYSTEMS`
+  - color: `#101514` 고정. 테마를 따르지 않는다 — 배경이 사진이라 따라갈 대상이 없다
+
+**워드마크를 사진 위에 직접 얹는 조건은 측정으로 정한다.**
+이 이미지의 워드마크 영역에서 검은 글씨의 **3:1 미달 픽셀이 1.51%**, 하위 5% 대비가 **7.68** 이다.
+남은 1.51% 는 조각 사이 얇은 이음새라 굵은 획이 그 위를 지나도 끊기지 않는다.
+**이유:** 같은 구도의 짙은 버전에서는 같은 수치가 **7.10% / 2.13** 이었고, 실제로 "DW" 획이 조각에
+파묻혔다. 사진 위 조판은 평균 대비가 아니라 **미달 픽셀 비율**로 판정한다.
 
 ## states
 
-- state:default — featured-cases 에 케이스 3건. MDX 가 3건 미만이면 있는 만큼만 보이고 빈 칸을 만들지 않는다
-- state:loading — 없다. 케이스는 빌드 시점에 MDX 에서 정적으로 박히므로 런타임 데이터 요청이 0건이다. 스켈레톤을 만들지 않는다
-- state:empty — MDX 파일이 0건이면 featured-cases 영역 자체를 렌더하지 않는다. "케이스가 없습니다" 문구를 쓰지 않는다 — 방문자에게 빈 상태를 보여줄 이유가 없고, 이건 빌드 시점에 이미 아는 사실이다
-- state:error — 없다. 빌드 시점에 MDX 파싱이 실패하면 배포가 실패한다. 런타임 에러 화면을 만들지 않는다
+- state:default — 항상 이 상태다. 데이터에 의존하지 않는다
+- state:loading — 이미지에 `priority` 를 주어 첫 화면에서 늦게 오지 않게 한다. 스켈레톤은 두지 않는다 — 정적 자산 하나라 로딩 구간을 화면으로 만들 이유가 없다
+- state:empty — 이 화면에는 빈 상태가 없다. 표시할 목록이 없다
+- state:error — 이 화면에는 에러 상태가 없다. 이미지가 실패하면 워드마크가 흰 바탕 위에 남는다. 상단 바는 불투명해서 그대로 읽힌다
 
 ## responsive
 
-- nextjs: <768 단일 열, hero 제목 text-3xl, 섹션 세로 py-10 / >=768 featured-cases 3열, 제목 text-4xl, py-16
-- nextjs: 컨테이너 max-w-5xl, 좌우 px-4
+- nextjs: 어느 폭에서도 이미지가 전면이고 워드마크는 가운데다
+- nextjs: 워드마크 clamp 3.5rem ~ 11rem (15vw), 띠는 `min(18rem, 60vw)`
+- 어느 폭에서도 세로 스크롤이 생기지 않는다
 
 ## a11y
 
-- focus-order: header.logo → header.cases → header.theme → hero.contact[0] → hero.contact[1] → featured-cases.card[0..2] → featured-cases.all → contact.email → contact.github
-- landmark: main = main, header = banner, footer = contentinfo
-- announce: 없음. 이 화면에는 비동기 상태 변화가 없다
+- focus-order: bar.cases → bar.theme. 이 화면의 포커스 대상은 둘뿐이다 — 워드마크 영역에는 링크가 없다
+- 이미지에 alt 를 준다. 장식이 아니라 브랜드가 말하려는 내용이다
+- landmark: main 하나. 이 화면에는 header·footer 를 두지 않는다 — 사이트 헤더는 케이스 화면부터 나온다
+- 이미지는 배경이 아니라 `<Image>` 요소다. alt 를 주고 장식으로 숨기지 않는다
+- a11y:contrast — 상단 바 15.0(고정). 워드마크는 사진 위이므로 미달 픽셀 비율로 판정한다 — 3:1 미달 1.51%, 하위 5% 7.68
