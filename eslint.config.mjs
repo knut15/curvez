@@ -1,5 +1,4 @@
-import js from "@eslint/js";
-import globals from "globals";
+import { base } from "@curvez/eslint-config/base";
 
 export default [
   // apps/packages 는 각자의 eslint 설정으로 자기를 린트한다. 루트가 그 안까지 훑으면
@@ -16,13 +15,5 @@ export default [
       "packages/**",
     ],
   },
-  {
-    files: ["**/*.mjs"],
-    languageOptions: {
-      ecmaVersion: "latest",
-      sourceType: "module",
-      globals: globals.node,
-    },
-    rules: js.configs.recommended.rules,
-  },
+  ...base,
 ];
