@@ -3,3 +3,4 @@
 **/.omc/
 result.html
 pnpm-lock.yaml
+plugins/curvez/vendor/

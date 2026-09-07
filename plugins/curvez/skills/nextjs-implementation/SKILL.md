@@ -22,6 +22,7 @@ description: Next.js App Router 코드를 확정된 아키텍처 경계와 디�
 - 모바일(React Native) 코드를 쓸 때 → `react-native-implementation` 을 쓴다
 - 화면·컴포넌트 스펙과 토큰을 **확정**할 때 → `wireframe-spec` 을 쓴다. 이 스킬은 확정된 스펙을 읽기만 한다
 - 코드를 쓰지 않고 검증·리뷰만 할 때 → `quality-gate` 를 쓴다
+- 이징 커브·지속 시간·전환 값을 정해야 할 때 → `motion-standards` 를 쓴다. 값을 정하고 이 스킬로 돌아온다
 - 레이어 경계 위반·중복을 훑어 구조를 정리할 때 → `structure-audit` 을 쓴다
 - 지시가 여러 파일·모듈에 걸쳐 있어 담당을 나눠야 할 때 → `team-orchestration` 이 먼저다. 이 스킬은 담당과 파일 범위가 정해진 뒤에 돈다
 - 레이어를 추가하거나 의존 방향을 바꿀 때 → 이 스킬로 하지 않는다. `blocked_on` 에 이의를 남겨 `curvez-architect` 에게 돌린다
