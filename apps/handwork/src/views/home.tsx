@@ -4,9 +4,12 @@ import Link from "next/link";
 import { DiagonalStripes } from "@/shared/ui/motifs";
 import { ThemeToggle } from "@/shared/ui/theme-toggle";
 
-/** 워드마크는 사진 위에 바로 얹는다. 검은 글씨 기준 3:1 미달 픽셀이 1.51% 인 하이키 이미지라 성립한다. */
-const INK = "#101514";
-
+/**
+ * 워드마크는 사진 위에 바로 얹는다.
+ * 라이트: 하이키 이미지 위 검은 글씨 — 3:1 미달 픽셀 1.51%.
+ * 다크: 같은 이미지에 70% 어둠 레이어를 덮고 민트 글씨 — 4.5:1 미달 픽셀 0.00%.
+ *      60% 는 큰 글자(3:1)만 통과해서 캡션이 걸린다.
+ */
 export function HomeView() {
   return (
     <main className="relative h-dvh overflow-hidden">
@@ -17,6 +20,10 @@ export function HomeView() {
         priority
         sizes="100vw"
         className="object-cover object-center"
+      />
+      <div
+        className="absolute inset-0 hidden bg-[#101514]/70 dark:block"
+        aria-hidden
       />
 
       <div className="relative flex h-full flex-col">
@@ -38,10 +45,7 @@ export function HomeView() {
           </nav>
         </header>
 
-        <div
-          className="flex flex-1 flex-col items-center justify-center px-6 text-center"
-          style={{ color: INK }}
-        >
+        <div className="flex flex-1 flex-col items-center justify-center px-6 text-center text-[#101514] dark:text-[#5eead4]">
           <h1 className="font-[family-name:var(--font-display)] text-[clamp(3.5rem,15vw,11rem)] leading-[0.82] tracking-tight uppercase">
             handwork
           </h1>
