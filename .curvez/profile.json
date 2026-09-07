@@ -1,0 +1,20 @@
+{
+  "stack": "nextjs",
+  "packageManager": "pnpm",
+  "architecture": "ddd",
+  "paths": {
+    "web": "apps/handwork"
+  },
+  "git": {
+    "baseBranch": "main",
+    "releaseBranch": "main",
+    "mergeStrategy": "squash",
+    "protectedBranches": ["main"],
+    "humanMergeTargets": ["main"]
+  },
+  "commands": {
+    "typecheck": "pnpm typecheck",
+    "lint": "pnpm lint",
+    "build": "pnpm build"
+  }
+}

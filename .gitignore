@@ -2,3 +2,6 @@
 .DS_Store
 node_modules/
 .build/
+
+# curvez 실행 부산물 — 재현 가치가 없다
+.curvez/tmp/
