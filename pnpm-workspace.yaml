@@ -1,0 +1,17 @@
+# 워크스페이스 대상. 여기에 없으면 pnpm 이 별개 프로젝트로 취급한다.
+#
+# `plugins/` 는 일부러 뺐다. Claude Code 플러그인은 npm 패키지가 아니라
+# `.claude-plugin/plugin.json` 으로 로드되고, 마켓플레이스가 레포 루트의
+# `.claude-plugin/marketplace.json` 을 읽는다. 워크스페이스에 넣으면
+# package.json 이 없어 pnpm 이 매번 경고하고, 넣기 위해 package.json 을
+# 만들면 플러그인 로더와 pnpm 이 같은 디렉터리의 정체성을 다르게 말한다.
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# 빌드 스크립트 허용 목록. pnpm 11 은 결정하지 않은 패키지가 있으면 설치를 막는다.
+# unrs-resolver 는 eslint-config-next 가 쓰는 resolver 로 미리 빌드된 바이너리를
+# 받으므로 postinstall 이 필요 없다. create-next-app 이 자기 워크스페이스 파일에
+# 넣었던 값과 같다.
+allowBuilds:
+  unrs-resolver: false

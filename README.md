@@ -86,6 +86,16 @@ node plugins/curvez/scripts/doctor.mjs --plugin
     완비 6/6
 ```
 
+## 저장소 구조
+
+pnpm 워크스페이스다. 플러그인은 워크스페이스 밖에 있다 — npm 패키지가 아니라 마켓플레이스가 로드한다.
+
+| 경로             |                                                                                |
+| ---------------- | ------------------------------------------------------------------------------ |
+| `plugins/curvez` | Claude Code 플러그인. 루트 `.claude-plugin/marketplace.json` 이 진입점이다     |
+| `packages/*`     | 여러 앱이 가져다 쓰는 것. 경계 규칙은 [packages/README.md](packages/README.md) |
+| `apps/*`         | 배포되는 것. 경계 규칙은 [apps/README.md](apps/README.md)                      |
+
 ## 문서
 
 | 알고 싶은 것               | 문서                                                           |

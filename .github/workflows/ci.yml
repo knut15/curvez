@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # 게이트 순서는 싼 것부터다. 먼저 깨지는 것이 먼저 보고돼야 원인을 좁히는 비용이 싸다.
+      # 명령은 .curvez/profile.json 의 commands 와 문자열까지 같아야 한다.
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm build

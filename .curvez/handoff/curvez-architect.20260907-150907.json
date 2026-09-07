@@ -1,0 +1,65 @@
+{
+  "from": "curvez-architect",
+  "to": ["curvez-orchestrator"],
+  "status": "done",
+  "summary": "handwork 의 층 경계를 FSD 로 확정하고 금지 import 6건을 ESLint 로 강제했다. 인터뷰 3문(구조·공유 경계·강제 수준)을 사용자가 직접 답했다.",
+  "artifacts": [
+    { "path": ".curvez/architecture.md", "kind": "decision" },
+    { "path": "apps/handwork/eslint.config.mjs", "kind": "code" }
+  ],
+  "decisions": [
+    {
+      "what": "FSD 를 쓴다. DDD 프리셋을 쓰지 않는다",
+      "why": "사용자 선택. 포트폴리오 사이트에 domain/application 분리는 과하고 왜 FSD 인가를 ADR 로 남길 계획이다",
+      "reversible_at": ".curvez/architecture.md:레이어 정의"
+    },
+    {
+      "what": "FSD 의 pages 층을 views 로 개명",
+      "why": "Next App Router 에서 pages 는 Pages Router 의 예약 이름이라 같은 트리에서 뜻이 갈린다",
+      "reversible_at": ".curvez/architecture.md:레이어 정의"
+    },
+    {
+      "what": "금지 import 를 ESLint no-restricted-imports 로 강제한다",
+      "why": "사용자 선택. 문서에만 있는 규칙은 위반해도 아무 일이 없다",
+      "reversible_at": "apps/handwork/eslint.config.mjs"
+    },
+    {
+      "what": "profile.json 의 architecture 값은 ddd 로 둔다",
+      "why": "curvez 가 아는 프리셋 이름 집합에 fsd 가 없다. 실제 구조의 정본은 architecture.md 다",
+      "reversible_at": ".curvez/profile.json:architecture"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "필수 헤딩 7개 grep",
+      "result": "OK 7건, MISSING 0건",
+      "passed": true
+    },
+    {
+      "command": "grep -cE '^\\| ARCH-[0-9]{3} \\|' .curvez/architecture.md",
+      "result": "6",
+      "passed": true
+    },
+    {
+      "command": "awk 로 3열 ERE 추출 후 grep -E 문법 검사",
+      "result": "REGEX-OK 6건, REGEX-BAD 0건. 출력 줄 수 6 = 규칙 수 6",
+      "passed": true
+    },
+    {
+      "command": "eslint --stdin 위반 프로브 5건 (features→widgets, shared→entities, shared→../../, app→widgets, features→shared)",
+      "result": "위반 3건 각각 exit=1 로 ARCH-003·ARCH-001·ARCH-005 검출, 합법 2건 exit=0. 규칙이 실제로 문다",
+      "passed": true
+    },
+    {
+      "command": "pnpm typecheck && pnpm lint && pnpm build",
+      "result": "전부 exit 0. 소스가 app 층뿐이라 층 위반 실측 대상은 0건",
+      "passed": true
+    },
+    {
+      "command": "pnpm format:check",
+      "result": "All matched files use Prettier code style!",
+      "passed": true
+    }
+  ]
+}
