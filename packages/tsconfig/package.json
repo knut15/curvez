@@ -1,0 +1,15 @@
+{
+  "name": "@curvez/tsconfig",
+  "version": "0.0.0",
+  "private": true,
+  "description": "워크스페이스가 공유하는 TypeScript 설정",
+  "license": "MIT",
+  "files": [
+    "base.json",
+    "nextjs.json"
+  ],
+  "exports": {
+    "./base.json": "./base.json",
+    "./nextjs.json": "./nextjs.json"
+  }
+}
