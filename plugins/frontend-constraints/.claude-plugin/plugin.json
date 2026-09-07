@@ -1,0 +1,16 @@
+{
+  "name": "frontend-constraints",
+  "version": "0.1.0",
+  "description": "Skills that enforce design-token and architecture constraints on frontend code, so agent-written UI stays inside your system.",
+  "author": { "name": "Curvez Studio" },
+  "homepage": "https://github.com/knut15/frontend-constraint-skills",
+  "license": "MIT",
+  "keywords": [
+    "shadcn",
+    "design-tokens",
+    "tailwind",
+    "frontend",
+    "accessibility",
+    "architecture"
+  ]
+}

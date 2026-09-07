@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "프로젝트 오케스트레이션 하네스. 기술 스펙·아키텍처·담당 에이전트를 세팅하고 팀 병렬 개발을 시작한다.",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   "plugins": [
     {
@@ -23,6 +23,23 @@
         "react-native",
         "ddd",
         "agents"
+      ]
+    },
+    {
+      "name": "frontend-constraints",
+      "source": "./plugins/frontend-constraints",
+      "description": "AI 가 쓴 프론트엔드 코드를 프로젝트의 디자인 토큰·아키텍처 규칙 안에 묶는 스킬. 결정론적 스크립트가 위반을 찾고 SKILL.md 가 무엇을 고칠지 지시한다.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Curvez Studio"
+      },
+      "keywords": [
+        "shadcn",
+        "design-tokens",
+        "tailwind",
+        "frontend",
+        "accessibility",
+        "architecture"
       ]
     }
   ]

@@ -12,6 +12,33 @@ curvez 는 **user scope 플러그인**이다. 한 번 업데이트하면 그 계
 
 ---
 
+## 마켓플레이스 0.6.0 — `frontend-constraints` 플러그인 추가
+
+**curvez 플러그인 자체는 `0.5.0` 그대로다.** 바뀐 것은 마켓플레이스이고, 이 레포가 플러그인
+하나가 아니라 둘을 담게 됐다.
+
+| #   | 변경                                                                                                                                            | 정본                                     |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| ①   | **`knut15/frontend-constraint-skills` 를 `plugins/frontend-constraints` 로 흡수했다.** 별도 레포로 두면 배포 이력이 두 곳으로 갈린다            | `plugins/frontend-constraints/README.md` |
+| ②   | **루트 `.claude-plugin/marketplace.json` 의 `plugins` 가 2개가 됐다.** `metadata.version` 만 `0.6.0` 으로 올렸다                                | `.claude-plugin/marketplace.json`        |
+| ③   | **curvez 의 스킬 규약은 그 플러그인에 적용되지 않는다.** 한글 트리거와 필수 섹션은 curvez 스킬의 규칙이고, 저쪽은 영어권 배포용 별도 산출물이다 | 아래 설명                                |
+
+`validate-skills.mjs` 를 `plugins/frontend-constraints/skills/` 에 돌리면 오류 4건이 나온다 —
+description 에 한글 트리거가 없고 필수 섹션 둘이 없다. **고치지 마라.** 그 플러그인은 Claude Code
+뿐 아니라 Cursor·Codex 에서도 읽히는 영어권 배포물이고, 검증기의 기본 검사 범위
+(`plugins/curvez/skills`) 밖이라 CI 도 건드리지 않는다.
+
+### 설치
+
+```bash
+/plugin marketplace update curvez
+/plugin install frontend-constraints@curvez
+```
+
+curvez 플러그인과 독립이다. 하나만 깔아도 된다.
+
+---
+
 ## 0.5.0 — 애니메이션·디자인 축 10종 벤더링 · `motion-standards` 신설
 
 ### 무엇이 바뀌었나
