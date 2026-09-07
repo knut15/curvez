@@ -25,6 +25,7 @@ description: React Native 화면·컴포넌트·네비게이션을 아키텍처 
 - 화면·컴포넌트 스펙 자체를 만들거나 고칠 때 → `wireframe-spec` 을 쓴다. `platform:` 값·상태 키·토큰을 정하는 건 `curvez-designer` 소유다
 - 레이어 정의·의존 방향·금지 import 표를 만들거나 고칠 때 → `architecture-setup` 을 쓴다
 - 코드를 쓰지 않고 검증만 돌릴 때 → `quality-gate` 를 쓴다
+- 이징 커브·스프링 값·제스처 전환을 정해야 할 때 → `motion-standards` 를 쓴다. 값을 정하고 이 스킬로 돌아온다
 - 핸드오프 JSON 을 쓰거나 읽을 때 → `agent-contract` 를 쓴다
 - 지시가 여러 파일·모듈에 걸쳐 있어 담당을 나눠야 할 때 → `team-orchestration` 이 먼저다. 이 스킬은 담당과 파일 범위가 정해진 뒤에 돈다
 

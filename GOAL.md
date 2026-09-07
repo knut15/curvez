@@ -118,25 +118,26 @@ model: opus
 - **why-first**: 금지 규칙에는 **왜 안 되는지**를 붙인다. 이유를 알아야 문서에 없는 엣지 케이스에서 판단을 이어간다
 - **문체**: `~하라`, `~한다` 명령형
 
-### 5.2 만들 스킬 (15종)
+### 5.2 만들 스킬 (16종)
 
-| 스킬                          | 주 사용 에이전트   | 하는 일                                                            |
-| ----------------------------- | ------------------ | ------------------------------------------------------------------ |
-| `bootstrap`                   | orchestrator       | 프로젝트 부트스트랩. 스택 감지 → 프로파일 인터뷰 → `.curvez/` 생성 |
-| `architecture-setup`          | architect          | DDD 프리셋 확인 → 인터뷰 → `.curvez/architecture.md` 확정          |
-| `team-orchestration`          | orchestrator       | 팀 필요 판정 → 구성안 **승인** → 병렬 Agent 실행 → 핸드오프 수합   |
-| `agent-contract`              | 전체               | 입출력 계약 작성·검증. 핸드오프 스키마의 단일 출처                 |
-| `authoring-agents`            | 프로젝트 담당자    | 새 에이전트 작성 규약 + 스캐폴딩 + 검증                            |
-| `authoring-skills`            | 프로젝트 담당자    | 새 스킬 작성 규약 + 스캐폴딩 + 검증                                |
-| `research-brief`              | researcher         | 1차 출처 조사 → 근거 링크 붙은 브리프                              |
-| `wireframe-spec`              | designer           | 와이어프레임·디자인 토큰·컴포넌트 스펙                             |
-| `nextjs-implementation`       | nextjs             | 아키텍처 규칙 준수 구현. RSC/클라이언트 경계                       |
-| `react-native-implementation` | react-native       | Expo/RN 구현. 플랫폼 분기                                          |
-| `quality-gate`                | qa, reviewer       | typecheck·lint·test 를 **실제로 돌리고** 수치 보고                 |
-| `structure-audit`             | structure-reviewer | 중복 코드·순환 의존·경계 위반 검출                                 |
-| `retrospective`               | retrospector       | 회고 + **규약 자체를 고치는 액션 아이템**                          |
-| `branching`                   | git                | 브랜치 생성·PR·머지 절차. 전략은 프로파일에서 읽는다               |
-| `commit`                      | git                | 커밋·푸시·PR 생성. 요청 범위를 넘지 않는다                         |
+| 스킬                          | 주 사용 에이전트               | 하는 일                                                            |
+| ----------------------------- | ------------------------------ | ------------------------------------------------------------------ |
+| `bootstrap`                   | orchestrator                   | 프로젝트 부트스트랩. 스택 감지 → 프로파일 인터뷰 → `.curvez/` 생성 |
+| `architecture-setup`          | architect                      | DDD 프리셋 확인 → 인터뷰 → `.curvez/architecture.md` 확정          |
+| `team-orchestration`          | orchestrator                   | 팀 필요 판정 → 구성안 **승인** → 병렬 Agent 실행 → 핸드오프 수합   |
+| `agent-contract`              | 전체                           | 입출력 계약 작성·검증. 핸드오프 스키마의 단일 출처                 |
+| `authoring-agents`            | 프로젝트 담당자                | 새 에이전트 작성 규약 + 스캐폴딩 + 검증                            |
+| `authoring-skills`            | 프로젝트 담당자                | 새 스킬 작성 규약 + 스캐폴딩 + 검증                                |
+| `research-brief`              | researcher                     | 1차 출처 조사 → 근거 링크 붙은 브리프                              |
+| `wireframe-spec`              | designer                       | 와이어프레임·디자인 토큰·컴포넌트 스펙                             |
+| `nextjs-implementation`       | nextjs                         | 아키텍처 규칙 준수 구현. RSC/클라이언트 경계                       |
+| `react-native-implementation` | react-native                   | Expo/RN 구현. 플랫폼 분기                                          |
+| `quality-gate`                | qa, reviewer                   | typecheck·lint·test 를 **실제로 돌리고** 수치 보고                 |
+| `structure-audit`             | structure-reviewer             | 중복 코드·순환 의존·경계 위반 검출                                 |
+| `retrospective`               | retrospector                   | 회고 + **규약 자체를 고치는 액션 아이템**                          |
+| `branching`                   | git                            | 브랜치 생성·PR·머지 절차. 전략은 프로파일에서 읽는다               |
+| `commit`                      | git                            | 커밋·푸시·PR 생성. 요청 범위를 넘지 않는다                         |
+| `motion-standards`            | nextjs, react-native, designer | 이징·지속 시간·중단 가능성을 값으로 확정. 정본은 벤더 사본         |
 
 ---
 
@@ -262,7 +263,7 @@ model: opus
 
 ## 11. 완료 기준
 
-- `node scripts/doctor.mjs` **exit 0**, 에이전트 13/13 · 스킬 15/15 통과
+- `node scripts/doctor.mjs` **exit 0**, 에이전트 13/13 · 스킬 16/16 통과
 - 500줄 초과 SKILL.md **0건**
 - 프론트매터 5필드 누락 **0건**, 본문 7섹션 누락 **0건**
 - `~/Workspace/weather` 설치 → `bootstrap` 실행 → `.curvez/` 생성 확인

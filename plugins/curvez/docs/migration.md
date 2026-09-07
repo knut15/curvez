@@ -12,6 +12,48 @@ curvez 는 **user scope 플러그인**이다. 한 번 업데이트하면 그 계
 
 ---
 
+## 0.5.0 — 애니메이션·디자인 축 10종 벤더링 · `motion-standards` 신설
+
+### 무엇이 바뀌었나
+
+추가만 있다. 스킬이 한 종 늘고, 기존 동작·스키마는 그대로다.
+
+| #   | 변경                                                                                                                                                                                                                                                                                                                     | 정본                                      |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------- |
+| ①   | **외부에서 10종 벤더링.** `emilkowalski/skills` 커밋 `d23d7f8` 에서 `emil-design-eng` `animate` `animate-expo` `review-animations` `improve-animations` `find-animation-opportunities` `animation-vocabulary` `apple-design` `prototype` `pick-ui-library` 를 복사했다. MIT 라이선스 원문과 출처·커밋·복사일을 함께 둔다 | `vendor/emilkowalski-skills/VENDOR.md`    |
+| ②   | **원본에 릴리스 태그가 없어 커밋 해시로 고정한다.** mattpocock 사본처럼 버전 번호로 대조할 수 없다. 대조 명령은 `git ls-remote` 다                                                                                                                                                                                       | 같은 문서 "원본이 바뀌었는지 확인하는 법" |
+| ③   | **`motion-standards` 스킬을 새로 만들었다.** 벤더 사본은 발화로 호출되지 않는다. 이 스킬이 트리거를 갖고, 빈도 판정 → 토큰 출처 → 구현 → 자체 검사 순서로 사본의 어느 파일을 열지 지정한다                                                                                                                               | `skills/motion-standards/SKILL.md`        |
+| ④   | **`write-swift` 와 `ask-sonner` 는 뺐다.** 각각 Swift 언어 가이드와 단일 라이브러리 API 레퍼런스라 curvez 스택·범위 밖이다                                                                                                                                                                                               | 같은 문서 "들여오지 않은 것"              |
+
+메운 구멍은 **모션 기준**이다. `wireframe-spec` 은 화면 구조와 토큰을 값으로 확정하지만 그 값이
+움직일 때 무엇이 맞는지는 다루지 않았다. 구현 에이전트가 이징·지속 시간·중단 가능성을 각자
+추측하던 자리가 조회 가능한 표로 채워진다.
+
+에이전트 13종 라인업과 핸드오프 스키마는 그대로다. 벤더 사본은 `skills/` 가 아니라
+`vendor/` 아래에 있어 curvez 스킬 개수에 들어가지 않는다 — 개수가 16종이 된 것은 새로 만든
+`motion-standards` 하나 때문이다.
+
+### 업데이트 절차 (필수)
+
+절차의 정본은 [README 의 업데이트](README.md#업데이트)다. 끝나면 `installed_plugins.json` 의
+`curvez@curvez` 가 `version: "0.5.0"` 인지 확인하고, `node "$CLAUDE_PLUGIN_ROOT/scripts/doctor.mjs"` 로
+exit 0 을 본다.
+
+### 프로젝트에서 할 일
+
+- **없다.** 추가만 있고 기존 규약은 그대로다
+
+### 조건부
+
+- **모션 기준은 `motion-standards` 로 들어간다.** "애니메이션 넣어줘", "모션 추가해줘" 같은 발화가
+  그 스킬을 부르고, 그 스킬이 사본의 어느 파일을 열지 지정한다. 사본 자체는 `skills/` 에 등록하지
+  않았다 — 원본 그대로 두는 것이 목적이다
+- **값이 부딪히면 `.curvez/design/` 이 이긴다.** 사본은 "코드베이스에 이징 토큰이 있으면 그것을 쓰라"고
+  하고, curvez 프로젝트에서 그 정본은 `.curvez/design/` 이다
+- **사본을 고치지 마라.** 고치면 원본과 대조할 수 없고 그때부터 벤더링이 아니라 포크다
+
+---
+
 ## 0.4.1 — 차용 자산의 출처 표기에 버전·범위를 붙인다
 
 ### 무엇이 바뀌었나
@@ -51,7 +93,7 @@ bootstrap 이 새 프로젝트에 복제하므로 템플릿 자리에 있어야 
 | ④   | **도메인 금지 import 목록도 그대로다.** `expo-*` 는 여전히 차단 대상이다. 차단은 지원이 아니다                                                                                                                                         | `presets/architecture/ddd.md` ARCH-002                                                                  |
 | ⑤   | **외부 스킬 7종 벤더링.** `mattpocock-skills` 1.2.3 에서 `grill-me` `grill-with-docs` `code-review` `tdd` `improve-codebase-architecture` `handoff` `writing-for-agents` 를 복사했다. MIT 라이선스 원문과 출처·버전·복사일을 함께 둔다 | `vendor/mattpocock-skills/VENDOR.md`                                                                    |
 
-에이전트 13종·스킬 15종 라인업과 핸드오프 스키마는 그대로다. 벤더 스킬은 `skills/` 가 아니라
+에이전트·스킬 라인업과 핸드오프 스키마는 그대로다. 벤더 스킬은 `skills/` 가 아니라
 `vendor/` 아래에 있어 curvez 스킬 개수에 들어가지 않는다.
 
 ### 업데이트 절차 (필수)
@@ -270,7 +312,7 @@ exit 0 을 본다.
 
 절차의 정본은 [README 의 업데이트](README.md#업데이트)다. 끝나면 `installed_plugins.json` 의
 `curvez@curvez` 가 `version: "0.2.0"` 인지 확인하고, `node "$CLAUDE_PLUGIN_ROOT/scripts/doctor.mjs"` 로
-에이전트 13/13 · 스킬 15/15 · exit 0 을 본다.
+에이전트·스킬 전부 통과, exit 0 을 본다.
 
 ### 프로젝트에서 할 일 (조건부)
 
