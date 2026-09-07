@@ -4,31 +4,33 @@ import { ThemeToggle } from "@/shared/ui/theme-toggle";
 
 type Current = "home" | "cases" | "case";
 
-const LINK =
-  "rounded-md py-3 text-sm text-muted-foreground transition-colors duration-150 ease-out hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
-
+/**
+ * 모든 화면이 쓰는 단일 헤더. 홈과 서브가 같은 컴포넌트를 써야 좌우 간격이 갈리지 않는다.
+ * 홈에서 테마가 바꾸는 것은 이 바뿐이다 — 사진과 워드마크는 고정이다.
+ */
 export function SiteHeader({ current = "home" }: { current?: Current }) {
   return (
-    <header className="border-b border-border">
-      <div className="mx-auto flex max-w-5xl items-center gap-4 px-4">
+    <header className="flex items-center justify-between gap-4 bg-brand-canvas px-5 py-3 text-brand-ink md:px-8">
+      <span className="font-mono text-[0.7rem] tracking-[0.22em] uppercase">
         <Link
           href="/"
-          className={`${LINK} font-medium text-foreground`}
           aria-current={current === "home" ? "page" : undefined}
+          className="transition-colors duration-150 ease-out hover:text-brand-accent motion-reduce:transition-none"
         >
-          handwork
+          handwork<sup className="ml-0.5 text-[0.6em]">®</sup>
         </Link>
+        <span className="ml-3 text-brand-ink/60">frontend systems</span>
+      </span>
+      <nav className="flex items-center gap-4">
         <Link
           href="/cases"
-          className={LINK}
           aria-current={current === "cases" ? "page" : undefined}
+          className="font-mono text-[0.7rem] tracking-widest uppercase underline underline-offset-4 transition-colors duration-150 ease-out hover:text-brand-accent motion-reduce:transition-none"
         >
           케이스
         </Link>
-        <div className="ml-auto">
-          <ThemeToggle />
-        </div>
-      </div>
+        <ThemeToggle />
+      </nav>
     </header>
   );
 }
