@@ -3,57 +3,79 @@
 platform: nextjs
 route(nextjs): /
 route(rn): 해당 없음 — profile 의 stack 이 nextjs 라 모바일 앱이 없다
-goal: 방문자가 첫 스크롤 안에 "무엇을 하는 사람인가"를 읽고, 근거가 되는 케이스 3건 중 하나로 들어간다
+goal: 방문자가 스크롤 없이 한 화면에서 이름·한 문장·연락처를 받는다. 이 화면은 브랜드 화면이고 목록이 아니다
 entry: 직접 방문 · 이력서/프로필의 링크
-exit: 케이스 카드 클릭 → case-detail · "전체 보기" → case-index
+exit: "케이스" → case-index · GitHub → 외부
 
 ## layout
 
-- region: header
-  - fixed: false
-  - role: 사이트 이름과 케이스 목록으로 가는 링크. 스크롤을 따라오지 않는다
-  - component: SiteHeader
-  - tokens: bg=--background, border-b=--border
-- region: main
-  - scroll: true
-  - role: 페이지 본문. landmark=main
-  - region: hero
-    - role: 한 문장 포지셔닝. 이 화면에서 가장 먼저 읽혀야 한다
-    - priority: 1
-    - content: h1 한 문장(최대 2줄) + 보조 문단 1개(최대 3줄) + 연락 링크 2개
-    - h1(초안): "여러 서비스가 가져다 쓰는 프론트엔드 시스템을 만듭니다."
-    - 보조(초안): 무엇을 만들었는지가 아니라 어떤 제약에서 무엇을 고르고 무엇을 버렸는지를 씁니다.
-    - tokens: fg=--foreground, 보조=--muted-foreground, 제목=text-4xl
-  - region: featured-cases
-    - role: 포지셔닝의 근거. 케이스 3건을 카드로 보여준다
-    - priority: 2
-    - 1차 3건: token-store-race-condition · middleware-proxy-split · shared-sdk-design
-    - component: CaseCard (3회 반복)
-    - layout: <768 1열 / >=768 3열 grid, gap-4
-    - tail: "전체 보기" 링크 1개 → /cases
-  - region: contact
-    - role: 다음 행동. 이메일과 GitHub 링크
-    - priority: 3
-    - github: https://github.com/knut15 (확정)
-    - email: 주소 미정. `mailto:` 자리만 두고 값은 사용자가 넣는다. 공개 레포에 개인 주소를 박는 결정이라 스펙이 대신 정하지 않는다
-- region: footer
-  - role: 저작권 한 줄. 링크 없음
-  - tokens: fg=--muted-foreground
+**스크롤이 없다.** `h-dvh` 안에서 끝나고 넘치는 것은 자른다. 케이스 카드는 이 화면에 두지 않는다 —
+목록을 얹는 순간 브랜드 화면이 아니라 인덱스가 된다.
+
+- region: bar
+  - role: 화면 전체를 가로지르는 상단 바. 좌측 `handwork® frontend systems`, 우측 케이스 링크와 테마 토글
+  - priority: 3
+  - **홈·서브가 같은 `SiteHeader` 를 쓴다.** 좌우 여백 `px-5 md:px-8` 이 모든 화면에서 같아야 하고, 컴포넌트를 나누면 그 값이 조용히 갈린다
+  - **홈에서 테마가 바꾸는 것은 이 바뿐이다.** 배경은 사진이라 테마를 따를 대상이 없다
+  - 바 아래 `border-b` 1px. 서브 페이지에서 바와 본문 배경의 명도차가 작아(라이트 1.17 · 다크 1.04) 선이 없으면 바가 면으로 읽히지 않는다. 홈에서는 사진과의 경계가 된다
+- region: backdrop
+  - role: 다섯 장 중 **한 장**. 어느 장이 걸릴지는 방문할 때마다 서버가 정한다
+  - priority: 1
+  - 후보 5장 — 각 항목의 `ground` 는 그림이 뜨기 전에 깔아 둘 바탕색이다
+
+    | 그림          | 파일                       | ground    |
+    | ------------- | -------------------------- | --------- |
+    | A 조각 필드   | `polygon-field-plain.webp` | `#17928E` |
+    | B 인물        | `maker-portrait.webp`      | `#144946` |
+    | C 작업대      | `workbench.webp`           | `#3CA89E` |
+    | E 플랫 그래픽 | `mark-field.svg`           | `#85C7BF` |
+    | F 캠페인      | `campaign-wall.webp`       | `#9EDDCB` |
+
+  - E 만 사진이 아니다. 단색 `#85C7BF` 바탕에 검은 형상, 중앙 넥타이만 코랄 `#FF6B4A`. 형상은 하단 52% 에만 두어 워드마크와 겹치지 않게 한다
+  - **돌아가지 않는다.** 한 번 정해진 그림은 그 방문 동안 그대로다. 이 화면에는 모션이 없다
+  - **`ground` 를 빼지 마라.** 그림이 뜨기 전 구간에 body 배경(다크에서 거의 검정)이 드러나고, 그 위의 검은 워드마크가 통째로 사라진다. 값은 각 사진 테두리 10% 의 중앙값이다
+  - **뽑기는 서버에서 한다.** 첫 페인트 뒤에 클라이언트가 바꾸면 정해진 그림이 한 번 번쩍이고 교체된다. 그래서 이 화면만 정적 생성이 아니라 요청마다 렌더한다(`app/page.tsx` 의 `export const dynamic = "force-dynamic"`)
+  - **`output: export` 로 바꾸면 이 화면이 깨진다.** 정적 내보내기에는 요청 시점이 없어 뽑기가 빌드 때 한 번으로 굳는다
+- region: wordmark
+  - role: 화면 한가운데. 사진 위에 면 없이 직접 얹는다
+  - priority: 2
+  - content: `handwork`, **W 한 글자만 코랄** `#FF6B4A`, 나머지는 `#101514`
+  - type: Pretendard 900, `clamp(2.1rem, 9vw, 6.6rem)`, `tracking-[-0.03em]`
+  - **밑줄 띠와 캡션을 두지 않는다.** 워드마크 하나로 끝낸다
+
+**스크림을 두지 않는다.** 배경을 덮지 않기로 한 결정이라, 대비는 배경이 그대로 정한다.
 
 ## states
 
-- state:default — featured-cases 에 케이스 3건. MDX 가 3건 미만이면 있는 만큼만 보이고 빈 칸을 만들지 않는다
-- state:loading — 없다. 케이스는 빌드 시점에 MDX 에서 정적으로 박히므로 런타임 데이터 요청이 0건이다. 스켈레톤을 만들지 않는다
-- state:empty — MDX 파일이 0건이면 featured-cases 영역 자체를 렌더하지 않는다. "케이스가 없습니다" 문구를 쓰지 않는다 — 방문자에게 빈 상태를 보여줄 이유가 없고, 이건 빌드 시점에 이미 아는 사실이다
-- state:error — 없다. 빌드 시점에 MDX 파싱이 실패하면 배포가 실패한다. 런타임 에러 화면을 만들지 않는다
+- state:default — 항상 이 상태다. 데이터에 의존하지 않는다
+- state:loading — 뽑힌 한 장에 `priority` 를 준다. 그림이 도착하기 전에는 그 그림의 `ground` 색이 화면을 채운다. 스켈레톤은 두지 않는다
+- state:empty — 이 화면에는 빈 상태가 없다. 표시할 목록이 없다
+- state:error — 이 화면에는 에러 상태가 없다. 배경이 실패해도 워드마크와 상단 바는 그대로 읽힌다
 
 ## responsive
 
-- nextjs: <768 단일 열, hero 제목 text-3xl, 섹션 세로 py-10 / >=768 featured-cases 3열, 제목 text-4xl, py-16
-- nextjs: 컨테이너 max-w-5xl, 좌우 px-4
+- nextjs: 어느 폭에서도 이미지가 전면(`object-cover object-center`)이고 워드마크는 가운데다
+- nextjs: 워드마크 clamp 3.5rem ~ 11rem (15vw), 띠는 `min(18rem, 60vw)`
+- 어느 폭에서도 세로 스크롤이 생기지 않는다
 
 ## a11y
 
-- focus-order: header.logo → header.cases → header.theme → hero.contact[0] → hero.contact[1] → featured-cases.card[0..2] → featured-cases.all → contact.email → contact.github
-- landmark: main = main, header = banner, footer = contentinfo
-- announce: 없음. 이 화면에는 비동기 상태 변화가 없다
+- focus-order: bar.cases → bar.theme. 이 화면의 포커스 대상은 둘뿐이다 — 워드마크 영역에는 링크가 없다
+- 이미지에 alt 를 준다. 장식이 아니라 브랜드가 말하려는 내용이다
+- landmark: main 하나. 이 화면에는 header·footer 를 두지 않는다 — 사이트 헤더는 케이스 화면부터 나온다
+- 이미지는 배경이 아니라 `<Image>` 요소다. alt 를 주고 장식으로 숨기지 않는다
+- a11y:contrast — 상단 바는 라이트 13.54 · 다크 15.50 으로 고정이다. 워드마크는 사진 위이므로 **미달 픽셀 비율**로 판정한다
+  - 재는 자리: 이미지 **가운데 가로 60% × 세로 18%** 구역. 워드마크가 놓이는 자리다. 글자색 `#101514`
+  - 다섯 장을 같은 자리·같은 방법으로 다시 쟀다. 아래 수치는 서로 비교할 수 있다
+
+    | 그림          | 3:1 미달   | 4.5:1 미달 | 하위 5% |
+    | ------------- | ---------- | ---------- | ------- |
+    | A 조각 필드   | 5.13%      | 36.99%     | 2.95    |
+    | B 인물        | **85.13%** | 92.26%     | 1.08    |
+    | C 작업대      | 32.55%     | 52.61%     | 1.34    |
+    | E 플랫 그래픽 | 0%         | 0%         | 9.58    |
+    | F 캠페인      | 27.63%     | 31.88%     | 1.06    |
+
+  - **B 만 등급이 다르다.** 나머지는 워드마크가 부분적으로 묻히는 정도이고, B 는 거의 전부가 묻힌다 — 어두운 teal 벽과 머리카락이 글자 자리를 덮는다. `object-position` 으로 피할 수 없다. 데스크톱 비율에서 잘라낼 여유가 가로로 5% 밖에 없다
+  - **F 가 가려지는 것은 사용자가 괜찮다고 한 결정**이다(27.63%). B 를 그 선에 맞추려면 그림 자체를 밝히거나 후보에서 빼야 한다
+  - 코랄 W 는 teal 계열 배경과 명도가 가까워 검은 글자보다 흐리게 읽힌다. 강조가 목적이라 감수한다

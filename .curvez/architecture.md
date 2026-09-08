@@ -77,6 +77,11 @@ apps/handwork/src/
 - **`shared` 는 `next/*` 와 `react` 를 import 해도 된다.** 프레임워크 비종속을 목표로 하지 않는다 —
   이 앱은 Next 를 갈아탈 계획이 없고, 그 제약을 걸면 UI 프리미티브를 shared 에 둘 수 없다
 
+- **`entities/*/ui` 는 `next/*` 를 참조해도 된다.** 모델과 API(`entities/*/model`, `entities/*/api`)는
+  참조하지 않는다. FSD 의 entity UI 는 표현 계층이라 `next/link` 없이 링크를 그릴 수 없고, 프레임워크와
+  무관해야 하는 진짜 이유(테스트·재사용)는 모델과 API 에만 걸린다
+  - 검사: `grep -rn 'from "next/' apps/handwork/src/entities/*/api apps/handwork/src/entities/*/model` 가 0건
+
 ## 권고
 
 정규식으로 검사할 수 없어 lint 에 걸지 않는다. 리뷰에서 본다.
