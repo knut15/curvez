@@ -19,12 +19,15 @@ exit: 목록으로 돌아가기 → case-index · 다음 케이스 → case-deta
     - role: 제목·기간·역할·기술 태그. 본문을 읽기 전에 맥락을 준다
     - priority: 1
     - content: h1 · 메타 한 줄(date, role) · 태그 칩 n개
-    - tokens: 메타=--muted-foreground, 칩 bg=--muted
+    - tokens: 메타=--muted-foreground, 칩 bg=--muted, 칩 radius=`rounded-sm`
+    - type: h1 `text-4xl` `tracking-[-0.02em]` `leading-[1.15]` `break-keep` · 메타 `text-sm`
+    - **메타 줄을 모노로 두지 않는다.** role 이 한글인데 Geist Mono 에 한글 글자가 없어 폰트가 갈린다
   - region: body
     - role: MDX 본문. 제약 → 선택 → 버린 것 순서로 읽힌다
     - priority: 2
     - layout: max-w-[68ch] 단일 열
-    - tokens: 코드 블록 bg=--muted, 인용 border-l=--border
+    - tokens: 코드 블록 bg=--muted `rounded-lg`, 인라인 코드 `rounded-sm`, 인용 border-l=--border
+    - 본문 링크 hover=--brand-accent. 사이트 전역의 상호작용 색과 같다
   - region: nav-next
     - role: 다음 읽을거리. 이전/다음 케이스 링크 최대 2개. 없으면 영역을 숨긴다
     - priority: 3
@@ -40,7 +43,7 @@ exit: 목록으로 돌아가기 → case-index · 다음 케이스 → case-deta
 
 ## responsive
 
-- nextjs: <768 py-10 · 본문 그대로 1열 / >=768 py-16 · 본문 max-w-[68ch] 중앙 정렬, 컨테이너 max-w-5xl
+- nextjs: <768 py-10 · px-5 · 본문 그대로 1열 / >=768 py-16 · px-8 · 본문 max-w-[68ch] 중앙 정렬, 컨테이너 max-w-5xl
 
 ## a11y
 

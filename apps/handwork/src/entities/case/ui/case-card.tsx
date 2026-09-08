@@ -13,7 +13,7 @@ export function CaseCard({ item }: { item: CaseSummary }) {
   return (
     <Link
       href={`/cases/${item.slug}`}
-      className="flex flex-col gap-2 rounded-[var(--radius)] border border-border bg-card p-5 transition-colors duration-150 ease-out hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none"
+      className="flex flex-col gap-2 rounded-lg border border-border bg-card p-5 transition-colors duration-150 ease-out hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none"
     >
       <span className="line-clamp-2 text-lg font-medium text-card-foreground">
         {item.title}
@@ -24,7 +24,7 @@ export function CaseCard({ item }: { item: CaseSummary }) {
       <span className="mt-auto flex flex-wrap items-center gap-2 pt-2 text-xs text-muted-foreground">
         <span>{item.date}</span>
         {shown.map((tag) => (
-          <span key={tag} className="rounded bg-muted px-2 py-0.5">
+          <span key={tag} className="rounded-sm bg-muted px-2 py-0.5">
             {tag}
           </span>
         ))}

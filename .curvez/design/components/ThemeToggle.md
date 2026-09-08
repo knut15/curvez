@@ -31,7 +31,7 @@ purpose: 라이트·다크를 전환한다. 선택은 브라우저에 남고 다
 - a11y:label — 아이콘 전용이라 `aria-label` 필수. 원문 "테마 전환". 현재 테마를 라벨에 넣지 않는다 — 아이콘과 라벨이 서로 다른 시점에 갱신되면 스크린리더가 반대로 읽는다
 - a11y:focus — 헤더 링크 다음, 본문 앞. 누른 뒤에도 포커스를 잃지 않는다
 - 토글 방향은 `document.documentElement.classList` 를 읽어 정한다. `resolvedTheme` 은 하이드레이션 전에 `undefined` 라 그 값으로 뒤집으면 첫 클릭이 반대로 간다
-- a11y:contrast — fg=--muted-foreground / bg=--background 4.5:1 이상 (라이트 4.74 · 다크 7.66). hover 는 fg=--accent-foreground / bg=--accent
+- a11y:contrast — fg=--muted-foreground / bg=--background 라이트 5.28 · 다크 7.97. hover 는 fg=--accent-foreground / bg=--accent
 - a11y:target — 40x40 px (`size-10`). 24x24 최소를 넘고 헤더 링크와 gap-4 로 8px 이상 떨어진다
 - a11y:role — button. 링크가 아니다. 주소가 바뀌지 않는다
 

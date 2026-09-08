@@ -18,6 +18,7 @@ exit: 헤더로 다른 화면 · 항목이 생기면 lab-detail
   - region: title
     - role: 화면 제목과 성격 한 문단. **Cases 와 무엇이 다른지**를 여기서 가른다
     - priority: 1
+    - type: h1 `text-4xl` `tracking-[-0.02em]` · 설명 `max-w-[60ch]` `leading-relaxed` `break-keep`
     - 원문: "끝나지 않은 것들. 검증 중인 실험, 만들다 만 도구, 답이 안 나온 시도를 둡니다. 케이스가 '무엇을 골랐나'라면 여기는 '아직 고르지 못한 것'입니다."
   - region: list
     - role: 실험 카드 목록. **지금은 비어 있다**
@@ -34,18 +35,18 @@ exit: 헤더로 다른 화면 · 항목이 생기면 lab-detail
 
 - state:default — 항목이 1건 이상일 때. 정렬은 Cases 와 같이 date 내림차순
 - state:loading — 없다. 항목이 생기면 Cases 처럼 빌드 시점 정적 생성이라 런타임 요청이 0건이다
-- state:empty — **지금 상태다.** 문구 "아직 공개한 실험이 없습니다." 한 줄. 홈으로 돌아가는 링크를 두지 않는다 — 헤더가 이미 그 자리를 한다
+- state:empty — **지금 상태다.** 문구 "아직 공개한 실험이 없습니다." 한 줄. 위에 `border-t` 를 둔다 — 그 선이 목록이 들어설 자리이고, 항목이 생기면 카드가 그 아래에 깔린다. 홈으로 돌아가는 링크를 두지 않는다 — 헤더가 이미 그 자리를 한다
 - state:error — 없다. 항목이 생겨도 MDX 파싱 실패는 빌드 실패로 끝난다
 
 ## responsive
 
-- nextjs: <768 1열 · py-10 / >=768 py-16, 컨테이너 max-w-5xl. 설명 문단은 `max-w-[60ch]` · `break-keep`
+- nextjs: <768 1열 · py-10 · px-5 / >=768 py-16 · px-8, 컨테이너 max-w-5xl. 설명 문단은 `max-w-[60ch]` · `break-keep`
 
 ## a11y
 
 - focus-order: header.logo → header.cases → header.labs → header.theme → (목록이 생기면 list.card[0..n])
 - landmark: main = main
-- a11y:contrast — 본문과 보조 문구는 shadcn 토큰 위라 라이트 5.15 이상 · 다크 12.46 이상
+- a11y:contrast — h1 은 라이트 15.82 · 다크 16.13, 보조 문구는 라이트 5.28 · 다크 7.97
 
 ## 아직 만들지 않은 것
 
