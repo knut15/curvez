@@ -1,9 +1,8 @@
-import { readdir } from "node:fs/promises";
-import path from "node:path";
+import { byDateDesc, listSlugs } from "@/shared/lib/mdx-collection";
 
 import type { CaseMeta, CaseSummary } from "../model/types";
 
-const CONTENT_DIR = path.join(process.cwd(), "content", "cases");
+const COLLECTION = "cases";
 
 type CaseModule = {
   default: React.ComponentType;
@@ -15,11 +14,8 @@ async function importCase(slug: string): Promise<CaseModule> {
 }
 
 /** 콘텐츠 디렉터리의 slug 목록. 빌드 시점에만 돈다. */
-export async function listCaseSlugs(): Promise<string[]> {
-  const entries = await readdir(CONTENT_DIR).catch(() => []);
-  return entries
-    .filter((name) => name.endsWith(".mdx"))
-    .map((name) => name.replace(/\.mdx$/, ""));
+export function listCaseSlugs(): Promise<string[]> {
+  return listSlugs(COLLECTION);
 }
 
 /** 목록용 요약. date 내림차순으로 정렬한다. */
@@ -28,7 +24,7 @@ export async function listCases(): Promise<CaseSummary[]> {
   const cases = await Promise.all(
     slugs.map(async (slug) => ({ slug, ...(await importCase(slug)).meta })),
   );
-  return cases.sort((a, b) => b.date.localeCompare(a.date));
+  return cases.sort(byDateDesc);
 }
 
 /** 상세용 본문 + 메타. 없는 slug 면 null 을 돌려주고, 404 판정은 호출부가 한다. */

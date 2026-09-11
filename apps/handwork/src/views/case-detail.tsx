@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import type { CaseMeta } from "@/entities/case/model/types";
+import { PROSE } from "@/shared/ui/prose";
 
 type Neighbor = { slug: string; title: string } | null;
 
@@ -41,7 +42,7 @@ export function CaseDetailView({
         </ul>
       </header>
 
-      <article className="mx-auto mt-10 max-w-[68ch] leading-relaxed [&_a]:underline [&_a]:underline-offset-4 [&_a]:transition-colors [&_a]:duration-150 [&_a]:ease-out [&_a:hover]:text-brand-accent [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-4 [&_code]:rounded-sm [&_code]:bg-muted [&_code]:px-1 [&_h2]:mt-12 [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:tracking-[-0.015em] [&_h3]:mt-8 [&_h3]:text-lg [&_h3]:font-medium [&_li]:my-1 [&_ol]:my-4 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-4 [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted [&_pre]:p-4 [&_ul]:my-4 [&_ul]:list-disc [&_ul]:pl-5">
+      <article className={`mx-auto mt-10 max-w-[68ch] ${PROSE}`}>
         {children}
       </article>
 
