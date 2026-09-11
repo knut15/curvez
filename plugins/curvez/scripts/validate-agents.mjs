@@ -9,7 +9,7 @@
  * exit code: 오류 1건 이상이면 1.
  */
 
-import { readdirSync, statSync, existsSync } from "node:fs";
+import { readdirSync, statSync, existsSync, readFileSync } from "node:fs";
 import { join, dirname, basename, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -31,6 +31,8 @@ import {
   OWNS_SYMBOLS,
   UNOWNED_PATHS,
   OWNS_SHARED_EXEMPT,
+  OWNS_EXEMPT_FILE,
+  OWNS_EXEMPT_HEADING,
 } from "./lib/spec.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -366,7 +368,51 @@ function pathsOverlap(a, b) {
  * 앞선 쪽을 조용히 지우고, 그 손실은 어디에도 기록되지 않는다.
  * 지금까지 이 판정은 정의 본문의 자연어를 사람이 눈으로 비교하는 데 의존했다.
  */
-function checkOwnershipConflicts(targets, report) {
+/**
+ * 프로젝트가 선언한 소유권 예외를 읽는다.
+ *
+ * `.curvez/team.md` 의 `## 파일 소유권 예외` 절에 있는 표에서 `| \`경로\` | \`에이전트\` |`
+ * 행만 가져온다. 첫 칸이 백틱으로 감싼 경로가 아닌 행(산문 설명)은 건너뛴다.
+ *
+ * **파일이 없으면 빈 목록이다.** 대부분의 프로젝트는 예외가 필요 없고, 없는 것이
+ * 정상이다. 없다고 경고하지 마라 — 쓰이지 않는 규약을 매번 알리면 사람이 출력을 안 읽게 된다.
+ */
+function readOwnershipExemptions(cwd) {
+  const file = join(cwd, OWNS_EXEMPT_FILE);
+  if (!existsSync(file)) return [];
+
+  const md = readFileSync(file, "utf8");
+  const start = md.indexOf(OWNS_EXEMPT_HEADING);
+  if (start === -1) return [];
+  const after = md.indexOf("\n## ", start + OWNS_EXEMPT_HEADING.length);
+  const section = md.slice(start, after === -1 ? undefined : after);
+
+  const out = [];
+  for (const line of section.split("\n")) {
+    const cells = line.split("|").map((c) => c.trim());
+    if (cells.length < 4) continue;
+    const path = cells[1].match(/^`([^`]+)`$/)?.[1];
+    const owner = cells[2].match(/^`([^`]+)`$/)?.[1];
+    if (path && owner) out.push({ path, owner });
+  }
+  return out;
+}
+
+/**
+ * 이 쌍이 프로젝트 선언으로 갈려 있는가.
+ *
+ * **두 경로가 모두 표에 있고, 표가 적은 소유자가 실제 소유자와 같을 때만** 예외로 본다.
+ * 한쪽만 적혀 있으면 선언이 반쪽이라 경계가 그어지지 않은 것이고, 소유자 이름이 다르면
+ * 표가 낡은 것이다. 둘 다 조용히 넘기면 선언을 믿은 사람이 덮어쓰기를 당한다.
+ */
+function declaredSeparately(a, b, exemptions) {
+  const claims = (agent) =>
+    exemptions.some((e) => e.path === agent.path && e.owner === agent.name);
+  return claims(a) && claims(b);
+}
+
+function checkOwnershipConflicts(targets, report, cwd = process.cwd()) {
+  const exemptions = readOwnershipExemptions(cwd);
   const owned = [];
 
   for (const file of targets) {
@@ -389,6 +435,7 @@ function checkOwnershipConflicts(targets, report) {
       if (a.name === b.name) continue;
       if (OWNS_SHARED_EXEMPT.some((e) => pathsOverlap(a.path, e))) continue;
       if (!pathsOverlap(a.path, b.path)) continue;
+      if (declaredSeparately(a, b, exemptions)) continue;
 
       const detail =
         a.path === b.path

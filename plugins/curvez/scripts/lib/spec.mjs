@@ -53,6 +53,20 @@ export const UNOWNED_PATHS = ["${paths.domain}"];
  */
 export const OWNS_SHARED_EXEMPT = [".curvez/handoff/"];
 
+/**
+ * 프로젝트가 소유권 예외를 선언하는 파일과 그 안의 표 제목.
+ *
+ * 코어 에이전트의 소유 경로 안쪽을 프로젝트 에이전트가 맡아야 할 때가 있다. 그때
+ * 코어 정의를 고치면 이 플러그인을 쓰는 다른 프로젝트의 팀 편성이 아무도 요청하지
+ * 않았는데 함께 달라진다. `docs/extending.md` 의 "새 에이전트 만들기 4단계" 가 그래서
+ * 프로젝트 쪽에만 선언하라고 정했다.
+ *
+ * 그 선언을 기계가 읽지 못하면 문서와 검사가 어긋난다 — 규약대로 적었는데도 검증기가
+ * 막는다. 이 값이 그 간격을 메운다.
+ */
+export const OWNS_EXEMPT_FILE = ".curvez/team.md";
+export const OWNS_EXEMPT_HEADING = "## 파일 소유권 예외";
+
 /** 에이전트 본문 필수 섹션. 헤딩 문자열과 순서가 고정이다. */
 export const AGENT_REQUIRED_SECTIONS = [
   "핵심 역할",
