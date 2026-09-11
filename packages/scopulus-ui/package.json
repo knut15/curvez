@@ -22,7 +22,8 @@
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
-    "cn": "^0.2.5"
+    "cn": "^0.2.5",
+    "lucide-react": "^1.41.0"
   },
   "peerDependencies": {
     "@base-ui/react": "^1.8.0",
