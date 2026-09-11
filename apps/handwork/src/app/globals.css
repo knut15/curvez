@@ -12,6 +12,8 @@
   --color-brand-accent: var(--brand-accent);
   --color-brand-canvas: var(--brand-canvas);
   --color-brand-ink: var(--brand-ink);
+  --color-brand-mark: var(--brand-mark);
+  --color-brand-overlay-ink: var(--brand-overlay-ink);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
@@ -62,6 +64,10 @@
   --brand-accent: #0b6b63;
   --brand-canvas: #e4e8e7;
   --brand-ink: #14201e;
+  /* 아래 둘은 .dark 에서 재정의하지 않는다. 랜딩 워드마크는 테마가 아니라
+     배경 사진 위에 얹히므로, 뒤집히면 사진 위에서 읽히지 않는다. */
+  --brand-mark: #ff6b4a;
+  --brand-overlay-ink: #101514;
   --background: oklch(0.9803 0.0025 165.1);
   --foreground: oklch(0.2315 0.0173 183.3);
   --card: oklch(1 0 0);
