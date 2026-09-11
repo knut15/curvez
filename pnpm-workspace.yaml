@@ -15,3 +15,6 @@ packages:
 # 넣었던 값과 같다.
 allowBuilds:
   unrs-resolver: false
+  # esbuild 는 postinstall 로 플랫폼 바이너리를 받는다. 막으면 vite 가 뜨지 않고
+  # storybook build 가 esbuild 를 못 찾아 죽는다.
+  esbuild: true

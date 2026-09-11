@@ -34,7 +34,7 @@ const BACKDROPS: Backdrop[] = [
   },
   {
     src: "/brand/maker-portrait.webp",
-    alt: "teal 조명이 도는 어두운 벽 앞에서 안경 쓴 사람이 화면 밖 위쪽을 올려다보는 상반신",
+    alt: "teal 조명이 도는 어두운 배경 앞에서 안경 쓴 사람이 화면 밖 위쪽을 올려다보는 상반신",
     ground: "#144946",
   },
   {
@@ -50,7 +50,7 @@ const BACKDROPS: Backdrop[] = [
   },
   {
     src: "/brand/campaign-wall.webp",
-    alt: "mint 색 벽 앞에서 접은 종이 조각 두 개를 눈에 대고 혀를 내민 사람",
+    alt: "mint 색 배경 앞에서 접은 종이 조각 두 개를 눈에 대고 혀를 내민 사람",
     ground: "#9eddcb",
   },
 ];
@@ -99,9 +99,9 @@ export async function HomeView() {
     <div className="relative min-h-0 flex-1 overflow-hidden">
       <Backdrop layer={layer} />
 
-      <div className="relative flex h-full flex-col items-center justify-center px-6 text-center text-[#101514]">
+      <div className="relative flex h-full flex-col items-center justify-center px-6 text-center text-brand-overlay-ink">
         <h1 className="text-[clamp(2.1rem,9vw,6.6rem)] leading-[0.82] font-black tracking-[-0.03em] uppercase">
-          hand<span className="text-[#ff6b4a]">w</span>ork
+          hand<span className="text-brand-mark">w</span>ork
         </h1>
       </div>
     </div>
