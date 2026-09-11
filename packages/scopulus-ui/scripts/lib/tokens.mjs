@@ -1,7 +1,7 @@
 /**
- * `src/tokens.css` 에서 색 토큰을 읽는다.
+ * `tokens.css` 에서 색 토큰을 읽는다.
  *
- * **`src/tokens.css` 가 유일한 입력이다.** `design/tokens.md` 는 그 파일의 사본이라고
+ * **`tokens.css` 가 유일한 입력이다.** `design/tokens.md` 는 그 파일의 사본이라고
  * 스스로 적어 뒀다. 사본을 입력으로 삼으면 내보낸 값과 화면의 값이 조용히 어긋난다.
  */
 import { readFileSync } from "node:fs";
@@ -9,7 +9,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-export const CSS_PATH = join(HERE, "..", "..", "src", "tokens.css");
+export const CSS_PATH = join(HERE, "..", "..", "tokens.css");
 
 /** `:root { ... }` 와 `.dark { ... }` 블록의 `--이름: 값;` 을 뽑는다. */
 export function readTokens(cssPath = CSS_PATH) {

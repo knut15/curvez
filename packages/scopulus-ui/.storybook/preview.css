@@ -4,7 +4,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "../src/tokens.css";
+@import "../tokens.css";
 
 /* 서체는 라이브러리가 정하지 않는다 — 쓰는 앱이 `--font-sans` 를 채운다(handwork 는
    `layout.tsx` 의 next/font 로). 스토리북에는 그 앱이 없어 변수가 비고, 비면 `font-sans`

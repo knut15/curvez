@@ -4,7 +4,7 @@
 간격 · 타이포 · 상태 · 고도, 그리고 문서 끝의 대비 검증 목록까지다. 값을 찾으려고 이 문서 밖으로
 나갈 일이 없어야 한다.
 
-**색의 실제 출처는 `../src/tokens.css` 다.** 아래 표는 그 파일의 `oklch()` 값을
+**색의 실제 출처는 `../tokens.css` 다.** 아래 표는 그 파일의 `oklch()` 값을
 읽기 쉬운 hex 로 옮긴 사본이고, 값이 갈리면 CSS 가 이긴다. 둘이 어긋나면
 `node packages/scopulus-ui/scripts/check-contrast.mjs` 의 동기 검사가 잡는다 — 사람이 눈으로 대조하지 않는다.
 
@@ -422,7 +422,7 @@ grep -rnE 'shadow|drop-shadow|elevation' apps/handwork/src --include='*.tsx' --i
 그때 이 절을 다시 연다. 지금 값을 지어 두면 쓰이지 않는 토큰이 남고, 처음 쓰는 사람이 그 값이
 검증된 것인지 아닌지 알 수 없다.
 
-**바꿀 때 고칠 위치:** 이 절과 `../src/tokens.css` 의 `@theme inline` 블록 두 곳.
+**바꿀 때 고칠 위치:** 이 절과 `../tokens.css` 의 `@theme inline` 블록 두 곳.
 
 ## 커버리지
 
