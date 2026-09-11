@@ -35,7 +35,7 @@ import { defineConfig } from "eslint/config";
 /** 위반 메시지. 무엇을 어디로 옮기라는 지시까지 담는다. */
 const MSG = {
   domainNoFramework:
-    "domain 은 프레임워크를 모른다. React·Next·RN·상태 라이브러리가 필요하면 presentation 이나 infrastructure 로 옮겨라.",
+    "domain 은 프레임워크를 모른다. React·Next·상태 라이브러리가 필요하면 presentation 이나 infrastructure 로 옮겨라.",
   domainNoOuter:
     "domain 이 바깥 레이어를 참조한다. 의존은 안쪽으로만 흐른다. 필요한 것은 인터페이스로 선언하고 주입받아라.",
   domainNoIO:
@@ -69,11 +69,6 @@ const FRAMEWORK = [
   "react-dom/*",
   "next",
   "next/*",
-  "react-native",
-  "react-native/*",
-  "expo",
-  "expo-*",
-  "@react-navigation/*",
   "zustand",
   "zustand/*",
   "jotai",

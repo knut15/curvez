@@ -1,8 +1,6 @@
 # screen: home
 
-platform: nextjs
-route(nextjs): /
-route(rn): 해당 없음 — profile 의 stack 이 nextjs 라 모바일 앱이 없다
+route: /
 goal: 방문자가 스크롤 없이 한 화면에서 이름·한 문장·연락처를 받는다. 이 화면은 브랜드 화면이고 목록이 아니다
 entry: 직접 방문 · 이력서/프로필의 링크
 exit: "케이스" → case-index · GitHub → 외부
@@ -54,8 +52,8 @@ exit: "케이스" → case-index · GitHub → 외부
 
 ## responsive
 
-- nextjs: 어느 폭에서도 이미지가 전면(`object-cover object-center`)이고 워드마크는 가운데다
-- nextjs: 워드마크 clamp 3.5rem ~ 11rem (15vw), 띠는 `min(18rem, 60vw)`
+- 어느 폭에서도 이미지가 전면(`object-cover object-center`)이고 워드마크는 가운데다
+- 워드마크 clamp 3.5rem ~ 11rem (15vw), 띠는 `min(18rem, 60vw)`
 - 어느 폭에서도 세로 스크롤이 생기지 않는다
 
 ## a11y

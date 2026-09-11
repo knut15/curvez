@@ -1,23 +1,26 @@
 # 디자인 스펙 — handwork
 
-포트폴리오 웹사이트. 1차 범위는 화면 3개다. 값의 정본은 이 디렉터리이고,
+포트폴리오 웹사이트. 화면 5개다. 값의 정본은 이 디렉터리이고,
 색 값의 실제 출처는 `apps/handwork/src/app/globals.css` 다(`tokens.md` 첫 문단 참조).
 
 ## 화면
 
-| screen-id                             | route(nextjs)   | 목표                                                  | 상태          |
-| ------------------------------------- | --------------- | ----------------------------------------------------- | ------------- |
-| [home](screens/home.md)               | `/`             | 한 문장 포지셔닝을 읽히고 케이스 3건 중 하나로 보낸다 | 확정          |
-| [case-index](screens/case-index.md)   | `/cases`        | 케이스 전체를 훑고 하나를 고른다                      | 확정          |
-| [case-detail](screens/case-detail.md) | `/cases/[slug]` | 제약·선택·버린 것을 끝까지 읽힌다                     | 확정          |
-| [lab-index](screens/lab-index.md)     | `/labs`         | 끝나지 않은 것들. 지금은 빈 상태                      | 확정(빈 목록) |
+| screen-id                             | route(nextjs)   | 목표                                                  | 상태 |
+| ------------------------------------- | --------------- | ----------------------------------------------------- | ---- |
+| [home](screens/home.md)               | `/`             | 한 문장 포지셔닝을 읽히고 케이스 3건 중 하나로 보낸다 | 확정 |
+| [case-index](screens/case-index.md)   | `/cases`        | 케이스 전체를 훑고 하나를 고른다                      | 확정 |
+| [case-detail](screens/case-detail.md) | `/cases/[slug]` | 제약·선택·버린 것을 끝까지 읽힌다                     | 확정 |
+| [lab-index](screens/lab-index.md)     | `/labs`         | 만든 것의 기록을 훑고 하나를 고른다                   | 확정 |
+| [lab-detail](screens/lab-detail.md)   | `/labs/[slug]`  | 무엇을 만들었고 어디까지 왔는지 끝까지 읽힌다         | 확정 |
 
 ## 컴포넌트
 
-| 이름                                   | 쓰이는 화면       | 비고                                                         |
-| -------------------------------------- | ----------------- | ------------------------------------------------------------ |
-| [CaseCard](components/CaseCard.md)     | home · case-index | 카드 전체가 링크 하나                                        |
-| [SiteHeader](components/SiteHeader.md) | 전 화면           | 로고(홈) + Cases + Labs + 테마 토글. 홈·서브가 같은 컴포넌트 |
+| 이름                                     | 쓰이는 화면       | 비고                                                         |
+| ---------------------------------------- | ----------------- | ------------------------------------------------------------ |
+| [CaseCard](components/CaseCard.md)       | home · case-index | 카드 전체가 링크 하나                                        |
+| [LabCard](components/LabCard.md)         | lab-index         | CaseCard 와 같은 규칙 + 상태 배지 하나                       |
+| [SiteHeader](components/SiteHeader.md)   | 전 화면           | 로고(홈) + Cases + Labs + 테마 토글. 홈·서브가 같은 컴포넌트 |
+| [ThemeToggle](components/ThemeToggle.md) | 전 화면(헤더 안)  | 라이트·다크 전환. next-themes 를 쓴다                        |
 
 shadcn 컴포넌트는 필요해질 때 `shadcn add` 로 받아 `src/shared/ui/` 에 둔다. 받은 컴포넌트를
 여기에 다시 스펙으로 적지 않는다 — 그 문서는 shadcn 쪽이 정본이고, 사본은 낡는다.
@@ -26,18 +29,18 @@ shadcn 컴포넌트는 필요해질 때 `shadcn add` 로 받아 `src/shared/ui/`
 
 | 항목        | 값                                                            |
 | ----------- | ------------------------------------------------------------- |
-| 화면        | 4 / 4 확정 — lab-index 는 빈 목록 상태로 확정                 |
-| 컴포넌트    | 2 / 2 확정                                                    |
+| 화면        | 5 / 5 확정                                                    |
+| 컴포넌트    | 4 / 4 확정                                                    |
 | 상태 4종    | 모든 화면에 존재. 불가능한 상태는 사유를 적었다               |
 | 라이트·다크 | 색 토큰 14종 전부 양쪽 정의. 중립 스케일은 브랜드 색조를 띤다 |
 | 대비 검증   | 20쌍(라이트 10 · 다크 10), 실패 0. 렌더 화면 실측             |
 
 ## 이 스펙이 전제하는 것
 
-- **콘텐츠는 레포 안 MDX 다.** 케이스 본문은 빌드 시점에 정적으로 박힌다. 그래서 세 화면 모두
-  런타임 로딩·에러 상태가 없고, 각 화면의 `state:loading` / `state:error` 줄에 그 사유를 적었다
-- **모바일 앱이 없다.** `profile.json` 의 `stack` 이 `nextjs` 라 `platform:` 은 전부 `nextjs` 이고
-  `route(rn)` 은 사유와 함께 비워 뒀다
+- **콘텐츠는 레포 안 MDX 다.** 케이스와 기록 본문은 `content/cases` · `content/labs` 에 있고
+  빌드 시점에 정적으로 박힌다. 그래서 랜딩을 뺀 네 화면 모두 런타임 로딩·에러 상태가 없고,
+  각 화면의 `state:loading` / `state:error` 줄에 그 사유를 적었다
+- **랜딩만 예외다.** 배경을 방문마다 뽑느라 `force-dynamic` 이라, 요청마다 서버에서 렌더한다
 - **다크 모드는 클래스 토글이고 UI 가 헤더에 있다.** shadcn 이 깔아 둔 `.dark` 블록을 `next-themes` 로 전환한다
 
 ## 1차 케이스 3건

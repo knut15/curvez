@@ -30,8 +30,8 @@ description: 변경을 커밋·푸시하고 PR 을 만들며, 요청받으면 �
 - 핸드오프 JSON 의 스키마·필드 규칙 → `agent-contract` 를 쓴다. 이 스킬은 `artifacts` 에 들어갈
   **값**(커밋 해시, PR URL)만 만든다
 - `.curvez/profile.json` 이 없을 때 → `bootstrap` 을 먼저 쓴다. 브랜치 이름을 추측하지 않는다
-- 커밋되지 않은 실패를 고치려고 코드를 쓸 때 → 구현 스킬(`nextjs-implementation` /
-  `react-native-implementation`)로 돌아간다. 깨진 것을 커밋으로 덮지 않는다
+- 커밋되지 않은 실패를 고치려고 코드를 쓸 때 → 구현 스킬(`nextjs-implementation`)로 돌아간다.
+  깨진 것을 커밋으로 덮지 않는다
 
 ## 어디까지 하는가
 

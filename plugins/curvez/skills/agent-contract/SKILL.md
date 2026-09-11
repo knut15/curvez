@@ -39,7 +39,7 @@ description: 에이전트가 작업을 마치고 다음 담당에게 넘기는 �
 ```json
 {
   "from": "curvez-architect",
-  "to": ["curvez-nextjs", "curvez-react-native"],
+  "to": ["curvez-nextjs"],
   "status": "done",
   "summary": "DDD 4레이어로 확정. 도메인은 프레임워크 import 금지.",
   "artifacts": [

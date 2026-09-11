@@ -1,8 +1,6 @@
 # screen: case-detail
 
-platform: nextjs
-route(nextjs): /cases/[slug]
-route(rn): 해당 없음 — profile 의 stack 이 nextjs 라 모바일 앱이 없다
+route: /cases/[slug]
 goal: 방문자가 하나의 케이스에서 "어떤 제약에서 무엇을 골랐고 무엇을 버렸나"를 끝까지 읽는다
 entry: home 의 카드 · case-index 의 카드 · 외부 링크
 exit: 목록으로 돌아가기 → case-index · 다음 케이스 → case-detail
@@ -43,7 +41,7 @@ exit: 목록으로 돌아가기 → case-index · 다음 케이스 → case-deta
 
 ## responsive
 
-- nextjs: <768 py-10 · px-5 · 본문 그대로 1열 / >=768 py-16 · px-8 · 본문 max-w-[68ch] 중앙 정렬, 컨테이너 max-w-5xl
+- <768 py-10 · px-5 · 본문 그대로 1열 / >=768 py-16 · px-8 · 본문 max-w-[68ch] 중앙 정렬, 컨테이너 max-w-5xl
 
 ## a11y
 

@@ -21,7 +21,7 @@ description: 코드베이스 구조를 기계적으로 검출해 중복 코드·
 - 타입체크·린트·테스트를 돌려 **동작**을 판정할 때 → `quality-gate` 를 쓴다
 - 레이어·의존 방향·금지 import 를 **새로 정하거나 고칠 때** → `architecture-setup` 을 쓴다.
   이 스킬은 정해진 규칙에 비춰 위반을 셀 뿐이다
-- 지적을 실제로 **고칠 때** → `nextjs-implementation` / `react-native-implementation` 을 쓴다
+- 지적을 실제로 **고칠 때** → `nextjs-implementation` 을 쓴다
 - 핸드오프 JSON 의 필드·상태 규칙을 확인할 때 → `agent-contract` 를 쓴다
 - 라운드를 넘겨 반복되는 패턴을 회고할 때 → `retrospective` 를 쓴다
 
@@ -41,7 +41,7 @@ description: 코드베이스 구조를 기계적으로 검출해 중복 코드·
 | `architecture.md` 가 없다 | 경계 위반 판정만 건너뛴다. 중복·순환·위치는 그대로 검사하고 `status: partial`                                                                         |
 | 구현 핸드오프가 없다      | 변경 범위를 모르므로 **전수 검사**로 전환하고 그 사실을 `summary` 에 적는다                                                                           |
 
-`stack` 이 `monorepo` 면 `paths.web` `paths.mobile` `paths.domain` 을 각각 따로 돌린다.
+`stack` 이 `monorepo` 면 `paths.web` 과 `paths.domain` 을 각각 따로 돌린다.
 
 ### 2. 기계적 검출을 먼저 돌린다
 
@@ -269,7 +269,7 @@ description: 코드베이스 구조를 기계적으로 검출해 중복 코드·
 
 ## 고치지 않는다
 
-정리 방안만 낸다. 실제 수정은 `curvez-nextjs` / `curvez-react-native` 가 한다.
+정리 방안만 낸다. 실제 수정은 `curvez-nextjs` 가 한다.
 `>`, `>>`, `tee`, `sed -i`, `mv`, `rm`, `git add`, `git commit` 으로 우회하지 마라.
 검출 명령은 전부 stdout 으로만 결과를 내는 형태로 쓴다.
 

@@ -18,7 +18,7 @@ owns: .curvez/team.md
 팀 편성은 이 한 곳에서만 한다.
 
 **하지 않는 것:** 요구사항 확정(`curvez-requirements`), 아키텍처 결정(`curvez-architect`),
-코드 작성(`curvez-nextjs` / `curvez-react-native`), 코드 리뷰(`curvez-reviewer` / `curvez-structure-reviewer`),
+코드 작성(`curvez-nextjs`), 코드 리뷰(`curvez-reviewer` / `curvez-structure-reviewer`),
 테스트 실행(`curvez-qa`). 워커가 낸 결론을 오케스트레이터가 대신 고쳐 쓰지 마라.
 **이유:** 지휘자가 산출물까지 만들면 어느 판단이 워커 것이고 어느 것이 지휘자 것인지 구분이 사라져,
 다음 라운드에서 무엇을 되돌려야 하는지 특정할 수 없다.
@@ -47,13 +47,13 @@ owns: .curvez/team.md
 자기 컨텍스트에 올려 다음 라운드를 판정해야 한다. 6명을 넘어가면 수합 단계에서 앞선 핸드오프가
 컨텍스트에서 밀려 나가 `blocked_on` 을 놓친다. 또한 curvez 실행 흐름에서 실제로 동시 실행이
 가능한 최대 폭은 2~3명(`curvez-requirements` ∥ `curvez-researcher`, `curvez-architect` ∥ `curvez-designer`,
-`curvez-nextjs` ∥ `curvez-react-native`, `curvez-reviewer` ∥ `curvez-structure-reviewer`)이라
+`curvez-reviewer` ∥ `curvez-structure-reviewer`)이라
 5는 이미 여유를 포함한 값이다. 5를 넘겨야 할 것 같으면 팀이 큰 것이 아니라 작업이 안 쪼개진 것이다.
 라운드를 하나 더 만들어라.
 
-**전체 팀 인원 상한은 12명** — `curvez-` 라인업 전체다.
+**전체 팀 인원 상한은 11명** — `curvez-` 라인업 전체다.
 
-`subagent_type` 은 **curvez 라인업 12종과 읽기 전용 `Explore` 로 제한한다.** `Tools: *` 를 가진
+`subagent_type` 은 **curvez 라인업 11종과 읽기 전용 `Explore` 로 제한한다.** `Tools: *` 를 가진
 범용 타입(`general-purpose`, `claude` 등)을 워커로 띄우지 마라.
 **이유:** 범용 타입은 `Agent` 도구까지 갖고 있어 그 워커가 또 워커를 띄운다. 실행 트리의 깊이를
 아무도 통제하지 못하고, 규약을 하나도 모르는 채로 실행된다.
@@ -137,19 +137,18 @@ owns: .curvez/team.md
 #### 공유 도메인 패키지는 소유자가 없다
 
 `.curvez/profile.json` 의 `paths.domain`(모노레포 공유 도메인 패키지)은 **소유자가 없는 경로**다.
-`curvez-nextjs` 도 `curvez-react-native` 도 자기 소유로 선언하지 않는다. 둘 다 읽고, 둘 다 쓰고 싶어 한다.
+`curvez-nextjs` 의 쓰기 범위는 `paths.web` 뿐이고, 도메인 패키지는 같은 워크스페이스의 다른
+소비 패키지들이 함께 읽는다. 그 패키지들은 이번 라운드의 담당 밖이다.
 
-| 상황                                                                                                             | 판단                                                                                                                                  |
-| ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| 이번 라운드 작업이 `paths.domain` 을 건드린다                                                                    | `curvez-nextjs` 와 `curvez-react-native` 를 **동시에 띄우지 않는다.** 순차로 강등한다                                                 |
-| 두 구현 에이전트 어느 쪽에서든 `blocked_on` 에 `who: curvez-orchestrator` 로 "도메인 시그니처 변경 요청" 이 왔다 | 한쪽을 먼저 실행해 시그니처 변경을 반영시킨 뒤, 그 결과를 입력으로 넘겨 다른 쪽을 실행한다. 두 요청을 같은 라운드에서 처리하지 않는다 |
-| `paths.domain` 을 안 건드리고 각자 앱 경로만 쓴다                                                                | 평소대로 병렬                                                                                                                         |
+| 상황                                                                                                | 판단                                                                                                                                                |
+| --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 구현 에이전트가 `blocked_on` 에 `who: curvez-orchestrator` 로 "도메인 시그니처 변경 요청" 을 올렸다 | 변경할 시그니처와 그 도메인을 소비하는 패키지 목록을 사용자에게 올려 판단을 받는다. 승인 없이 구현 에이전트에게 도메인을 고치라고 돌려보내지 않는다 |
+| 이번 라운드가 `paths.domain` 을 건드리기로 확정됐다                                                 | 도메인 변경을 그 라운드에서 먼저 닫고, 소비 패키지 쪽 작업은 다음 라운드로 미룬다. 한 라운드에 섞지 않는다                                          |
+| `paths.domain` 을 안 건드리고 `paths.web` 만 쓴다                                                   | 평소대로 병렬                                                                                                                                       |
 
-먼저 실행할 쪽은 **변경 요청을 낸 쪽**이다. 양쪽이 동시에 요청했으면 `blast_radius` 가 큰 쪽을 먼저 돌린다.
-
-**이유:** 한쪽 스택 사정으로 공유 시그니처를 바꾸면 다른 스택이 조용히 깨진다. 그 깨짐은 그쪽
-에이전트가 **다음에 실행될 때까지 발견되지 않는다.** 동시 실행이면 그 다음이 이번 라운드에 없으므로,
-깨진 채로 리뷰·QA 라운드까지 흘러가 어느 변경이 원인이었는지 특정할 수 없게 된다.
+**이유:** 공유 시그니처를 바꾸면 그것을 소비하는 다른 패키지는 그 자리에서 깨지지 않는다. 깨짐은
+그 패키지를 다루는 **다음 라운드에서야 나타나고**, 그때는 여러 변경이 섞여 있어 어느 시그니처
+변경이 원인이었는지 특정할 수 없게 된다.
 
 #### `curvez-git` 은 라운드 자동 종료가 아니다
 
@@ -291,7 +290,6 @@ TS=$(date +%Y%m%d-%H%M%S)
 | `curvez-architect`          | 확정된 수용 기준, 연구 브리프 경로, **인터뷰 질문과 사용자 답변 원문**(중계했을 때)                         | requirements 라운드 종료 후                                                                                                                                                                           |
 | `curvez-designer`           | 확정된 수용 기준, 화면 목록                                                                                 | architect 와 같은 라운드. 소유 경로가 `.curvez/design/` 와 `.curvez/architecture.md` 로 분리된다                                                                                                      |
 | `curvez-nextjs`             | `.curvez/architecture.md` 경로, 담당 화면·모듈, 금지 import 목록                                            | architect·designer 라운드 종료 후                                                                                                                                                                     |
-| `curvez-react-native`       | 위와 같음. 담당 화면·모듈만 다르다                                                                          | `curvez-nextjs` 와 같은 라운드. 웹/모바일 소스 경로가 분리된다                                                                                                                                        |
 | `curvez-qa`                 | 구현 핸드오프의 `artifacts` 경로, `profile.json` 의 `commands`                                              | 구현 라운드 종료 후                                                                                                                                                                                   |
 | `curvez-reviewer`           | 리뷰 대상 경로, 계약 문서 경로, **"응답 전체를 핸드오프 JSON 으로만 반환하라"**                             | qa 라운드 종료 후                                                                                                                                                                                     |
 | `curvez-structure-reviewer` | 위와 같음                                                                                                   | `curvez-reviewer` 와 같은 라운드. 둘 다 읽기 전용이라 충돌이 없다                                                                                                                                     |
@@ -414,7 +412,7 @@ node "$CLAUDE_PLUGIN_ROOT/scripts/validate-skills.mjs" "$CLAUDE_PLUGIN_ROOT/skil
 
 - **선행:** 없다. 사용자 지시를 직접 받는 진입점이다
 - **후행:** 전원 — `curvez-requirements`, `curvez-researcher`, `curvez-marketer`, `curvez-architect`,
-  `curvez-designer`, `curvez-nextjs`, `curvez-react-native`, `curvez-qa`, `curvez-reviewer`,
+  `curvez-designer`, `curvez-nextjs`, `curvez-qa`, `curvez-reviewer`,
   `curvez-structure-reviewer`, `curvez-retrospector`
 - **병렬:** 없다. 오케스트레이터는 워커와 동시에 돌지 않는다
   - **이유:** 워커가 도는 동안 오케스트레이터가 파일을 쓰면 워커가 읽는 시점의 상태가 불확정해진다.

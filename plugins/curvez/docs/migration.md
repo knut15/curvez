@@ -56,7 +56,7 @@ curvez 플러그인과 독립이다. 하나만 깔아도 된다.
 움직일 때 무엇이 맞는지는 다루지 않았다. 구현 에이전트가 이징·지속 시간·중단 가능성을 각자
 추측하던 자리가 조회 가능한 표로 채워진다.
 
-에이전트 13종 라인업과 핸드오프 스키마는 그대로다. 벤더 사본은 `skills/` 가 아니라
+에이전트 12종 라인업과 핸드오프 스키마는 그대로다. 벤더 사본은 `skills/` 가 아니라
 `vendor/` 아래에 있어 curvez 스킬 개수에 들어가지 않는다 — 개수가 16종이 된 것은 새로 만든
 `motion-standards` 하나 때문이다.
 
@@ -108,17 +108,13 @@ bootstrap 이 새 프로젝트에 복제하므로 템플릿 자리에 있어야 
 
 ---
 
-## 0.4.0 — Expo 전제 제거 (파괴적 변경) · 외부 스킬 7종 벤더링
+## 0.4.0 — 외부 스킬 7종 벤더링
 
 ### 무엇이 바뀌었나
 
-| #   | 변경                                                                                                                                                                                                                                   | 정본                                                                                                    |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| ①   | **`expo.sdkVersion` 이 필수 키에서 빠졌다.** `react-native` 스택의 필수 키는 `paths.mobile` 하나다. RN 지원이 특정 툴체인을 전제하지 않는다                                                                                            | `scripts/bootstrap.mjs` `REQUIRED_KEYS`                                                                 |
-| ②   | **Expo 전용 절차가 전부 빠졌다.** 관리형/bare 구분, SDK 정렬 설치, `expo-doctor`, `expo install --check`, `expo-router` 기본값이 사라졌다. 네비게이션 기본값은 `@react-navigation/native` 다                                           | `agents/curvez-react-native.md`, `skills/react-native-implementation/`, `presets/stack/react-native.md` |
-| ③   | **스택 탐지는 그대로다.** `package.json` 의 `expo` 의존성은 여전히 RN 프로젝트 신호로 읽는다. 지우면 그 도구로 만든 프로젝트가 감지되지 않는다                                                                                         | `scripts/bootstrap.mjs` 감지부                                                                          |
-| ④   | **도메인 금지 import 목록도 그대로다.** `expo-*` 는 여전히 차단 대상이다. 차단은 지원이 아니다                                                                                                                                         | `presets/architecture/ddd.md` ARCH-002                                                                  |
-| ⑤   | **외부 스킬 7종 벤더링.** `mattpocock-skills` 1.2.3 에서 `grill-me` `grill-with-docs` `code-review` `tdd` `improve-codebase-architecture` `handoff` `writing-for-agents` 를 복사했다. MIT 라이선스 원문과 출처·버전·복사일을 함께 둔다 | `vendor/mattpocock-skills/VENDOR.md`                                                                    |
+| #   | 변경                                                                                                                                                                                                                                   | 정본                                 |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| ①   | **외부 스킬 7종 벤더링.** `mattpocock-skills` 1.2.3 에서 `grill-me` `grill-with-docs` `code-review` `tdd` `improve-codebase-architecture` `handoff` `writing-for-agents` 를 복사했다. MIT 라이선스 원문과 출처·버전·복사일을 함께 둔다 | `vendor/mattpocock-skills/VENDOR.md` |
 
 에이전트·스킬 라인업과 핸드오프 스키마는 그대로다. 벤더 스킬은 `skills/` 가 아니라
 `vendor/` 아래에 있어 curvez 스킬 개수에 들어가지 않는다.

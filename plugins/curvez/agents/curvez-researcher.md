@@ -15,7 +15,7 @@ owns: .curvez/research/
 
 **하지 않는 것:**
 
-- 코드 작성 — `curvez-nextjs`, `curvez-react-native` 의 일이다
+- 코드 작성 — `curvez-nextjs` 의 일이다
 - 아키텍처·레이어 경계 결정 — `curvez-architect` 의 일이다
 - 요구사항 확정·수용 기준 도출 — `curvez-requirements` 의 일이다
 - 기술 선택의 **최종 결정** — 조사는 선택지와 근거까지다. 고르는 것은 `curvez-architect` 와 `curvez-orchestrator` 다
@@ -103,13 +103,13 @@ owns: .curvez/research/
 
 ## 팀 통신 프로토콜
 
-| 누구에게                               | 무엇을                                                     | 언제                                   |
-| -------------------------------------- | ---------------------------------------------------------- | -------------------------------------- |
-| `curvez-architect`                     | 브리프 경로 + 기술 제약 + `확인 불가` 목록                 | 브리프를 쓴 직후. 아키텍처 결정 전     |
-| `curvez-orchestrator`                  | `status`, `blocked_on`, 조사 상한 도달 여부                | 항상. 모든 핸드오프의 `to` 에 포함한다 |
-| `curvez-requirements`                  | 요구사항이 기술적으로 불가능하거나 제약과 충돌할 때의 이의 | 모순을 발견한 즉시, 아키텍처 확정 전   |
-| `curvez-nextjs`, `curvez-react-native` | 구현에 직접 걸리는 API 사실·버전 제약 브리프 경로          | 해당 스택 조사일 때만                  |
-| `curvez-designer`                      | 플랫폼이 강제하는 UI 제약 (예: 안전영역, 폰트 로딩 제약)   | 디자인 조사일 때만                     |
+| 누구에게              | 무엇을                                                     | 언제                                   |
+| --------------------- | ---------------------------------------------------------- | -------------------------------------- |
+| `curvez-architect`    | 브리프 경로 + 기술 제약 + `확인 불가` 목록                 | 브리프를 쓴 직후. 아키텍처 결정 전     |
+| `curvez-orchestrator` | `status`, `blocked_on`, 조사 상한 도달 여부                | 항상. 모든 핸드오프의 `to` 에 포함한다 |
+| `curvez-requirements` | 요구사항이 기술적으로 불가능하거나 제약과 충돌할 때의 이의 | 모순을 발견한 즉시, 아키텍처 확정 전   |
+| `curvez-nextjs`       | 구현에 직접 걸리는 API 사실·버전 제약 브리프 경로          | 해당 스택 조사일 때만                  |
+| `curvez-designer`     | 브라우저가 강제하는 UI 제약 (예: 폰트 로딩, 뷰포트 단위)   | 디자인 조사일 때만                     |
 
 **받는 쪽:** `curvez-orchestrator` 의 조사 질문, `curvez-requirements` 의 수용 기준
 (조사 범위를 좁히는 데 쓴다), 다른 에이전트 핸드오프의 `blocked_on` 중 `who` 가 `curvez-researcher` 인 질문.
@@ -142,7 +142,7 @@ owns: .curvez/research/
 - **병렬:** `curvez-requirements` — 요구사항 확정과 기술 사실 확인은 서로를 기다리지 않는다.
   요구사항이 확정되면 조사 범위가 좁아질 뿐, 없어도 조사는 시작할 수 있다
 - **후행:** `curvez-architect` (기술 제약을 전제로 아키텍처 확정), `curvez-designer`,
-  그 뒤 `curvez-nextjs` / `curvez-react-native`
+  그 뒤 `curvez-nextjs`
 - **파일 소유권:** `.curvez/research/` 아래만 쓴다. 추가로 `.curvez/handoff/curvez-researcher.<timestamp>.json` 만 쓴다.
   `.curvez/architecture.md`, `.curvez/requirements.md`, `.curvez/design/`, 소스 트리는 **읽기만** 한다
 - **`Edit` 와 `NotebookEdit` 이 막혀 있다.** 기존 파일을 고칠 수 없고 새로 쓰기만 한다.

@@ -46,14 +46,13 @@ monorepo 에서 웹과 앱이 같은 규칙을 공유해야 할 때.
 
 인터뷰는 **레이어명과 경계 규칙만** 바꾼다. 프리셋을 재설계하지 않는다. 3문 이상 5문 이하다.
 
-| 무엇을                                                          | 프리셋 기본값                                                                                                    | 바꾸면 함께 고칠 곳                                                                             |
-| --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| 레이어 이름을 팀 용어로                                         | `application` → `usecase`, `presentation` → `ui` 등                                                              | `## 레이어 정의`, `## 의존 방향`, `## 금지 import` 의 검사 경로와 패턴, `## 폴더 구조`          |
-| 공유 코드를 어디에 둘 것인가                                    | `shared/` 를 두지 않는다. 순수 유틸은 `domain/shared/`, 프레임워크가 필요한 유틸은 `presentation/lib/`           | `## 폴더 구조`. `shared/` 를 최상위로 올리면 ARCH-003·ARCH-004 의 검사 경로에 추가하라          |
-| 경계 예외를 허용할 지점                                         | 없음                                                                                                             | `## 예외` 에 대상·허용 범위·**만료 조건**을 함께 적는다. 만료 조건 없는 예외는 새 기본값이 된다 |
-| (monorepo) 앱 간 공유를 패키지로 자를 것인가 폴더로 자를 것인가 | 패키지. `paths.domain` 이 곧 그 패키지다                                                                         | `## 폴더 구조`, `## 스택 매핑` 의 monorepo 절, 금지 import 의 검사 경로                         |
-| (react-native) 플랫폼 분기를 어느 레이어에서만 허용할 것인가    | `presentation` 과 `infrastructure` 에서만. `Platform.OS` 와 `.ios.tsx`/`.android.tsx` 가 그 밖으로 나가지 않는다 | `## 레이어 정의` 의 "여기 들어가면 안 되는 것", 필요하면 금지 import 규칙 추가                  |
-| **바운디드 컨텍스트를 나눌 것인가**                             | 나누지 않는다. `src/{domain,application,...}` 하나                                                               | 아래 절                                                                                         |
+| 무엇을                                                          | 프리셋 기본값                                                                                          | 바꾸면 함께 고칠 곳                                                                             |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| 레이어 이름을 팀 용어로                                         | `application` → `usecase`, `presentation` → `ui` 등                                                    | `## 레이어 정의`, `## 의존 방향`, `## 금지 import` 의 검사 경로와 패턴, `## 폴더 구조`          |
+| 공유 코드를 어디에 둘 것인가                                    | `shared/` 를 두지 않는다. 순수 유틸은 `domain/shared/`, 프레임워크가 필요한 유틸은 `presentation/lib/` | `## 폴더 구조`. `shared/` 를 최상위로 올리면 ARCH-003·ARCH-004 의 검사 경로에 추가하라          |
+| 경계 예외를 허용할 지점                                         | 없음                                                                                                   | `## 예외` 에 대상·허용 범위·**만료 조건**을 함께 적는다. 만료 조건 없는 예외는 새 기본값이 된다 |
+| (monorepo) 앱 간 공유를 패키지로 자를 것인가 폴더로 자를 것인가 | 패키지. `paths.domain` 이 곧 그 패키지다                                                               | `## 폴더 구조`, `## 스택 매핑` 의 monorepo 절, 금지 import 의 검사 경로                         |
+| **바운디드 컨텍스트를 나눌 것인가**                             | 나누지 않는다. `src/{domain,application,...}` 하나                                                     | 아래 절                                                                                         |
 
 ### 컨텍스트를 나눌 때
 
@@ -100,7 +99,7 @@ monorepo 에서 웹과 앱이 같은 규칙을 공유해야 할 때.
 아래는 프리셋이 **기본으로 켜지 않는** 규칙이다. 필요하면 인터뷰 답에 따라 `ARCH-009` 부터 이어 붙인다.
 
 - `presentation` 이 `infrastructure` 를 직접 참조 금지 — `src/presentation/` 에 `from ['\"][^'\"]*infrastructure/` 를 건다. 유스케이스 경계를 강제하지만 의존성 조립 지점(컴포지션 루트)이 걸리므로 그 파일을 `## 예외` 에 만료 조건과 함께 넣어야 한다. 예외를 만들기 싫으면 켜지 마라
-- `domain` 이 `crypto`/`node:crypto` 참조 금지 — RN 에는 없는 모듈이라 공유가 깨진다. 순수 해시 용도로 쓰고 있다면 오탐이 된다
+- `domain` 이 `crypto`/`node:crypto` 참조 금지 — 브라우저 번들에는 없는 모듈이라 클라이언트에서 도메인을 못 쓰게 된다. 순수 해시 용도로 쓰고 있다면 오탐이 된다
 - `domain` 이 로깅·모니터링 SDK 참조 금지 — 도메인이 관측 도구에 묶이면 테스트에서 초기화가 필요해진다
 
 ---
@@ -169,13 +168,12 @@ lint 는 조용히 통과한다 — 검사가 안 돌았는데 통과로 보이�
 | 규칙 ID  | 검사 경로           | 금지 패턴 (ERE)                                                                                          | 이유                                                                                                                                         |
 | -------- | ------------------- | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | ARCH-001 | src/domain/         | from ['\"](next                                                                                          | next/.*                                                                                                                                      | react         | react-dom | react/.*) | 도메인은 프레임워크 교체에서 분리돼야 한다 |
-| ARCH-002 | src/domain/         | from ['\"](react-native                                                                                  | react-native/.*                                                                                                                              | expo          | expo-.*   | expo/.*   | @react-navigation/.*)                      | 같은 도메인을 웹과 앱에서 재사용하려면 RN 의존이 없어야 한다 |
 | ARCH-003 | src/domain/         | from ['\"][^'\"]*infrastructure/                                                                         | 의존은 안쪽으로만 흐른다. 바깥을 부르면 레이어가 이름만 남는다                                                                               |
 | ARCH-004 | src/domain/         | from ['\"][^'\"]*presentation/                                                                           | 화면을 아는 도메인은 화면이 바뀔 때마다 함께 바뀐다                                                                                          |
 | ARCH-009 | src/application/    | from ['\"][^'\"]*infrastructure/                                                                         | ARCH-003 과 같은 규칙을 application 에 적용한다. 검사 경로를 한 칸에 둘 이상 적으면 zsh 에서 단어 분리가 일어나지 않아 위반 0건으로 위장된다 |
 | ARCH-010 | src/application/    | from ['\"][^'\"]*presentation/                                                                           | ARCH-004 와 같은 규칙을 application 에 적용한다. 경로를 나눈 이유는 ARCH-009 와 같다                                                         |
 | ARCH-005 | src/domain/         | from ['\"](node:)?(fs\|fs/promises\|path\|os\|http\|https\|net\|dns\|child_process\|worker_threads)['\"] | 런타임과 파일 시스템에 묶인 도메인은 앱에서 재사용도 테스트도 어렵다                                                                         |
-| ARCH-006 | src/domain/         | from ['\"](@prisma/client                                                                                | prisma                                                                                                                                       | drizzle-orm.* | typeorm   | mongoose  | mongodb                                    | pg                                                           | mysql2 | redis | ioredis | @supabase/.* | firebase | firebase/.* | @aws-sdk/.* | axios | ky  | got | node-fetch | @tanstack/react-query | swr) | DB 와 외부 클라이언트는 인프라의 관심사다. 도메인은 인터페이스만 선언한다 |
+| ARCH-006 | src/domain/         | from ['\"](@prisma/client                                                                                | prisma                                                                                                                                       | drizzle-orm.* | typeorm   | mongoose  | mongodb                                    | pg  | mysql2 | redis | ioredis | @supabase/.* | firebase | firebase/.* | @aws-sdk/.* | axios | ky  | got | node-fetch | @tanstack/react-query | swr) | DB 와 외부 클라이언트는 인프라의 관심사다. 도메인은 인터페이스만 선언한다 |
 | ARCH-007 | src/domain/         | (^\|[^a-zA-Z0-9_.])fetch\(                                                                               | 도메인이 직접 네트워크를 부르면 단위 테스트가 통합 테스트가 된다                                                                             |
 | ARCH-008 | src/infrastructure/ | from ['\"][^'\"]*presentation/                                                                           | 인프라가 화면을 알면 의존이 바깥에서 바깥으로 흐른다                                                                                         |
 
@@ -197,7 +195,7 @@ ARCH-001 부터 ARCH-007 까지가 **도메인의 프레임워크 독립**을 �
 
 `.curvez/profile.json` 의 `paths` 를 전제로 읽는다. 아래 트리의 최상위 접두사는 그 값으로 치환된다.
 
-**단일 앱** — `stack: nextjs` 면 `<paths.web>/`, `stack: react-native` 면 `<paths.mobile>/` 아래다.
+**단일 앱** — `stack: nextjs` 면 `<paths.web>/` 아래다.
 
 ```
 src/
@@ -218,7 +216,6 @@ src/
 │   └── config/              # 환경 변수는 여기서만 읽는다
 └── presentation/            # 화면과 진입점
     ├── app/                 # Next.js App Router 라우트 (stack: nextjs)
-    ├── screens/             # 화면 컴포넌트 (stack: react-native)
     ├── components/
     └── hooks/
 ```
@@ -238,11 +235,6 @@ apps/
 │       ├── infrastructure/
 │       └── presentation/
 │           └── app/
-└── mobile/                  # = paths.mobile
-    └── src/
-        ├── application/
-        ├── infrastructure/
-        └── presentation/
             ├── navigation/
             └── screens/
 tests/                       # = paths.tests. 없으면 각 패키지 안의 관례 위치
@@ -255,12 +247,12 @@ tests/                       # = paths.tests. 없으면 각 패키지 안의 관
 
 ## 스택 매핑
 
-| 레이어           | `nextjs`                                          | `react-native`                                     | `monorepo`                                                      |
-| ---------------- | ------------------------------------------------- | -------------------------------------------------- | --------------------------------------------------------------- |
-| `domain`         | `src/domain/` — 순수 TS                           | 동일. 웹과 그대로 공유 가능한 유일한 레이어다      | `packages/domain/src/` — 웹·앱이 함께 쓴다                      |
-| `application`    | `src/application/` — 서버에서 호출되는 유스케이스 | `src/application/` — 화면 훅이 호출하는 유스케이스 | 앱별로 각각 둔다                                                |
-| `infrastructure` | DB 클라이언트, `fetch` 래퍼, 외부 SDK             | HTTP 클라이언트, 로컬 저장소, 네이티브 모듈 래퍼   | 앱별로 각각 둔다. 같은 도메인 인터페이스를 서로 다르게 구현한다 |
-| `presentation`   | App Router 라우트, 서버·클라이언트 컴포넌트       | 화면 컴포넌트와 네비게이터                         | 앱별로 각각 둔다                                                |
+| 레이어           | `nextjs`                                          | `monorepo`                                                      |
+| ---------------- | ------------------------------------------------- | --------------------------------------------------------------- |
+| `domain`         | `src/domain/` — 순수 TS                           | `packages/domain/src/` — 앱 패키지들이 함께 쓴다                |
+| `application`    | `src/application/` — 서버에서 호출되는 유스케이스 | 앱별로 각각 둔다                                                |
+| `infrastructure` | DB 클라이언트, `fetch` 래퍼, 외부 SDK             | 앱별로 각각 둔다. 같은 도메인 인터페이스를 서로 다르게 구현한다 |
+| `presentation`   | App Router 라우트, 서버·클라이언트 컴포넌트       | 앱별로 각각 둔다                                                |
 
 ### `nextjs` — RSC 경계는 레이어 경계가 아니다
 
@@ -275,28 +267,18 @@ App Router 는 `presentation` **안쪽의 구분**이다. 레이어를 가르지
 
 `app/` 디렉터리 이름이 레이어 이름과 겹치지 않으므로 Next.js App Router 의 `app/` 과 혼동할 여지가 없다.
 
-### `react-native` — 네비게이션은 `presentation` 이다
-
-- 네비게이터 정의, 스크린 등록, 라우트 파라미터 타입은 전부 `presentation/navigation/` 이다. `@react-navigation/*` 는 ARCH-002 로 `domain` 에서 이미 막혀 있다
-- **화면 이동은 유스케이스의 결과가 아니다.** `application` 이 `navigate()` 를 부르면 그 유스케이스는 화면 없이 테스트할 수 없다. 유스케이스는 결과를 반환하고, 무엇으로 이동할지는 `presentation` 이 정한다
-- 딥링크 스킴 정의는 `presentation`, 딥링크가 실어 오는 식별자의 유효성은 `domain` 이다
-- 플랫폼 분기(`Platform.OS`, `.ios.tsx`/`.android.tsx`)는 `presentation` 과 `infrastructure` 에서만 한다. `domain` 에 플랫폼 분기가 생기면 그 규칙은 두 플랫폼에서 다르게 동작하는 규칙이 된다
-- 네이티브 모듈(`react-native-keychain`, `react-native-fs` 등)은 전부 `infrastructure` 의 래퍼 뒤에 둔다. `domain` 은 그 래퍼의 인터페이스만 안다
-- `paths.mobile` 아래에 `src/` 를 두지 않는 템플릿이 흔하다. 확정 전에 실제 경로를 확인하고 검사 경로를 맞춰라
-
 ### `monorepo` — `domain` 이 `paths.domain` 으로 빠진다
 
 **DDD 가 monorepo 에서 가장 잘 맞는 이유가 이것이다.** `domain` 이 프레임워크를 참조하지 않으면
-`packages/domain` 하나를 웹과 앱이 그대로 쓴다. 참조하는 순간 공유는 불가능해진다 —
-`domain` 이 `next/headers` 를 한 줄이라도 import 하면 RN 앱이 그 패키지를 못 쓴다. 반대도 같다.
+`packages/domain` 하나를 앱 패키지 여럿이 그대로 쓴다. 참조하는 순간 공유는 불가능해진다 —
+`domain` 이 `next/headers` 를 한 줄이라도 import 하면 서버 요청 밖에서 도는 패키지는 그것을 못 쓴다.
 **공유는 "대부분 공유" 가 성립하지 않는다. 한 줄이면 전체가 막힌다.**
 
-- `paths.domain` 에는 **소유자를 두지 않는다.** 웹 담당도 앱 담당도 아닌 공용 경로다. 그래서 구현 에이전트를 이 경로에 동시에 띄우지 않는다
-- ARCH-001 과 ARCH-002 의 검사 경로를 `packages/domain/src/` 로 바꾼다. 이 둘이 monorepo 공유를 실제로 지키는 규칙이다
-- ARCH-003·ARCH-004 의 검사 경로는 `packages/domain/src/ apps/web/src/application/ apps/mobile/src/application/` 처럼 앱별 경로를 함께 나열한다
+- `paths.domain` 에는 **소유자를 두지 않는다.** 어느 앱 담당의 것도 아닌 공용 경로다. 그래서 구현 에이전트를 이 경로에 동시에 띄우지 않는다
+- ARCH-001 의 검사 경로를 `packages/domain/src/` 로 바꾼다. 이것이 monorepo 공유를 실제로 지키는 규칙이다
+- ARCH-003·ARCH-004 의 검사 경로는 `packages/domain/src/ apps/web/src/application/ apps/admin/src/application/` 처럼 앱별 경로를 함께 나열한다
 - **패키지 경계는 상대 경로로 뚫린다.** 워크스페이스 프로토콜을 쓰더라도 `../../packages/...` 같은 import 가 가능하므로 금지 import 규칙은 여전히 필요하다
 - 앱 간 공유를 패키지로 자를지 폴더로 자를지는 인터뷰 문항이다. 패키지는 경계가 빌드 도구로 강제되지만 초기 설정과 빌드 시간이 늘고, 폴더는 반대다
-- `paths.mobile` 이 있으면 RN 앱이 존재한다는 뜻이다. `paths.domain` 에서 RN 의존 검사(ARCH-002)를 절대 끄지 마라
 
 ## 예외
 

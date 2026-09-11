@@ -1,6 +1,5 @@
 # component: SiteHeader
 
-platform: nextjs
 purpose: 모든 화면의 최상단에서 현재 위치와 이동 경로를 주고, 테마 전환을 놓는다
 
 ## props
@@ -31,11 +30,10 @@ purpose: 모든 화면의 최상단에서 현재 위치와 이동 경로를 주�
 
 ## responsive
 
-- nextjs: 모든 폭에서 한 줄. 좌측 로고, 우측 링크 2개와 토글. 항목이 4개라 모바일 메뉴를 만들지 않는다. 좌우 여백 `px-5 md:px-8` — 홈과 서브가 같은 값이어야 한다
-- nextjs: **`frontend systems` 태그라인은 640px 미만에서 접는다(`hidden sm:inline`).** 펼친 상태의 최소 한 줄 폭이 440px 라 375px 에서 두 줄이 된다. 접으면 281px 로 내려가 한 줄이 보장된다(실측)
+- 모든 폭에서 한 줄. 좌측 로고, 우측 링크 2개와 토글. 항목이 4개라 모바일 메뉴를 만들지 않는다. 좌우 여백 `px-5 md:px-8` — 홈과 서브가 같은 값이어야 한다
+- **`frontend systems` 태그라인은 640px 미만에서 접는다(`hidden sm:inline`).** 펼친 상태의 최소 한 줄 폭이 440px 라 375px 에서 두 줄이 된다. 접으면 281px 로 내려가 한 줄이 보장된다(실측)
 - 바 높이 61px. 세로 여백은 링크의 `py-2` 가 만들고 바는 `py-2.5` 만 갖는다
 
-## platform-diff
+## 상호작용
 
-- nextjs: hover / focus-visible 정의
-- rn: 해당 없음 — 이 프로젝트에 모바일 앱이 없다
+- hover / focus-visible 정의

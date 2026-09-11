@@ -15,7 +15,7 @@ description: 새 프로젝트에 curvez 를 붙인다. 스택을 감지하고 �
 - 프로젝트에 curvez 를 처음 붙일 때
 - `.curvez/profile.json` 이 없는 상태에서 curvez 작업 지시를 받았을 때
 - `curvez-orchestrator` 가 `.curvez/profile.json` 없음으로 `status: blocked` 를 냈을 때
-- 스택이 바뀌어(웹 전용 → 모노레포) 프로파일의 `stack` 과 `paths` 를 다시 잡아야 할 때
+- 스택이 바뀌어(단일 앱 → 모노레포) 프로파일의 `stack` 과 `paths` 를 다시 잡아야 할 때
 
 ## 언제 쓰지 않는가
 
@@ -63,7 +63,7 @@ test -e .curvez/profile.json && echo "EXISTS" || echo "NEW"
 
 **기존 값을 덮어쓰지 마라.**
 **이유:** `paths` 는 이미 `.curvez/architecture.md` 의 `## 스택 매핑`, `.curvez/design/` 의
-`route(nextjs)`·`route(rn)`, 각 에이전트의 소유 경로 판정에 참조돼 있다. 경로 하나를 조용히 바꾸면
+`route(nextjs)`, 각 에이전트의 소유 경로 판정에 참조돼 있다. 경로 하나를 조용히 바꾸면
 그 참조들이 전부 어긋나는데, 어긋난 자리는 실행이 실패할 때까지 드러나지 않는다.
 덮어쓰기가 정말 필요하면 그것은 bootstrap 이 아니라 사용자가 결정할 마이그레이션이다.
 
@@ -79,35 +79,31 @@ const d = { ...(root.dependencies || {}), ...(root.devDependencies || {}) };
 console.log(JSON.stringify({
   workspace: !!root.workspaces || fs.existsSync("pnpm-workspace.yaml"),
   next: d.next || null,
-  expo: d.expo || null,
-  reactNative: d["react-native"] || null,
   packageManager: root.packageManager || null,
   scripts: Object.keys(root.scripts || {})
 }, null, 2));
 '
 ```
 
-출력으로 판정한다. 세 줄에 안 걸리면 판정하지 마라.
+출력으로 판정한다. 두 줄에 안 걸리면 판정하지 마라.
 
-| 출력                                                            | 판정                                                   |
-| --------------------------------------------------------------- | ------------------------------------------------------ |
-| `workspace: false`, `next` 있음, `expo`·`reactNative` 없음      | `nextjs`                                               |
-| `workspace: false`, `expo` 또는 `reactNative` 있음, `next` 없음 | `react-native`                                         |
-| `workspace: true`                                               | **아직 확정하지 않는다.** 워크스페이스를 순회해야 한다 |
+| 출력                            | 판정                                                   |
+| ------------------------------- | ------------------------------------------------------ |
+| `workspace: false`, `next` 있음 | `nextjs`                                               |
+| `workspace: true`               | **아직 확정하지 않는다.** 워크스페이스를 순회해야 한다 |
 
-`workspace: true` 이거나 위 세 줄 중 어느 것에도 안 맞으면
+`workspace: true` 이거나 위 두 줄 중 어느 것에도 안 맞으면
 [references/stack-detection.md](references/stack-detection.md) 를 읽고 그 절차를 따른다.
 
 ### 애매하면 묻는다
 
 아래는 전부 **추측 금지**다. 절차 4 의 인터뷰 문항으로 올린다.
 
-| 상황                                                | 왜 추측하면 안 되는가                                                                                                 |
-| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `next` 와 `expo` 가 **같은** `package.json` 에 있다 | 웹을 곁들인 RN 앱인지, RN 을 곁들인 웹인지 의존성만으로 갈리지 않는다. 판정이 틀리면 담당 구현 에이전트 자체가 틀린다 |
-| 셋 다 없다                                          | curvez 대상이 아닌 저장소일 수 있다. 스택을 지어내면 존재하지 않는 경로에 코드를 쓴다                                 |
-| `NO_PACKAGE_JSON`                                   | Node 프로젝트가 아니거나 루트가 아니다. 루트 위치부터 확인한다                                                        |
-| `workspace: true` 인데 웹·모바일 앱이 한쪽만 있다   | 모노레포 구조여도 `stack` 은 실제 앱 구성으로 갈린다                                                                  |
+| 상황                                          | 왜 추측하면 안 되는가                                                                 |
+| --------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `next` 가 없다                                | curvez 대상이 아닌 저장소일 수 있다. 스택을 지어내면 존재하지 않는 경로에 코드를 쓴다 |
+| `NO_PACKAGE_JSON`                             | Node 프로젝트가 아니거나 루트가 아니다. 루트 위치부터 확인한다                        |
+| `workspace: true` 인데 앱 패키지가 하나뿐이다 | 모노레포 구조여도 `stack` 은 실제 앱 구성으로 갈린다                                  |
 
 ### 스택이 정해지면 해당 스택 프리셋을 읽는다
 
@@ -118,18 +114,17 @@ console.log(JSON.stringify({
 $CLAUDE_PLUGIN_ROOT/presets/stack/<stack>.md
 ```
 
-| `stack`        | 프리셋                          | 거기서만 알 수 있는 것                                                                                      |
-| -------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `nextjs`       | `presets/stack/nextjs.md`       | App Router / Pages Router 판정을 디렉터리 이름이 아니라 파일 규약(`layout.*` / `_app.*`)으로 해야 하는 이유 |
-| `react-native` | `presets/stack/react-native.md` | `package.json` 최상위 `expo` 키가 레거시 설정 블록일 수 있어 의존성만 봐야 한다는 것                        |
-| `monorepo`     | `presets/stack/monorepo.md`     | `paths.domain` 을 이름이 아니라 **의존 관계**로 판정하는 방법                                               |
+| `stack`    | 프리셋                      | 거기서만 알 수 있는 것                                                                                      |
+| ---------- | --------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `nextjs`   | `presets/stack/nextjs.md`   | App Router / Pages Router 판정을 디렉터리 이름이 아니라 파일 규약(`layout.*` / `_app.*`)으로 해야 하는 이유 |
+| `monorepo` | `presets/stack/monorepo.md` | `paths.domain` 을 이름이 아니라 **의존 관계**로 판정하는 방법                                               |
 
 **이 파일이 없어도 멈추지 마라.** 정상 설치에는 있지만, 없으면 이 스킬의 절차만으로
 진행할 수 있다. 다만 위 표의 함정들은 프리셋에만 적혀 있으므로, 없이 진행했다면 그 사실을
 `decisions` 에 남긴다.
 
-**이유:** 스택별 오탐 케이스를 이 스킬 본문에 전부 담으면 세 스택의 상세가 한 문서에 쌓여
-지금 필요 없는 두 스택 몫이 매번 읽힌다. 감지 결과가 나온 **뒤에** 해당 분기만 읽는 것이 맞다.
+**이유:** 스택별 오탐 케이스를 이 스킬 본문에 전부 담으면 두 스택의 상세가 한 문서에 쌓여
+지금 필요 없는 한 스택 몫이 매번 읽힌다. 감지 결과가 나온 **뒤에** 해당 분기만 읽는 것이 맞다.
 
 ## 3. commands 를 scripts 에서 읽는다
 
@@ -166,8 +161,8 @@ QA 가 "검증 실패" 로 보고하고 구현 에이전트가 멀쩡한 코드�
 
 | 순위 | 문항                                                                                  | 나오는 조건                                                                                      |
 | ---- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| 1    | 이 프로젝트의 스택은 `nextjs` / `react-native` / `monorepo` 중 무엇인가               | 절차 2 가 애매로 끝났을 때                                                                       |
-| 2    | 웹/모바일/도메인 소스 경로가 각각 어디인가                                            | 필수 `paths` 키를 감지로 못 채웠을 때                                                            |
+| 1    | 이 프로젝트의 스택은 `nextjs` / `monorepo` 중 무엇인가                                | 절차 2 가 애매로 끝났을 때                                                                       |
+| 2    | 웹/도메인 소스 경로가 각각 어디인가                                                   | 필수 `paths` 키를 감지로 못 채웠을 때                                                            |
 | 4    | 원격 목록이 이렇다 — 작업 브랜치를 `baseBranch` 에서 따고 PR 도 거기로 여는 게 맞는가 | **2단으로 판정됐을 때**(이름만 보고 정한 값이라 확인받는다) 또는 원격 브랜치를 아예 못 읽었을 때 |
 | 5    | 타입 체크·린트·테스트를 어떤 명령으로 도는가                                          | 절차 3 에서 셋 다 비었을 때                                                                      |
 | 6    | 테스트 파일이 어디 있는가                                                             | 아래 폴백으로도 못 찾았을 때                                                                     |
@@ -202,7 +197,6 @@ ls -d tests test __tests__ e2e 2>/dev/null | head -3
   "architecture": "ddd",
   "paths": {
     "web": "apps/web",
-    "mobile": "apps/mobile",
     "domain": "packages/domain",
     "tests": "tests"
   },
@@ -222,11 +216,10 @@ ls -d tests test __tests__ e2e 2>/dev/null | head -3
 }
 ```
 
-| `stack`        | 필수 키                                     | 선택 키       |
-| -------------- | ------------------------------------------- | ------------- |
-| `nextjs`       | `paths.web`                                 | `paths.tests` |
-| `react-native` | `paths.mobile`                              | `paths.tests` |
-| `monorepo`     | `paths.web`, `paths.mobile`, `paths.domain` | `paths.tests` |
+| `stack`    | 필수 키                     | 선택 키       |
+| ---------- | --------------------------- | ------------- |
+| `nextjs`   | `paths.web`                 | `paths.tests` |
+| `monorepo` | `paths.web`, `paths.domain` | `paths.tests` |
 
 **`git` 블록 — 다섯 키 전부 쓴다.** 감지는 `git branch -r` 로 한다. 원격에 `release` 또는
 `develop` 이 있으면 그것이 `baseBranch` 다. 없으면 `release` 브랜치를 **새로 만들어** 2단으로
@@ -387,7 +380,7 @@ JS 계열(`js/mjs/cjs/jsx`)만 검사한다.
 node -e '
 const fs = require("fs");
 const p = JSON.parse(fs.readFileSync(".curvez/profile.json", "utf8"));
-const NEED = { nextjs: ["paths.web"], "react-native": ["paths.mobile"], monorepo: ["paths.web", "paths.mobile", "paths.domain"] };
+const NEED = { nextjs: ["paths.web"], monorepo: ["paths.web", "paths.domain"] };
 const need = NEED[p.stack];
 if (!need) { console.error("stack 값이 계약 밖이다: " + p.stack); process.exit(1); }
 const get = (o, k) => k.split(".").reduce((a, c) => (a == null ? a : a[c]), o);
@@ -425,7 +418,7 @@ bootstrap 이 끝나면 **`architecture-setup` 을 부른다.** `.curvez/archite
 ## 완료 기준
 
 - [ ] 절차 7 의 검증 명령이 exit 0 이고 `missing=none`, `notOnDisk=none`
-- [ ] `stack` 이 `nextjs` / `react-native` / `monorepo` 중 하나
+- [ ] `stack` 이 `nextjs` / `monorepo` 중 하나
 - [ ] `commands` 의 모든 값이 `package.json` 의 `scripts` 에 실제로 있는 이름
 - [ ] `git` 의 다섯 키가 전부 있고, `baseBranch` · `releaseBranch` 가 원격에 실제로 있는 브랜치다
       (`release` 를 새로 만든 경우 `git push -u origin release` 까지 끝냈다.

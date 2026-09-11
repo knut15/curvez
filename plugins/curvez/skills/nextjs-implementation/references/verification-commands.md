@@ -121,8 +121,6 @@ grep -rlE "^[\"']use client[\"']" "$WEB/src/app" --include="page.tsx" --include=
 
 ```bash
 grep -rn "state:" .curvez/design/screens .curvez/design/components 2>/dev/null
-grep -rn "platform:" .curvez/design/screens .curvez/design/components 2>/dev/null
 ```
 
-`platform:` 값이 `both` 또는 `nextjs` 인 항목만 구현 대상이다. `rn` 은 세지 않는다.
 문서에 있는데 구현에 없는 상태 키가 1건이라도 있으면 `status: done` 을 쓰지 않는다.

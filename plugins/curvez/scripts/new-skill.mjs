@@ -36,7 +36,6 @@ function skillTemplate({ name, withReferences }) {
 대상 스택에 따라 아래를 읽는다. 본문에는 모든 분기에 공통인 것만 둔다.
 
 - Next.js: [references/nextjs.md](references/nextjs.md)
-- React Native: [references/react-native.md](references/react-native.md)
 `
     : "";
 
@@ -114,10 +113,7 @@ function main() {
   if (opts.withReferences) {
     const refDir = join(skillDir, "references");
     mkdirSync(refDir, { recursive: true });
-    for (const [file, title] of [
-      ["nextjs.md", "Next.js 분기"],
-      ["react-native.md", "React Native 분기"],
-    ]) {
+    for (const [file, title] of [["nextjs.md", "Next.js 분기"]]) {
       const p = join(refDir, file);
       if (!existsSync(p) || opts.force) {
         writeFileSync(p, referenceTemplate(title), "utf8");

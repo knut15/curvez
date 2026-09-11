@@ -25,7 +25,7 @@
 │       ├─ 예   → shared/    (공용 UI, API 클라이언트 래퍼)
 │       └─ 아니오 → utils/    (순수 함수. 아무것도 의존하지 않는다)
 └─ 예 ↓
-    ├─ React·RN 컴포넌트를 만든다        → presentation/
+    ├─ React 컴포넌트를 만든다           → presentation/
     ├─ fetch·DB·외부 SDK 를 쓴다          → infrastructure/
     ├─ 다른 컨텍스트 모델을 번역한다        → infrastructure/acl/
     ├─ 바깥에 필요한 것을 인터페이스로 선언  → application/ports/
