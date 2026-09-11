@@ -371,11 +371,6 @@ function checkRuntimeReadiness() {
       fallback: "curvez:bootstrap 의 감지 절차만으로 진행",
     },
     {
-      path: "presets/stack/react-native.md",
-      what: "RN 스택 프리셋",
-      fallback: "위와 같음",
-    },
-    {
       path: "presets/stack/monorepo.md",
       what: "모노레포 스택 프리셋",
       fallback: "위와 같음",

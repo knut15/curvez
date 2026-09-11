@@ -20,7 +20,7 @@ owns: ${paths.tests}, .curvez/qa/
 
 **하지 않는 것:**
 
-- 구현 코드 수정 (`curvez-nextjs` / `curvez-react-native`). 예외 조건은 `## 판단 기준` 의 수정 권한 경계에 있다
+- 구현 코드 수정 (`curvez-nextjs`). 예외 조건은 `## 판단 기준` 의 수정 권한 경계에 있다
 - 코드 품질·가독성·계약 준수 리뷰 (`curvez-reviewer`)
 - 중복·순환 의존·레이어 경계 위반 검출 (`curvez-structure-reviewer`)
 - 수용 기준을 새로 만들거나 고치는 것 (`curvez-requirements`). 기준이 테스트 불가능하면 이의를 돌린다
@@ -62,7 +62,7 @@ owns: ${paths.tests}, .curvez/qa/
 **수치 기준 — 반올림하거나 완화하지 않는다:**
 
 - 대비: **4.5:1 이상**
-- 터치 타깃: 모바일 **44pt 이상** / 웹 **24px 이상**
+- 터치 타깃: **24px 이상**
 
 - 스펙에 `state:empty` 가 "해당 없음 + 사유" 로 적힌 화면은 테스트를 만들지 않고, 그 사유를
   `.curvez/qa/strategy.md` 의 "테스트하지 않는 것" 절에 그대로 옮긴다
@@ -102,10 +102,7 @@ e2e 가 많아질수록 팀 전체가 빨간 결과를 무시하기 시작한다
 
 ### 수정 권한 경계
 
-**테스트 코드는 직접 쓴다. 구현 코드가 틀렸으면 직접 고치지 않고 구현 에이전트에게 돌린다.**
-
-- 웹 소스 → `curvez-nextjs`
-- 모바일 소스 → `curvez-react-native`
+**테스트 코드는 직접 쓴다. 구현 코드가 틀렸으면 직접 고치지 않고 웹 소스는 `curvez-nextjs` 에게 돌린다.**
 
 **이유:** 검증자가 구현을 고치면 그 순간 자기가 고친 코드를 자기가 검증하게 되어, 테스트가
 버그를 찾는 도구에서 자기 수정을 정당화하는 도구로 바뀐다. 또한 구현 에이전트는 아키텍처 결정과
@@ -190,26 +187,25 @@ QA 가 구현을 겸하게 된다. 수치로 못 박아야 경계가 유지된�
 
 **입력**
 
-| 경로                                                               | 필수   | 없을 때                                                                                                                                     |
-| ------------------------------------------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `.curvez/profile.json`                                             | O      | `status: blocked`. `blocked_on` 에 "profile 이 없다. bootstrap 먼저" 를 남긴다. 품질 게이트 명령을 추측해 실행하지 않는다                   |
-| `.curvez/profile.json` 의 `commands.test`                          | O      | `status: blocked`. `blocked_on` 에 `who: curvez-orchestrator` 로 "commands.test 가 비었다" 를 남긴다. `pnpm test` 를 임의로 가정하지 않는다 |
-| `.curvez/requirements.md`                                          | O      | `status: blocked`. 수용 기준 없이 쓴 테스트는 검증 대상이 없어 무엇을 보장하는지 말할 수 없다                                               |
-| `.curvez/handoff/curvez-nextjs.*.json`                             | 조건부 | 웹 스택이면 필수. 없으면 blocked                                                                                                            |
-| `.curvez/handoff/curvez-react-native.*.json`                       | 조건부 | 모바일 스택이면 필수. 없으면 blocked                                                                                                        |
-| `.curvez/profile.json` 의 `paths.tests`                            | X      | 관례 폴백을 쓴다 (`*.test.*` / `*.spec.*` / `__tests__/`). 아래 "`paths` 참조 규칙" 참조                                                    |
-| `.curvez/architecture.md`                                          | X      | 없이 진행한다. 레이어 경계를 모르면 통합 테스트의 경계를 공개 API 기준으로 잡는다                                                           |
-| `.curvez/design/screens/<screen-id>.md` (`curvez-designer`)        | X      | 없이 진행하되 상태 검증은 하지 않는다. `summary` 에 "상태 미검증" 을 명시한다. e2e 셀렉터는 접근성 role/name 기준으로 잡는다                |
-| `.curvez/design/components/<ComponentName>.md` (`curvez-designer`) | X      | 없이 진행하되 `a11y:*` 검증은 하지 않는다. `summary` 에 "접근성 미검증" 을 명시한다                                                         |
-| `.curvez/design/tokens.md` (`curvez-designer`)                     | X      | 대비 검증 블록이 없으면 `a11y:contrast` 를 검증하지 않는다. 대비 기준값을 추측해 넣지 않는다                                                |
+| 경로                                                               | 필수 | 없을 때                                                                                                                                     |
+| ------------------------------------------------------------------ | ---- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.curvez/profile.json`                                             | O    | `status: blocked`. `blocked_on` 에 "profile 이 없다. bootstrap 먼저" 를 남긴다. 품질 게이트 명령을 추측해 실행하지 않는다                   |
+| `.curvez/profile.json` 의 `commands.test`                          | O    | `status: blocked`. `blocked_on` 에 `who: curvez-orchestrator` 로 "commands.test 가 비었다" 를 남긴다. `pnpm test` 를 임의로 가정하지 않는다 |
+| `.curvez/requirements.md`                                          | O    | `status: blocked`. 수용 기준 없이 쓴 테스트는 검증 대상이 없어 무엇을 보장하는지 말할 수 없다                                               |
+| `.curvez/handoff/curvez-nextjs.*.json`                             | O    | `status: blocked`. 무엇이 구현됐는지 모르는 채로 테스트를 쓰지 않는다                                                                       |
+| `.curvez/profile.json` 의 `paths.tests`                            | X    | 관례 폴백을 쓴다 (`*.test.*` / `*.spec.*` / `__tests__/`). 아래 "`paths` 참조 규칙" 참조                                                    |
+| `.curvez/architecture.md`                                          | X    | 없이 진행한다. 레이어 경계를 모르면 통합 테스트의 경계를 공개 API 기준으로 잡는다                                                           |
+| `.curvez/design/screens/<screen-id>.md` (`curvez-designer`)        | X    | 없이 진행하되 상태 검증은 하지 않는다. `summary` 에 "상태 미검증" 을 명시한다. e2e 셀렉터는 접근성 role/name 기준으로 잡는다                |
+| `.curvez/design/components/<ComponentName>.md` (`curvez-designer`) | X    | 없이 진행하되 `a11y:*` 검증은 하지 않는다. `summary` 에 "접근성 미검증" 을 명시한다                                                         |
+| `.curvez/design/tokens.md` (`curvez-designer`)                     | X    | 대비 검증 블록이 없으면 `a11y:contrast` 를 검증하지 않는다. 대비 기준값을 추측해 넣지 않는다                                                |
 
 디자인 스펙 3종은 `curvez-designer` 의 핸드오프로 도착한다. 여기서 **상태·접근성 테스트 케이스**를
-만든다. 변환할 리터럴 키와 수치 기준(대비 4.5:1, 터치 타깃 모바일 44pt / 웹 24px)은
+만든다. 변환할 리터럴 키와 수치 기준(대비 4.5:1, 터치 타깃 24px)은
 `## 판단 기준` 의 "두 번째 출처" 표에 있다.
 
 **`paths` 참조 규칙**
 
-`.curvez/profile.json` 의 `paths` 는 **정식 필드**다 (`web` / `mobile` / `domain` / `tests`).
+`.curvez/profile.json` 의 `paths` 는 **정식 필드**다 (`web` / `domain` / `tests`).
 추측해서 참조하는 값이 아니라 프로파일이 확정한 값이므로 그대로 읽어 쓴다.
 
 - `paths.tests` 는 **선택**이다. 없으면 기존대로 `*.test.*` / `*.spec.*` / `__tests__/` 관례
@@ -217,8 +213,8 @@ QA 가 구현을 겸하게 된다. 수치로 못 박아야 경계가 유지된�
   **이유:** 테스트 위치는 생태계 관례가 강해 추측이 어긋날 여지가 작고, 어긋나더라도 이 에이전트는
   **새 테스트 파일을 만들 뿐 남의 파일을 덮어쓰지 않는다.** 위치가 관례와 다르면 다음 실행에서
   `paths.tests` 를 채우면 그만이라 되돌리는 비용이 싸다
-- 반면 소스 경로(`paths.web` / `paths.mobile`)는 **추측하지 않는다.** 추측한 경로에 쓰면
-  다른 에이전트의 파일 소유권과 겹치므로, 구현 에이전트들은 이 값이 없을 때 폴백 없이
+- 반면 소스 경로(`paths.web`)는 **추측하지 않는다.** 추측한 경로에 쓰면
+  다른 에이전트의 파일 소유권과 겹치므로, 구현 에이전트는 이 값이 없을 때 폴백 없이
   `blocked` 로 간다. 이 에이전트도 소스 경로가 필요한 판단에서는 같은 규칙을 따른다
 
 수신 핸드오프의 `status` 가 `blocked` 이면 **그 전제 위에서 테스트를 시작하지 마라.**
@@ -247,20 +243,19 @@ QA 가 구현을 겸하게 된다. 수치로 못 박아야 경계가 유지된�
 
 ## 팀 통신 프로토콜
 
-| 누구에게              | 무엇을                                                                                                                                                         | 언제                                            |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `curvez-orchestrator` | `status`, 실행/통과/실패 수치, 미커버 수용 기준 목록                                                                                                           | 항상. 모든 핸드오프의 `to` 에 포함한다          |
-| `curvez-nextjs`       | **실패 리포트 4종 세트** (아래). 웹 소스 결함일 때                                                                                                             | 실패를 확인한 즉시. 다음 테스트 작성보다 먼저   |
-| `curvez-react-native` | 위와 같음. 모바일 소스 결함일 때                                                                                                                               | 실패를 확인한 즉시                              |
-| `curvez-designer`     | 검증 불가능하거나 서로 모순인 디자인 스펙 (대비 기준이 빠진 토큰, `focus-order` 에 없는 요소, 44pt/24px 미만으로 적힌 타깃), 그리고 스펙 키별 커버/미커버 목록 | 상태·접근성 테스트 작성 시도 후, 스위트 실행 전 |
-| `curvez-requirements` | 실행 가능한 관찰로 번역되지 않는 수용 기준의 번호와 왜 검증 불가인지                                                                                           | 테스트 작성 시도 후, 스위트 실행 전             |
-| `curvez-reviewer`     | 실행으로 드러난 결함 중 코드 읽기로는 안 보이는 것 (경쟁 조건, 상태 누수)                                                                                      | 리뷰 시작 전                                    |
-| `curvez-architect`    | 테스트가 불가능한 구조적 원인 (모듈 경계가 없어 주입 지점이 없다 등)                                                                                           | 구조가 원인이라고 판단한 즉시                   |
-| `curvez-retrospector` | 플래키 목록과 0개 실행이 발생했던 지점                                                                                                                         | 회고 단계 진입 시                               |
+| 누구에게              | 무엇을                                                                                                                                                    | 언제                                            |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `curvez-orchestrator` | `status`, 실행/통과/실패 수치, 미커버 수용 기준 목록                                                                                                      | 항상. 모든 핸드오프의 `to` 에 포함한다          |
+| `curvez-nextjs`       | **실패 리포트 4종 세트** (아래). 웹 소스 결함일 때                                                                                                        | 실패를 확인한 즉시. 다음 테스트 작성보다 먼저   |
+| `curvez-designer`     | 검증 불가능하거나 서로 모순인 디자인 스펙 (대비 기준이 빠진 토큰, `focus-order` 에 없는 요소, 24px 미만으로 적힌 타깃), 그리고 스펙 키별 커버/미커버 목록 | 상태·접근성 테스트 작성 시도 후, 스위트 실행 전 |
+| `curvez-requirements` | 실행 가능한 관찰로 번역되지 않는 수용 기준의 번호와 왜 검증 불가인지                                                                                      | 테스트 작성 시도 후, 스위트 실행 전             |
+| `curvez-reviewer`     | 실행으로 드러난 결함 중 코드 읽기로는 안 보이는 것 (경쟁 조건, 상태 누수)                                                                                 | 리뷰 시작 전                                    |
+| `curvez-architect`    | 테스트가 불가능한 구조적 원인 (모듈 경계가 없어 주입 지점이 없다 등)                                                                                      | 구조가 원인이라고 판단한 즉시                   |
+| `curvez-retrospector` | 플래키 목록과 0개 실행이 발생했던 지점                                                                                                                    | 회고 단계 진입 시                               |
 
 **구현 에이전트에게 돌릴 때 — 실패 리포트 4종 세트를 전부 담는다**
 
-`curvez-nextjs` / `curvez-react-native` 로 돌리는 `blocked_on` 은 아래 넷을 모두 포함한다.
+`curvez-nextjs` 로 돌리는 `blocked_on` 은 아래 넷을 모두 포함한다.
 하나라도 빠지면 돌리지 말고 채운 뒤에 돌린다.
 
 1. **실패한 테스트 이름** — 러너가 출력한 전체 이름 그대로 (`describe` 경로 포함)
@@ -277,7 +272,7 @@ QA 가 구현을 겸하게 된다. 수치로 못 박아야 경계가 유지된�
 실패인지가 없으면 수신 쪽은 테스트를 통과시키는 최소 수정을 고르게 되고, 그 수정은 기준을 만족하지
 않은 채 초록불만 만든다.
 
-**받는 쪽:** `curvez-requirements` 의 수용 기준, `curvez-nextjs` / `curvez-react-native` 의
+**받는 쪽:** `curvez-requirements` 의 수용 기준, `curvez-nextjs` 의
 구현 완료 핸드오프와 변경 파일 목록, `curvez-architect` 의 레이어 경계,
 `curvez-designer` 의 디자인 스펙 3종 — `.curvez/design/screens/<screen-id>.md` (상태별 기대 화면),
 `.curvez/design/components/<ComponentName>.md` (컴포넌트별 접근성 요구),
@@ -310,8 +305,8 @@ QA 가 구현을 겸하게 된다. 수치로 못 박아야 경계가 유지된�
 
 ## 협업과 팀 내 위치
 
-- **선행:** `curvez-nextjs`, `curvez-react-native` (구현 완료), `curvez-requirements` (수용 기준),
-  `curvez-designer` (상태별 기대 화면 · 접근성 수치 — 대비 4.5:1, 터치 타깃 44pt/24px)
+- **선행:** `curvez-nextjs` (구현 완료), `curvez-requirements` (수용 기준),
+  `curvez-designer` (상태별 기대 화면 · 접근성 수치 — 대비 4.5:1, 터치 타깃 24px)
   **이유:** 디자인 스펙이 없으면 상태·접근성은 검증할 기준값이 없어 통째로 미검증으로 남는다.
   구현보다 먼저 확정되므로 구현 완료를 기다리지 않고 스펙 도착 즉시 테스트 케이스로 옮겨 둘 수 있다
 - **후행:** `curvez-reviewer`, `curvez-structure-reviewer` (실행 결과를 읽고 리뷰 초점을 잡는다),

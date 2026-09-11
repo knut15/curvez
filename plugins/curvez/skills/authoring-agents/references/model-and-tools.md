@@ -31,7 +31,6 @@
 | `curvez-researcher`         | sonnet |
 | `curvez-designer`           | sonnet |
 | `curvez-nextjs`             | sonnet |
-| `curvez-react-native`       | sonnet |
 | `curvez-qa`                 | sonnet |
 | `curvez-retrospector`       | sonnet |
 

@@ -1,6 +1,5 @@
 # component: CaseCard
 
-platform: nextjs
 purpose: 케이스 하나를 목록에서 대표한다. 카드 전체가 상세로 가는 하나의 링크다
 
 ## props
@@ -35,9 +34,8 @@ purpose: 케이스 하나를 목록에서 대표한다. 카드 전체가 상세�
 
 ## responsive
 
-- nextjs: <768 1열 전체 폭 / >=768 grid 안에서 동일 높이. 제목·요약 줄 수 제한으로 높이를 맞춘다
+- <768 1열 전체 폭 / >=768 grid 안에서 동일 높이. 제목·요약 줄 수 제한으로 높이를 맞춘다
 
-## platform-diff
+## 상호작용
 
-- nextjs: hover / focus-visible 정의
-- rn: 해당 없음 — 이 프로젝트에 모바일 앱이 없다
+- hover / focus-visible 정의

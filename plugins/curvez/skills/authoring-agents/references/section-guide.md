@@ -92,11 +92,11 @@
 ```markdown
 ## 팀 통신 프로토콜
 
-| 누구에게                               | 무엇을                                            | 언제                                   |
-| -------------------------------------- | ------------------------------------------------- | -------------------------------------- |
-| `curvez-nextjs`, `curvez-react-native` | `.curvez/architecture.md` 경로와 금지 import 목록 | 아키텍처 확정 직후                     |
-| `curvez-orchestrator`                  | `status` 와 미해결 질문                           | 항상. 모든 핸드오프의 `to` 에 포함한다 |
-| `curvez-requirements`                  | 요구사항이 아키텍처와 모순될 때의 이의            | 모순을 발견한 즉시, 구현 시작 전       |
+| 누구에게              | 무엇을                                            | 언제                                   |
+| --------------------- | ------------------------------------------------- | -------------------------------------- |
+| `curvez-nextjs`       | `.curvez/architecture.md` 경로와 금지 import 목록 | 아키텍처 확정 직후                     |
+| `curvez-orchestrator` | `status` 와 미해결 질문                           | 항상. 모든 핸드오프의 `to` 에 포함한다 |
+| `curvez-requirements` | 요구사항이 아키텍처와 모순될 때의 이의            | 모순을 발견한 즉시, 구현 시작 전       |
 
 **받는 쪽:** `curvez-requirements` 의 수용 기준, `curvez-researcher` 의 기술 제약 브리프.
 ```
@@ -140,7 +140,7 @@
 ## 협업과 팀 내 위치
 
 - **선행:** `curvez-requirements` (수용 기준 확정), `curvez-researcher` (기술 제약)
-- **후행:** `curvez-nextjs`, `curvez-react-native`, `curvez-structure-reviewer`
+- **후행:** `curvez-nextjs`, `curvez-structure-reviewer`
 - **병렬:** `curvez-designer` — 와이어프레임과 아키텍처는 서로를 기다리지 않는다
 - **파일 소유권:** `.curvez/architecture.md` 만 쓴다. 소스 트리는 건드리지 않는다
 ```
@@ -163,7 +163,7 @@
 
 ```bash
 node "$CLAUDE_PLUGIN_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
-grep -rn "from ['\"]next\|from ['\"]react-native" src/domain/ | wc -l
+grep -rn "from ['\"]next" src/domain/ | wc -l
 ```
 
 - [ ] 핸드오프 검증 오류 0개

@@ -65,8 +65,7 @@ const COMMAND_CANDIDATES = {
 /** 스택별 필수 프로파일 키. 없으면 진행 불가다. */
 const REQUIRED_KEYS = {
   nextjs: ["paths.web"],
-  "react-native": ["paths.mobile"],
-  monorepo: ["paths.web", "paths.mobile", "paths.domain"],
+  monorepo: ["paths.web", "paths.domain"],
 };
 
 const readJson = (p) => {
@@ -85,7 +84,7 @@ const getPath = (obj, dotted) =>
  *
  * 파일 존재만으로 모노레포라고 단정하면 안 된다. pnpm 은 이 파일을 워크스페이스 정의뿐 아니라
  * `allowBuilds` · `minimumReleaseAgeExclude` 같은 설치 설정 파일로도 쓴다.
- * 실제 Expo 단일 저장소가 이 이유로 monorepo 로 오판돼, 있지도 않은 `apps/` 를 순회하고
+ * 실제로 단일 저장소가 이 이유로 monorepo 로 오판돼, 있지도 않은 `apps/` 를 순회하고
  * "스택 판정 불가" 로 멈췄다. `packages:` 키가 있어야 워크스페이스다.
  */
 function hasPnpmWorkspacePackages() {
@@ -108,19 +107,16 @@ function detect() {
 
   return {
     workspace: !!root.workspaces || hasPnpmWorkspacePackages(),
-    // 최상위 `expo` 키는 레거시 설정 블록일 수 있다. 의존성만 본다.
     next: dep.next ?? null,
-    expo: dep.expo ?? null,
-    reactNative: dep["react-native"] ?? null,
     packageManager: root.packageManager ?? null,
     scripts: Object.keys(root.scripts ?? {}),
   };
 }
 
-/** 워크스페이스를 순회해 web·mobile·domain 후보를 찾는다. */
+/** 워크스페이스를 순회해 web·domain 후보를 찾는다. */
 function scanWorkspaces() {
   const roots = ["apps", "packages"];
-  const found = { web: [], mobile: [], packages: {} };
+  const found = { web: [], packages: {} };
 
   for (const r of roots) {
     const base = join(ROOT, r);
@@ -136,30 +132,21 @@ function scanWorkspaces() {
       };
       found.packages[pkg.name ?? rel] = { rel, deps: Object.keys(dep) };
       if (dep.next) found.web.push(rel);
-      if (dep.expo || dep["react-native"]) found.mobile.push(rel);
     }
   }
 
   // paths.domain 은 이름이 아니라 의존 관계로 판정한다.
   // 이유: `domain`/`core`/`shared` 같은 이름 규칙은 저장소마다 다르지만,
-  // "웹과 모바일이 둘 다 의존한다" 는 구조적 사실이다.
+  // "웹 앱이 의존하는 내부 패키지" 는 구조적 사실이다.
   const webPkgs = Object.entries(found.packages).filter(([, v]) =>
     found.web.includes(v.rel),
-  );
-  const mobilePkgs = Object.entries(found.packages).filter(([, v]) =>
-    found.mobile.includes(v.rel),
   );
   const internal = new Set(Object.keys(found.packages));
 
   const usedByWeb = new Set(
     webPkgs.flatMap(([, v]) => v.deps.filter((d) => internal.has(d))),
   );
-  const usedByMobile = new Set(
-    mobilePkgs.flatMap(([, v]) => v.deps.filter((d) => internal.has(d))),
-  );
-  const domainCandidates = [...usedByWeb]
-    .filter((d) => usedByMobile.has(d))
-    .map((d) => found.packages[d].rel);
+  const domainCandidates = [...usedByWeb].map((d) => found.packages[d].rel);
 
   return { ...found, domainCandidates };
 }
@@ -255,7 +242,7 @@ function decide(d) {
   // 워크스페이스라고 판정했는데 하위 앱이 하나도 없으면 루트 자체가 앱이다.
   // 이유: 워크스페이스 선언과 실제 구조는 어긋날 수 있다. 순회 결과가 비었는데도
   // 모노레포로 밀어붙이면 루트의 의존성을 아예 보지 않고 판정 불가로 끝난다.
-  if (ws && ws.web.length === 0 && ws.mobile.length === 0) {
+  if (ws && ws.web.length === 0) {
     decisions.push({
       what: "워크스페이스 신호가 있지만 하위 앱이 없어 단일 저장소로 판정",
       why: "apps/·packages/ 순회 결과가 비었다. 루트 의존성으로 판정한다",
@@ -264,30 +251,22 @@ function decide(d) {
   }
 
   if (ws) {
-    if (ws.web.length > 0 && ws.mobile.length > 0) stack = "monorepo";
-    else if (ws.web.length > 0) stack = "nextjs";
-    else stack = "react-native";
-  } else if (d.next && !d.expo && !d.reactNative) {
+    // 웹 앱이 의존하는 내부 패키지가 있으면 모노레포다. 없으면 앱 하나짜리
+    // 워크스페이스라 단일 웹 저장소와 같게 다룬다.
+    stack = ws.domainCandidates.length > 0 ? "monorepo" : "nextjs";
+  } else if (d.next) {
     stack = "nextjs";
-  } else if ((d.expo || d.reactNative) && !d.next) {
-    stack = "react-native";
-  } else if (d.next && (d.expo || d.reactNative)) {
-    questions.push({
-      key: "stack",
-      ask: "next 와 expo/react-native 가 같은 package.json 에 있다. 웹을 곁들인 RN 앱인가, RN 을 곁들인 웹인가?",
-      why: "판정이 틀리면 담당 구현 에이전트 자체가 틀린다",
-    });
   } else {
     questions.push({
       key: "stack",
-      ask: "next·expo·react-native 중 어느 것도 찾지 못했다. curvez 대상 저장소가 맞는가?",
+      ask: "next 를 찾지 못했다. curvez 대상 저장소가 맞는가?",
       why: "스택을 지어내면 존재하지 않는 경로에 코드를 쓴다",
     });
   }
 
   const paths = {};
 
-  if (stack === "monorepo" && ws) {
+  if (ws) {
     if (ws.web.length === 1) paths.web = ws.web[0];
     else
       questions.push({
@@ -295,20 +274,14 @@ function decide(d) {
         ask: `웹 앱 후보가 ${ws.web.length}개다: ${ws.web.join(", ") || "없음"}. 어느 것인가?`,
         why: "경로를 추측하면 소유권이 겹친다",
       });
+  }
 
-    if (ws.mobile.length === 1) paths.mobile = ws.mobile[0];
-    else
-      questions.push({
-        key: "paths.mobile",
-        ask: `모바일 앱 후보가 ${ws.mobile.length}개다: ${ws.mobile.join(", ") || "없음"}. 어느 것인가?`,
-        why: "경로를 추측하면 소유권이 겹친다",
-      });
-
+  if (stack === "monorepo" && ws) {
     if (ws.domainCandidates.length === 1) {
       paths.domain = ws.domainCandidates[0];
       decisions.push({
         what: `paths.domain 을 ${paths.domain} 으로 판정`,
-        why: "웹과 모바일이 둘 다 의존하는 유일한 내부 패키지",
+        why: "웹 앱이 의존하는 유일한 내부 패키지",
       });
     } else {
       questions.push({
@@ -317,16 +290,10 @@ function decide(d) {
         why: "이름이 아니라 의존 관계로 판정하므로 자동 축소가 불가능하다",
       });
     }
-  } else if (stack === "nextjs") {
+  } else if (stack === "nextjs" && !ws) {
     paths.web = ".";
     decisions.push({
       what: "paths.web 을 저장소 루트로 판정",
-      why: "워크스페이스가 아닌 단일 저장소",
-    });
-  } else if (stack === "react-native") {
-    paths.mobile = ".";
-    decisions.push({
-      what: "paths.mobile 을 저장소 루트로 판정",
       why: "워크스페이스가 아닌 단일 저장소",
     });
   }
@@ -595,7 +562,7 @@ import js from "@eslint/js";
 import globals from "globals";
 
 export default [
-  { ignores: [".next/", ".expo/", "dist/", "build/", "coverage/", ".curvez/"] },
+  { ignores: [".next/", "dist/", "build/", "coverage/", ".curvez/"] },
   {
     files: ["**/*.{js,mjs,cjs,jsx}"],
     languageOptions: {
@@ -628,7 +595,7 @@ import globals from "globals";
 /** 위반 메시지. 무엇을 어디로 옮기라는 지시까지 담는다. */
 const MSG = {
   domainNoFramework:
-    "domain 은 프레임워크를 모른다. React·Next·RN·상태 라이브러리가 필요하면 presentation 이나 infrastructure 로 옮겨라.",
+    "domain 은 프레임워크를 모른다. React·Next·상태 라이브러리가 필요하면 presentation 이나 infrastructure 로 옮겨라.",
   domainNoOuter:
     "domain 이 바깥 레이어를 참조한다. 의존은 안쪽으로만 흐른다. 필요한 것은 인터페이스로 선언하고 주입받아라.",
   domainNoIO:
@@ -658,11 +625,6 @@ const FRAMEWORK = [
   "react-dom/*",
   "next",
   "next/*",
-  "react-native",
-  "react-native/*",
-  "expo",
-  "expo-*",
-  "@react-navigation/*",
   "zustand",
   "zustand/*",
   "jotai",
@@ -761,7 +723,7 @@ const layerRules = [
 ];
 
 export default [
-  { ignores: [".next/", ".expo/", "dist/", "build/", "coverage/", ".curvez/"] },
+  { ignores: [".next/", "dist/", "build/", "coverage/", ".curvez/"] },
   {
     files: ["**/*.{js,mjs,cjs,jsx}"],
     languageOptions: {
@@ -794,7 +756,6 @@ const PRETTIERRC_SKELETON = `{
 const PRETTIERIGNORE_SKELETON = `# curvez:bootstrap 이 만들었다. lockfile·빌드 산출물·curvez 산출물은 포맷 대상이 아니다.
 pnpm-lock.yaml
 .next/
-.expo/
 dist/
 build/
 coverage/

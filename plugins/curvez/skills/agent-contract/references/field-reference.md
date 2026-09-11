@@ -22,7 +22,7 @@
 이 결과를 읽어야 하는 에이전트 `name` 배열. 최소 1개.
 
 ```json
-"to": ["curvez-nextjs", "curvez-react-native"]
+"to": ["curvez-nextjs", "curvez-qa"]
 ```
 
 - 다음 담당이 정해지지 않았으면 `["curvez-orchestrator"]` 로 돌려준다

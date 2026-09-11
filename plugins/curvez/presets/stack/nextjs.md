@@ -14,11 +14,11 @@
 
 `skills/bootstrap/SKILL.md` 절차 2 의 출력으로 판정한다.
 
-| 출력                                                       | 판정                                                                |
-| ---------------------------------------------------------- | ------------------------------------------------------------------- |
-| `workspace: false`, `next` 있음, `expo`·`reactNative` 없음 | `nextjs`                                                            |
-| `workspace: true`                                          | 확정 금지. `skills/bootstrap/references/stack-detection.md` 로 간다 |
-| `next` 없음                                                | `nextjs` 가 아니다                                                  |
+| 출력                            | 판정                                                                |
+| ------------------------------- | ------------------------------------------------------------------- |
+| `workspace: false`, `next` 있음 | `nextjs`                                                            |
+| `workspace: true`               | 확정 금지. `skills/bootstrap/references/stack-detection.md` 로 간다 |
+| `next` 없음                     | `nextjs` 가 아니다                                                  |
 
 `next` 는 `dependencies` / `devDependencies` **어느 쪽에 있어도** 신호로 친다.
 `peerDependencies` 는 신호가 아니다 — 그 저장소는 Next.js 앱이 아니라 Next.js 용 라이브러리다.
@@ -59,13 +59,12 @@ Pages Router 프로젝트는 `stack: "nextjs"` 가 맞더라도 담당 에이전
 
 ### 오탐 케이스 — 전부 추측 금지
 
-| 상황                                                                          | 왜 추측하면 안 되는가                                                                      | 행동                                                     |
-| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------- |
-| 같은 `package.json` 에 `next` 와 `expo` 가 둘 다 있다                         | 웹 빌드를 곁들인 RN 앱일 수도, 마이그레이션 중인 웹 앱일 수도 있다. 의존성으로는 안 갈린다 | 인터뷰 1번 문항. 틀리면 담당 구현 에이전트 자체가 틀린다 |
-| `workspace: true` 인데 루트에 `next` 가 있다                                  | 루트의 `next` 는 도구용 hoisting 일 수 있고 실제 앱은 하위 패키지다                        | `references/stack-detection.md` 의 순회를 돌린다         |
-| 순회 결과 `web` 이 2개 이상 (`apps/web` + `apps/admin`)                       | 순회 순서가 파일시스템 순서라 실행마다 다른 값이 나온다                                    | 인터뷰로 주 앱을 고르게 한다. 첫 번째를 고르지 마라      |
-| `next` 가 `devDependencies` 에만 있고 `next.config` 도 라우트 디렉터리도 없다 | Next.js 용 라이브러리·플러그인 저장소다                                                    | `nextjs` 로 판정하지 않는다                              |
-| `next` 는 있는데 `react` 가 없다                                              | `package.json` 이 불완전하거나 루트가 아니다                                               | 루트 위치부터 확인한다                                   |
+| 상황                                                                          | 왜 추측하면 안 되는가                                               | 행동                                                |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------- |
+| `workspace: true` 인데 루트에 `next` 가 있다                                  | 루트의 `next` 는 도구용 hoisting 일 수 있고 실제 앱은 하위 패키지다 | `references/stack-detection.md` 의 순회를 돌린다    |
+| 순회 결과 `web` 이 2개 이상 (`apps/web` + `apps/admin`)                       | 순회 순서가 파일시스템 순서라 실행마다 다른 값이 나온다             | 인터뷰로 주 앱을 고르게 한다. 첫 번째를 고르지 마라 |
+| `next` 가 `devDependencies` 에만 있고 `next.config` 도 라우트 디렉터리도 없다 | Next.js 용 라이브러리·플러그인 저장소다                             | `nextjs` 로 판정하지 않는다                         |
+| `next` 는 있는데 `react` 가 없다                                              | `package.json` 이 불완전하거나 루트가 아니다                        | 루트 위치부터 확인한다                              |
 
 ### 확인 명령
 
@@ -80,8 +79,6 @@ const d = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
 const s = pkg.scripts || {};
 console.log(JSON.stringify({
   next: d.next || null,
-  expo: d.expo || null,
-  reactNative: d["react-native"] || null,
   workspace: !!pkg.workspaces || fs.existsSync("pnpm-workspace.yaml"),
   nextConfig: has("next.config.js", "next.config.mjs", "next.config.cjs", "next.config.ts"),
   nextScript: Object.entries(s).filter(([, v]) => /^next\b/.test(v)).map(([k]) => k),
@@ -92,7 +89,7 @@ console.log(JSON.stringify({
 '
 ```
 
-`next` 가 있고 `expo`·`reactNative` 가 `null` 이고 `workspace` 가 `false` 이면 `nextjs` 다.
+`next` 가 있고 `workspace` 가 `false` 이면 `nextjs` 다.
 `appRouter` 와 `pagesRouter` 중 정확히 하나만 값이 있어야 라우터가 확정된다.
 
 ---
@@ -120,13 +117,13 @@ console.log(JSON.stringify({
 - **못 찾으면 추측하지 마라.** 인터뷰 2번 문항으로 묻고, 답이 없으면 `status: blocked` 다.
   `apps/web` 이나 루트로 폴백하지 않는다
 
-### `paths.mobile` / `paths.domain`
+### `paths.domain`
 
-`stack: "nextjs"` 에서는 **둘 다 쓰지 않는다.** 필수도 선택도 아니다 — 키째로 없어야 한다.
+`stack: "nextjs"` 에서는 **쓰지 않는다.** 필수도 선택도 아니다 — 키째로 없어야 한다.
 웹 전용 저장소에 `paths.domain` 을 넣으면 `curvez-orchestrator` 가 monorepo 용 순차 강등 규칙을
 적용해 병렬로 돌 수 있는 라운드를 직렬로 만든다.
 
-앱과 웹이 같은 저장소에 있으면 그것은 `nextjs` 가 아니라 `monorepo` 다.
+앱 패키지가 여럿이면 그것은 `nextjs` 가 아니라 `monorepo` 다.
 
 ### `paths.tests` — 선택 키, 폴백 허용
 

@@ -24,7 +24,7 @@ curvez 팀 실행의 절차서다. 주 사용 에이전트는 `curvez-orchestrat
 
 - 프로젝트를 처음 세팅하고 `.curvez/profile.json` 을 만들 때 → `bootstrap` 을 쓴다
 - 검증 명령만 돌려 수치를 뽑을 때 → `quality-gate` 를 쓴다
-- 단일 파일·단일 관심사 작업 → 팀을 만들지 않는다. 플랫폼과 파일 범위가 이미 정해진 구현이면 `nextjs-implementation` / `react-native-implementation` 을 직접 쓴다
+- 단일 파일·단일 관심사 작업 → 팀을 만들지 않는다. 파일 범위가 이미 정해진 구현이면 `nextjs-implementation` 을 직접 쓴다
 - 핸드오프 JSON 의 필드와 `status` 판정 → `agent-contract` 를 쓴다
 - 에이전트 정의·스킬 문서를 고칠 때 → `authoring-agents` / `authoring-skills` 를 쓴다
 - tmux 패널에 CLI 워커를 띄우는 팀 → curvez 가 아니다. `team-lead` 를 쓴다
@@ -59,8 +59,7 @@ curvez 팀 실행의 절차서다. 주 사용 에이전트는 `curvez-orchestrat
 | `curvez-marketer`           | 브랜드 코어·네이밍 리딩, 회의 소집과 A/B 수렴 | **요청 시에만.** 1라운드에 `curvez-requirements` 와 병렬 가능. 네이밍 회의는 브리프 → 후보 수집(`blocked` 라우팅) → 수렴의 라운드로 돈다 |
 | `curvez-architect`          | 레이어·경계 확정                              | 요구사항 뒤. `curvez-designer` 와 병렬                                                                                                   |
 | `curvez-designer`           | 화면·토큰 스펙                                | 요구사항 뒤                                                                                                                              |
-| `curvez-nextjs`             | 웹 구현                                       | 설계 뒤. `curvez-react-native` 와 병렬                                                                                                   |
-| `curvez-react-native`       | 모바일 구현                                   | 설계 뒤                                                                                                                                  |
+| `curvez-nextjs`             | 웹 구현                                       | 설계 뒤                                                                                                                                  |
 | `curvez-qa`                 | 게이트 실행                                   | 구현 뒤. 단독                                                                                                                            |
 | `curvez-reviewer`           | 정확성·계약 리뷰                              | QA 뒤. `curvez-structure-reviewer` 와 병렬                                                                                               |
 | `curvez-structure-reviewer` | 구조·중복·순환                                | QA 뒤                                                                                                                                    |
@@ -160,17 +159,15 @@ curvez 팀 실행의 절차서다. 주 사용 에이전트는 `curvez-orchestrat
 
 ### 공유 도메인 패키지는 소유자가 없다
 
-`.curvez/profile.json` 의 `paths.domain` 은 **소유자가 없는 경로**다. `curvez-nextjs` 도
-`curvez-react-native` 도 자기 소유로 선언하지 않는다.
+`.curvez/profile.json` 의 `paths.domain` 은 **소유자가 없는 경로**다. 어느 워커도 자기 소유로
+선언하지 않는다.
 
-**이번 라운드 작업이 `paths.domain` 을 건드리면 구현 에이전트 2종을 동시에 띄우지 않는다.** 순차로 강등한다.
+**이번 라운드 작업이 `paths.domain` 을 건드리면 그 경로에 쓰는 워커를 하나로 좁힌다.**
+나머지는 순차로 강등한다.
 
-**이유:** 한쪽 스택 사정으로 공유 시그니처를 바꾸면 다른 스택이 조용히 깨지고, 그 깨짐은 그쪽
-에이전트가 **다음에 실행될 때까지 발견되지 않는다.** 동시 실행이면 그 다음이 이번 라운드에 없으므로
+**이유:** 공유 시그니처를 바꾼 변경이 다른 워커의 산출물을 조용히 깨뜨리고, 그 깨짐은 그 워커가
+**다음에 실행될 때까지 발견되지 않는다.** 동시 실행이면 그 다음이 이번 라운드에 없으므로
 깨진 채로 리뷰·QA 라운드까지 흘러가 어느 변경이 원인이었는지 특정할 수 없게 된다.
-
-어느 쪽을 먼저 돌릴지, 양쪽이 동시에 시그니처 변경을 요청했을 때의 우선순위는
-`curvez-orchestrator.md` 의 `#### 공유 도메인 패키지는 소유자가 없다` 표를 따른다.
 
 강등한 사실과 근거는 **구성안에 적어 승인받는다.** 겹친 채로 병렬 실행하지 마라.
 
@@ -303,7 +300,7 @@ grep -l '^tools:.*Agent' "$CLAUDE_PLUGIN_ROOT"/agents/*.md | wc -l
 - [ ] 승인 이전 `Agent` 호출 **0회** (예외 조건에 해당하면 그 근거가 `.curvez/team.md` 에 있다)
 - [ ] `.curvez/team.md` 에 팀 명단·소유 경로·병렬 판정 근거·승인 기록 **4항목 전부** 존재
 - [ ] 소유 경로가 겹치는 워커를 같은 라운드에 띄운 사례 **0건**
-- [ ] `paths.domain` 을 건드리는 라운드에서 구현 에이전트 2종 동시 실행 **0건**
+- [ ] `paths.domain` 을 건드리는 라운드에서 그 경로에 쓰는 워커가 동시에 2개 이상 **0건**
 - [ ] `validate-handoff.mjs` 오류 **0개**
 - [ ] 띄운 워커 수 == 새로 생긴 핸드오프 파일 수. 차이 **0**
 - [ ] `status: done` 인 핸드오프 전부에 `verification` **1건 이상**

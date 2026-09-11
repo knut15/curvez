@@ -225,7 +225,7 @@ curvez 코어에서 `opus` 가 붙은 넷이 정확히 이 성질을 갖는다.
 모르는 API 를 만났을 때 정의에 적힌 대로 `blocked_on` 으로 넘기지 않고 스스로 조사하려 든다.
 그러면 조사 담당 에이전트가 존재하는 의미가 사라지고, 출처 없는 사실이 구현에 섞여 들어간다.
 
-`curvez-nextjs`, `curvez-react-native`, `curvez-qa` 세 구현 계열이 `disallowedTools` 에
+`curvez-nextjs` 와 `curvez-qa` 두 구현 계열이 `disallowedTools` 에
 `WebSearch` 를 명시적으로 넣어 둔 것이 이 판단의 결과다. 능력을 뺏는 게 아니라 역할을 좁히는 것이다.
 
 `Agent` 도구를 오케스트레이터만 갖는 것도 같은 성질이다. 서브에이전트가 또 서브에이전트를 띄우면

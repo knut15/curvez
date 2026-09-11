@@ -31,7 +31,6 @@ export const OWNS_NONE = "none";
  */
 export const OWNS_SYMBOLS = [
   "${paths.web}",
-  "${paths.mobile}",
   "${paths.tests}",
   "${paths.domain}",
 ];

@@ -1,6 +1,5 @@
 # component: ThemeToggle
 
-platform: nextjs
 purpose: 라이트·다크를 전환한다. 선택은 브라우저에 남고 다음 방문에 이어진다
 
 ## props
@@ -37,9 +36,8 @@ purpose: 라이트·다크를 전환한다. 선택은 브라우저에 남고 다
 
 ## responsive
 
-- nextjs: 모든 폭에서 동일. 모바일에서도 헤더에 남는다
+- 모든 폭에서 동일. 모바일에서도 헤더에 남는다
 
-## platform-diff
+## 상호작용
 
-- nextjs: hover / focus-visible 정의
-- rn: 해당 없음 — 이 프로젝트에 모바일 앱이 없다
+- hover / focus-visible 정의

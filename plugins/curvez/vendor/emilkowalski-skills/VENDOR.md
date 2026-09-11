@@ -17,8 +17,8 @@ curvez 가 직접 만들지 않고 **복사해 들여온** 스킬이다. 원본�
 
 curvez 에는 **모션과 시각 디테일의 기준**이 없었다. `wireframe-spec` 은 화면 구조·토큰·컴포넌트
 스펙을 값으로 확정하지만, 그 값이 **움직일 때** 무엇이 맞는지는 다루지 않는다. 이징을 무엇으로 할지,
-얼마나 빠를지, 애초에 움직여야 하는지가 비어 있었다. 구현 에이전트(`curvez-nextjs`,
-`curvez-react-native`)는 그 판단을 각자 추측해 왔다.
+얼마나 빠를지, 애초에 움직여야 하는지가 비어 있었다. 구현 에이전트(`curvez-nextjs`)는
+그 판단을 각자 추측해 왔다.
 
 이 사본은 그 판단을 **조회 가능한 값**으로 준다 — 빈도별 애니메이션 여부 표, 요소별 지속 시간 예산,
 정확한 `cubic-bezier` 값, 자동 차단 목록.
@@ -31,7 +31,6 @@ curvez 에 없던 축만 골랐다. 이미 있는 것(요구사항·아키텍처
 | ------------------------------ | ------------------------------------- | ---------------------------------------------- |
 | `emil-design-eng`              | `skills/emil-design-eng`              | UI 디테일·컴포넌트 설계 철학과 리뷰 표 형식    |
 | `animate`                      | `skills/animate`                      | 웹 애니메이션을 값으로 정해 구현하는 절차      |
-| `animate-expo`                 | `skills/animate-expo`                 | RN 애니메이션 — 제스처·시트·햅틱·JS 스레드     |
 | `review-animations`            | `skills/review-animations`            | 모션 코드 단건 리뷰 기준                       |
 | `improve-animations`           | `skills/improve-animations`           | 코드베이스 모션 감사 → 실행 계획서 생산        |
 | `find-animation-opportunities` | `skills/find-animation-opportunities` | 모션이 없는데 있어야 할 곳 탐색과 기각 목록    |
@@ -51,7 +50,7 @@ curvez 에 없던 축만 골랐다. 이미 있는 것(요구사항·아키텍처
 
 | 스킬          | 뺀 이유                                                                     |
 | ------------- | --------------------------------------------------------------------------- |
-| `write-swift` | Swift 언어 가이드. curvez 가 다루는 스택(Next.js·React Native)과 무관하다   |
+| `write-swift` | Swift 언어 가이드. curvez 가 다루는 스택(Next.js)과 무관하다                |
 | `ask-sonner`  | 단일 라이브러리 사용 설명서. 애니메이션·디자인 기준이 아니라 API 레퍼런스다 |
 
 ## 원본이 바뀌었는지 확인하는 법
@@ -75,8 +74,7 @@ curvez 스킬처럼 발화로 자동 호출되지 않는다. `skills/` 가 아�
 
 | 하려는 일                       | 읽을 파일                                                             |
 | ------------------------------- | --------------------------------------------------------------------- |
-| 애니메이션을 새로 만든다 (웹)   | `animate/SKILL.md` → 해당하면 `animate/RECIPES.md`                    |
-| 애니메이션을 새로 만든다 (RN)   | `animate-expo/SKILL.md` → `animate-expo/RECIPES.md`                   |
+| 애니메이션을 새로 만든다        | `animate/SKILL.md` → 해당하면 `animate/RECIPES.md`                    |
 | 만든 모션을 리뷰한다            | `review-animations/SKILL.md` + `review-animations/STANDARDS.md`       |
 | 코드베이스 모션을 감사한다      | `improve-animations/SKILL.md` + `AUDIT.md` + `PLAN-TEMPLATE.md`       |
 | 어디에 모션을 넣을지 찾는다     | `find-animation-opportunities/SKILL.md`                               |

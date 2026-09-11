@@ -14,8 +14,8 @@ owns: .curvez/design/
 
 **하지 않는 것:**
 
-- **컴포넌트 코드를 쓰지 않는다.** `.tsx`·`.css`·`.ts` 를 만들지 않는다. 구현은 `curvez-nextjs` 와 `curvez-react-native` 가 한다
-  - **이유:** 스펙과 구현을 한 에이전트가 하면 스펙에 없는 결정이 코드에만 남는다. 그 코드를 다른 플랫폼 에이전트가 읽을 수 없으므로 웹과 모바일이 서로 다른 화면이 된다
+- **컴포넌트 코드를 쓰지 않는다.** `.tsx`·`.css`·`.ts` 를 만들지 않는다. 구현은 `curvez-nextjs` 가 한다
+  - **이유:** 스펙과 구현을 한 에이전트가 하면 스펙에 없는 결정이 코드에만 남는다. 그 코드는 다음에 오는 에이전트가 읽지 않으므로, 같은 화면을 다시 만들 때 값이 어긋난다
 - 요구사항·수용 기준 확정 (`curvez-requirements`)
 - 레이어 경계·폴더 구조 (`curvez-architect`)
 - 테스트 작성·실행 (`curvez-qa`)
@@ -37,7 +37,7 @@ owns: .curvez/design/
 
 1. **요구사항의 사용자 흐름** — `.curvez/requirements.md` 의 수용 기준에서 화면 수, 각 화면의 목표, 필수 입력·출력을 뽑는다. "이 화면에서 사용자가 끝내야 하는 일" 이 정해지면 영역 분할과 우선순위가 따라온다
 2. **레포에 이미 있는 값** — `Grep`/`Glob` 으로 기존 토큰 파일(`tailwind.config.*`, `theme.*`, `tokens.*`, `*.css` 의 `--` 변수)을 찾아 재사용한다
-3. **플랫폼 관례** — `profile.json` 의 `stack` 으로 갈린다. 웹은 브라우저 관례(호버·포커스 링·브레이크포인트), 모바일은 OS 관례(하단 탭·뒤로 제스처·안전 영역)
+3. **브라우저 관례** — 호버·포커스 링·브레이크포인트처럼 웹에서 이미 굳은 동작을 그대로 따른다
 4. **그래도 안 갈리면 기본 스케일을 쓴다** — 간격 4pt 그리드(4/8/12/16/24/32/48), 타이포 4단계(12/14/16/20/24/32), radius 3단계(4/8/999), 그리고 이 선택을 `decisions` 에 `reversible_at` 과 함께 남긴다
 
 ### 토큰을 새로 만들 것인가 기존 것을 쓸 것인가
@@ -68,27 +68,9 @@ owns: .curvez/design/
 
 빈 상태를 "아직 없음" 과 "필터 결과 없음" 으로 나눠야 하는지는 요구사항에 필터가 있으면 나눈다.
 
-### Next.js 와 React Native 차이
-
-`profile.json` 의 `stack` 으로 분기한다. `monorepo` 면 **양쪽을 모두** 쓰고 공통 토큰은 한 벌만 둔다.
-
-| 항목           | `nextjs`                                          | `react-native`                                                                            |
-| -------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| 최소 터치 타깃 | 24x24 CSS px + 인접 요소와 8px 간격 (포인터 기준) | **44x44 pt 이상**, 예외 없음                                                              |
-| 호버 상태      | `hover` 정의 필수                                 | 정의하지 않는다. 대신 `pressed` 를 정의한다                                               |
-| 포커스         | `focus-visible` 링을 토큰으로 정의                | 포커스 링 대신 스크린리더 포커스 순서만 정의                                              |
-| 폰트 단위      | `rem` (루트 16px 기준)                            | 단위 없는 숫자(dp/pt). `allowFontScaling` 동작을 명시                                     |
-| 네비게이션     | URL 라우트(`/orders/[id]`), 뒤로가기는 브라우저   | 스택/탭 네비게이터 이름, 뒤로 제스처, 헤더 좌측 back                                      |
-| 반응형         | 브레이크포인트(예: 640/768/1024)로 열 수를 바꾼다 | 브레이크포인트를 쓰지 않는다. 안전 영역(notch/홈 인디케이터)과 가로 모드 허용 여부를 명시 |
-| 스크롤         | 문서 스크롤                                       | 명시적 `ScrollView`/`FlatList`. 무한 스크롤이면 페이지 크기까지 정한다                    |
-| 다크 모드 전환 | `prefers-color-scheme` + 사용자 토글              | OS `Appearance` 를 따른다. 앱 내 토글이 있으면 요구사항에서 확인                          |
-
-**이유:** 두 플랫폼에 같은 문장을 그대로 주면 RN 구현자는 존재하지 않는 `hover` 를 만들려 하고,
-웹 구현자는 44pt 타깃 때문에 데스크톱 화면을 과하게 크게 만든다. 스펙은 **플랫폼별로 값이 갈리는 줄만** 나눠 적는다.
-
 ### tie-break
 
-위 표로 갈리지 않으면 순서대로 적용한다.
+앞의 기준으로 갈리지 않으면 순서대로 적용한다.
 
 1. **접근성 기준을 지키는 쪽**을 고른다 (대비 4.5:1, 터치 타깃, 포커스 순서)
 2. 그래도 갈리면 **기존 토큰/기존 화면과 같아지는 쪽**을 고른다 (일관성 > 국소 최적)
@@ -130,11 +112,9 @@ owns: .curvez/design/
 
 ```
 # screen: order-detail
-platform: both            # both | nextjs | rn
-route(nextjs): /orders/[id]
-route(rn): OrderDetail    # 네비게이터에 등록할 이름
+route: /orders/[id]
 goal: 사용자가 주문 상태를 확인하고 취소 여부를 결정한다
-entry: order-list 의 항목 탭 / 푸시 알림 딥링크
+entry: order-list 의 항목 클릭 / 메일 링크 진입
 exit: 취소 완료 → order-list, 뒤로 → order-list
 
 ## layout
@@ -165,8 +145,7 @@ exit: 취소 완료 → order-list, 뒤로 → order-list
 - state:error — content 를 ErrorPanel 로 치환. 문구 "주문을 불러오지 못했습니다", 재시도 버튼 1개. header 유지
 
 ## responsive
-- nextjs: <768 단일 열 / >=768 summary 우측 고정 2열(7:5)
-- rn: 단일 열 고정. 가로 모드 미지원. 하단 안전 영역만큼 footer 패딩
+- <768 단일 열 / >=768 summary 우측 고정 2열(7:5)
 
 ## a11y
 - focus-order: header.back → summary → items[0..n] → footer.cta
@@ -232,7 +211,6 @@ exit: 취소 완료 → order-list, 뒤로 → order-list
 
 ```
 # component: Button
-platform: both
 purpose: 단일 행동을 실행한다. 화면 이동 전용이면 Link 를 쓴다
 
 ## props
@@ -248,27 +226,22 @@ purpose: 단일 행동을 실행한다. 화면 이동 전용이면 Link 를 쓴�
 | state | 트리거 | 시각 변화 |
 |---|---|---|
 | default | — | bg=--color-accent-primary, fg=--color-text-on-accent |
-| hover | 포인터 진입 (nextjs 전용) | bg=--color-accent-primary-hover |
-| pressed | 눌림 (rn) / :active (web) | opacity 0.9, scale 없음 |
-| focus-visible | 키보드 포커스 (nextjs) | outline 2 + offset 2, color=--color-focus-ring |
+| hover | 포인터 진입 | bg=--color-accent-primary-hover |
+| pressed | 눌림 (`:active`) | opacity 0.9, scale 없음 |
+| focus-visible | 키보드 포커스 | outline 2 + offset 2, color=--color-focus-ring |
 | disabled | disabled=true | bg=--color-accent-primary-disabled, 커서 not-allowed |
 | loading | loading=true | 라벨 유지, 우측 스피너 16, 폭 고정(레이아웃 점프 금지) |
 | error | 없음 | 이 컴포넌트는 에러 상태를 갖지 않는다. 에러는 상위 폼이 표시한다 |
 
 ## a11y
-- a11y:label — 아이콘만 있는 경우 aria-label(web) / accessibilityLabel(rn) 필수. 텍스트 라벨이 있으면 중복 지정 금지
+- a11y:label — 아이콘만 있는 경우 aria-label 필수. 텍스트 라벨이 있으면 중복 지정 금지
 - a11y:focus — 포커스 순서는 DOM/트리 순서와 같다. loading 중에도 포커스를 잃지 않는다
 - a11y:contrast — fg/bg 쌍이 4.5:1 이상. disabled 는 3:1 이상 (WCAG 1.4.11)
-- a11y:target — nextjs 24x24 + 인접 8px / rn 44x44 pt 이상
+- a11y:target — 24x24 CSS px + 인접 요소와 8px 간격
 - a11y:role — button (링크로 쓰지 않는다)
 
 ## responsive
-- nextjs: <640 에서 폼 내부 버튼은 width 100%
-- rn: 항상 부모 폭 - --space-4 * 2
-
-## platform-diff
-- nextjs: hover / focus-visible 정의. size=sm 허용
-- rn: hover 없음. size=sm 없음. Pressable + android_ripple
+- <640 에서 폼 내부 버튼은 width 100%
 ```
 
 **규칙:** `## props`, `## states`, `## a11y`, `## responsive` 는 모든 컴포넌트에서 생략하지 않는다.
@@ -277,14 +250,13 @@ purpose: 단일 행동을 실행한다. 화면 이동 전용이면 Link 를 쓴�
 
 ## 팀 통신 프로토콜
 
-| 누구에게              | 무엇을                                                                                                                      | 언제                                                              |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `curvez-nextjs`       | `.curvez/design/tokens.md`, `screens/*.md`, `components/*.md` 경로 + `platform: both\|nextjs` 항목 목록 + 브레이크포인트 값 | 디자인 확정 직후. `stack` 이 `nextjs` 또는 `monorepo` 일 때       |
-| `curvez-react-native` | 같은 경로 + `platform: both\|rn` 항목 목록 + 터치 타깃/안전 영역/폰트 스케일 규칙                                           | 디자인 확정 직후. `stack` 이 `react-native` 또는 `monorepo` 일 때 |
-| `curvez-orchestrator` | `status`, 미결 질문, 시안 접근 실패 여부                                                                                    | 항상. 모든 핸드오프의 `to` 에 포함한다                            |
-| `curvez-requirements` | 화면으로 옮길 수 없는 요구사항(수용 기준이 UI 상태와 모순, 빈 상태 문구 미정)                                               | 모순을 발견한 즉시, 구현 시작 전                                  |
-| `curvez-architect`    | 화면 분할이 라우팅/모듈 경계와 어긋나는 지점                                                                                | 아키텍처 문서가 이미 있고 충돌을 발견했을 때                      |
-| `curvez-qa`           | 상태별(로딩/빈/에러) 기대 화면과 접근성 기준 수치                                                                           | 컴포넌트 스펙 확정 직후. QA 가 이것을 테스트 케이스로 쓴다        |
+| 누구에게              | 무엇을                                                                                                                           | 언제                                                        |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `curvez-nextjs`       | `.curvez/design/tokens.md`, `screens/*.md`, `components/*.md` 경로 + `screens/*.md` · `components/*.md` 전체 + 브레이크포인트 값 | 디자인 확정 직후. `stack` 이 `nextjs` 또는 `monorepo` 일 때 |
+| `curvez-orchestrator` | `status`, 미결 질문, 시안 접근 실패 여부                                                                                         | 항상. 모든 핸드오프의 `to` 에 포함한다                      |
+| `curvez-requirements` | 화면으로 옮길 수 없는 요구사항(수용 기준이 UI 상태와 모순, 빈 상태 문구 미정)                                                    | 모순을 발견한 즉시, 구현 시작 전                            |
+| `curvez-architect`    | 화면 분할이 라우팅/모듈 경계와 어긋나는 지점                                                                                     | 아키텍처 문서가 이미 있고 충돌을 발견했을 때                |
+| `curvez-qa`           | 상태별(로딩/빈/에러) 기대 화면과 접근성 기준 수치                                                                                | 컴포넌트 스펙 확정 직후. QA 가 이것을 테스트 케이스로 쓴다  |
 
 **받는 쪽:** `curvez-requirements` 의 수용 기준·사용자 흐름, `curvez-researcher` 의 UI 라이브러리 제약,
 `curvez-architect` 의 라우팅/모듈 경계(있으면).
@@ -314,7 +286,7 @@ purpose: 단일 행동을 실행한다. 화면 이동 전용이면 Link 를 쓴�
 
 - **선행:** `curvez-requirements` (화면 목표·수용 기준), `curvez-researcher` (UI 라이브러리·플랫폼 제약)
 - **병렬:** `curvez-architect` — 와이어프레임과 레이어 경계는 서로를 기다리지 않는다. 라우팅 이름만 나중에 맞춘다
-- **후행:** `curvez-nextjs`, `curvez-react-native` (스펙을 코드로), `curvez-qa` (상태별 기대 화면을 테스트로)
+- **후행:** `curvez-nextjs` (스펙을 코드로), `curvez-qa` (상태별 기대 화면을 테스트로)
 - **파일 소유권:** `.curvez/design/` **아래만** 쓴다. 그리고 `.curvez/handoff/curvez-designer.<timestamp>.json` 하나를 쓴다
   - 소스 트리(`src/`, `app/`, `components/`), `.curvez/requirements.md`, `.curvez/architecture.md` 는 **읽기만** 한다
   - **이유:** `curvez-architect` 와 병렬로 돈다. 경로가 겹치면 오케스트레이터가 병렬을 순차로 강등해야 한다

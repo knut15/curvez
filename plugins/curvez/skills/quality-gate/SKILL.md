@@ -16,13 +16,13 @@ description: typecheck·lint·test·아키텍처 경계·빌드를 프로파일�
 - 리뷰를 시작하기 전, lint 가 이미 잡은 항목을 `findings` 에서 빼려 할 때
 - `.curvez/architecture.md` 의 `ARCH-NNN` 금지 import 위반을 기계적으로 셀 때
 - 라운드를 닫기 전 빌드까지 포함한 전체 게이트를 돌릴 때
-- 의존성·설정 파일(`package.json`, `tsconfig`, `next.config`, `app.json`, lockfile)이 바뀌었을 때
+- 의존성·설정 파일(`package.json`, `tsconfig`, `next.config`, lockfile)이 바뀌었을 때
 
 ## 언제 쓰지 않는가
 
 - 중복·순환 의존·레이어 배치처럼 **파일 사이 관계**를 읽어서 판정할 때 → `structure-audit` 를 쓴다.
   이 스킬은 명령을 돌려 나온 수치만 다룬다
-- 실패를 고치려고 코드를 쓸 때 → `nextjs-implementation` / `react-native-implementation` 를 쓴다.
+- 실패를 고치려고 코드를 쓸 때 → `nextjs-implementation` 를 쓴다.
   이 스킬은 실패를 수치와 원문으로 남기고 멈춘다
 - 핸드오프 JSON 을 작성하고 스키마를 검증할 때 → `agent-contract` 를 쓴다.
   이 스킬은 `verification[]` 에 들어갈 **값**만 만들고, 그 값을 담을 **그릇**은 저쪽이 정한다
@@ -343,13 +343,9 @@ echo "suppression-count=$SUP"
 
 ## 스택별 차이
 
-빌드와 0개 실행 함정의 모양이 스택마다 다르다. `profile.json` 의 `stack` 으로 갈라 읽는다.
-
-- `stack` 이 `nextjs` 또는 `monorepo` 면 [references/nextjs.md](references/nextjs.md) 를 읽는다
-- `stack` 이 `react-native` 또는 `monorepo` 면 [references/react-native.md](references/react-native.md) 를 읽는다
-
-`monorepo` 는 **둘 다** 읽고 `paths.web` · `paths.mobile` 에 각각 적용한다.
-`paths.domain` 은 소유자가 없는 공용 경로이므로 arch 게이트에서 양쪽 규칙의 검사 대상이 된다.
+빌드와 0개 실행 함정의 모양은 [references/nextjs.md](references/nextjs.md) 에 있다.
+`stack` 이 `nextjs` 든 `monorepo` 든 이 문서를 읽고 `paths.web` 에 적용한다.
+`paths.domain` 은 소유자가 없는 공용 경로이므로 arch 게이트에서도 검사 대상이 된다.
 
 ## 완료 기준
 

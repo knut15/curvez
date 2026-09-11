@@ -19,7 +19,7 @@ description: 디자인 작업을 어느 스킬이 맡을지 판정한다. "랜�
 ## 언제 쓰지 않는가
 
 - 화면 구조·토큰·컴포넌트 스펙을 **값으로 확정**할 때 → `wireframe-spec` 을 쓴다. 이 스킬은 담당만 정한다
-- 확정된 스펙으로 코드를 쓸 때 → `nextjs-implementation` / `react-native-implementation` 을 쓴다
+- 확정된 스펙으로 코드를 쓸 때 → `nextjs-implementation` 을 쓴다
 - 이징·지속 시간 등 모션 값을 정할 때 → `motion-standards` 를 쓴다
 - 레이어 경계·폴더 구조를 정할 때 → `architecture-setup` 을 쓴다
 - 담당이 이미 명백할 때 — 사용자가 스킬 이름을 직접 불렀고 그 스킬의 출력 형태가 프로젝트와 맞으면 그냥 그것을 쓴다

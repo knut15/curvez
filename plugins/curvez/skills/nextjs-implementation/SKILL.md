@@ -19,7 +19,6 @@ description: Next.js App Router 코드를 확정된 아키텍처 경계와 디�
 
 ## 언제 쓰지 않는가
 
-- 모바일(React Native) 코드를 쓸 때 → `react-native-implementation` 을 쓴다
 - 화면·컴포넌트 스펙과 토큰을 **확정**할 때 → `wireframe-spec` 을 쓴다. 이 스킬은 확정된 스펙을 읽기만 한다
 - 코드를 쓰지 않고 검증·리뷰만 할 때 → `quality-gate` 를 쓴다
 - 이징 커브·지속 시간·전환 값을 정해야 할 때 → `motion-standards` 를 쓴다. 값을 정하고 이 스킬로 돌아온다
@@ -39,12 +38,11 @@ PROFILE=.curvez/profile.json
 node -p "JSON.stringify({stack:require('./$PROFILE').stack, web:require('./$PROFILE').paths?.web, domain:require('./$PROFILE').paths?.domain, commands:require('./$PROFILE').commands})"
 ```
 
-| 확인                                   | 없을 때                                                                    |
-| -------------------------------------- | -------------------------------------------------------------------------- |
-| `paths.web`                            | `status: blocked`. `blocked_on` 에 "profile.json 에 paths.web 이 없다"     |
-| `commands` (`typecheck`/`lint`/`test`) | `status: blocked`. 명령을 지어내지 않는다                                  |
-| `stack: monorepo` 일 때 `paths.domain` | `status: blocked`. 금지 import 검사 대상을 못 정한다                       |
-| `stack: react-native`                  | 이 에이전트가 실행될 자리가 아니다. `blocked` 로 오케스트레이터에게 돌린다 |
+| 확인                                   | 없을 때                                                                |
+| -------------------------------------- | ---------------------------------------------------------------------- |
+| `paths.web`                            | `status: blocked`. `blocked_on` 에 "profile.json 에 paths.web 이 없다" |
+| `commands` (`typecheck`/`lint`/`test`) | `status: blocked`. 명령을 지어내지 않는다                              |
+| `stack: monorepo` 일 때 `paths.domain` | `status: blocked`. 금지 import 검사 대상을 못 정한다                   |
 
 **경로와 명령을 추측하지 않는다.** 폴백을 만들지 않는다.
 **이유:** 구현 에이전트마다 다른 폴백을 만들면 monorepo 에서 두 에이전트가 같은 디렉터리를 소유하게 되고,
@@ -68,7 +66,6 @@ node -p "JSON.stringify({stack:require('./$PROFILE').stack, web:require('./$PROF
 
 `index.md` → 해당 `screens/<screen-id>.md` · `components/<ComponentName>.md` → `tokens.md` 순으로 읽는다.
 
-- `platform:` 값이 `both` 또는 `nextjs` 인 항목만 구현한다. `rn` 은 `curvez-react-native` 의 몫이라 건드리지 않는다
 - `route(nextjs)` 값을 App Router 경로로 그대로 쓴다. 경로를 새로 짓지 않는다
 - 문서에 있는 상태 키(`state:default` `state:loading` `state:empty` `state:error`)를 **전부** 구현한다
 - 색·간격·타이포·라운드는 `tokens.md` 의 토큰 이름(`--<category>-<role>-<variant>`)으로만 쓴다. 값을 직접 박아넣지 않는다
@@ -115,7 +112,7 @@ node -p "JSON.stringify({stack:require('./$PROFILE').stack, web:require('./$PROF
 - **도메인 레이어에서 `next/*` 를 참조하지 않는다.** `next/navigation`, `next/headers`, `next/cache`, `next/image`, `next/server` 전부 포함한다
   - **이유:** 도메인을 프레임워크 교체와 렌더링 모델에서 분리하는 것이 이 아키텍처를 쓰는 유일한 이유다.
     도메인이 `next/headers` 를 부르는 순간 그 코드는 요청 컨텍스트 없이는 테스트도 재사용도 불가능해지고,
-    `curvez-react-native` 가 같은 도메인 로직을 공유할 수 없게 된다
+    같은 도메인 로직을 다른 진입점에서 공유할 수 없게 된다
   - 프레임워크가 필요한 값(쿠키·헤더·현재 경로)은 **상위 레이어에서 읽어 인자로 주입한다**
 - 의존 방향을 역행하는 import 가 필요해 보이면 그 자리에서 고치지 않는다
 - **규칙에 이의가 있으면 조용히 어기지 않는다.** `blocked_on` 에 어느 규칙이 어느 파일에서 왜 걸리는지 적고 `who` 를 `curvez-architect` 로 둔다
@@ -147,7 +144,7 @@ node -p "JSON.stringify({stack:require('./$PROFILE').stack, web:require('./$PROF
 2. `## 금지 import` 표의 `ARCH-NNN` 규칙을 **파싱해** 규칙별 위반 건수를 센다
 3. `any` · 타입 단언 개수를 센다
 4. `page.tsx` / `layout.tsx` 최상단 `"use client"` 개수를 센다
-5. 구현한 화면·컴포넌트의 상태 키와 `platform:` 항목 중 미구현이 있는지 대조한다
+5. 구현한 화면·컴포넌트의 상태 키 중 미구현이 있는지 대조한다
 
 **2번의 함정:** 표 안에서 패턴의 `|` 는 마크다운 규칙상 `\|` 로 이스케이프돼 있다.
 `awk -F' \| '`(공백-파이프-공백)로 필드를 끊은 뒤 읽어낸 패턴의 `\|` 를 `|` 로 되돌려야 `grep -E` 가 원래 뜻으로 동작한다.
@@ -169,7 +166,6 @@ node -p "JSON.stringify({stack:require('./$PROFILE').stack, web:require('./$PROF
 필드에 무엇을 담는지는 `agents/curvez-nextjs.md` 의 `## 입출력 프로토콜` 을 따른다.
 
 구현 단위를 끝내고 자체 검증을 통과한 직후 `to` 에 `curvez-qa` 와 `curvez-orchestrator` 를 넣는다.
-공유 route handler 의 계약을 만들거나 바꿨으면 `curvez-react-native` 도 넣는다.
 
 ## 6. 막혔을 때
 
@@ -198,6 +194,6 @@ node -p "JSON.stringify({stack:require('./$PROFILE').stack, web:require('./$PROF
 - [ ] 도메인 레이어의 `next/*` import 0건
 - [ ] 웹 소스의 `any` 0건. 어댑터에서 불가피한 단언은 개수와 경로를 `decisions` 에 명시
 - [ ] `page.tsx` / `layout.tsx` 최상단 `"use client"` 0건 (있으면 이유를 `decisions` 에)
-- [ ] 구현 대상(`platform:` 이 `both`/`nextjs`)의 상태 키 중 미구현 0건
+- [ ] 구현 대상 화면·컴포넌트의 상태 키 중 미구현 0건
 - [ ] 핸드오프의 `verification` 에 명령과 **실제 출력 수치**가 들어 있다
 - [ ] 위 중 하나라도 못 채웠으면 `status` 가 `done` 이 아니다

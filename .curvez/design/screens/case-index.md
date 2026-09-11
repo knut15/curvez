@@ -1,8 +1,6 @@
 # screen: case-index
 
-platform: nextjs
-route(nextjs): /cases
-route(rn): 해당 없음 — profile 의 stack 이 nextjs 라 모바일 앱이 없다
+route: /cases
 goal: 방문자가 케이스 전체를 훑고 자기 관심사에 맞는 것을 고른다
 entry: home 의 "전체 보기" · header 의 케이스 링크 · 검색 유입
 exit: 카드 클릭 → case-detail
@@ -36,7 +34,7 @@ exit: 카드 클릭 → case-detail
 
 ## responsive
 
-- nextjs: <768 1열 · py-10 · px-5 / >=768 2열 · py-16 · px-8, 컨테이너 max-w-5xl. 좌우 여백은 헤더와 같은 값이다
+- <768 1열 · py-10 · px-5 / >=768 2열 · py-16 · px-8, 컨테이너 max-w-5xl. 좌우 여백은 헤더와 같은 값이다
 
 ## a11y
 

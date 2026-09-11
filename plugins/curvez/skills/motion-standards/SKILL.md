@@ -8,7 +8,7 @@ description: 애니메이션의 이징·지속 시간·중단 가능성을 값�
 
 ## 언제 이 스킬을 쓰는가
 
-- 화면에 새 애니메이션·전환을 넣을 때 (웹·React Native 둘 다)
+- 화면에 새 애니메이션·전환을 넣을 때
 - 구현 도중 이징 커브·지속 시간·스프링 설정을 정해야 할 때
 - 이미 있는 모션이 굼뜨다·튄다·끊긴다는 지적을 받아 고칠 때
 - 코드베이스 전체 모션을 감사해 고칠 순서를 정할 때
@@ -17,7 +17,7 @@ description: 애니메이션의 이징·지속 시간·중단 가능성을 값�
 ## 언제 쓰지 않는가
 
 - 화면 구조·색·간격·타이포 토큰을 확정할 때 → `wireframe-spec` 을 쓴다
-- 컴포넌트를 처음부터 구현할 때 → `nextjs-implementation` / `react-native-implementation` 을 쓴다. 그 절차 안에서 모션 값이 필요해지는 지점에만 이 스킬로 들어온다
+- 컴포넌트를 처음부터 구현할 때 → `nextjs-implementation` 을 쓴다. 그 절차 안에서 모션 값이 필요해지는 지점에만 이 스킬로 들어온다
 - 레이어 경계·중복·순환 의존을 볼 때 → `structure-audit` 을 쓴다
 - typecheck·lint·test 를 실제로 돌릴 때 → `quality-gate` 를 쓴다
 - 결과를 다음 에이전트에게 넘기는 JSON 형식이 궁금할 때 → `agent-contract` 를 쓴다
@@ -33,7 +33,6 @@ description: 애니메이션의 이징·지속 시간·중단 가능성을 값�
 | 하려는 일                     | 열 파일 (`plugins/curvez/vendor/emilkowalski-skills/` 아래)      |
 | ----------------------------- | ---------------------------------------------------------------- |
 | 웹 애니메이션을 만든다        | `animate/SKILL.md` → 해당 컴포넌트가 있으면 `animate/RECIPES.md` |
-| RN 애니메이션을 만든다        | `animate-expo/SKILL.md` → `animate-expo/RECIPES.md`              |
 | 만든 모션을 리뷰한다          | `review-animations/SKILL.md` + `review-animations/STANDARDS.md`  |
 | 코드베이스 모션을 감사한다    | `improve-animations/SKILL.md` + `AUDIT.md` + `PLAN-TEMPLATE.md`  |
 | 넣을 자리를 찾는다            | `find-animation-opportunities/SKILL.md`                          |
@@ -91,8 +90,7 @@ rg -n "transition:\s*all|scale\(0\)|ease-in[^-]|transform-origin:\s*center" <바
 ```
 
 걸린 줄마다 판정한다 — 모달의 `transform-origin: center` 는 정상이고, 트리거에 붙은 팝오버의
-같은 값은 결함이다. RN 은 이 정규식 대신 `animate-expo/SKILL.md` 의 `## Never Ship` 표를 그대로
-대조한다.
+같은 값은 결함이다.
 
 **완료 판정:** 검출 0건이거나, 남은 건마다 정상인 이유가 한 줄씩 적혀 있다.
 

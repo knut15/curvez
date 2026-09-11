@@ -4,7 +4,7 @@ description: 화면 구조·디자인 토큰·컴포넌트 스펙을 해석 여�
 ---
 
 디자인 스펙의 목표는 그림이 아니라 **판정 가능한 값**이다. 구현 에이전트가 이 문서만 읽고
-같은 화면을 만들면 성공이고, "적당히" 가 한 군데라도 남으면 웹과 모바일이 서로 다른 앱이 된다.
+같은 화면을 만들면 성공이고, "적당히" 가 한 군데라도 남으면 구현자가 그 자리에서 값을 지어낸다.
 
 ## 언제 이 스킬을 쓰는가
 
@@ -16,7 +16,7 @@ description: 화면 구조·디자인 토큰·컴포넌트 스펙을 해석 여�
 
 ## 언제 쓰지 않는가
 
-- 실제 컴포넌트 코드(`.tsx`/`.css`)를 쓸 때 → `nextjs-implementation` / `react-native-implementation` 을 쓴다
+- 실제 컴포넌트 코드(`.tsx`/`.css`)를 쓸 때 → `nextjs-implementation` 을 쓴다
 - 레이어 경계·폴더 구조·금지 import 를 정할 때 → `architecture-setup` 을 쓴다
 - 수용 기준(`AC-<번호>`)을 확정할 때 → `research-brief` 가 아니라 요구사항 단계다. 화면 목표가 없으면 지어내지 말고 `blocked_on` 에 남긴다
 - 이미 구현된 화면의 결함을 지적할 때 → `quality-gate` / `structure-audit` 을 쓴다
@@ -25,7 +25,7 @@ description: 화면 구조·디자인 토큰·컴포넌트 스펙을 해석 여�
 - 결과를 다음 에이전트에게 넘기는 JSON 형식이 궁금할 때 → `agent-contract` 를 쓴다
 
 **이유:** 스펙과 구현을 한 흐름에서 같이 하면 스펙에 없는 결정이 코드에만 남는다.
-그 코드는 다른 플랫폼 담당이 읽지 않으므로 두 플랫폼이 조용히 갈라진다.
+그 코드는 리뷰어도 QA 도 읽지 않으므로 결정의 근거가 조용히 사라진다.
 
 ## 산출물과 형식의 정본
 
@@ -36,7 +36,7 @@ description: 화면 구조·디자인 토큰·컴포넌트 스펙을 해석 여�
 | `.curvez/design/index.md`                      | 화면 목록 · 컴포넌트 목록 · 커버리지 표 · 미결 질문         |
 | `.curvez/design/tokens.md`                     | 토큰 표(라이트/다크 동시) · 이름 규칙 · `## 대비 검증` 블록 |
 | `.curvez/design/screens/<screen-id>.md`        | layout / states / responsive / a11y                         |
-| `.curvez/design/components/<ComponentName>.md` | props / states / a11y / responsive / platform-diff          |
+| `.curvez/design/components/<ComponentName>.md` | props / states / a11y / responsive                          |
 
 **각 파일의 정확한 서식(예시 전문)은 `plugins/curvez/agents/curvez-designer.md` 의
 `### 와이어프레임 형식` · `### 디자인 토큰 형식` · `### 컴포넌트 스펙 형식` 이 정본이다.**
@@ -49,12 +49,8 @@ description: 화면 구조·디자인 토큰·컴포넌트 스펙을 해석 여�
 
 - 상태: `state:default` `state:loading` `state:empty` `state:error`
 - 접근성: `a11y:label` `a11y:focus` `a11y:contrast` `a11y:target` `a11y:role`, `focus-order`
-- 플랫폼: `platform:` 값은 `both` / `nextjs` / `rn`
-- 라우팅: `route(nextjs)` `route(rn)`
+- 라우팅: `route(nextjs)`
 - 토큰 이름: `--<category>-<role>-<variant>` (예: `--color-bg-canvas`)
-
-**`react-native` 로 쓰지 마라.** `platform:` 값은 `rn` 이다.
-**이유:** `route(rn)` 과 어휘를 맞춘 확정값이다. 두 어휘가 섞이면 구현 에이전트가 자기 몫을 `grep` 으로 못 고른다.
 
 **`--color-blue-500` 같은 값-이름을 토큰 이름에 쓰지 마라.**
 **이유:** 다크에서 그 토큰이 밝은 색이 되면 이름이 거짓말을 한다. 구현자는 이름을 믿고 잘못 쓴다.
@@ -64,7 +60,7 @@ description: 화면 구조·디자인 토큰·컴포넌트 스펙을 해석 여�
 ### 1. 입력을 읽고 시안 유무를 판정한다
 
 `.curvez/profile.json` 과 `.curvez/requirements.md`(또는 requirements 핸드오프)를 먼저 읽는다.
-둘 중 하나라도 없으면 **추측하지 말고 `status: blocked`** 로 끝낸다. `stack` 을 모르면 어느 플랫폼 규칙을 적용할지 정할 근거가 없다.
+둘 중 하나라도 없으면 **추측하지 말고 `status: blocked`** 로 끝낸다. `stack` 을 모르면 어느 경로에 스펙이 적용될지 정할 근거가 없다.
 
 시안은 세 갈래다.
 
@@ -78,7 +74,7 @@ description: 화면 구조·디자인 토큰·컴포넌트 스펙을 해석 여�
 
 1. **요구사항의 사용자 흐름** — 수용 기준에서 화면 수, 각 화면의 목표, 필수 입력·출력을 뽑는다. "이 화면에서 사용자가 끝내야 하는 일" 이 정해지면 영역 분할과 우선순위가 따라온다
 2. **레포에 이미 있는 값** — `Grep`/`Glob` 으로 `tailwind.config.*`, `theme.*`, `tokens.*`, `*.css` 의 `--` 변수를 찾아 재사용한다
-3. **플랫폼 관례** — `profile.json` 의 `stack` 으로 갈린다. 웹은 호버·포커스 링·브레이크포인트, 모바일은 하단 탭·뒤로 제스처·안전 영역
+3. **웹 관례** — 호버, 포커스 링, 브레이크포인트처럼 브라우저에서 이미 굳은 규칙을 그대로 쓴다
 4. **기본 스케일** — 간격 4pt 그리드(4/8/12/16/24/32/48), 타이포 4단계(12/14/16/20/24/32), radius 3단계(4/8/999)
 
 **4번까지 왔으면 그 선택을 `decisions` 에 `reversible_at` 과 함께 남긴다.**
@@ -111,7 +107,7 @@ description: 화면 구조·디자인 토큰·컴포넌트 스펙을 해석 여�
 
 ### 3. 화면 스펙을 쓴다 — 상태 4종은 지우지 않는다
 
-화면마다 `screens/<screen-id>.md` 하나. `platform:`, `route(nextjs)`/`route(rn)`, `goal`, `entry`, `exit` 를 머리에 두고
+화면마다 `screens/<screen-id>.md` 하나. `route(nextjs)`, `goal`, `entry`, `exit` 를 머리에 두고
 `## layout` → `## states` → `## responsive` → `## a11y` 순으로 쓴다.
 
 - `region` 은 중첩한다. 들여쓰기 2칸이 한 단계다. **모든 `region` 에 `role` 을 적는다** — 역할 없는 영역은 지운다
@@ -149,16 +145,12 @@ description: 화면 구조·디자인 토큰·컴포넌트 스펙을 해석 여�
 | `a11y:label`    | 아이콘 전용일 때 라벨 원문. 텍스트 라벨이 있으면 중복 지정 금지 |
 | `a11y:focus`    | 포커스 순서가 트리 순서와 같은가. 로딩 중 포커스 유지 여부      |
 | `a11y:contrast` | fg/bg 쌍이 **4.5:1** 이상. disabled 는 3:1 이상                 |
-| `a11y:target`   | `nextjs` **24x24 px** + 인접 8px / `rn` **44x44 pt** 이상       |
+| `a11y:target`   | **24x24 px** 이상 + 인접 요소와 8px 간격                        |
 | `a11y:role`     | 역할 하나. 버튼을 링크로 쓰지 않는다                            |
 
 **접근성을 나중으로 미루지 마라.**
 **이유:** 대비와 타깃 크기는 값만 바꾸면 되지만, 포커스 순서와 role 은 마크업 구조에 박힌다.
 스펙 시점에 정하면 한 줄이고, 구현 뒤에 정하면 컴포넌트 트리를 다시 짠다.
-
-`## platform-diff` 섹션은 `nextjs` 와 `rn` 의 값이 실제로 갈리는 줄만 적는다. 같은 줄을 두 번 쓰지 않는다.
-**플랫폼별로 무엇을 값으로 확정해야 하는지, 화면을 파일로 나눌지 줄로 나눌지는
-[references/platform-diff.md](references/platform-diff.md) 를 읽는다.** `stack` 이 `monorepo` 이거나 한 화면이 웹과 모바일에서 갈리면 반드시 읽는다.
 
 ### 5. 검증하고 넘긴다
 
