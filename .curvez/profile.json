@@ -15,6 +15,7 @@
   "commands": {
     "typecheck": "pnpm typecheck",
     "lint": "pnpm lint",
+    "test": "pnpm test",
     "build": "pnpm build"
   }
 }

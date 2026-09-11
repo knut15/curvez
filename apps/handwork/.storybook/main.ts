@@ -9,10 +9,18 @@ import type { StorybookConfig } from "@storybook/nextjs-vite";
  */
 const config: StorybookConfig = {
   stories: [
+    "../src/shared/ui/**/*.mdx",
     "../src/shared/ui/**/*.stories.@(ts|tsx)",
     "../src/entities/*/ui/**/*.stories.@(ts|tsx)",
   ],
-  addons: ["@storybook/addon-themes"],
+  addons: [
+    "@storybook/addon-themes",
+    // 컴포넌트 스펙 12종이 a11y 다섯 키를 값으로 적어 뒀다. 그 값 중 기계가 셀 수 있는 것을
+    // 여기서 센다 — 대비·role·이름. 포커스 순서처럼 못 세는 것은 여전히 사람이 본다.
+    "@storybook/addon-a11y",
+    "@storybook/addon-docs",
+    "@storybook/addon-vitest",
+  ],
   framework: {
     name: "@storybook/nextjs-vite",
     options: {},

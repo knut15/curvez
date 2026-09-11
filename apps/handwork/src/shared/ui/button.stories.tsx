@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { fn } from "storybook/test";
+import { expect, fn, userEvent, within } from "storybook/test";
 
 import { Button } from "./button";
 
@@ -23,7 +23,16 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const Default: Story = {
+  /** 눌리는지 본다. 버튼의 유일한 계약이다. */
+  play: async ({ canvasElement, args }) => {
+    const button = within(canvasElement).getByRole("button", {
+      name: "케이스 보기",
+    });
+    await userEvent.click(button);
+    await expect(args.onClick).toHaveBeenCalledTimes(1);
+  },
+};
 
 /** 두 번째 강조. `theme-toggle.tsx:21` 이 이미 이 모양이다. */
 export const Ghost: Story = {
@@ -56,6 +65,19 @@ export const Icon: Story = {
 /** 대비 하한이 3:1 이다(WCAG 1.4.11). `disabled` 속성을 실제로 준다 — 색만으로 표현하지 않는다. */
 export const Disabled: Story = {
   args: { disabled: true },
+  /**
+   * **누르면 아무 일도 없어야 한다.** 스펙이 "`disabled` 속성을 실제로 주고 색만으로
+   * 표현하지 마라" 고 정했는데, 그 값이 실제로 클릭을 막는지는 눌러 봐야만 안다.
+   * 불투명도만 낮추고 핸들러가 그대로 도는 구현이 화면에서는 똑같이 보인다.
+   */
+  play: async ({ canvasElement, args }) => {
+    const button = within(canvasElement).getByRole("button", {
+      name: "케이스 보기",
+    });
+    await expect(button).toBeDisabled();
+    await userEvent.click(button, { pointerEventsCheck: 0 });
+    await expect(args.onClick).not.toHaveBeenCalled();
+  },
 };
 
 /** 두 variant 와 두 size 를 한 화면에서 견준다. 네 조합이 전부다. */
