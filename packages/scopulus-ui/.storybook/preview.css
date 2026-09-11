@@ -1,0 +1,18 @@
+/* 스토리북 프리뷰의 전체 스타일시트. 앱이 `globals.css` 에서 하는 조립을 여기서 한다.
+   `src/tokens.css` 는 토큰 층만 갖고 Tailwind 를 import 하지 않으므로, 유틸리티가 나오려면
+   여기서 함께 실어야 한다. */
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "../src/tokens.css";
+
+/* 서체는 라이브러리가 정하지 않는다 — 쓰는 앱이 `--font-sans` 를 채운다(handwork 는
+   `layout.tsx` 의 next/font 로). 스토리북에는 그 앱이 없어 변수가 비고, 비면 `font-sans`
+   유틸이 아무 서체도 고르지 못한다. 값은 handwork 가 싣는 것과 같은 npm 패키지의 가변 폰트다.
+   실제 화면과 글자 모양을 맞추려는 것이지 라이브러리가 이 서체를 요구한다는 뜻이 아니다. */
+@import "pretendard/dist/web/variable/pretendardvariable.css";
+
+:root {
+  --font-sans: "Pretendard Variable", system-ui, -apple-system, sans-serif;
+  --font-geist-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}

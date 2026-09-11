@@ -2,7 +2,7 @@
 
 purpose: 라이트·다크를 전환한다. 선택은 브라우저에 남고 다음 방문에 이어진다
 
-구현: `apps/handwork/src/shared/ui/theme-toggle.tsx`. 사용처는 `apps/handwork/src/widgets/site-header.tsx:49` 하나다.
+구현: `packages/scopulus-ui/src/ui/theme-toggle.tsx`. 사용처는 `apps/handwork/src/widgets/site-header.tsx:49` 하나다.
 
 **화면에 존재하는 유일한 `<button>` 이다** — `grep -rn '<button' apps/handwork/src --include='*.tsx'`
 가 1건(`theme-toggle.tsx:9`)이다. 그래서 이 디자인 시스템의 버튼 값이 전부 이 파일에서 실측됐다.
@@ -75,7 +75,7 @@ purpose: 라이트·다크를 전환한다. 선택은 브라우저에 남고 다
 
 **대신 한 방향을 못박는다: `Button` 의 `ghost`+`icon` 이 이 파일을 따라간다.**
 [`Button.md`](Button.md) 의 "남기는 값" 표가 이 파일의 줄 번호를 근거로 적혀 있다.
-**고칠 때 순서:** `apps/handwork/src/shared/ui/theme-toggle.tsx:21` 을 먼저 고치고
+**고칠 때 순서:** `packages/scopulus-ui/src/ui/theme-toggle.tsx:21` 을 먼저 고치고
 [`Button.md`](Button.md) 의 표를 맞춘다. 반대로 하지 마라.
 
 ## 아이콘 크기 — 20px 하나

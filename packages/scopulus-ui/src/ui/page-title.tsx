@@ -3,7 +3,7 @@ import { cn } from "cn";
 /**
  * 화면 제목 h1 과 그 아래 설명 문단을 한 벌로 낸다. 한 화면에 하나만 둔다.
  *
- * 스펙은 `apps/handwork/design/components/PageTitle.md` 가 정본이다.
+ * 스펙은 `packages/scopulus-ui/design/components/PageTitle.md` 가 정본이다.
  *
  * `level` 을 받지 않는다 — 항상 `<h1>` 이다. 레벨을 고를 수 있게 하면 h1 이 둘이거나
  * 없는 화면이 생기고, 그것은 스크린리더의 문서 개요를 망가뜨린다. h2·h3 는 본문 안에

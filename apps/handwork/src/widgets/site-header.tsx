@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { ThemeToggle } from "@/shared/ui/theme-toggle";
+import { ThemeToggle } from "@scopulus/ui";
 
 type Current = "home" | "cases" | "case" | "labs";
 

@@ -1,7 +1,6 @@
 import { withThemeByClassName } from "@storybook/addon-themes";
 import type { Preview } from "@storybook/nextjs-vite";
 
-import "../src/app/globals.css";
 import "./preview.css";
 
 /**

@@ -1,7 +1,7 @@
 /**
  * 한 낱말짜리 메타 정보를 본문과 구분해 얹는다. 태그 칩과 기록 상태 둘을 맡는다.
  *
- * 스펙은 `apps/handwork/design/components/Badge.md` 가 정본이다.
+ * 스펙은 `packages/scopulus-ui/design/components/Badge.md` 가 정본이다.
  *
  * **스펙과 한 군데 다르다.** 스펙은 `status` prop 의 타입을 `진행 중 | 멈춤 | 마무리` 로
  * 잡았지만, `shared` 는 ARCH-001 로 `@/entities` 를 import 할 수 없다. 그 이름들은

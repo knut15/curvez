@@ -4,7 +4,7 @@ import { cn } from "cn";
 /**
  * 주소를 바꾸지 않는 행동 하나. 주소가 바뀌는 것은 `AppLink` 가 맡는다.
  *
- * 스펙은 `apps/handwork/design/components/Button.md` 가 정본이다.
+ * 스펙은 `packages/scopulus-ui/design/components/Button.md` 가 정본이다.
  *
  * **`shadcn add button` 으로 받지 않고 손으로 썼다.** 받는 쪽은 variant 6종 · size 7종인데
  * 이 사이트에 버튼이 들어갈 자리가 둘뿐이다. 쓰이지 않는 variant 는 검증되지 않은 채

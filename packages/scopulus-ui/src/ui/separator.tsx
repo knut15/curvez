@@ -1,7 +1,7 @@
 /**
  * 블록과 블록 사이에 가로줄 하나를 긋고 위아래 여백을 함께 갖는다.
  *
- * 스펙은 `apps/handwork/design/components/Separator.md` 가 정본이다.
+ * 스펙은 `packages/scopulus-ui/design/components/Separator.md` 가 정본이다.
  *
  * `<hr>` 이다. `<div className="border-t">` 로 그리지 마라 — 구조 정보가 시각에만 남아
  * 스크린리더가 덩어리의 경계를 알지 못한다. 같은 이유로 `aria-hidden` 을 붙이지 마라.

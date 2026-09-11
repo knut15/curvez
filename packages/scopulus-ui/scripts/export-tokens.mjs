@@ -10,9 +10,9 @@
  * 한 컬렉션의 두 모드가 된다. W3C DTCG 는 아직 모드를 표준화하지 않아, 순수 DTCG 로 쓰면
  * 어느 도구도 두 테마를 한 컬렉션으로 읽지 못한다.
  *
- * 입력은 globals.css 하나다 — `apps/handwork/design/tokens.md` 는 스스로 사본이라고 적어 둔 문서다.
+ * 입력은 `src/tokens.css` 하나다 — `design/tokens.md` 는 스스로 사본이라고 적어 둔 문서다.
  *
- * 사용: node apps/handwork/scripts/export-tokens.mjs [--check]
+ * 사용: node packages/scopulus-ui/scripts/export-tokens.mjs [--check]
  *   --check 를 붙이면 쓰지 않고 기존 파일과 같은지만 본다. 다르면 exit 1.
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -22,8 +22,7 @@ import { fileURLToPath } from "node:url";
 import { readTokens, toHexAlpha } from "./lib/tokens.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-// 디자인 자산은 앱 안에 있다. 저장소 루트를 거치지 않는다 —
-// handwork 의 디자인 시스템은 curvez 의 `.curvez/design/` 과 무관하다.
+// 디자인 문서는 라이브러리 안에 있다. 앱도 저장소 루트도 거치지 않는다.
 const DESIGN = join(HERE, "..", "design");
 const OUT = join(DESIGN, "tokens.figma.json");
 
@@ -72,11 +71,11 @@ if (process.argv.includes("--check")) {
   }
   if (current !== json) {
     console.log(
-      `어긋남: ${OUT} 가 globals.css 와 다르다. --check 없이 다시 돌려라.`,
+      `어긋남: ${OUT} 가 tokens.css 와 다르다. --check 없이 다시 돌려라.`,
     );
     process.exit(1);
   }
-  console.log("tokens.figma.json 이 globals.css 와 일치한다");
+  console.log("tokens.figma.json 이 tokens.css 와 일치한다");
   process.exit(0);
 }
 

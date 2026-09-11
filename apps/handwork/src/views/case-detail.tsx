@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import type { CaseMeta } from "@/entities/case/model/types";
-import { PROSE } from "@/shared/ui/prose";
+import { PROSE } from "@scopulus/ui";
 
 type Neighbor = { slug: string; title: string } | null;
 

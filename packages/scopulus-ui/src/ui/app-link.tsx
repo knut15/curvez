@@ -4,7 +4,7 @@ import { cn } from "cn";
 /**
  * 주소를 바꾸는 이동 하나. hover 와 focus 를 `--brand-accent` 한 색으로 모은다.
  *
- * 스펙은 `apps/handwork/design/components/AppLink.md` 가 정본이다.
+ * 스펙은 `packages/scopulus-ui/design/components/AppLink.md` 가 정본이다.
  *
  * **자기 색을 갖지 않는다.** fg 는 부모에게서 상속한다 — 헤더에서는 `--brand-ink`, 본문에서는
  * `--foreground`, 메타 줄에서는 `--muted-foreground` 다. 링크 색을 하나로 고정하면 메타 줄에서

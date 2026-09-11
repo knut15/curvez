@@ -17,7 +17,7 @@ grep -rn 'hover:text-brand-accent' apps/handwork/src --include='*.tsx' --include
 | `apps/handwork/src/widgets/site-header.tsx` | 15  | O    | 헤더 링크 상수 `LINK` (Cases · Labs)             |
 | `apps/handwork/src/views/case-detail.tsx`   | 10  | X    | 본문·이웃 링크 상수 `LINK`                       |
 | `apps/handwork/src/widgets/site-header.tsx` | 24  | X    | 헤더 워드마크 `handwork®`                        |
-| `apps/handwork/src/shared/ui/prose.ts`      | 8   | O    | MDX 본문 안 링크 `[&_a:hover]:text-brand-accent` |
+| `packages/scopulus-ui/src/ui/prose.ts`      | 8   | O    | MDX 본문 안 링크 `[&_a:hover]:text-brand-accent` |
 
 리터럴 `hover:text-brand-accent` 는 5줄이고, 여섯 번째는 `prose.ts:8` 의 `[&_a:hover]:` 형태라
 같은 grep 에 걸리지 않는다. 강조색으로 hover 하는 자리는 **모두 6곳**이다.

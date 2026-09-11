@@ -8,7 +8,7 @@ purpose: 주소를 바꾸지 않는 단일 행동을 실행한다. 화면 이동
 grep -rn '<button' apps/handwork/src --include='*.tsx'
 ```
 
-실측 **1건**이다 — `apps/handwork/src/shared/ui/theme-toggle.tsx:9`. 그것도 아이콘 전용이고
+실측 **1건**이다 — `packages/scopulus-ui/src/ui/theme-toggle.tsx:9`. 그것도 아이콘 전용이고
 `ThemeToggle` 이 직접 들고 있다.
 
 **그래서 variant 와 size 를 지어내지 않는다.** shadcn 이 정한 이름
@@ -60,7 +60,7 @@ grep -rn '<button' apps/handwork/src --include='*.tsx'
 | size `sm`           | 이 사이트에 버튼이 들어갈 자리가 둘뿐이다 — 헤더의 아이콘 하나와, 아직 없는 CTA 하나. 크기 단계가 둘 이상 필요한 자리가 0곳이다. 실측 `<button>` 1건이 그 근거다                                                                                                                                  |
 | size `lg`           | 같은 이유. 그리고 40px 보다 큰 버튼을 놓을 자리가 없다 — 화면 5개 중 넷이 글 읽는 화면이고 랜딩에는 버튼이 0개다                                                                                                                                                                                  |
 
-**버린 것을 되살릴 때 고칠 위치:** 이 절과 `apps/handwork/src/shared/ui/button.tsx` 의 `cva` 정의 두 곳.
+**버린 것을 되살릴 때 고칠 위치:** 이 절과 `packages/scopulus-ui/src/ui/button.tsx` 의 `cva` 정의 두 곳.
 
 ## states
 

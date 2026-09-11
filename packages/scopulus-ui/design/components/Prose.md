@@ -4,7 +4,7 @@ purpose: MDX 본문의 서식을 한 자리에 모은다. 케이스와 기록이
 
 ## 근거 — 이미 존재한다
 
-`apps/handwork/src/shared/ui/prose.ts` 가 정본이다. 7-8행에 클래스 문자열 하나가 export 돼 있고,
+`packages/scopulus-ui/src/ui/prose.ts` 가 정본이다. 7-8행에 클래스 문자열 하나가 export 돼 있고,
 같은 파일 1-6행 주석이 존재 이유를 적었다.
 
 > 두 화면이 각자 이 문자열을 들고 있으면 한쪽만 고쳐질 때 본문 서식이 조용히 갈린다.
@@ -64,7 +64,7 @@ purpose: MDX 본문의 서식을 한 자리에 모은다. 케이스와 기록이
 **`PROSE` 문자열 export 를 지우지 마라.**
 **이유:** 현재 두 화면이 template literal 로 쓰고 있다(`case-detail.tsx:45`, `lab-detail.tsx:41`).
 컴포넌트를 만들어도 문자열은 남겨 두고, 두 화면을 컴포넌트로 옮긴 뒤에 지울지 판단한다.
-**고칠 위치:** `apps/handwork/src/shared/ui/prose.ts:7`.
+**고칠 위치:** `packages/scopulus-ui/src/ui/prose.ts:7`.
 
 ## states
 

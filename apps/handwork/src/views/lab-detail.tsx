@@ -1,5 +1,5 @@
 import type { LabMeta } from "@/entities/lab/model/types";
-import { PROSE } from "@/shared/ui/prose";
+import { PROSE } from "@scopulus/ui";
 
 export function LabDetailView({
   meta,

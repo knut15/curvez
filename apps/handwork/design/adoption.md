@@ -7,15 +7,15 @@
 
 | 파일                                           | export            | props                                          |
 | ---------------------------------------------- | ----------------- | ---------------------------------------------- |
-| `apps/handwork/src/shared/ui/page-shell.tsx`   | `PageShell`       | `children`                                     |
-| `apps/handwork/src/shared/ui/page-title.tsx`   | `PageTitle`       | `children` · `description?` · `variant?`       |
-| `apps/handwork/src/shared/ui/card.tsx`         | `Card`            | `href` · `children`                            |
-| `apps/handwork/src/shared/ui/badge.tsx`        | `Badge`           | `variant?` · `tone` · `children`               |
-| `apps/handwork/src/shared/ui/button.tsx`       | `Button`          | `variant?` · `size?` · `onClick` · `disabled?` |
-| `apps/handwork/src/shared/ui/app-link.tsx`     | `AppLink`         | `href` · `children` · `variant?` · `current?`  |
-| `apps/handwork/src/shared/ui/separator.tsx`    | `Separator`       | 없음                                           |
-| `apps/handwork/src/shared/ui/prose.ts`         | `Prose` + `PROSE` | `children`                                     |
-| `apps/handwork/src/shared/ui/theme-toggle.tsx` | `ThemeToggle`     | 없음                                           |
+| `packages/scopulus-ui/src/ui/page-shell.tsx`   | `PageShell`       | `children`                                     |
+| `packages/scopulus-ui/src/ui/page-title.tsx`   | `PageTitle`       | `children` · `description?` · `variant?`       |
+| `packages/scopulus-ui/src/ui/card.tsx`         | `Card`            | `href` · `children`                            |
+| `packages/scopulus-ui/src/ui/badge.tsx`        | `Badge`           | `variant?` · `tone` · `children`               |
+| `packages/scopulus-ui/src/ui/button.tsx`       | `Button`          | `variant?` · `size?` · `onClick` · `disabled?` |
+| `packages/scopulus-ui/src/ui/app-link.tsx`     | `AppLink`         | `href` · `children` · `variant?` · `current?`  |
+| `packages/scopulus-ui/src/ui/separator.tsx`    | `Separator`       | 없음                                           |
+| `packages/scopulus-ui/src/ui/prose.ts`         | `Prose` + `PROSE` | `children`                                     |
+| `packages/scopulus-ui/src/ui/theme-toggle.tsx` | `ThemeToggle`     | 없음                                           |
 
 각 컴포넌트의 스펙은 [`components/`](components/) 아래에 있다. 값이 갈리면 그쪽이 정본이다.
 
@@ -26,13 +26,13 @@
 ### 1. `Badge` 의 `status` 가 `tone` 이 됐다
 
 스펙은 `status: 진행 중 | 멈춤 | 마무리` 였는데 구현은 `tone: "active" | "idle"` 이다
-(`apps/handwork/src/shared/ui/badge.tsx:19`).
+(`packages/scopulus-ui/src/ui/badge.tsx:19`).
 
 **이유:** `shared` 는 ARCH-001 로 `@/entities` 를 import 할 수 없다. 그 세 이름은
 `apps/handwork/src/entities/lab/model/types.ts:15` 의 도메인 값이다.
 
 **화면에 나오는 것은 스펙 그대로다** — `active` 가 `--brand-accent`, `idle` 이 `--muted-foreground`
-(`apps/handwork/src/shared/ui/badge.tsx:32` · `apps/handwork/src/shared/ui/badge.tsx:33`).
+(`packages/scopulus-ui/src/ui/badge.tsx:32` · `packages/scopulus-ui/src/ui/badge.tsx:33`).
 
 **어느 status 가 어느 tone 인지는 부르는 쪽이 정한다.** 그 매핑을 `entities/lab` 안에 둔다.
 
@@ -47,9 +47,9 @@ tone={item.status === "진행 중" ? "active" : "idle"}
 
 ### 2. `Prose` 가 `prose.ts` 안에 `createElement` 로 들어갔다
 
-`apps/handwork/src/shared/ui/prose.ts:25` 가 컴포넌트이고, `apps/handwork/src/shared/ui/prose.ts:9` 가 문자열 `PROSE` 다.
+`packages/scopulus-ui/src/ui/prose.ts:25` 가 컴포넌트이고, `packages/scopulus-ui/src/ui/prose.ts:9` 가 문자열 `PROSE` 다.
 
-**이유:** 같은 디렉터리에 `prose.ts` 와 `prose.tsx` 가 함께 있으면 `@/shared/ui/prose` 가 어느
+**이유:** 같은 디렉터리에 `prose.ts` 와 `prose.tsx` 가 함께 있으면 `./prose` 가 어느
 파일인지 해석되지 않는다. 그리고 문자열 `PROSE` 는 두 화면이 아직 쓰고 있어 지울 수 없다
 (`apps/handwork/src/views/case-detail.tsx:4` · `apps/handwork/src/views/lab-detail.tsx:2`).
 
@@ -57,7 +57,7 @@ tone={item.status === "진행 중" ? "active" : "idle"}
 
 1. 두 화면을 `<Prose>` 로 옮긴다 (아래 3단계)
 2. `import { PROSE }` 두 줄이 사라진 것을 `pnpm typecheck` 로 확인한다
-3. **그 뒤에** `handwork-ui` 가 `apps/handwork/src/shared/ui/prose.ts:9-10` 의 문자열을 지우고 파일을 `prose.tsx` 로 바꾼다
+3. **그 뒤에** `handwork-ui` 가 `packages/scopulus-ui/src/ui/prose.ts:9-10` 의 문자열을 지우고 파일을 `prose.tsx` 로 바꾼다
 
 3번은 `shared/ui/` 라 `curvez-nextjs` 의 소유가 아니다. 2번까지 끝내고 넘긴다.
 
@@ -95,7 +95,7 @@ tone={item.status === "진행 중" ? "active" : "idle"}
 | `apps/handwork/src/views/lab-index.tsx:6`    |
 | `apps/handwork/src/views/lab-detail.tsx:12`  |
 
-다섯 곳의 클래스 문자열이 한 글자도 다르지 않고, `apps/handwork/src/shared/ui/page-shell.tsx:12` 가 같은 문자열을 갖는다.
+다섯 곳의 클래스 문자열이 한 글자도 다르지 않고, `packages/scopulus-ui/src/ui/page-shell.tsx:12` 가 같은 문자열을 갖는다.
 
 **before** (`apps/handwork/src/views/case-index.tsx:8`)
 
@@ -106,7 +106,7 @@ tone={item.status === "진행 중" ? "active" : "idle"}
 **after**
 
 ```tsx
-import { PageShell } from "@/shared/ui/page-shell";
+import { PageShell } from "@scopulus/ui";
 // ...
 <PageShell>
 ```
@@ -125,7 +125,7 @@ import { PageShell } from "@/shared/ui/page-shell";
 | `apps/handwork/src/entities/case/ui/case-card.tsx:16` |
 | `apps/handwork/src/entities/lab/ui/lab-card.tsx:16`   |
 
-두 곳의 클래스가 `apps/handwork/src/shared/ui/card.tsx:25` 와 같다.
+두 곳의 클래스가 `packages/scopulus-ui/src/ui/card.tsx:25` 와 같다.
 
 **before** (`apps/handwork/src/entities/case/ui/case-card.tsx:14`)
 
@@ -139,7 +139,7 @@ import { PageShell } from "@/shared/ui/page-shell";
 **after**
 
 ```tsx
-import { Card } from "@/shared/ui/card";
+import { Card } from "@scopulus/ui";
 // ...
 <Card href={`/cases/${item.slug}`}>
 ```
@@ -158,12 +158,12 @@ import { Card } from "@/shared/ui/card";
 | `apps/handwork/src/views/case-detail.tsx:45` |
 | `apps/handwork/src/views/lab-detail.tsx:41`  |
 
-`apps/handwork/src/shared/ui/prose.ts:28` 이 `mx-auto mt-10 max-w-[68ch] ${PROSE}` 를 그대로 갖는다.
+`packages/scopulus-ui/src/ui/prose.ts:28` 이 `mx-auto mt-10 max-w-[68ch] ${PROSE}` 를 그대로 갖는다.
 
 **before** (`apps/handwork/src/views/case-detail.tsx:45`)
 
 ```tsx
-import { PROSE } from "@/shared/ui/prose";
+import { PROSE } from "@scopulus/ui";
 // ...
 <article className={`mx-auto mt-10 max-w-[68ch] ${PROSE}`}>{children}</article>;
 ```
@@ -171,7 +171,7 @@ import { PROSE } from "@/shared/ui/prose";
 **after**
 
 ```tsx
-import { Prose } from "@/shared/ui/prose";
+import { Prose } from "@scopulus/ui";
 // ...
 <Prose>{children}</Prose>;
 ```
@@ -191,7 +191,7 @@ import { Prose } from "@/shared/ui/prose";
 | `apps/handwork/src/views/case-index.tsx:19`  | `inline` | 부모 `<div>` 에서 상속한다     |
 | `apps/handwork/src/views/case-detail.tsx:10` | `bare`   | `const LINK` 를 통째로 지운다  |
 
-세 곳의 클래스 집합이 `apps/handwork/src/shared/ui/app-link.tsx:32`·`apps/handwork/src/shared/ui/app-link.tsx:34`·`apps/handwork/src/shared/ui/app-link.tsx:35` 의 조합과 정확히 같다.
+세 곳의 클래스 집합이 `packages/scopulus-ui/src/ui/app-link.tsx:32`·`packages/scopulus-ui/src/ui/app-link.tsx:34`·`packages/scopulus-ui/src/ui/app-link.tsx:35` 의 조합과 정확히 같다.
 
 **before** (`apps/handwork/src/app/not-found.tsx:15`)
 
@@ -207,7 +207,7 @@ import { Prose } from "@/shared/ui/prose";
 **after**
 
 ```tsx
-import { AppLink } from "@/shared/ui/app-link";
+import { AppLink } from "@scopulus/ui";
 // ...
 <AppLink href="/cases">케이스 목록으로</AppLink>;
 ```
@@ -215,7 +215,7 @@ import { AppLink } from "@/shared/ui/app-link";
 ### `case-detail.tsx` 의 이웃 링크 — fg 를 `<nav>` 로 올린다
 
 `AppLink` 는 `className` 을 받지 않고 fg 를 부모에게서 상속한다
-(`apps/handwork/src/shared/ui/app-link.tsx:15`). 그래서 지금 링크마다 붙어 있는
+(`packages/scopulus-ui/src/ui/app-link.tsx:15`). 그래서 지금 링크마다 붙어 있는
 `text-muted-foreground` 를 `<nav>` 로 옮긴다.
 
 **before** (`apps/handwork/src/views/case-detail.tsx:50`)
@@ -288,7 +288,7 @@ import { AppLink } from "@/shared/ui/app-link";
 감싸는 `<span>` 으로 옮기면 최소 타깃 24x24 를 잃는다.
 
 **권고: 지금은 그대로 둔다.** 옮기고 싶으면 `AppLink` 에 `variant="nav"` 를 한 단계 더한다.
-**고칠 위치:** `apps/handwork/src/shared/ui/app-link.tsx:24` 의 variant 유니온과
+**고칠 위치:** `packages/scopulus-ui/src/ui/app-link.tsx:24` 의 variant 유니온과
 [`components/AppLink.md`](components/AppLink.md) 의 variant 표, 두 곳. **둘 다 `handwork-ui` 소유다.**
 
 ---
@@ -315,7 +315,7 @@ import { AppLink } from "@/shared/ui/app-link";
 **after**
 
 ```tsx
-import { PageTitle } from "@/shared/ui/page-title";
+import { PageTitle } from "@scopulus/ui";
 // ...
 <PageTitle description="어떤 제약에서 무엇을 고르고 무엇을 버렸는지를 씁니다.">
   케이스
@@ -323,7 +323,7 @@ import { PageTitle } from "@/shared/ui/page-title";
 ```
 
 상세 화면은 `variant="detail"` 을 준다 (`leading-[1.15] break-keep` 이 그때만 붙는다 —
-`apps/handwork/src/shared/ui/page-title.tsx:26`).
+`packages/scopulus-ui/src/ui/page-title.tsx:26`).
 
 ```tsx
 <PageTitle variant="detail">{meta.title}</PageTitle>
@@ -332,7 +332,7 @@ import { PageTitle } from "@/shared/ui/page-title";
 ### ⚠ 값이 바뀐다 1 — `lab-index.tsx` 설명 폭 60ch → 65ch
 
 `apps/handwork/src/views/lab-index.tsx:8` 이 `max-w-[60ch]` 인데 `PageTitle` 은 `max-w-[65ch]` 다
-(`apps/handwork/src/shared/ui/page-title.tsx:34`).
+(`packages/scopulus-ui/src/ui/page-title.tsx:34`).
 
 **화면이 실제로 달라진다.** Labs 화면의 설명 문단이 5ch 만큼 넓어지고, 줄바꿈 지점이 옮겨간다.
 문단이 세 줄이라 한 줄이 줄어들 수 있다.
@@ -341,7 +341,7 @@ import { PageTitle } from "@/shared/ui/page-title";
 같으면 통일한다. 65ch 를 고른 근거는 [`components/PageTitle.md`](components/PageTitle.md) 에 있다 —
 본문 폭 `max-w-[68ch]` 에 가장 가까워, 같은 사이트에서 설명과 본문의 줄바꿈이 크게 갈리지 않는다.
 
-**되돌릴 위치:** `apps/handwork/src/shared/ui/page-title.tsx:34` 한 곳.
+**되돌릴 위치:** `packages/scopulus-ui/src/ui/page-title.tsx:34` 한 곳.
 
 ### ⚠ 값이 바뀐다 2 — `not-found.tsx` 설명 문단
 
@@ -372,7 +372,7 @@ import { PageTitle } from "@/shared/ui/page-title";
 | `apps/handwork/src/views/lab-index.tsx:16`   | 32 / 32   | 32 / 32 | 없음     |
 | `apps/handwork/src/views/case-detail.tsx:52` | 48 / 24   | 32 / 32 | **있다** |
 
-`Separator` 는 `my-8 border-t border-border` 다 (`apps/handwork/src/shared/ui/separator.tsx:14`).
+`Separator` 는 `my-8 border-t border-border` 다 (`packages/scopulus-ui/src/ui/separator.tsx:14`).
 
 **before** (`apps/handwork/src/views/lab-index.tsx:16`)
 
@@ -385,7 +385,7 @@ import { PageTitle } from "@/shared/ui/page-title";
 **after**
 
 ```tsx
-import { Separator } from "@/shared/ui/separator";
+import { Separator } from "@scopulus/ui";
 // ...
 <Separator />
 <p className="text-muted-foreground">아직 공개한 기록이 없습니다.</p>
@@ -430,7 +430,7 @@ import { Separator } from "@/shared/ui/separator";
 **폭 `mx-auto max-w-[68ch]` 를 감싸는 `<div>` 로 올려야 한다.** `Separator` 는 폭을 정하지 않고
 부모를 꽉 채운다 — 선이 스스로 폭을 정하면 본문과 어긋난다.
 
-**되돌릴 위치:** `apps/handwork/src/shared/ui/separator.tsx:14` 의 `my-8` 한 곳.
+**되돌릴 위치:** `packages/scopulus-ui/src/ui/separator.tsx:14` 의 `my-8` 한 곳.
 
 ---
 
@@ -446,7 +446,7 @@ import { Separator } from "@/shared/ui/separator";
 | `apps/handwork/src/views/lab-detail.tsx:33`           | `<li>`      |
 
 `Badge` 의 tag 면은 `rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground` 다
-(`apps/handwork/src/shared/ui/badge.tsx:42`). 네 곳의 계산값과 같다 — 카드 쪽 둘은 부모
+(`packages/scopulus-ui/src/ui/badge.tsx:42`). 네 곳의 계산값과 같다 — 카드 쪽 둘은 부모
 (`apps/handwork/src/entities/case/ui/case-card.tsx:24`)가 `text-xs text-muted-foreground` 를 주고 있다.
 
 **before** (`apps/handwork/src/entities/case/ui/case-card.tsx:26`)
@@ -464,7 +464,7 @@ import { Separator } from "@/shared/ui/separator";
 **after**
 
 ```tsx
-import { Badge } from "@/shared/ui/badge";
+import { Badge } from "@scopulus/ui";
 // ...
 {
   shown.map((tag) => <Badge key={tag}>{tag}</Badge>);
@@ -497,7 +497,7 @@ import { Badge } from "@/shared/ui/badge";
 | `apps/handwork/src/views/lab-detail.tsx:18`         | `text-sm` 14px         | `text-xs` 12px |
 
 `Badge` 의 status 면은 `flex items-center gap-2 text-xs text-muted-foreground` 다
-(`apps/handwork/src/shared/ui/badge.tsx:26`).
+(`packages/scopulus-ui/src/ui/badge.tsx:26`).
 
 **before** (`apps/handwork/src/entities/lab/ui/lab-card.tsx:18`)
 
@@ -569,7 +569,7 @@ Geist Mono 로 떨어지고, 그 폰트에 한글 글립이 없어 대체 서체
 **이유:** 같은 배지가 화면마다 다른 크기로 나오면 그것은 컴포넌트가 아니라 우연히 비슷한 두 개다.
 `Badge` 를 쓰는 목적이 그 둘을 하나로 만드는 것이다. 5단계의 65ch 통일, 6단계의 32/32 통일과 같은 판단이다.
 
-**되돌릴 위치:** `apps/handwork/src/shared/ui/badge.tsx:26` 의 `text-xs` 한 곳.
+**되돌릴 위치:** `packages/scopulus-ui/src/ui/badge.tsx:26` 의 `text-xs` 한 곳.
 **`handwork-ui` 소유다.**
 
 ---
@@ -672,7 +672,7 @@ tokens.figma.json 이 globals.css 와 일치한다
 
 | 누구에게                 | 무엇을                                                                                              |
 | ------------------------ | --------------------------------------------------------------------------------------------------- |
-| `handwork-ui`            | 3단계가 끝났다는 사실. `apps/handwork/src/shared/ui/prose.ts:9-10` 문자열을 지우고 `.tsx` 로 바꾼다 |
+| `handwork-ui`            | 3단계가 끝났다는 사실. `packages/scopulus-ui/src/ui/prose.ts:9-10` 문자열을 지우고 `.tsx` 로 바꾼다 |
 | `handwork-ui`            | 헤더를 옮기려면 `AppLink` 에 `variant="nav"` 가 필요하다는 것 (4단계 마지막)                        |
 | `handwork-design-system` | 위 표의 1·2·5번 실측값. [`tokens.md`](tokens.md) 는 그쪽 소유다                                     |
 | `curvez-orchestrator`    | 값이 바뀐 다섯 곳(5단계 2곳 · 6단계 1곳 · 7단계 2곳). 화면이 실제로 달라진다                        |

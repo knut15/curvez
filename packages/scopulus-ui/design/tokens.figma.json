@@ -1,33 +1,10 @@
 {
   "$metadata": {
-    "tokenSetOrder": [
-      "light",
-      "dark"
-    ]
+    "tokenSetOrder": ["light", "dark"]
   },
   "$themes": [],
   "light": {
     "color": {
-      "brand-accent": {
-        "$type": "color",
-        "$value": "#0B6B63"
-      },
-      "brand-canvas": {
-        "$type": "color",
-        "$value": "#E4E8E7"
-      },
-      "brand-ink": {
-        "$type": "color",
-        "$value": "#14201E"
-      },
-      "brand-mark": {
-        "$type": "color",
-        "$value": "#FF6B4A"
-      },
-      "brand-overlay-ink": {
-        "$type": "color",
-        "$value": "#101514"
-      },
       "background": {
         "$type": "color",
         "$value": "#F7F9F8"
@@ -110,26 +87,6 @@
   },
   "dark": {
     "color": {
-      "brand-accent": {
-        "$type": "color",
-        "$value": "#5EEAD4"
-      },
-      "brand-canvas": {
-        "$type": "color",
-        "$value": "#101514"
-      },
-      "brand-ink": {
-        "$type": "color",
-        "$value": "#E6EDEA"
-      },
-      "brand-mark": {
-        "$type": "color",
-        "$value": "#FF6B4A"
-      },
-      "brand-overlay-ink": {
-        "$type": "color",
-        "$value": "#101514"
-      },
       "background": {
         "$type": "color",
         "$value": "#0B100F"

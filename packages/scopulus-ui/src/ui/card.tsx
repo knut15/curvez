@@ -3,7 +3,7 @@ import Link from "next/link";
 /**
  * 목록 항목 하나를 담는 면. 면 전체가 상세로 가는 링크 하나다.
  *
- * 스펙은 `apps/handwork/design/components/Card.md` 가 정본이다.
+ * 스펙은 `packages/scopulus-ui/design/components/Card.md` 가 정본이다.
  *
  * **면만 갖는다. 안에 무엇이 들어가는지는 모른다.** `CaseCard` 와 `LabCard` 가 이것 위에
  * 올라간다. 두 카드가 다루는 데이터가 달라(케이스는 role, 기록은 status) 면과 내용을 한

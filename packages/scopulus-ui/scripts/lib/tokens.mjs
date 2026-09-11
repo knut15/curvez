@@ -1,24 +1,28 @@
 /**
- * `src/app/globals.css` 에서 색 토큰을 읽는다.
+ * `src/tokens.css` 에서 색 토큰을 읽는다.
  *
- * **globals.css 가 유일한 입력이다.** `apps/handwork/design/tokens.md` 는 스스로 "정본은
- * globals.css 다. 값이 갈리면 CSS 가 이긴다" 고 적어 둔 사본이다. 사본을 입력으로 삼으면
- * 내보낸 값과 화면의 값이 조용히 어긋난다.
+ * **`src/tokens.css` 가 유일한 입력이다.** `design/tokens.md` 는 그 파일의 사본이라고
+ * 스스로 적어 뒀다. 사본을 입력으로 삼으면 내보낸 값과 화면의 값이 조용히 어긋난다.
  */
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-export const CSS_PATH = join(HERE, "..", "..", "src", "app", "globals.css");
+export const CSS_PATH = join(HERE, "..", "..", "src", "tokens.css");
 
 /** `:root { ... }` 와 `.dark { ... }` 블록의 `--이름: 값;` 을 뽑는다. */
 export function readTokens(cssPath = CSS_PATH) {
   const css = readFileSync(cssPath, "utf8");
-  return { light: block(css, ":root"), dark: block(css, ".dark") };
+  return {
+    light: block(css, ":root", cssPath),
+    dark: block(css, ".dark", cssPath),
+  };
 }
 
-function block(css, selector) {
+// `cssPath` 는 오류 메시지에만 쓴다. 넘기지 않으면 여기서 스코프 밖 변수를 읽어
+// ReferenceError 가 나는데, 그 경로는 블록을 못 찾았을 때만 타므로 평소엔 드러나지 않는다.
+function block(css, selector, cssPath) {
   // 셀렉터 뒤 첫 `{` 부터 짝이 맞는 `}` 까지. 중첩이 없는 블록이라 깊이 세기로 충분하다.
   const start = css.indexOf(selector + " {");
   if (start === -1)

@@ -6,13 +6,13 @@
  *
  *   1. 쌍 검사 — 디자인 문서의 `## 대비 검증` 목록을 읽어 WCAG 대비를 계산하고,
  *      `min=` 기준과 문서가 적어 둔 `→ 값` 양쪽에 대조한다.
- *   2. 동기 검사 — `globals.css` 의 색 토큰을 hex 로 바꿔 `tokens.md` 의 `## 색` 표와 맞춘다.
+ *   2. 동기 검사 — `tokens.css` 의 색 토큰을 hex 로 바꿔 `tokens.md` 의 `## 색` 표와 맞춘다.
  *
  * **2번이 없으면 1번은 자기 자신만 검사한다.** 문서의 hex 쌍끼리 계산하는 것이라,
  * CSS 가 바뀌고 문서가 안 바뀐 상태에서도 전부 통과한다. 그때 통과는 "색이 맞다" 가 아니라
  * "문서가 자기와 일관된다" 일 뿐이다.
  *
- * 사용: node apps/handwork/scripts/check-contrast.mjs
+ * 사용: node packages/scopulus-ui/scripts/check-contrast.mjs
  * 종료 코드: 실패 0건이면 0, 하나라도 있으면 1.
  */
 import { existsSync, readFileSync } from "node:fs";
@@ -22,8 +22,7 @@ import { fileURLToPath } from "node:url";
 import { contrast, isOpaqueColor, readTokens, toHex } from "./lib/tokens.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-// 디자인 자산은 앱 안에 있다. 저장소 루트를 거치지 않는다 —
-// handwork 의 디자인 시스템은 curvez 의 `.curvez/design/` 과 무관하다.
+// 디자인 문서는 라이브러리 안에 있다. 앱도 저장소 루트도 거치지 않는다.
 const DESIGN = join(HERE, "..", "design");
 
 const PAIR_DOCS = [join(DESIGN, "tokens.md")];

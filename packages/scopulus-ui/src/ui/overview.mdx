@@ -4,16 +4,16 @@ import { Meta } from "@storybook/addon-docs/blocks";
 
 # handwork 디자인 시스템
 
-**값은 전부 `apps/handwork/design/` 이 정본이다.** 이 스토리북은 그 값이 화면에서 실제로
+**값은 전부 `packages/scopulus-ui/design/` 이 정본이다.** 이 스토리북은 그 값이 화면에서 실제로
 어떻게 나오는지를 보여주는 곳이고, 값을 새로 정하는 곳이 아니다. 두 곳이 다르면 문서가 이긴다.
 
 ## 무엇을 보고 있나
 
-| 여기                             | 값의 정본                                    |
-| -------------------------------- | -------------------------------------------- |
-| `shared/*` — 프리미티브 8종      | `apps/handwork/design/components/<이름>.md`  |
-| `entities/*` — 화면용 카드 2종   | 같은 디렉터리의 `CaseCard.md` · `LabCard.md` |
-| 색 · 간격 · 타이포 · 상태 · 고도 | `apps/handwork/design/tokens.md`             |
+| 여기                             | 값의 정본                                          |
+| -------------------------------- | -------------------------------------------------- |
+| `shared/*` — 프리미티브 8종      | `packages/scopulus-ui/design/components/<이름>.md` |
+| `entities/*` — 화면용 카드 2종   | 같은 디렉터리의 `CaseCard.md` · `LabCard.md`       |
+| 색 · 간격 · 타이포 · 상태 · 고도 | `packages/scopulus-ui/design/tokens.md`            |
 
 ## 이 시스템이 만들어진 방식
 
@@ -56,8 +56,8 @@ pnpm --filter handwork test-storybook   # 스토리를 브라우저에서 그대
   `Button/Disabled` 가 그 예다 — 불투명도만 낮추고 핸들러가 도는 구현은 화면에서 똑같이 보인다
 
 ```bash
-node apps/handwork/scripts/check-contrast.mjs   # 대비 쌍 + 토큰 hex 동기
-node apps/handwork/scripts/export-tokens.mjs    # Figma Variables JSON 내보내기
+node packages/scopulus-ui/scripts/check-contrast.mjs   # 대비 쌍 + 토큰 hex 동기
+node packages/scopulus-ui/scripts/export-tokens.mjs    # Figma Variables JSON 내보내기
 ```
 
 **시각 회귀는 없다.** 픽셀 단위 변화는 이 검사들로 잡히지 않는다.
@@ -68,4 +68,4 @@ node apps/handwork/scripts/export-tokens.mjs    # Figma Variables JSON 내보내
 쓰기 엔드포인트는 Enterprise 조직 전용이다. 그래서 토큰을 W3C Design Tokens 형식으로
 내보내는 데까지만 하고, 가져가는 것은 사람이 Tokens Studio 같은 플러그인으로 한다.
 
-출력은 `apps/handwork/design/tokens.figma.json` 이고 라이트·다크 두 모드를 갖는다.
+출력은 `packages/scopulus-ui/design/tokens.figma.json` 이고 라이트·다크 두 모드를 갖는다.

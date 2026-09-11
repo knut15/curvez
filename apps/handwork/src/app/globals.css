@@ -1,65 +1,20 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-
-@custom-variant dark (&:is(.dark *));
+/* 색·반경 토큰의 정본은 라이브러리다. 여기서는 handwork 고유의 브랜드 색만 더한다. */
+@import "@scopulus/ui/tokens.css";
 
 @theme inline {
-  /* 모션 값. 정본은 plugins/curvez/vendor/emilkowalski-skills/animate/SKILL.md 다.
-     내장 ease-out 은 약해서 UI 에서 의도가 드러나지 않는다. */
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   /* 랜딩 전용 팔레트. 정본은 .curvez/design/tokens.md 의 `랜딩 팔레트` 다. */
   --color-brand-accent: var(--brand-accent);
   --color-brand-canvas: var(--brand-canvas);
   --color-brand-ink: var(--brand-ink);
   --color-brand-mark: var(--brand-mark);
   --color-brand-overlay-ink: var(--brand-overlay-ink);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* shadcn 중립 스케일을 브랜드 색조(green-grey)로 물들인 값이다. 무채색 원본을 쓰면
-   헤더 바(--brand-canvas)와 본문 배경이 서로 다른 팔레트로 읽혀 서브 페이지마다 이음매가 보였다.
-   명도는 원본과 거의 같게 두고 채도만 얹었다. hex 사본과 대비 실측은 .curvez/design/tokens.md 에 있다. */
+/* 랜딩 전용 팔레트. 라이브러리로 올리지 않는다 — handwork 의 브랜드 색이고
+   다른 앱이 쓸 값이 아니다. 값의 근거는 `../../design/tokens.md` 의 `## 랜딩 팔레트` 다. */
 :root {
   --brand-accent: #0b6b63;
   --brand-canvas: #e4e8e7;
@@ -68,75 +23,12 @@
      배경 사진 위에 얹히므로, 뒤집히면 사진 위에서 읽히지 않는다. */
   --brand-mark: #ff6b4a;
   --brand-overlay-ink: #101514;
-  --background: oklch(0.9803 0.0025 165.1);
-  --foreground: oklch(0.2315 0.0173 183.3);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2315 0.0173 183.3);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2315 0.0173 183.3);
-  --primary: oklch(0.2315 0.0173 183.3);
-  --primary-foreground: oklch(0.9803 0.0025 165.1);
-  --secondary: oklch(0.9548 0.0045 179.7);
-  --secondary-foreground: oklch(0.2315 0.0173 183.3);
-  --muted: oklch(0.9548 0.0045 179.7);
-  --muted-foreground: oklch(0.5143 0.0187 182.2);
-  --accent: oklch(0.9548 0.0045 179.7);
-  --accent-foreground: oklch(0.2315 0.0173 183.3);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.9107 0.007 174.4);
-  --input: oklch(0.9107 0.007 174.4);
-  --ring: oklch(0.4761 0.0809 185.7);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
 }
 
 .dark {
   --brand-accent: #5eead4;
   --brand-canvas: #101514;
   --brand-ink: #e6edea;
-  --background: oklch(0.1672 0.0082 181.8);
-  --foreground: oklch(0.94 0.0085 168.7);
-  --card: oklch(0.2108 0.0098 173.2);
-  --card-foreground: oklch(0.94 0.0085 168.7);
-  --popover: oklch(0.2108 0.0098 173.2);
-  --popover-foreground: oklch(0.94 0.0085 168.7);
-  --primary: oklch(0.94 0.0085 168.7);
-  --primary-foreground: oklch(0.1672 0.0082 181.8);
-  --secondary: oklch(0.2559 0.012 178.5);
-  --secondary-foreground: oklch(0.94 0.0085 168.7);
-  --muted: oklch(0.2559 0.012 178.5);
-  --muted-foreground: oklch(0.7265 0.0157 175.5);
-  --accent: oklch(0.2559 0.012 178.5);
-  --accent-foreground: oklch(0.94 0.0085 168.7);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.8549 0.1251 181.1);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
 }
 
 @layer base {
