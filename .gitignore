@@ -10,3 +10,7 @@ reference/*.jpg
 # 도구가 만든 것들
 .DS_Store
 .omc/
+
+# hero 생성물 — hero.py 로 다시 만든다
+hero-graded/
+hero-framed/
