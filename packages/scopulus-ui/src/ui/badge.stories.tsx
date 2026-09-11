@@ -41,7 +41,7 @@ export const TagGroup: Story = {
   ),
 };
 
-/** 진행 중. 점이 `--brand-accent` 다 — 사이트에서 강조색을 쓰는 유일한 상태다. */
+/** 진행 중. 점이 `--ring` 이다 — 이 시스템에서 강조색을 쓰는 유일한 상태다. */
 export const StatusActive: Story = {
   args: { variant: "status", tone: "active", children: "진행 중" },
 };

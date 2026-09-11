@@ -1,0 +1,84 @@
+import {
+  Button,
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@scopulus/ui";
+
+화면을 덮는 모달입니다. 초점을 가두고, 답하기 전에는 뒤로 나가지 못하게 합니다 — 덮지 않고
+기준 요소에 붙기만 하는 것은 [Popover](/components/popover) 입니다.
+
+<div className="flex flex-wrap items-center gap-3 not-prose my-6">
+  <Dialog>
+    <DialogTrigger render={<Button variant="outline" />}>
+      사례 지우기
+    </DialogTrigger>
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>이 사례를 지울까요?</DialogTitle>
+        <DialogDescription>
+          지운 사례는 되돌릴 수 없습니다. 공개된 주소도 함께 사라집니다.
+        </DialogDescription>
+      </DialogHeader>
+      <DialogFooter>
+        <DialogClose render={<Button variant="outline" />}>취소</DialogClose>
+        <Button>지우기</Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
+</div>
+
+## DialogTitle 은 선택이 아니다
+
+**`DialogTitle` 이 없으면 접근성 검사가 `aria-dialog-name` 으로 잡습니다.** 화면 낭독기가
+모달에 들어왔을 때 읽을 이름이 거기서만 오기 때문입니다. 제목을 화면에 보이고 싶지 않다면
+지우지 말고 `className="sr-only"` 로 감추십시오.
+
+조각을 다 조립해야 뜻이 있습니다 — `DialogTrigger` 로 열고, `DialogContent` 안에
+`DialogTitle` 을 넣고, 닫는 길을 하나 이상 둡니다. `DialogContent` 는 오른쪽 위 닫기 버튼을
+기본으로 붙이므로(`showCloseButton` 기본값 `true`), 바닥 버튼이 없어도 나갈 길은 있습니다.
+
+## Button 의 두 값을 되살린 곳이 여기다
+
+`Dialog` 는 [Button](/components/button) 의 `icon-sm` 과 `outline` 을 씁니다.
+
+- 오른쪽 위 닫기 버튼 — `variant="ghost" size="icon-sm"` (`dialog.tsx:65,67`)
+- 바닥의 `Close` — `variant="outline"` (`dialog.tsx:109`)
+
+처음 Button 을 쓸 때 두 값은 "쓰는 곳이 0" 이라 빼 뒀던 것입니다. `Dialog` 가 들어오면서
+그 전제가 깨져 되살렸습니다.
+
+## 팝업은 화면 한가운데 고정된다
+
+`DialogContent` 는 `fixed top-1/2 left-1/2` 로 뷰포트 한가운데 앉고, 좁은 화면에서는
+`max-w-[calc(100%-2rem)]`, 넓은 화면에서는 `sm:max-w-sm` 입니다 (`dialog.tsx:54`).
+
+**부모의 위치와 무관합니다.** 내용이 포털로 `body` 밑에 나가기 때문에, 바깥 요소에
+`overflow: hidden` 이나 `transform` 이 걸려 있어도 잘리지 않습니다. 대신 스토리북 문서
+페이지처럼 여러 예제가 한 화면에 늘어서는 곳에서는 열린 채로 두면 다른 예제를 덮습니다 —
+스토리 쪽에서 열린 상태를 보여주는 예제 하나만 문서 페이지에서 뺀 이유가 그것입니다.
+
+`modal` 기본값이 `true` 라, 열려 있는 동안 바깥은 조작할 수 없게 됩니다. 뒤 화면을 계속
+쓰게 하려면 `modal={false}` 를 주십시오. 다만 그 순간 초점을 가두는 성질이 사라지므로,
+그럴 자리라면 대개 `Popover` 가 맞습니다.
+
+## 바닥 버튼은 좁은 화면에서 뒤집힌다
+
+`DialogFooter` 는 `flex-col-reverse` 로 시작해 `sm:flex-row` 로 풀립니다. 좁은 화면에서
+**마지막에 쓴 버튼이 위로** 올라간다는 뜻입니다. 주 행동을 뒤에 쓰면 모바일에서 위, 데스크톱에서
+오른쪽 — 두 곳 모두 관례에 맞는 자리에 놓입니다.
+
+## 어디서 왔나
+
+shadcn `base-nova` 에서 받았습니다 — 2026-09-11.
+
+**handwork 사용처: 0곳.** 실측에서 나온 아홉과 근거가 다릅니다. 화면에서 세어 본 값이 아니라,
+컴포넌트 20종이 **폼 · 오버레이 · 피드백 · 데이터** 네 묶음을 덮게 하려고 받은 것입니다.
+`Dialog` 는 [Popover](/components/popover) · [Tooltip](/components/tooltip) 과 함께
+**오버레이** 묶음을 맡습니다. 셋의 차이는 덮는 범위입니다 — 화면 전체(`Dialog`),
+기준 요소 옆(`Popover`), 이름 한 줄(`Tooltip`).

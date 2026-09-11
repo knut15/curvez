@@ -1,0 +1,47 @@
+import { Badge, Card } from "@scopulus/ui";
+
+목록 항목 하나를 담는 면입니다. **면 전체가 링크 하나입니다.**
+
+<div className="grid gap-4 md:grid-cols-2 not-prose my-6">
+  <Card href="/components/badge">
+    <span className="text-lg font-medium text-card-foreground">
+      토큰 스토어의 레이스 컨디션
+    </span>
+    <span className="text-sm text-muted-foreground">
+      갱신 요청이 겹칠 때 이전 토큰이 뒤늦게 덮어쓰는 문제를 고쳤습니다.
+    </span>
+    <span className="mt-auto flex flex-wrap items-center gap-2 pt-2 text-xs text-muted-foreground">
+      <span>2026-08</span>
+      <Badge>auth</Badge>
+      <Badge>concurrency</Badge>
+    </span>
+  </Card>
+  <Card href="/components/page-shell">
+    <span className="text-lg font-medium text-card-foreground">
+      미들웨어와 프록시를 가르다
+    </span>
+    <span className="text-sm text-muted-foreground">
+      한 곳에서 다 하던 것을 둘로 나눴습니다.
+    </span>
+  </Card>
+</div>
+
+## 면만 갖는다
+
+안에 무엇이 들어가는지 모릅니다. 두 목록이 다루는 데이터가 달라서, 면과 내용을 한 컴포넌트에
+묶으면 세 번째 목록이 생길 때 면을 다시 복사하게 됩니다.
+
+## 받지 않는 것
+
+- **`onClick`** — `<button>` 이나 `<div onClick>` 으로 만들면 새 탭 열기와 주소 복사가 막힙니다
+- **`padding` · `variant`** — 실측이 `p-5` 하나입니다. 두 번째 값이 생기면 목록마다 안쪽 여백이 갈립니다
+
+## hover 에 그림자를 붙이지 않는다
+
+이 시스템은 고도를 쓰지 않습니다. 배경만 `--accent` 로 바뀌고 이동·확대가 없습니다.
+인라인 요소가 hover 에 움직이면 그 줄의 글자가 함께 밀립니다.
+
+## 카드당 포커스 대상은 하나
+
+`children` 안에 별도 링크나 버튼을 두지 마십시오. 카드 하나를 지나가는 데 탭이 여러 번
+필요해지고, 중첩 링크는 HTML 이 허용하지 않습니다.

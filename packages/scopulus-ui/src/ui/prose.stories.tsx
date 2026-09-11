@@ -38,7 +38,7 @@ export const AllElements: Story = {
         </p>
         <h3>무엇을 버렸나</h3>
         <p>
-          인라인 코드는 <code>--brand-accent</code> 처럼 면을 갖는다.
+          인라인 코드는 <code>--ring</code> 처럼 면을 갖는다.
         </p>
         <ul>
           <li>순서 없는 목록 항목</li>

@@ -63,7 +63,7 @@ export const LAB_STATUSES = ["진행 중", "멈춤", "마무리"] as const;
 
 | status 값 | 점 색                | 근거                                 |
 | --------- | -------------------- | ------------------------------------ |
-| `진행 중` | `--brand-accent`     | `entities/lab/ui/lab-card.tsx:22-23` |
+| `진행 중` | `--ring`             | `entities/lab/ui/lab-card.tsx:22-23` |
 | `멈춤`    | `--muted-foreground` | `entities/lab/ui/lab-card.tsx:24`    |
 | `마무리`  | `--muted-foreground` | 같은 분기의 else 쪽                  |
 

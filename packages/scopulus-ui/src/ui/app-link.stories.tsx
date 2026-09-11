@@ -36,7 +36,7 @@ export const Current: Story = {
 
 /**
  * **자기 색을 갖지 않는 것**이 이 컴포넌트의 핵심이다. 세 부모 색 위에 같은 링크를 놓아
- * 상속이 실제로 일어나는지 본다. hover 하면 셋 다 `--brand-accent` 한 색으로 모인다.
+ * 상속이 실제로 일어나는지 본다. hover 하면 셋 다 `--ring` 한 색으로 모인다.
  */
 export const InheritsParentColor: Story = {
   render: (args) => (
@@ -47,8 +47,8 @@ export const InheritsParentColor: Story = {
       <p className="text-muted-foreground">
         메타 줄 색 위에서 — <AppLink {...args}>케이스 목록으로</AppLink>
       </p>
-      <p className="bg-brand-canvas px-3 py-2 text-brand-ink">
-        헤더 바 색 위에서 — <AppLink {...args}>케이스 목록으로</AppLink>
+      <p className="rounded-lg bg-card px-3 py-2 text-card-foreground">
+        카드 면 위에서 — <AppLink {...args}>케이스 목록으로</AppLink>
       </p>
     </div>
   ),

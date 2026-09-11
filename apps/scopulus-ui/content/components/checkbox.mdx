@@ -1,0 +1,66 @@
+import { Checkbox } from "@scopulus/ui";
+
+켜고 끄는 선택 하나입니다. 여러 개를 골라 폼과 함께 보내는 자리에 씁니다 — 고른 즉시
+적용되는 것은 [Switch](/components/switch) 입니다.
+
+<div className="flex flex-col gap-3 not-prose my-6">
+  <div className="flex items-center gap-2 text-sm">
+    <Checkbox id="doc-checkbox-a" />
+    <label htmlFor="doc-checkbox-a">공개 사례로 올린다</label>
+  </div>
+  <div className="flex items-center gap-2 text-sm">
+    <Checkbox id="doc-checkbox-b" defaultChecked />
+    <label htmlFor="doc-checkbox-b">댓글을 허용한다</label>
+  </div>
+  <div className="flex items-center gap-2 text-sm">
+    <Checkbox id="doc-checkbox-c" defaultChecked disabled />
+    <label htmlFor="doc-checkbox-c">검색 결과에 싣는다</label>
+  </div>
+</div>
+
+## id 는 숨은 input 에 얹힌다
+
+Base UI 의 `Checkbox.Root` 는 **두 요소를 냅니다** — 보이는 `<span role="checkbox">` 와 그
+옆의 숨은 `<input type="checkbox">` 입니다. 넘긴 `id` 는 **숨은 input** 이 받고, 보이는
+`span` 은 따로 생성한 id 를 씁니다.
+
+그래서 `<label htmlFor>` 를 형제로 두는 방식이 그대로 통합니다.
+
+```tsx
+<Checkbox id="publish" />
+<label htmlFor="publish">공개 사례로 올린다</label>
+```
+
+- 라벨이 숨은 input 을 가리키고, Base UI 가 그 라벨의 id 를 `span` 의 `aria-labelledby` 로
+  올려 줍니다
+- 두 요소의 id 가 겹치지 않으므로 중복 id 위반이 생기지 않습니다
+- 라벨을 눌러도 상태가 뒤집힙니다
+
+**이름이 없으면 접근성 검사가 `aria-toggle-field-name` 으로 잡습니다.** 라벨을 놓을 자리가
+없으면 `aria-label` 을 직접 주십시오.
+
+## 눌리는 범위가 보이는 것보다 넓다
+
+상자는 `size-4` — 16px 입니다. 손가락으로 누르기에는 좁아서 `after:-inset-x-3
+after:-inset-y-2` 로 눌리는 영역만 가로 12px · 세로 8px 씩 넓혀 뒀습니다
+(`checkbox.tsx:10`).
+
+**보이지 않는 영역이라 옆 요소와 겹칠 수 있습니다.** 체크박스를 촘촘히 세로로 쌓을 때는
+행 간격을 8px 이상 두십시오.
+
+## 상태는 CSS 가 아니라 aria 로 읽는다
+
+체크 표시는 `data-checked` 에 걸린 CSS 로만 나타납니다. 화면만 봐서는 값이 바뀐 것과 그림만
+바뀐 것을 가를 수 없어, 스토리의 상호작용 테스트도 `aria-checked` 로 판정합니다.
+
+`indeterminate` 를 주면 `aria-checked="mixed"` 가 됩니다. 이때 체크 표시는 그대로 나오므로,
+부분 선택을 화면에서 구분하려면 표시를 직접 바꿔 주어야 합니다.
+
+## 어디서 왔나
+
+shadcn `base-nova` 에서 받았습니다 — 2026-09-11.
+
+**handwork 사용처: 0곳.** 실측에서 나온 아홉과 근거가 다릅니다. 화면에서 세어 본 값이 아니라,
+컴포넌트 20종이 **폼 · 오버레이 · 피드백 · 데이터** 네 묶음을 덮게 하려고 받은 것입니다.
+`Checkbox` 는 [Input](/components/input) · [Textarea](/components/textarea) ·
+[Select](/components/select) · [Switch](/components/switch) 와 함께 **폼** 묶음을 채웁니다.

@@ -1,0 +1,17 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+/* 색·반경 토큰의 정본은 라이브러리다. 이 사이트는 그 값을 보여주는 곳이지 정하는 곳이 아니다. */
+@import "@scopulus/ui/tokens.css";
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}

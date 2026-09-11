@@ -1,0 +1,82 @@
+import {
+  Alert,
+  AlertAction,
+  AlertDescription,
+  AlertTitle,
+  Button,
+} from "@scopulus/ui";
+
+짧은 알림 한 덩어리입니다. 제목과 설명, 그리고 필요하면 행동 하나까지를 한 면에 담습니다.
+
+<div className="flex flex-col gap-3 not-prose my-6">
+  <Alert>
+    <AlertTitle>초안이 저장되었습니다</AlertTitle>
+    <AlertDescription>
+      마지막 저장은 방금 전입니다. 발행하기 전까지는 나에게만 보입니다.
+    </AlertDescription>
+  </Alert>
+  <Alert variant="destructive">
+    <AlertTitle>발행에 실패했습니다</AlertTitle>
+    <AlertDescription>
+      본문에 닫히지 않은 코드 블록이 있습니다. 137번째 줄을 확인해 주세요.
+    </AlertDescription>
+  </Alert>
+</div>
+
+## 아이콘은 직접 자식이어야 한다
+
+아이콘 열은 `alert.tsx:6` 의 `has-[>svg]:grid-cols-[auto_1fr]` 이 만듭니다. **`>` 가 붙은
+직접 자식 선택자**라서, `svg` 를 `AlertTitle` 안에 넣거나 `<span>` 으로 한 겹 감싸면 열이
+생기지 않고 아이콘이 제목 자리를 밀어냅니다.
+
+```tsx
+<Alert variant="destructive">
+  <TriangleAlertIcon aria-hidden />
+  <AlertTitle>발행에 실패했습니다</AlertTitle>
+  <AlertDescription>…</AlertDescription>
+</Alert>
+```
+
+아이콘에 `aria-hidden` 을 붙이십시오. 뜻은 이미 제목이 말하고 있고, 그림만 한 번 더 읽히면
+화면 낭독기에서 같은 말이 두 번 나옵니다.
+
+## 행동은 오른쪽 위에 절대 배치된다
+
+`AlertAction` 은 `absolute top-2 right-2` 입니다. 본문과 같은 흐름에 있지 않으므로, 이것이
+있으면 본문 오른쪽 여백이 `pr-18` 로 벌어져 글자가 버튼 밑으로 들어가지 않습니다
+(`alert.tsx:6` 의 `has-data-[slot=alert-action]:pr-18`).
+
+<div className="flex flex-col gap-3 not-prose my-6">
+  <Alert>
+    <AlertTitle>연결이 끊겼습니다</AlertTitle>
+    <AlertDescription>
+      네트워크가 돌아오면 자동으로 다시 붙습니다.
+    </AlertDescription>
+    <AlertAction>
+      <Button variant="outline" className="h-8 px-3">
+        다시 시도
+      </Button>
+    </AlertAction>
+  </Alert>
+</div>
+
+여백이 고정값이라 **버튼 하나가 들어갈 폭까지만 맞습니다.** 둘 이상을 넣어야 하면 그것은
+알림이 아니라 [Dialog](/components/dialog) 입니다.
+
+## variant 가 색을 다 바꾸지 않는다
+
+`destructive` 는 **글자색만** `--destructive` 로 바꿉니다. 바탕은 `default` 와 같은 `--card`
+그대로입니다. 위험을 바탕색으로 칠하지 않는 것은 강조색을 하나만 쓰기로 한 결정을 따른
+것이고, 그래서 두 variant 를 나란히 놓았을 때 차이가 글자에서만 보입니다.
+
+`role="alert"` 은 컴포넌트가 항상 붙입니다. 화면에 처음부터 있던 알림이 아니라 **내용이
+바뀔 때** 읽히므로, 페이지 로드 시점에 이미 떠 있는 정적 안내문에는 맞지 않습니다.
+
+## 어디서 왔나
+
+shadcn `base-nova` 에서 받았습니다 — 2026-09-11.
+
+**handwork 사용처: 0곳.** 실측에서 나온 아홉과 근거가 다릅니다. 화면에서 세어 본 값이 아니라,
+컴포넌트 20종이 **폼 · 오버레이 · 피드백 · 데이터** 네 묶음을 덮게 하려고 받은 것입니다.
+`Alert` 는 [Skeleton](/components/skeleton) 과 함께 **피드백** 묶음을 맡습니다 — 기다리는
+동안을 `Skeleton` 이, 끝난 뒤의 결과를 `Alert` 가 말합니다.

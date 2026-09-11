@@ -7,7 +7,7 @@ import { createElement } from "react";
  * 값의 근거는 `packages/scopulus-ui/design/tokens.md` 의 타이포·형태 절이다.
  */
 export const PROSE =
-  "leading-relaxed [&_a]:underline [&_a]:underline-offset-4 [&_a]:transition-colors [&_a]:duration-150 [&_a]:ease-out [&_a:hover]:text-brand-accent [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-4 [&_code]:rounded-sm [&_code]:bg-muted [&_code]:px-1 [&_h2]:mt-12 [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:tracking-[-0.015em] [&_h3]:mt-8 [&_h3]:text-lg [&_h3]:font-medium [&_li]:my-1 [&_ol]:my-4 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-4 [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted [&_pre]:p-4 [&_ul]:my-4 [&_ul]:list-disc [&_ul]:pl-5";
+  "leading-relaxed [&_a]:underline [&_a]:underline-offset-4 [&_a]:transition-colors [&_a]:duration-150 [&_a]:ease-out [&_a:hover]:text-ring [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-4 [&_code]:rounded-sm [&_code]:bg-muted [&_code]:px-1 [&_h2]:mt-12 [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:tracking-[-0.015em] [&_h3]:mt-8 [&_h3]:text-lg [&_h3]:font-medium [&_li]:my-1 [&_ol]:my-4 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-4 [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted [&_pre]:p-4 [&_ul]:my-4 [&_ul]:list-disc [&_ul]:pl-5";
 
 /**
  * MDX 본문을 담는 `<article>`. 폭·위 여백·서식을 한 자리에 모은다.

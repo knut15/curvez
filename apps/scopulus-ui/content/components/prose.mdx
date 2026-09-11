@@ -1,0 +1,40 @@
+import { Prose } from "@scopulus/ui";
+
+MDX 본문을 담는 `<article>` 입니다. 폭·위 여백·서식을 한 자리에 모읍니다.
+
+**이 페이지의 본문이 `Prose` 안에 있습니다.** 지금 읽고 있는 문단의 폭이 68ch 에서 멈추는 것,
+`h2` 위에 48px 이 붙는 것, `인라인 코드` 가 면을 갖는 것이 그 결과입니다.
+
+## 서식은 자손 선택자로만 건다
+
+```
+[&_h2]:mt-12 [&_p]:my-4 [&_code]:bg-muted [&_a:hover]:text-ring ...
+```
+
+MDX 가 내는 요소에 클래스를 붙일 수 없으므로 부모에서 자손을 겨냥합니다.
+**여기 없는 요소는 스타일이 없는 채로 나옵니다** — 표와 이미지가 그렇습니다.
+
+## 값을 받지 않는다
+
+`className` · `size` · `variant` 가 없습니다. 본문 서식이 화면마다 달라야 할 이유가 없습니다.
+
+## 문자열과 컴포넌트가 한 파일에 있다
+
+`PROSE` 문자열도 함께 내보냅니다. 아직 그 문자열을 쓰는 화면이 있어서, 컴포넌트로 다 옮기기
+전까지는 둘을 함께 둡니다.
+
+```tsx
+import { Prose, PROSE } from "@scopulus/ui";
+
+<Prose>{children}</Prose>
+<article className={`mx-auto mt-10 max-w-[68ch] ${PROSE}`}>{children}</article>
+```
+
+**JSX 가 아니라 `createElement` 로 썼습니다.** 같은 디렉터리에 `prose.ts` 와 `prose.tsx` 가
+함께 있으면 모듈 해석이 갈립니다. 두 화면을 컴포넌트로 옮기면 문자열을 지우고 `.tsx` 로
+바꿉니다.
+
+## 내부 링크는 `<a>` 다
+
+MDX 가 내는 링크는 `next/link` 가 아닙니다. 내부 경로를 쓰면 전체 새로고침이 일어납니다 —
+`mdx-components.tsx` 에서 `a` 를 매핑해 풀 일입니다. 이 사이트가 그렇게 하고 있습니다.

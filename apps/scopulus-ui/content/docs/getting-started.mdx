@@ -1,0 +1,74 @@
+## 설치
+
+이 저장소 안에서는 워크스페이스로 씁니다. npm 에 발행하지 않습니다.
+
+```json
+{
+  "dependencies": {
+    "@scopulus/ui": "workspace:*"
+  }
+}
+```
+
+## 토큰을 먼저 깐다
+
+**컴포넌트보다 토큰이 먼저입니다.** 색과 반경은 전부 CSS 변수를 읽으므로, 변수가 없으면
+컴포넌트가 아무 색도 갖지 못합니다.
+
+앱의 전역 CSS 맨 위에 한 줄을 더합니다.
+
+```css
+@import "tailwindcss";
+@import "shadcn/tailwind.css";
+@import "@scopulus/ui/tokens.css";
+```
+
+## 쓴다
+
+```tsx
+import { Button, Card, Badge } from "@scopulus/ui";
+
+export function Example() {
+  return (
+    <Card href="/cases/token-store">
+      <Badge>auth</Badge>
+      <span className="text-lg font-medium">토큰 스토어의 레이스 컨디션</span>
+    </Card>
+  );
+}
+```
+
+**`@scopulus/ui` 가 공개 API 의 전부입니다.** 내부 경로(`@scopulus/ui/src/ui/button`)를 직접
+집지 마십시오 — 그 순간 파일을 옮기는 것이 파괴적 변경이 됩니다.
+
+## 다크 모드
+
+`.dark` 클래스 하나로 전환합니다. 전환 장치는 라이브러리가 정하지 않습니다 — 앱이
+[next-themes](https://github.com/pacocoursey/next-themes) 같은 것을 씁니다.
+
+```tsx
+<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+  {children}
+</ThemeProvider>
+```
+
+`ThemeToggle` 은 그 프로바이더를 전제합니다. 그래서 `next-themes` 가 이 패키지의
+`peerDependencies` 입니다.
+
+## 서체는 정하지 않는다
+
+라이브러리는 `--font-sans` 를 읽기만 합니다. 값은 앱이 채웁니다.
+
+```css
+:root {
+  --font-sans: "Pretendard Variable", system-ui, sans-serif;
+}
+```
+
+**이유:** 서체는 브랜드의 값이지 컴포넌트의 값이 아닙니다. 라이브러리가 고정하면 쓰는 쪽이
+자기 서체를 쓸 수 없습니다.
+
+## 값이 갈리면
+
+정본은 `packages/scopulus-ui/design/` 입니다. 이 사이트는 그 값을 보여주는 곳이지 정하는 곳이
+아닙니다. 두 곳이 다르면 스펙이 이깁니다.

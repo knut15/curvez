@@ -1,0 +1,80 @@
+import {
+  Button,
+  Popover,
+  PopoverContent,
+  PopoverDescription,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from "@scopulus/ui";
+
+기준 요소에 붙는 떠 있는 면입니다. 화면을 덮지 않고, 바깥을 누르면 닫힙니다 — 답하기 전에
+나가지 못하게 해야 하는 것은 [Dialog](/components/dialog) 입니다.
+
+<div className="flex flex-wrap items-center gap-3 not-prose my-6">
+  <Popover>
+    <PopoverTrigger render={<Button variant="outline" />}>
+      공개 설정
+    </PopoverTrigger>
+    <PopoverContent>
+      <PopoverHeader>
+        <PopoverTitle>공개 범위</PopoverTitle>
+        <PopoverDescription>
+          공개로 두면 주소를 아는 누구나 읽을 수 있습니다.
+        </PopoverDescription>
+      </PopoverHeader>
+    </PopoverContent>
+  </Popover>
+  <Popover>
+    <PopoverTrigger render={<Button variant="ghost" />}>
+      옆에 띄우기
+    </PopoverTrigger>
+    <PopoverContent side="right" align="start">
+      <PopoverHeader>
+        <PopoverTitle>side 와 align</PopoverTitle>
+        <PopoverDescription>
+          두 값은 Popover 가 아니라 그 안의 Positioner 로 내려갑니다.
+        </PopoverDescription>
+      </PopoverHeader>
+    </PopoverContent>
+  </Popover>
+</div>
+
+## 위치 값은 Content 가 받아 Positioner 로 넘긴다
+
+`side` · `align` · `sideOffset` · `alignOffset` 은 Base UI 에서 `Positioner` 의 props 인데,
+이 라이브러리는 **`PopoverContent` 에서 받습니다.** 조립할 때 `Positioner` 를 직접 쓰지
+않아도 되도록 한 겹 줄인 것입니다.
+
+```tsx
+<PopoverContent side="right" align="start" sideOffset={8}>
+```
+
+기본값은 `side="bottom"` · `align="center"` · `sideOffset={4}` 입니다.
+
+## 폭이 고정이다
+
+면의 폭은 `w-72` — 288px 고정입니다 (`popover.tsx:37`). 내용에 따라 늘지 않습니다.
+
+[Select](/components/select) 의 목록이 `w-(--anchor-width)` 로 **트리거 폭을 따라가는 것과
+다릅니다.** 팝오버는 트리거가 작은 아이콘 버튼이어도 288px 을 유지합니다. 좁혀야 하면
+`className` 으로 덮으십시오.
+
+## 제목과 설명은 조각으로 있다
+
+`PopoverTitle` 과 `PopoverDescription` 은 Base UI 의 `Title` · `Description` 을 그대로
+쓰므로, 팝업의 `aria-labelledby` · `aria-describedby` 가 자동으로 이 둘을 가리킵니다.
+**직접 쓴 `<p>` 로 바꾸면 그 연결이 끊깁니다.**
+
+`Dialog` 와 달리 제목이 없어도 접근성 검사가 잡지 않습니다. 팝오버의 role 이 dialog 가
+아니기 때문인데, **없어도 된다는 뜻은 아닙니다** — 안에 내용이 여럿이면 제목이 무엇을 여는
+면인지 말해 줍니다.
+
+## 어디서 왔나
+
+shadcn `base-nova` 에서 받았습니다 — 2026-09-11.
+
+**handwork 사용처: 0곳.** 실측에서 나온 아홉과 근거가 다릅니다. 화면에서 세어 본 값이 아니라,
+컴포넌트 20종이 **폼 · 오버레이 · 피드백 · 데이터** 네 묶음을 덮게 하려고 받은 것입니다.
+`Popover` 는 [Dialog](/components/dialog) · [Tooltip](/components/tooltip) 과 함께
+**오버레이** 묶음의 가운데를 맡습니다 — 화면을 덮지는 않지만 안에 조작할 것이 들어가는 자리입니다.

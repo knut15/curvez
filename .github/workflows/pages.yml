@@ -1,0 +1,56 @@
+name: Pages
+
+# main 에 들어간 것만 배포한다. PR 마다 배포하면 사이트가 흔들리고,
+# 리뷰 중인 것이 공개 주소로 새어 나간다.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 배포는 하나씩. 앞선 것을 취소하지 않는다 — 반쯤 올라간 사이트가 남는다.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # 게이트를 다시 돌린다. ci.yml 이 PR 에서 이미 돌았더라도, main 에 들어온 뒤의
+      # 상태는 머지 결과라 같지 않을 수 있다. 깨진 것을 배포하지 않는다.
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm build
+
+      - uses: actions/configure-pages@v5
+
+      # Jekyll 이 `_` 로 시작하는 경로를 버린다. Next 의 `_next/` 가 통째로 사라진다.
+      - run: touch apps/scopulus-ui/out/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/scopulus-ui/out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

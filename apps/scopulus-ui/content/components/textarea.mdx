@@ -1,0 +1,66 @@
+import { Textarea } from "@scopulus/ui";
+
+여러 줄 텍스트 입력입니다. 한 줄은 [Input](/components/input) 이 맡습니다.
+
+<div className="flex flex-col gap-4 not-prose my-6">
+  <div className="flex w-80 flex-col gap-1.5">
+    <label htmlFor="doc-textarea-a" className="text-sm font-medium">
+      증상
+    </label>
+    <Textarea
+      id="doc-textarea-a"
+      placeholder="무엇이 어떻게 막혔는지 적어 주세요"
+    />
+  </div>
+  <div className="flex w-80 flex-col gap-1.5">
+    <label htmlFor="doc-textarea-b" className="text-sm font-medium">
+      증상
+    </label>
+    <Textarea
+      id="doc-textarea-b"
+      defaultValue="토큰 갱신 요청이 겹칠 때 이전 토큰이 뒤늦게 덮어씁니다. 재현은 두 탭을 동시에 열고 만료 직전에 새로고침하면 됩니다. 세 번에 한 번꼴로 재현됩니다."
+    />
+  </div>
+</div>
+
+## 스크롤이 아니라 칸이 늘어난다
+
+`field-sizing-content` 가 걸려 있습니다 (`textarea.tsx:9`). 값이 길어지면 안쪽에 스크롤이
+생기는 대신 **칸 자체가 늘어납니다.** 위 두 예제의 높이가 다른 것이 그 결과입니다.
+
+- 최소 높이는 `min-h-16` 입니다
+- 최대 높이는 없습니다. 긴 글을 붙여 넣으면 그만큼 계속 늘어납니다
+- `rows` 로 높이를 고정하지 마십시오 — 이 속성과 싸웁니다
+
+상한이 필요하면 `className="max-h-64 overflow-y-auto"` 를 주십시오. **`max-h` 만 주면
+넘치는 글자가 잘려 보이지 않으므로 `overflow-y-auto` 를 함께 줘야 합니다.**
+
+`field-sizing` 은 비교적 새 CSS 속성이라 지원하지 않는 브라우저에서는 `min-h-16` 높이에
+스크롤이 생깁니다. 값을 못 읽는 상황은 아니지만 **모양은 갈립니다.**
+
+## Input 과 같은 규칙을 따른다
+
+`Input` 과 같은 테두리 · 포커스 링 · `aria-invalid` 처리를 씁니다. 그래서 라벨에 대한
+이야기도 그대로입니다 — `placeholder` 는 라벨이 아니고, 접근성 검사가 그것을 이름으로
+인정한다는 것까지 같습니다. [Input 쪽 설명](/components/input)에 확인 과정을 적어 뒀습니다.
+
+다른 점은 둘입니다.
+
+- 높이가 고정이 아닙니다 (`min-h-16`, `Input` 은 `h-8`)
+- `disabled` 일 때 포인터 이벤트를 끄지 않습니다. 글자를 끌어 고를 수는 있습니다
+
+## Base UI 를 쓰지 않는다
+
+`Input` 은 `@base-ui/react` 의 `Input` 을 감싸지만, `Textarea` 는 **네이티브
+`<textarea>` 를 그대로 씁니다.** Base UI 에 대응하는 조각이 없기 때문입니다.
+
+`Field` 컨텍스트와 엮이는 자동 처리(오류 연결, `disabled` 전파)가 여기에는 없다는 뜻입니다.
+`aria-describedby` 같은 연결은 직접 주십시오.
+
+## 어디서 왔나
+
+shadcn `base-nova` 에서 받았습니다 — 2026-09-11.
+
+**handwork 사용처: 0곳.** 실측에서 나온 아홉과 근거가 다릅니다. 화면에서 세어 본 값이 아니라,
+컴포넌트 20종이 **폼 · 오버레이 · 피드백 · 데이터** 네 묶음을 덮게 하려고 받은 것입니다.
+`Textarea` 는 **폼** 묶음에서 "여러 줄" 을 맡습니다.

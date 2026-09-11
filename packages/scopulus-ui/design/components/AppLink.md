@@ -1,13 +1,13 @@
 # component: AppLink
 
-purpose: 주소를 바꾸는 이동 하나. hover 와 focus 를 `--brand-accent` 한 색으로 모은다
+purpose: 주소를 바꾸는 이동 하나. hover 와 focus 를 `--ring` 한 색으로 모은다
 
 ## 근거 — 실측 6회
 
-같은 상호작용 규칙이 여섯 자리에서 반복된다. hover 색이 전부 `--brand-accent` 다.
+같은 상호작용 규칙이 여섯 자리에서 반복된다. hover 색이 전부 `--ring` 다.
 
 ```bash
-grep -rn 'hover:text-brand-accent' apps/handwork/src --include='*.tsx' --include='*.ts'
+grep -rn 'hover:text-ring' apps/handwork/src --include='*.tsx' --include='*.ts'
 ```
 
 | 파일                                        | 줄  | 밑줄 | 자리                                             |
@@ -19,7 +19,7 @@ grep -rn 'hover:text-brand-accent' apps/handwork/src --include='*.tsx' --include
 | `apps/handwork/src/widgets/site-header.tsx` | 24  | X    | 헤더 워드마크 `handwork®`                        |
 | `packages/scopulus-ui/src/ui/prose.ts`      | 8   | O    | MDX 본문 안 링크 `[&_a:hover]:text-brand-accent` |
 
-리터럴 `hover:text-brand-accent` 는 5줄이고, 여섯 번째는 `prose.ts:8` 의 `[&_a:hover]:` 형태라
+리터럴 `hover:text-ring` 는 5줄이고, 여섯 번째는 `prose.ts:8` 의 `[&_a:hover]:` 형태라
 같은 grep 에 걸리지 않는다. 강조색으로 hover 하는 자리는 **모두 6곳**이다.
 
 ## 이 컴포넌트가 존재하는 이유
@@ -68,7 +68,7 @@ AppLink 는 그 여섯 자리를 한 자리로 모으는 컴포넌트다.
 | state         | 트리거        | 시각 변화                                                                                                                                                                                                                                     |
 | ------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | default       | —             | fg 는 부모에게서 상속한다(자기 색을 갖지 않는다). `inline` 이면 `underline underline-offset-4`. 전이 `transition-colors duration-150 ease-out motion-reduce:transition-none`                                                                  |
-| hover         | 포인터 진입   | fg → `--brand-accent`. **색만 바뀐다.** 밑줄 굵기·위치·글자 크기·위치 전부 그대로다                                                                                                                                                           |
+| hover         | 포인터 진입   | fg → `--ring`. **색만 바뀐다.** 밑줄 굵기·위치·글자 크기·위치 전부 그대로다                                                                                                                                                                   |
 | focus-visible | 키보드 포커스 | `focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring`. **`rounded-sm` 이 필요하다** — 인라인 링크는 자기 반경이 없어 붙이지 않으면 링이 직각으로 그려진다. 실측 5건이 전부 이 조합이다 |
 | pressed       | `:active`     | 시각 변화 없음. 누르면 주소가 바뀌어 화면이 교체된다 — 그 사이를 표시해도 읽히지 않는다                                                                                                                                                       |
 | disabled      | 없음          | 비활성 링크가 없다. 현재 화면을 가리키는 링크도 눌리게 둔다 ([`SiteHeader.md`](SiteHeader.md) 의 `disabled` 행과 같은 판단)                                                                                                                   |
@@ -89,7 +89,7 @@ AppLink 는 그 여섯 자리를 한 자리로 모으는 컴포넌트다.
 
 - a11y:label — 해당 없음. 글자가 그대로 접근 이름이다. `aria-label` 을 중복 지정하지 마라 — 이유: 보이는 글자와 읽히는 글자가 갈리면 음성 조작이 실패한다. 예외는 화살표뿐인 이웃 링크인데, 그 자리(`case-detail.tsx:59,69`)는 화살표 옆에 제목이 함께 있어 이름이 이미 온전하다
 - a11y:focus — 포커스 순서는 DOM 순서와 같다. 링크는 항상 포커스를 받는다. `tabindex` 를 조작하지 마라. `current=true` 여도 포커스에서 빼지 않는다
-- a11y:contrast — hover fg=`--brand-accent` 기준. `/ bg=--background` 라이트 6.02 · 다크 12.96. `/ bg=--card` 라이트 6.37 · 다크 11.92. `/ bg=--brand-canvas`(헤더 바) 라이트 5.15 · 다크 12.46. 전부 `../tokens.md` 의 실측값이고 4.5:1 을 넘는다. default 상태의 대비는 부모 색을 따라간다 — `--foreground`/`--background` 라이트 15.82 · 다크 16.13, `--muted-foreground`/`--background` 라이트 5.28 · 다크 7.97
+- a11y:contrast — hover fg=`--ring` 기준. `/ bg=--background` 라이트 6.02 · 다크 12.96. `/ bg=--card` 라이트 6.37 · 다크 11.92. `/ bg=--brand-canvas`(헤더 바) 라이트 5.15 · 다크 12.46. 전부 `../tokens.md` 의 실측값이고 4.5:1 을 넘는다. default 상태의 대비는 부모 색을 따라간다 — `--foreground`/`--background` 라이트 15.82 · 다크 16.13, `--muted-foreground`/`--background` 라이트 5.28 · 다크 7.97
 - a11y:target — 인라인 링크는 글자 높이만큼만 차지한다. **줄 안에 있는 링크는 24x24 규칙의 예외다**(WCAG 2.5.8 의 inline 예외) — 이유: 문장 안의 링크를 키우면 줄 간격이 그 줄에서만 벌어진다. **줄 밖에 단독으로 놓이는 링크는 세로 여백을 링크 자신이 갖는다** — 헤더 링크가 `py-2` 로 상자를 39x33·31x33 까지 키운 것이 실측 증거다(`site-header.tsx:15`, [`SiteHeader.md`](SiteHeader.md) 의 `a11y:target`). 바에 여백을 몰아 주면 클릭 영역이 글자 높이 11px 에 머문다
 - a11y:role — `link` (`<a>` 의 암묵 역할). `<button>` 으로 만들지 마라 — 이유: 새 탭 열기와 주소 복사가 막힌다. 반대로 주소가 바뀌지 않는 동작에 이 컴포넌트를 쓰지 마라 — 그것은 `Button` 이다
 

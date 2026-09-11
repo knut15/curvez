@@ -30,13 +30,13 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 
 /**
- * 헤더 바 색 위에 놓았을 때. 실제로 이 버튼이 사는 자리다 — `widgets/site-header.tsx`.
- * 바의 배경(`--brand-canvas`)이 본문 배경과 다르므로 hover 면(`--accent`)도 그 위에서 봐야 한다.
+ * 카드 면 위에 놓았을 때. 이 버튼은 헤더 안에 사는데, 헤더의 바탕은 앱마다 다르다.
+ * 본문 배경과 다른 면 위에서 hover 면(`--accent`)이 어떻게 보이는지를 여기서 본다.
  */
-export const OnHeaderBar: Story = {
+export const OnSurface: Story = {
   decorators: [
     (Story) => (
-      <div className="bg-brand-canvas p-4 text-brand-ink">
+      <div className="rounded-lg bg-card p-4 text-card-foreground">
         <div className="flex items-center justify-end gap-4">
           <span className="text-sm">Cases</span>
           <span className="text-sm">Labs</span>

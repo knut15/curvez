@@ -1,6 +1,9 @@
 {
   "$metadata": {
-    "tokenSetOrder": ["light", "dark"]
+    "tokenSetOrder": [
+      "light",
+      "dark"
+    ]
   },
   "$themes": [],
   "light": {

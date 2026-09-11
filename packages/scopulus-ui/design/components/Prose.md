@@ -28,7 +28,7 @@ purpose: MDX 본문의 서식을 한 자리에 모은다. 케이스와 기록이
 | `p`             | 위아래 16px (`[&_p]:my-4`)                                                                    |
 | `h2`            | 위 48px, 24px, 600, 자간 -0.015em (`[&_h2]:mt-12 text-2xl font-semibold tracking-[-0.015em]`) |
 | `h3`            | 위 32px, 18px, 500 (`[&_h3]:mt-8 text-lg font-medium`)                                        |
-| `a`             | 밑줄 + 4px 띄움, 전이 `transition-colors duration-150 ease-out`, hover fg=`--brand-accent`    |
+| `a`             | 밑줄 + 4px 띄움, 전이 `transition-colors duration-150 ease-out`, hover fg=`--ring`            |
 | `ul`            | 위아래 16px, 점 목록, 왼쪽 20px (`[&_ul]:my-4 list-disc pl-5`)                                |
 | `ol`            | 위아래 16px, 숫자 목록, 왼쪽 20px (`[&_ol]:my-4 list-decimal pl-5`)                           |
 | `li`            | 위아래 4px (`[&_li]:my-1`)                                                                    |
@@ -71,7 +71,7 @@ purpose: MDX 본문의 서식을 한 자리에 모은다. 케이스와 기록이
 | state         | 트리거                       | 시각 변화                                                                                                                                        |
 | ------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | default       | —                            | 위 표의 서식. 폭 `max-w-[68ch]`, 위 여백 40px(`mt-10`), 가운데 정렬                                                                              |
-| hover         | 본문 안 링크에 포인터 진입   | 그 링크의 fg → `--brand-accent`. Prose 자신은 반응하지 않는다                                                                                    |
+| hover         | 본문 안 링크에 포인터 진입   | 그 링크의 fg → `--ring`. Prose 자신은 반응하지 않는다                                                                                            |
 | focus-visible | 본문 안 링크에 키보드 포커스 | 링크의 포커스 링. **Prose 문자열에는 focus 규칙이 없다** — `prose.ts:8` 실측. MDX 링크가 `AppLink` 를 거치지 않고 raw `<a>` 로 렌더되기 때문이다 |
 | pressed       | 없음                         | Prose 자신은 눌리지 않는다                                                                                                                       |
 | disabled      | 없음                         | 비활성 개념이 없다. 읽는 글이다                                                                                                                  |
@@ -97,7 +97,7 @@ purpose: MDX 본문의 서식을 한 자리에 모은다. 케이스와 기록이
 
 - a11y:label — 해당 없음. 컨테이너이고 자기 글자가 없다. `aria-label` 을 붙이지 마라 — 이유: 이름이 붙으면 스크린리더가 본문 진입 때마다 그것을 읽는다
 - a11y:focus — Prose 자신은 포커스를 받지 않는다. 안쪽 링크들의 포커스 순서는 DOM 순서 = 읽는 순서와 같다. **`pre` 블록에 `tabindex="0"` 을 주지 않는다** — 실측 0건. 이유: 가로 스크롤이 생기는 코드 블록은 키보드로 스크롤할 수 있어야 한다는 주장이 있으나, 현재 본문에 가로로 넘치는 코드가 있는지 확인하지 않았다. 확인한 뒤에 정한다
-- a11y:contrast — 본문 fg=`--foreground` / bg=`--background` 라이트 15.82 · 다크 16.13. 링크 hover fg=`--brand-accent` / bg=`--background` 라이트 6.02 · 다크 12.96. 인라인 코드와 `pre` 는 fg=`--foreground` / bg=`--muted` 조합인데 **이 쌍은 `../tokens.md` 의 대비 검증 목록에 없다** — 목록에 있는 것은 `--muted-foreground`/`--muted`(라이트 4.91 · 다크 6.51)다. `--foreground` 는 `--muted-foreground` 보다 어두우므로(라이트) 대비가 더 높지만 **실측하지 않았다.** 구현 뒤 렌더 화면에서 재서 `../tokens.md` 의 `## 대비 검증` 에 한 줄을 추가한다
+- a11y:contrast — 본문 fg=`--foreground` / bg=`--background` 라이트 15.82 · 다크 16.13. 링크 hover fg=`--ring` / bg=`--background` 라이트 6.02 · 다크 12.96. 인라인 코드와 `pre` 는 fg=`--foreground` / bg=`--muted` 조합인데 **이 쌍은 `../tokens.md` 의 대비 검증 목록에 없다** — 목록에 있는 것은 `--muted-foreground`/`--muted`(라이트 4.91 · 다크 6.51)다. `--foreground` 는 `--muted-foreground` 보다 어두우므로(라이트) 대비가 더 높지만 **실측하지 않았다.** 구현 뒤 렌더 화면에서 재서 `../tokens.md` 의 `## 대비 검증` 에 한 줄을 추가한다
 - a11y:target — 본문 안 인라인 링크는 24x24 규칙의 예외다(WCAG 2.5.8 inline 예외). 이유: 문장 안의 링크를 키우면 그 줄에서만 줄 간격이 벌어진다. 목록 항목 사이는 `[&_li]:my-1`(4px)이라 인접 8px 을 만족하지 않지만, **목록 항목은 클릭 대상이 아니다** — 항목 안의 링크만 대상이고 그것은 인라인 예외에 해당한다
 - a11y:role — 역할을 지정하지 않는다. 렌더 요소는 `<article>` 이고(`case-detail.tsx:45`, `lab-detail.tsx:41`) 그 암묵 역할이 `article` 이다. `role="document"`·`role="main"` 을 붙이지 마라 — 이유: `main` 은 `PageShell` 이 이미 갖는다. 안쪽 `h2`·`h3` 는 MDX 가 그대로 내는 요소이고 레벨을 손으로 바꾸지 않는다
 

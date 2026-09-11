@@ -1,0 +1,65 @@
+import { Switch } from "@scopulus/ui";
+
+즉시 적용되는 켜기와 끄기입니다. 저장 버튼을 누를 때까지 기다리는 선택은
+[Checkbox](/components/checkbox) 입니다.
+
+<div className="flex flex-col gap-3 not-prose my-6">
+  <div className="flex items-center gap-2 text-sm">
+    <Switch id="doc-switch-a" />
+    <label htmlFor="doc-switch-a">댓글 받기</label>
+  </div>
+  <div className="flex items-center gap-2 text-sm">
+    <Switch id="doc-switch-b" defaultChecked />
+    <label htmlFor="doc-switch-b">새 사례를 메일로 알림</label>
+  </div>
+  <div className="flex items-center gap-2 text-sm">
+    <Switch id="doc-switch-c" size="sm" defaultChecked />
+    <label htmlFor="doc-switch-c">작은 크기 · size sm</label>
+  </div>
+</div>
+
+## Checkbox 와 언제 갈리나
+
+모양이 아니라 **적용 시점**으로 가릅니다.
+
+- `Switch` — 누른 즉시 반영됩니다. 되돌리려면 다시 누릅니다
+- `Checkbox` — 폼과 함께 보내집니다. 보내기 전에는 아무것도 바뀌지 않습니다
+
+되돌릴 수 없는 일에는 스위치를 쓰지 마십시오. 즉시 적용되므로 확인할 틈이 없습니다 —
+그런 자리는 [Dialog](/components/dialog) 로 한 번 물어야 합니다.
+
+## id 는 숨은 input 에 얹힌다
+
+[Checkbox](/components/checkbox) 와 같습니다. Base UI 의 `Switch.Root` 가 보이는
+`<span role="switch">` 와 숨은 `<input>` 두 요소를 내고, 넘긴 `id` 는 숨은 input 이 받습니다.
+
+```tsx
+<Switch id="comments" />
+<label htmlFor="comments">댓글 받기</label>
+```
+
+이름이 없으면 접근성 검사가 `aria-toggle-field-name` 으로 잡습니다. 상태는 `aria-checked` 로
+읽으십시오 — 손잡이 위치는 `translate-x` 로 그려지므로 **애니메이션만 돌고 값은 그대로인
+구현도 화면에서는 똑같이 보입니다.**
+
+## 크기가 두 가지고 값이 소수점이다
+
+`data-size` 로 갈립니다 (`switch.tsx:18`).
+
+- `default` — 32 × 18.4px
+- `sm` — 24 × 14px
+
+  18.4px 은 shadcn 이 준 값 그대로입니다. **바꾸지 않은 이유는 근거가 없어서입니다** — 손잡이
+  크기(`size-4`)와 트랙 높이의 비율에서 나온 값으로 보이지만, 확인하지 못했습니다. 줄 높이에
+  맞추려고 반올림하면 손잡이가 트랙 밖으로 조금 나옵니다.
+
+눌리는 영역은 `after:-inset-x-3 after:-inset-y-2` 로 보이는 것보다 넓습니다. 스위치를
+세로로 촘촘히 쌓을 때는 행 간격을 8px 이상 두십시오.
+
+## 어디서 왔나
+
+shadcn `base-nova` 에서 받았습니다 — 2026-09-11.
+
+**handwork 사용처: 0곳.** 실측에서 나온 아홉과 근거가 다릅니다. 화면에서 세어 본 값이 아니라,
+컴포넌트 20종이 **폼 · 오버레이 · 피드백 · 데이터** 네 묶음을 덮게 하려고 받은 것입니다.
+`Switch` 는 **폼** 묶음에서 "즉시 적용되는 둘 중 하나" 를 맡습니다.

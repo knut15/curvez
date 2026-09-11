@@ -7,7 +7,7 @@
  * 잡았지만, `shared` 는 ARCH-001 로 `@/entities` 를 import 할 수 없다. 그 이름들은
  * `entities/lab/model/types.ts` 의 도메인 값이다. 그래서 여기서는 색을 가르는 축만
  * `tone` 으로 받고, 어떤 status 가 어느 tone 인지는 부르는 쪽(`entities/lab`)이 정한다.
- * 화면에 나오는 것은 스펙과 같다 — `active` 가 `--brand-accent`, `idle` 이 `--muted-foreground` 다.
+ * 화면에 나오는 것은 스펙과 같다 — `active` 가 `--ring`, `idle` 이 `--muted-foreground` 다.
  *
  * 색을 직접 넘기는 prop 을 두지 않는다. 부르는 쪽이 색을 고를 수 있으면 토큰 밖의 값이 들어온다.
  */
@@ -29,7 +29,7 @@ export function Badge(props: BadgeProps) {
           aria-hidden
           className={
             props.tone === "active"
-              ? "size-1.5 rounded-full bg-brand-accent"
+              ? "size-1.5 rounded-full bg-ring"
               : "size-1.5 rounded-full bg-muted-foreground"
           }
         />
