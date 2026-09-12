@@ -19,11 +19,13 @@ import {
   DialogContent,
   DialogTitle,
   DialogTrigger,
+  Input,
 } from "@scopulus/ui";
 
 import { exportFramed, exportPhoto, save } from "@/shared/export-image";
 import { drawFrame } from "@/shared/frame-canvas";
 import { Grader } from "@/shared/grade-gl";
+import { FRAME_LABELS } from "@/shared/preset-values";
 import { PRESETS } from "@/shared/presets";
 
 import "swiper/css";
@@ -50,6 +52,8 @@ export function PresetPicker() {
   const [frameOpen, setFrameOpen] = useState(false);
   const [frameError, setFrameError] = useState<string | null>(null);
   const [saving, setSaving] = useState<"photo" | "frame" | null>(null);
+  // 프레임에 찍을 이름. 비워 두면 프리셋의 도시 이름을 쓴다
+  const [frameName, setFrameName] = useState("");
   const grader = useRef<Grader | null>(null);
   const file = useRef<HTMLInputElement>(null);
   const sliding = useRef(false);
@@ -185,7 +189,7 @@ export function PresetPicker() {
           h = img.naturalHeight;
         }
         if (dead) return;
-        drawFrame(framed, source, w, h, preset.stem);
+        drawFrame(framed, source, w, h, preset.stem, frameName);
         setFrameError(null);
       } catch (err) {
         setFrameError(err instanceof Error ? err.message : String(err));
@@ -194,7 +198,7 @@ export function PresetPicker() {
     return () => {
       dead = true;
     };
-  }, [frameOpen, framed, photo, preset.stem]);
+  }, [frameOpen, framed, frameName, photo, preset.stem]);
 
   /**
    * 받기. **원본 해상도 그대로 다시 건다** — 화면의 것은 긴 변 2048 로 줄인
@@ -207,7 +211,7 @@ export function PresetPicker() {
       const blob =
         kind === "photo"
           ? await exportPhoto(photo, preset.stem)
-          : await exportFramed(photo, preset.stem);
+          : await exportFramed(photo, preset.stem, frameName);
       const suffix = kind === "frame" ? "-frame" : "";
       save(blob, `city-presets-${preset.stem}${suffix}.jpg`);
     } catch (err) {
@@ -390,6 +394,7 @@ export function PresetPicker() {
               aria-pressed={i === active}
               onClick={() => {
                 setActive(i);
+                setFrameName("");
                 sweep(120);
               }}
               className="block focus-visible:outline-none"
@@ -456,7 +461,7 @@ export function PresetPicker() {
                 </Button>
               }
             />
-            <DialogContent className="flex h-dvh w-screen max-w-screen items-center justify-center rounded-none p-0 sm:max-w-screen">
+            <DialogContent className="flex h-dvh w-screen max-w-screen flex-col rounded-none p-0 sm:max-w-screen">
               <DialogTitle className="sr-only">
                 {preset.name} 프레임 완성본
               </DialogTitle>
@@ -466,20 +471,34 @@ export function PresetPicker() {
                 </p>
               ) : (
                 <>
-                  <canvas
-                    ref={setFramed}
-                    className="max-h-full max-w-full object-contain"
-                  />
-                  {photo && (
-                    <Button
-                      type="button"
-                      onClick={() => download("frame")}
-                      disabled={saving !== null}
-                      className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 h-12 -translate-x-1/2 px-8 text-[15px]"
-                    >
-                      {saving === "frame" ? "만드는 중" : "프레임 받기"}
-                    </Button>
-                  )}
+                  {/* 값 스트립을 가리지 않게 세로로 나눈다. 겹쳐 놓으면
+                      이 제품이 파는 것(실제 적용값)이 손에 가린다 */}
+                  <div className="flex min-h-0 flex-1 items-center justify-center px-3 pt-10">
+                    <canvas
+                      ref={setFramed}
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </div>
+                  <div className="flex shrink-0 justify-center gap-2 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                    <Input
+                      value={frameName}
+                      onChange={(e) => setFrameName(e.target.value)}
+                      placeholder={FRAME_LABELS[preset.stem].city}
+                      aria-label="프레임에 찍을 이름"
+                      maxLength={24}
+                      className="h-12 max-w-48 bg-background text-[15px]"
+                    />
+                    {photo && (
+                      <Button
+                        type="button"
+                        onClick={() => download("frame")}
+                        disabled={saving !== null}
+                        className="h-12 px-6 text-[15px]"
+                      >
+                        {saving === "frame" ? "만드는 중" : "받기"}
+                      </Button>
+                    )}
+                  </div>
                 </>
               )}
             </DialogContent>
