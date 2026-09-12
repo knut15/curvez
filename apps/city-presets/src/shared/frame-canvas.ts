@@ -29,12 +29,14 @@ export function drawFrame(
   w: number,
   h: number,
   stem: string,
-  /** 도시 이름 대신 찍을 글자. 비우면 프리셋의 이름을 쓴다 */
+  /** 도시 이름과 무드 대신 찍을 글자. 비우면 프리셋의 것을 쓴다 */
   name?: string,
+  mood?: string,
 ) {
   const label = FRAME_LABELS[stem];
   if (!label) throw new Error(`프레임 글자가 없다: ${stem}`);
   const title = name?.trim() || label.city;
+  const sub = mood?.trim() || label.mood;
   const { side, width, height } = frameSize(w, h);
 
   target.width = width;
@@ -54,11 +56,7 @@ export function drawFrame(
   const tw = d.measureText(title).width;
   d.font = `${Math.floor(w * 0.02)}px ${NAME_FONT}`;
   d.fillStyle = GREY;
-  d.fillText(
-    label.mood,
-    side + tw + Math.floor(w * 0.018),
-    y + Math.floor(w * 0.018),
-  );
+  d.fillText(sub, side + tw + Math.floor(w * 0.018), y + Math.floor(w * 0.018));
 
   // 값 — 폭을 넘으면 줄인다. **잘린 값은 틀린 값이다**
   const [l1, l2] = label.lines;

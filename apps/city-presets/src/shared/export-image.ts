@@ -51,13 +51,18 @@ export async function exportPhoto(photo: string, stem: string) {
 }
 
 /** 흰 테두리와 값 스트립이 붙은 것. 선택 */
-export async function exportFramed(photo: string, stem: string, name?: string) {
+export async function exportFramed(
+  photo: string,
+  stem: string,
+  name?: string,
+  mood?: string,
+) {
   const { canvas, w, h } = await graded(photo, stem);
   const out = document.createElement("canvas");
   const { width, height } = frameSize(w, h);
   out.width = width;
   out.height = height;
-  drawFrame(out, canvas, w, h, stem, name);
+  drawFrame(out, canvas, w, h, stem, name, mood);
   return toBlob(out);
 }
 

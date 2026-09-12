@@ -54,6 +54,8 @@ export function PresetPicker() {
   const [saving, setSaving] = useState<"photo" | "frame" | null>(null);
   // 프레임에 찍을 이름. 비워 두면 프리셋의 도시 이름을 쓴다
   const [frameName, setFrameName] = useState("");
+  const [frameMood, setFrameMood] = useState("");
+  const [editOpen, setEditOpen] = useState(false);
   const grader = useRef<Grader | null>(null);
   const file = useRef<HTMLInputElement>(null);
   const sliding = useRef(false);
@@ -189,7 +191,7 @@ export function PresetPicker() {
           h = img.naturalHeight;
         }
         if (dead) return;
-        drawFrame(framed, source, w, h, preset.stem, frameName);
+        drawFrame(framed, source, w, h, preset.stem, frameName, frameMood);
         setFrameError(null);
       } catch (err) {
         setFrameError(err instanceof Error ? err.message : String(err));
@@ -198,7 +200,7 @@ export function PresetPicker() {
     return () => {
       dead = true;
     };
-  }, [frameOpen, framed, frameName, photo, preset.stem]);
+  }, [frameOpen, framed, frameName, frameMood, photo, preset.stem]);
 
   /**
    * 받기. **원본 해상도 그대로 다시 건다** — 화면의 것은 긴 변 2048 로 줄인
@@ -211,7 +213,7 @@ export function PresetPicker() {
       const blob =
         kind === "photo"
           ? await exportPhoto(photo, preset.stem)
-          : await exportFramed(photo, preset.stem, frameName);
+          : await exportFramed(photo, preset.stem, frameName, frameMood);
       const suffix = kind === "frame" ? "-frame" : "";
       save(blob, `city-presets-${preset.stem}${suffix}.jpg`);
     } catch (err) {
@@ -395,6 +397,7 @@ export function PresetPicker() {
               onClick={() => {
                 setActive(i);
                 setFrameName("");
+                setFrameMood("");
                 sweep(120);
               }}
               className="block focus-visible:outline-none"
@@ -480,20 +483,74 @@ export function PresetPicker() {
                     />
                   </div>
                   <div className="flex shrink-0 justify-center gap-2 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-                    <Input
-                      value={frameName}
-                      onChange={(e) => setFrameName(e.target.value)}
-                      placeholder={FRAME_LABELS[preset.stem].city}
-                      aria-label="프레임에 찍을 이름"
-                      maxLength={24}
-                      className="h-12 max-w-48 bg-background text-[15px]"
-                    />
+                    <Dialog open={editOpen} onOpenChange={setEditOpen}>
+                      <DialogTrigger
+                        render={
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="px-4"
+                          >
+                            편집
+                          </Button>
+                        }
+                      />
+                      <DialogContent className="grid gap-3 p-5">
+                        <DialogTitle className="text-[15px] font-medium">
+                          프레임에 찍을 글자
+                        </DialogTitle>
+                        <label className="grid gap-1.5">
+                          <span className="text-[13px] text-muted-foreground">
+                            이름
+                          </span>
+                          <Input
+                            value={frameName}
+                            onChange={(e) => setFrameName(e.target.value)}
+                            placeholder={FRAME_LABELS[preset.stem].city}
+                            maxLength={24}
+                            autoFocus
+                          />
+                        </label>
+                        <label className="grid gap-1.5">
+                          <span className="text-[13px] text-muted-foreground">
+                            무드
+                          </span>
+                          <Input
+                            value={frameMood}
+                            onChange={(e) => setFrameMood(e.target.value)}
+                            placeholder={FRAME_LABELS[preset.stem].mood}
+                            maxLength={32}
+                          />
+                        </label>
+                        <div className="mt-1 flex gap-2">
+                          {/* 비우면 프리셋의 글자로 돌아간다 */}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              setFrameName("");
+                              setFrameMood("");
+                            }}
+                            className="flex-1"
+                          >
+                            되돌리기
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={() => setEditOpen(false)}
+                            className="flex-1"
+                          >
+                            완료
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                     {photo && (
                       <Button
                         type="button"
                         onClick={() => download("frame")}
                         disabled={saving !== null}
-                        className="h-12 px-6 text-[15px]"
+                        className="h-10 px-6 text-[15px]"
                       >
                         {saving === "frame" ? "만드는 중" : "받기"}
                       </Button>
