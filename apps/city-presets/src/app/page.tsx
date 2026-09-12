@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PresetPicker } from "@/widgets/preset-picker";
 
 /**
@@ -6,10 +7,16 @@ import { PresetPicker } from "@/widgets/preset-picker";
 export default function Home() {
   return (
     <div className="mx-auto flex h-dvh w-full max-w-[430px] flex-col border-border sm:border-x">
-      <header className="shrink-0 px-5 py-3.5">
+      <header className="flex shrink-0 items-baseline justify-between px-5 py-3.5">
         <span className="text-[13px] font-medium tracking-tight">
           city-presets
         </span>
+        <Link
+          href="/about"
+          className="text-[13px] text-muted-foreground underline-offset-4 hover:underline"
+        >
+          소개
+        </Link>
       </header>
 
       <PresetPicker />
