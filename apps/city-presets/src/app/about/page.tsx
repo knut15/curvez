@@ -3,9 +3,10 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { PRESETS } from "@/shared/presets";
+import { Brand } from "@/widgets/brand";
 
 export const metadata: Metadata = {
-  title: "열두 도시의 색 — city-presets",
+  title: "열두 도시의 색 — Fondly",
   description:
     "도시 이름은 찍을 장소가 아니라 색의 이름이다. 열두 개가 새벽에서 밤으로, 겨울에서 겨울로 이어진다.",
 };
@@ -21,9 +22,7 @@ export default function About() {
   return (
     <div className="mx-auto w-full max-w-[430px] border-border sm:border-x">
       <header className="flex items-baseline justify-between px-5 py-3.5">
-        <span className="text-[13px] font-medium tracking-tight">
-          city-presets
-        </span>
+        <Brand />
         <Link
           href="/"
           className="text-[13px] text-muted-foreground underline-offset-4 hover:underline"
