@@ -13,8 +13,15 @@ import {
 import { FreeMode } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 
-import { Button } from "@scopulus/ui";
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@scopulus/ui";
 
+import { drawFrame } from "@/shared/frame-canvas";
 import { Grader } from "@/shared/grade-gl";
 import { PRESETS } from "@/shared/presets";
 
@@ -36,6 +43,11 @@ export function PresetPicker() {
   const [photo, setPhoto] = useState<string | null>(null);
   const frame = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
+  // Base UI 의 Dialog 는 포털로 나중에 붙는다. ref 로는 그릴 시점에 아직 비어 있어서
+  // 노드를 상태로 받는다 — 붙는 순간이 곧 그릴 순간이다.
+  const [framed, setFramed] = useState<HTMLCanvasElement | null>(null);
+  const [frameOpen, setFrameOpen] = useState(false);
+  const [frameError, setFrameError] = useState<string | null>(null);
   const grader = useRef<Grader | null>(null);
   const file = useRef<HTMLInputElement>(null);
   const sliding = useRef(false);
@@ -143,6 +155,44 @@ export function PresetPicker() {
       dead = true;
     };
   }, [photo, preset.stem]);
+
+  /**
+   * 프레임 완성본. 사진에 흰 테두리를 두르고 아래에 적용값을 찍는다 —
+   * `presets/frame.py` 가 내놓는 것과 같은 배치다.
+   *
+   * 사진을 골랐으면 방금 색을 건 캔버스를 쓰고, 아직이면 그 도시의 데모 적용본을 쓴다.
+   */
+  useEffect(() => {
+    if (!frameOpen || !framed) return;
+    let dead = false;
+    (async () => {
+      try {
+        let source: CanvasImageSource;
+        let w: number;
+        let h: number;
+        if (photo && canvas.current) {
+          source = canvas.current;
+          w = canvas.current.width;
+          h = canvas.current.height;
+        } else {
+          const img = new window.Image();
+          img.src = `/demo/${preset.stem}-after.webp`;
+          await img.decode();
+          source = img;
+          w = img.naturalWidth;
+          h = img.naturalHeight;
+        }
+        if (dead) return;
+        drawFrame(framed, source, w, h, preset.stem);
+        setFrameError(null);
+      } catch (err) {
+        setFrameError(err instanceof Error ? err.message : String(err));
+      }
+    })();
+    return () => {
+      dead = true;
+    };
+  }, [frameOpen, framed, photo, preset.stem]);
 
   function onPick(e: ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -349,14 +399,44 @@ export function PresetPicker() {
           onChange={onPick}
           className="hidden"
         />
-        {/* 높이만 덮는다. 기본 h-10(40px)은 모바일 최소 터치 영역 44px 에 못 미친다 */}
-        <Button
-          type="button"
-          onClick={() => file.current?.click()}
-          className="h-12 w-full text-[15px]"
-        >
-          {photo ? "다른 사진 고르기" : "사진 고르기"}
-        </Button>
+        <div className="flex gap-2">
+          {/* 높이만 덮는다. 기본 h-10(40px)은 모바일 최소 터치 영역 44px 에 못 미친다 */}
+          <Button
+            type="button"
+            onClick={() => file.current?.click()}
+            className="h-12 flex-1 text-[15px]"
+          >
+            {photo ? "다른 사진 고르기" : "사진 고르기"}
+          </Button>
+          <Dialog open={frameOpen} onOpenChange={setFrameOpen}>
+            <DialogTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-12 text-[15px]"
+                >
+                  프레임 보기
+                </Button>
+              }
+            />
+            <DialogContent className="flex h-dvh w-screen max-w-screen items-center justify-center rounded-none p-0 sm:max-w-screen">
+              <DialogTitle className="sr-only">
+                {preset.name} 프레임 완성본
+              </DialogTitle>
+              {frameError ? (
+                <p className="p-4 text-[13px] text-muted-foreground">
+                  {frameError}
+                </p>
+              ) : (
+                <canvas
+                  ref={setFramed}
+                  className="max-h-full max-w-full object-contain"
+                />
+              )}
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
     </>
   );

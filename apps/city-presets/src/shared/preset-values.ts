@@ -181,3 +181,109 @@ export const PRESET_VALUES: Record<string, PresetParams> = {
     splitShadow: [190, 10],
   },
 };
+
+/** 프레임 아래에 찍히는 글자. 값 줄은 `frame.py` 의 `value_lines` 가 만든다 */
+export type FrameLabel = {
+  city: string;
+  mood: string;
+  lines: [string, string];
+};
+
+export const FRAME_LABELS: Record<string, FrameLabel> = {
+  "01-oslo": {
+    city: "Oslo",
+    mood: "winter dawn",
+    lines: [
+      "Exp -14 · Shad -4 · Cont -6 · Black +6 · Sat -24 · Warm -42",
+      "Tint +8 · Def +4 · Split S 225°/26 · Split H 215°/12 · Grain 14",
+    ],
+  },
+  "02-sapporo": {
+    city: "Sapporo",
+    mood: "winter clear",
+    lines: [
+      "Exp +26 · Bril +22 · High -20 · Cont +10 · Black +2",
+      "Sat -40 · Warm -12 · Tint -4 · Def +6 · Split S 205°/9",
+    ],
+  },
+  "03-seoul": {
+    city: "Seoul",
+    mood: "autumn clear",
+    lines: [
+      "Shad -8 · Cont +26 · Black +12 · Sat -34 · Vib +22 · Warm +6",
+      "Tint -8 · Def +22 · Split H 225°/12 · HSL 52°+30 · HSL 215°+34",
+    ],
+  },
+  "04-tokyo": {
+    city: "Tokyo",
+    mood: "spring bloom",
+    lines: [
+      "Exp +16 · Bril +14 · High -20 · Shad +14 · Cont -12 · Sat -2",
+      "Vib +14 · Warm +8 · Tint +9 · Def -10 · Split H 345°/6 · Grain 8",
+    ],
+  },
+  "05-santorini": {
+    city: "Santorini",
+    mood: "summer noon",
+    lines: [
+      "Exp +10 · High -10 · Cont +26 · Black +12 · Sat +16 · Vib +20",
+      "Warm -14 · Tint -4 · Def +18 · Split H 195°/8 · HSL 195°+40 · HSL 52°-45",
+    ],
+  },
+  "06-lisbon": {
+    city: "Lisbon",
+    mood: "late afternoon",
+    lines: [
+      "High +10 · Shad -8 · Cont +12 · Black +6 · Vib +16 · Warm +30",
+      "Tint +4 · Def +8 · Vign +10 · Split S 220°/14 · Split H 45°/20",
+    ],
+  },
+  "07-havana": {
+    city: "Havana",
+    mood: "faded sun",
+    lines: [
+      "Shad +20 · Cont -18 · Black -24 · Sat -20 · Warm +14",
+      "Tint -6 · Def -6 · Split S 188°/16 · Split H 30°/12 · Grain 18",
+    ],
+  },
+  "08-seattle": {
+    city: "Seattle",
+    mood: "overcast rain",
+    lines: [
+      "Exp +10 · Bril +12 · Shad +16 · Cont -24 · Black -10 · Sat -28",
+      "Warm -26 · Tint +10 · Def -8 · Split S 205°/22 · Split H 210°/10",
+    ],
+  },
+  "09-paris": {
+    city: "Paris",
+    mood: "dusk",
+    lines: [
+      "Shad +12 · Cont -10 · Black -6 · Sat -18 · Vib +10 · Warm +10",
+      "Tint +20 · Vign +22 · Split S 285°/18 · Split H 350°/12 · Grain 20",
+    ],
+  },
+  "10-marrakesh": {
+    city: "Marrakesh",
+    mood: "desert sunset",
+    lines: [
+      "High +6 · Cont +14 · Black +16 · Sat +8 · Vib +12",
+      "Warm +44 · Tint -6 · Vign +18 · Split S 15°/10 · Split H 35°/22",
+    ],
+  },
+  "11-hongkong": {
+    city: "Hong Kong",
+    mood: "neon night",
+    lines: [
+      "High +14 · Cont +20 · Black +8 · Sat +22 · Warm -18 · Tint +26",
+      "Def +12 · Vign +14 · Split S 190°/22 · Split H 320°/20 · Bloom 26",
+    ],
+  },
+  "12-reykjavik": {
+    city: "Reykjavik",
+    mood: "winter grey",
+    lines: [
+      "Exp -8 · Shad -6 · Cont -4 · Black +8 · Sat -66",
+      "Warm -2 · Def -4 · Split S 190°/10 · Grain 12",
+    ],
+  },
+};

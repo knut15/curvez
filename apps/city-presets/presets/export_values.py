@@ -1,9 +1,11 @@
-"""`PRESETS` 를 브라우저가 읽을 TypeScript 로 내보낸다.
+"""`PRESETS` 와 프레임에 찍히는 글자를 브라우저가 읽을 TypeScript 로 내보낸다.
 
 손으로 옮겨 적지 않는다. 같은 숫자가 두 벌 있으면 한쪽만 고쳐진다.
+값 줄을 만드는 규칙도 `frame.py` 한 곳에만 둔다 — 브라우저는 받아 그리기만 한다.
 """
 import json, pathlib, shutil, subprocess
 from grade import PRESETS, SLIDERS
+from frame import CITY, MOOD, value_lines
 
 OUT = pathlib.Path('../src/shared/preset-values.ts')
 
@@ -29,7 +31,13 @@ def main():
         '  hueSat?: [number, number, number][];\n'
         '};\n\n'
         'export const PRESET_VALUES: Record<string, PresetParams> = {\n'
-        + '\n'.join(items) + '\n};\n',
+        + '\n'.join(items) + '\n};\n\n'
+        '/** 프레임 아래에 찍히는 글자. 값 줄은 `frame.py` 의 `value_lines` 가 만든다 */\n'
+        'export type FrameLabel = { city: string; mood: string; lines: [string, string] };\n\n'
+        'export const FRAME_LABELS: Record<string, FrameLabel> = '
+        + json.dumps({n: {'city': CITY[n], 'mood': MOOD[n], 'lines': list(value_lines(n))}
+                      for n in PRESETS}, ensure_ascii=False, indent=2)
+        + ';\n',
         encoding='utf-8')
     # 포맷은 저장소 규칙을 따른다. 그러지 않으면 이 스크립트를 돌릴 때마다
     # `pnpm format:check` 가 깨진다.
