@@ -1,6 +1,6 @@
 {
   "name": "@scopulus/ui",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "scopulusUI — 토큰 위에 세운 React 컴포넌트 라이브러리",
   "license": "MIT",
@@ -16,6 +16,9 @@
   },
   "scripts": {
     "build-storybook": "storybook build",
+    "changelog": "node scripts/changelog.mjs",
+    "changelog:check": "node scripts/changelog.mjs --check",
+    "changelog:write": "node scripts/changelog.mjs --write",
     "check-contrast": "node scripts/check-contrast.mjs",
     "check-version": "node scripts/check-version.mjs",
     "export-tokens": "node scripts/export-tokens.mjs",
