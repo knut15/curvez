@@ -5,7 +5,8 @@
  * 동작이면서, 모서리가 없어 도구보다 마음 쪽으로 읽힌다. 두 색뿐이라
  * 16px 에서도 파비콘에서도 무너지지 않는다.
  *
- * 이름은 사진을 들여다볼 때의 마음을 가리키는 말이다 — 다정하게, 애틋하게.
+ * 이름은 빛이 도는 결을 가리킨다 — shade(색조)와 tide(밀물처럼 드나드는 흐름).
+ * 열두 개가 새벽에서 밤으로, 겨울에서 겨울로 도는 것이 그대로 이름이 된다.
  * 프레임에 찍히는 활자와 같은 명조 계열로 짠다.
  */
 export function Brand({ className = "" }: { className?: string }) {
@@ -23,7 +24,7 @@ export function Brand({ className = "" }: { className?: string }) {
         <path d="M8 0.75a7.25 7.25 0 0 1 0 14.5z" fill="currentColor" />
       </svg>
       <span className="font-serif text-[17px] leading-none tracking-tight">
-        Fondly
+        Shadetide
       </span>
     </span>
   );

@@ -21,7 +21,7 @@ const gowunBatang = Gowun_Batang({
 });
 
 export const metadata: Metadata = {
-  title: "Fondly — 사진에 도시의 색을 입힌다",
+  title: "Shadetide — 사진에 도시의 색을 입힌다",
   description:
     "도시 이름은 찍을 장소가 아니라 색의 이름이다. 열두 도시 중 하나를 고르면 사진이 그 색이 된다. 계산은 브라우저 안에서만 돈다.",
 };
