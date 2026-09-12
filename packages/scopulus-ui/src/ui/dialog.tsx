@@ -41,13 +41,22 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  overlay,
   ...props
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean;
+  /**
+   * 배경막에 그대로 넘긴다.
+   *
+   * **중첩 모달에서 `forceRender` 를 켜는 자리다.** Base UI 는 안쪽 모달의 배경막을
+   * 기본으로 그리지 않는다 — 어둠이 두 겹 겹치는 것을 막으려는 것이다. 뒤를 흐리게
+   * 해야 하는 자리에서는 쓰는 쪽이 켠다(`@base-ui/react` 의 `DialogBackdrop`).
+   */
+  overlay?: DialogPrimitive.Backdrop.Props;
 }) {
   return (
     <DialogPortal>
-      <DialogOverlay />
+      <DialogOverlay {...overlay} />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(

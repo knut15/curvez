@@ -81,11 +81,12 @@ handwork 화면 어디에도 쓰인 적이 없다. **기존 9종의 `## 근거` 
 
 ### DialogContent
 
-| 이름            | 타입              | 필수 | 기본값     | 의미                                   |
-| --------------- | ----------------- | ---- | ---------- | -------------------------------------- |
-| showCloseButton | `boolean`         | X    | **`true`** | 오른쪽 위 X 버튼 (`dialog.tsx:43`)     |
-| className       | `string`          | X    | —          | 폭을 바꿀 때만 쓴다                    |
-| children        | `React.ReactNode` | O    | —          | `DialogHeader` · 본문 · `DialogFooter` |
+| 이름            | 타입              | 필수 | 기본값     | 의미                                                                              |
+| --------------- | ----------------- | ---- | ---------- | --------------------------------------------------------------------------------- |
+| showCloseButton | `boolean`         | X    | **`true`** | 오른쪽 위 X 버튼 (`dialog.tsx:43`)                                                |
+| overlay         | `Backdrop.Props`  | X    | —          | 배경막에 그대로 넘긴다. 중첩 모달에서 `{ forceRender: true }` 로 뒤를 흐리게 한다 |
+| className       | `string`          | X    | —          | 폭을 바꿀 때만 쓴다                                                               |
+| children        | `React.ReactNode` | O    | —          | `DialogHeader` · 본문 · `DialogFooter`                                            |
 
 ### DialogFooter
 
