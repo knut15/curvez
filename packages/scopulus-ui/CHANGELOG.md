@@ -3,16 +3,7 @@
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따른다.
 버전은 [유의적 버전](https://semver.org/lang/ko/)이다.
 
-`## [Unreleased]` 는 커밋에서 만든다. 손으로 적지 않는다.
-
-```bash
-node scripts/changelog.mjs --write
-```
-
-발행된 절(`## [x.y.z]`)은 건드리지 않는다. `scripts/check-version.mjs` 가 최상단 버전과
-`package.json` 을 대조한다.
-
-## [0.2.0] - 2026-09-12
+`## [0.2.0] - 2026-09-12
 
 ### Added
 
