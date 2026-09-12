@@ -1,0 +1,21 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+/* 색·반경 토큰의 정본은 라이브러리다. */
+@import "@scopulus/ui/tokens.css";
+
+/* Tailwind v4 의 자동 탐지는 `node_modules` 를 건너뛰는데 `@scopulus/ui` 는 거기
+   심볼릭 링크로 있다. 넣지 않으면 라이브러리에서만 쓰는 클래스가 조용히 빠진다. */
+@source "../../../../packages/scopulus-ui/src";
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}

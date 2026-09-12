@@ -1,16 +1,3 @@
-# 생성물 — grade.py / frame.py 로 언제든 다시 만든다
-graded/
-framed/
-
-# 초기 레퍼런스로 뽑았다가 버린 도시 풍경 이미지 (41MB).
-# 왜 버렸는지는 PRD 의 "무엇이 아닌가" 에 적혀 있다. 프롬프트만 남긴다.
-reference/*.png
-reference/*.jpg
-
-# 도구가 만든 것들
-.DS_Store
-.omc/
-
-# hero 생성물 — hero.py 로 다시 만든다
-hero-graded/
-hero-framed/
+.next/
+next-env.d.ts
+*.tsbuildinfo
