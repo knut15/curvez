@@ -169,21 +169,48 @@ export function TypeScale() {
   );
 }
 
-/** 모서리는 값으로 적어도 안 보인다. 네 상자를 나란히 두면 차이가 바로 읽힌다. */
+/**
+ * 모서리 단계.
+ *
+ * **`var(--radius-sm)` 로 그리지 않는다.** `@theme inline` 은 값을 유틸리티에 인라인하고
+ * CSS 변수를 내보내지 않는다. 그래서 런타임에 `var()` 가 빈 값이 되고 상자가 전부 0px 로
+ * 그려진다. 실제로 그렇게 나와 있었다(2026-09-12).
+ *
+ * 클래스는 문자열로 적는다. `rounded-${name}` 처럼 조합하면 Tailwind 가 소스에서 못 찾아
+ * 클래스가 아예 생성되지 않는다 — 오류 없이 모서리만 사라진다.
+ *
+ * 단계 목록은 그래도 CSS 에서 읽는다. `tokens.css` 에 단계를 더했는데 여기 클래스가 없으면
+ * **던진다.** 조용히 빼면 새 단계가 화면에서 사라지고 아무도 모른다.
+ */
+const ROUNDED: Record<string, string> = {
+  "--radius-sm": "rounded-sm",
+  "--radius-md": "rounded-md",
+  "--radius-lg": "rounded-lg",
+  "--radius-xl": "rounded-xl",
+  "--radius-2xl": "rounded-2xl",
+  "--radius-3xl": "rounded-3xl",
+  "--radius-4xl": "rounded-4xl",
+};
+
 export function RadiusScale() {
-  const tokens = radiusTokens();
+  const steps = radiusTokens().filter((t) => t.name !== "--radius");
+  const missing = steps.filter((t) => !ROUNDED[t.name]).map((t) => t.name);
+  if (missing.length > 0) {
+    throw new Error(
+      `token-visuals.tsx 의 ROUNDED 에 없는 단계: ${missing.join(", ")}`,
+    );
+  }
 
   return (
     <div className="not-prose my-8 flex flex-wrap gap-5">
-      {tokens.map((t) => (
+      {steps.map((t) => (
         <div key={t.name} className="flex flex-col items-center gap-2">
           <span
-            className="size-16 border border-border bg-muted"
-            style={{ borderRadius: `var(${t.name})` }}
+            className={`size-16 border border-border bg-muted ${ROUNDED[t.name]}`}
             aria-hidden
           />
           <code className="font-mono text-xs text-muted-foreground">
-            {t.name.replace("--radius", "radius")}
+            {ROUNDED[t.name]}
           </code>
         </div>
       ))}
