@@ -25,7 +25,6 @@ import {
 import { exportFramed, exportPhoto, save } from "@/shared/export-image";
 import { drawFrame } from "@/shared/frame-canvas";
 import { Grader } from "@/shared/grade-gl";
-import { FRAME_LABELS } from "@/shared/preset-values";
 import { PRESETS } from "@/shared/presets";
 
 import "swiper/css";
@@ -502,16 +501,16 @@ export function PresetPicker() {
                         className="grid gap-3 p-5"
                       >
                         <DialogTitle className="text-[15px] font-medium">
-                          프레임에 찍을 글자
+                          사진의 제목과 설명을 변경할 수 있어요!
                         </DialogTitle>
                         <label className="grid gap-1.5">
                           <span className="text-[13px] text-muted-foreground">
-                            이름
+                            제목
                           </span>
                           <Input
                             value={frameName}
                             onChange={(e) => setFrameName(e.target.value)}
-                            placeholder={FRAME_LABELS[preset.stem].city}
+                            placeholder="제목을 입력해 주세요"
                             maxLength={24}
                             autoFocus
                           />
@@ -523,8 +522,8 @@ export function PresetPicker() {
                           <Input
                             value={frameMood}
                             onChange={(e) => setFrameMood(e.target.value)}
-                            placeholder={FRAME_LABELS[preset.stem].mood}
-                            maxLength={32}
+                            placeholder="설명을 15자 이내로 입력해 주세요"
+                            maxLength={15}
                           />
                         </label>
                         <div className="mt-1 flex gap-2">
