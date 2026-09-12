@@ -6,7 +6,7 @@ import { PRESETS } from "@/shared/presets";
 import { Brand } from "@/widgets/brand";
 
 export const metadata: Metadata = {
-  title: "열두 도시의 색 — Shadetide",
+  title: "열두 도시의 색 — satinhaze",
   description:
     "도시 이름은 찍을 장소가 아니라 색의 이름이다. 열두 개가 새벽에서 밤으로, 겨울에서 겨울로 이어진다.",
 };
