@@ -2,7 +2,7 @@
 
 purpose: 한 낱말짜리 메타 정보를 본문과 구분해 얹는다. 태그 칩과 기록 상태 둘을 맡는다
 
-## 근거 — 실측 두 형태
+## 근거 — 화면에서 쓰던 두 형태
 
 ### 형태 1 — 태그 칩, 4회
 
@@ -73,7 +73,7 @@ export const LAB_STATUSES = ["진행 중", "멈춤", "마무리"] as const;
 `멈춤` 과 `마무리` 의 차이는 옆에 붙은 글자가 말한다.
 
 **`size` prop 을 두지 않는다.**
-**이유:** 실측 네 자리의 칩이 전부 같은 크기다. 카드 안이든 상세 화면이든 태그의 무게가 같아야 한다.
+**이유:** 화면에 나온 네 자리의 칩이 전부 같은 크기다. 카드 안이든 상세 화면이든 태그의 무게가 같아야 한다.
 
 **색을 직접 넘기는 prop(`color`, `tone`)을 두지 않는다.**
 **이유:** 부르는 쪽이 색을 고를 수 있으면 토큰 밖의 값이 들어오고, 그 값은 [`../tokens.md`](../tokens.md) 에
@@ -99,10 +99,10 @@ export const LAB_STATUSES = ["진행 중", "멈춤", "마무리"] as const;
 
 ## a11y
 
-- a11y:label — 해당 없음. 글자가 그대로 보이는 표시다. `aria-label` 을 붙이지 마라 — 이유: 보이는 글자와 읽히는 글자가 갈린다. 단 `status` 의 **점은 `aria-hidden` 이다** (`lab-card.tsx:20`, `lab-detail.tsx:20`) — 색만으로 말하는 장식이고 그 뜻은 옆 글자가 이미 말한다
+- a11y:label — 해당 없음. 글자가 그대로 보이는 표시다. `aria-label` 을 붙이지 마라 — 이유: 보이는 글자와 읽히는 글자가 달라진다. 단 `status` 의 **점은 `aria-hidden` 이다** (`lab-card.tsx:20`, `lab-detail.tsx:20`) — 색만으로 말하는 장식이고 그 뜻은 옆 글자가 이미 말한다
 - a11y:focus — 포커스 대상이 0개다. 포커스 순서에 끼어들지 않는다. 카드 안에 있을 때 카드 링크가 유일한 포커스 대상이고, Badge 는 그 링크의 접근 이름에서도 빠진다 ([`CaseCard.md`](CaseCard.md) 의 `a11y:label`)
-- a11y:contrast — `tag`: fg=`--muted-foreground` / bg=`--muted` 라이트 4.91 · 다크 6.51 (`../tokens.md` 실측값, 4.5:1 통과). `status` 글자: fg=`--muted-foreground` / bg=`--card` 라이트 5.59 · 다크 7.34, bg=`--background` 라이트 5.28 · 다크 7.97. 점은 `aria-hidden` 이라 대비 대상이 아니다
-- a11y:target — 해당 없음. 클릭 대상이 아니다. 24x24 규칙은 상호작용 요소에만 걸린다. 칩 실측 높이는 글자 12px + 세로 여백 4px = 16px 이고, 눌리지 않으므로 문제가 아니다
+- a11y:contrast — `tag`: fg=`--muted-foreground` / bg=`--muted` 라이트 4.91 · 다크 6.51 (`../tokens.md` 의 대비값, 4.5:1 통과). `status` 글자: fg=`--muted-foreground` / bg=`--card` 라이트 5.59 · 다크 7.34, bg=`--background` 라이트 5.28 · 다크 7.97. 점은 `aria-hidden` 이라 대비 대상이 아니다
+- a11y:target — 해당 없음. 클릭 대상이 아니다. 24x24 규칙은 상호작용 요소에만 걸린다. 칩 높이는 글자 12px + 세로 여백 4px = 16px 이고, 눌리지 않으므로 문제가 아니다
 - a11y:role — 역할을 지정하지 않는다. `<span>` 이다. `status`·`img`·`note` 를 붙이지 마라 — 이유: `role="status"` 는 live region 이라 값이 바뀔 때마다 스크린리더가 읽는다. 이 배지는 바뀌지 않는다. 상세 화면에서 칩들은 `<ul role="list">` 안의 `<li>` 이고(`case-detail.tsx:33`, `lab-detail.tsx:29`) 그 역할은 목록 쪽이 갖는다
 
 **색만으로 상태를 말하지 마라.** 점 옆에 상태 글자가 항상 함께 있다

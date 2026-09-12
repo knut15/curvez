@@ -21,12 +21,25 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** 글 안에 섞이는 자리. 밑줄이 없으면 링크인지 알 수 없다. 실측 4곳이 이 형태다. */
+/** 글 안에 섞이는 자리. 밑줄이 없으면 링크인지 알 수 없다. 화면에 4곳이 이 형태다. */
 export const Inline: Story = {};
 
-/** 위치로 이미 구분되는 자리 — 헤더 워드마크, 이웃 글 내비게이션. 실측 2곳. */
+/** 위치로 이미 구분되는 자리 — 헤더 워드마크, 이웃 글 내비게이션. 화면에 2곳. */
 export const Bare: Story = {
   args: { variant: "bare", children: "handwork®" },
+};
+
+/**
+ * 랜딩의 주 행동. 모양은 `Button` 의 `buttonClass` 를 그대로 입고 요소는 `<a>` 로 남는다 —
+ * `role="button"` 이 붙으면 새 탭 열기와 주소 복사가 막힌다.
+ */
+export const Cta: Story = {
+  args: { variant: "cta", children: "컴포넌트 20종 보기" },
+};
+
+/** 주 행동 옆의 두 번째 자리. `Button` 의 `outline` 을 입는다. */
+export const CtaQuiet: Story = {
+  args: { variant: "cta-quiet", children: "시작하기" },
 };
 
 /** 현재 화면을 가리키는 링크. 눌리게 두고 `aria-current="page"` 만 붙는다. */

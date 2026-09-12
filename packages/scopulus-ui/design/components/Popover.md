@@ -34,7 +34,7 @@ purpose: 트리거 곁에 덧창을 띄우고 뒤의 조작은 막지 않는다.
 
 ### 2. handwork 사용처: 0곳
 
-handwork 화면 어디에도 쓰인 적이 없다. **기존 9종의 `## 근거` 에 있는 `파일:줄` 실측이 이 문서에는
+handwork 화면 어디에도 쓰인 적이 없다. **기존 9종의 `## 근거` 에 있는 `파일:줄` 이 이 문서에는
 없다.** 값의 출처는 위의 받은 소스 하나다.
 
 ### 3. 왜 20종에 들어가는가
@@ -84,7 +84,7 @@ handwork 화면 어디에도 쓰인 적이 없다. **기존 9종의 `## 근거` 
 | `PopoverDescription` | fg=`--muted-foreground`                                                                                                                       | `popover.tsx:74` |
 
 **`shadow-md` 가 [`../tokens.md`](../tokens.md) 와 어긋난다.** 그 문서의 `## 고도(elevation)` 절이
-"쓰지 않는다. 그림자 토큰을 만들지 않는다" 를 실측 0건으로 정했다. **같은 절이 되돌릴 조건도
+"쓰지 않는다. 그림자 토큰을 만들지 않는다" 를 화면에 나온 0곳으로 정했다. **같은 절이 되돌릴 조건도
 적어 두었다 — "그림자가 필요해지는 조건은 하나다 — 화면 위에 떠서 아래를 가리는 요소가 생길 때."
 `Popover` 가 그 조건이다.**
 
@@ -96,7 +96,7 @@ handwork 화면 어디에도 쓰인 적이 없다. **기존 9종의 `## 근거` 
 **고칠 위치:** `../tokens.md` 의 `## 고도(elevation)` 절과 `../../src/tokens.css` 의
 `@theme inline` 블록. 그 작업은 이 문서의 범위가 아니다.
 
-**`duration-100` 은 [`../tokens.md`](../tokens.md) 의 `duration-150`(실측 9건)과 다르다.**
+**`duration-100` 은 [`../tokens.md`](../tokens.md) 의 `duration-150`(화면에 9곳)과 다르다.**
 **`duration-150` 으로 맞춘다. 이유:** 모션 값이 `--ease-out` 하나로 못박혀 있는데 시간만 두 값이면
 어느 것이 의도인지 판정할 수 없다. **고칠 위치:** `../../src/ui/popover.tsx:37`.
 
@@ -121,7 +121,7 @@ handwork 화면 어디에도 쓰인 적이 없다. **기존 9종의 `## 근거` 
 여섯 방향(`top` · `bottom` · `left` · `right` · `inline-start` · `inline-end`)에 각각 반대쪽에서
 2 스텝(8px) 미끄러져 들어온다.
 **`motion-reduce:` 짝이 빠져 있다** — [`../tokens.md`](../tokens.md) 가 "전이를 넣으면
-`motion-reduce:transition-none` 을 같은 줄에 넣는다" 를 실측 8:8 로 정했다.
+`motion-reduce:transition-none` 을 같은 줄에 넣는다" 를 화면에 나온 8:8 로 정했다.
 **`motion-reduce:animate-none` 을 넣는다. 이유:** 미끄러지는 움직임은 전정기관 이상이 있는
 사용자에게 어지럼을 준다. **고칠 위치:** `../../src/ui/popover.tsx:37`.
 
@@ -129,7 +129,7 @@ handwork 화면 어디에도 쓰인 적이 없다. **기존 9종의 `## 근거` 
 
 - a11y:label — `PopoverTitle` 을 넣으면 Base UI 가 `aria-labelledby` 로 덧창과 묶는다. **제목 없이 열지 마라 — 이유:** 이름 없는 덧창은 스크린리더가 "그룹" 이라고만 읽어 무엇이 열렸는지 알 수 없다. 제목을 화면에 보이지 않게 해야 하면 `sr-only` 를 쓴다. `PopoverDescription` 은 선택이고, 넣으면 `aria-describedby` 로 묶인다. 트리거가 아이콘 버튼이면 `aria-label` 이 **필수**다 — [`Button.md`](Button.md) 의 a11y:label 과 같은 규칙이다
 - a11y:focus — 열리면 포커스가 덧창 안으로 들어가고 닫히면 `PopoverTrigger` 로 돌아간다. Base UI 가 처리한다. Esc 로 닫히고, 덧창 밖을 누르면 닫힌다. **`Dialog` 와 달리 포커스가 덧창에 갇히지 않는다** — Tab 으로 덧창을 빠져나가면 덧창이 닫힌다. **덧창 안에 포커스 대상이 0개면 `Popover` 를 쓰지 마라 — 이유:** 키보드로 연 뒤 갈 곳이 없어 Esc 말고는 할 수 있는 일이 없다. 글자만 보여 줄 자리는 `Tooltip` 이다
-- a11y:contrast — `--popover` 와 `--popover-foreground` 의 값은 `--card` · `--card-foreground` 와 **같다** (`../../src/tokens.css:68-69` 라이트 · `:103-104` 다크). 그래서 [`../tokens.md`](../tokens.md) 의 카드 실측값이 그대로 적용된다 — 제목 fg=`--popover-foreground` / bg=`--popover` 라이트 16.73 · 다크 14.84, 설명 fg=`--muted-foreground` / bg=`--popover` 라이트 5.59 · 다크 7.34. 둘 다 4.5:1 통과. **`ring-1 ring-foreground/10` 의 테두리 대비는 미측정이다** — 알파가 얹힌 색은 배경에 따라 달라져 고정 쌍으로 계산되지 않는다. 같은 판단을 [`../tokens.md`](../tokens.md) 가 다크 `--border` 에 대해 이미 내렸다
+- a11y:contrast — `--popover` 와 `--popover-foreground` 의 값은 `--card` · `--card-foreground` 와 **같다** (`../../src/tokens.css:68-69` 라이트 · `:103-104` 다크). 그래서 [`../tokens.md`](../tokens.md) 의 카드 대비값이 그대로 적용된다 — 제목 fg=`--popover-foreground` / bg=`--popover` 라이트 16.73 · 다크 14.84, 설명 fg=`--muted-foreground` / bg=`--popover` 라이트 5.59 · 다크 7.34. 둘 다 4.5:1 통과. **`ring-1 ring-foreground/10` 의 테두리 대비는 미측정이다** — 알파가 얹힌 색은 배경에 따라 달라져 고정 쌍으로 계산되지 않는다. 같은 판단을 [`../tokens.md`](../tokens.md) 가 다크 `--border` 에 대해 이미 내렸다
 - a11y:target — 덧창 면은 클릭 대상이 아니라 24x24 규칙이 걸리지 않는다. 트리거와 덧창 안의 버튼만 그 규칙을 받고, [`Button.md`](Button.md) 가 `size="default"` 40px · `size="icon"` 40x40 · `size="icon-sm"` 32x32 로 정했다. 트리거와 덧창 사이 `sideOffset` 4px 은 클릭 영역을 가르지 않는다 — 그 틈은 포인터가 지나가는 자리다
 - a11y:role — Base UI 가 `role="dialog"` 를 붙인다. **`aria-modal` 은 붙지 않는다** — 뒤를 막지 않기 때문이다. **`role` 을 덮어쓰지 마라. 이유:** `tooltip` 으로 바꾸면 안의 버튼을 스크린리더가 읽지 못하고, `menu` 로 바꾸면 화살표 키 이동이 있는 것처럼 읽히는데 실제로는 없다. 트리거는 `aria-expanded` 와 `aria-controls` 를 Base UI 가 붙인다
 

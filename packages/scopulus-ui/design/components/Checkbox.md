@@ -29,7 +29,7 @@ purpose: 서로 독립된 항목을 켜고 끈다. 하나를 즉시 적용하는
 
 ### 2. handwork 사용처: 0곳
 
-handwork 화면 어디에도 쓰인 적이 없다. **기존 9종의 `## 근거` 에 있는 `파일:줄` 실측이 이 문서에는
+handwork 화면 어디에도 쓰인 적이 없다. **기존 9종의 `## 근거` 에 있는 `파일:줄` 이 이 문서에는
 없다.** 값의 출처는 위의 받은 소스 하나다.
 
 ### 3. 왜 20종에 들어가는가
@@ -52,7 +52,7 @@ handwork 화면 어디에도 쓰인 적이 없다. **기존 9종의 `## 근거` 
 
 타입 원본은 `CheckboxPrimitive.Root.Props` 다 (`checkbox.tsx:5`). 위 표는 그중 이 프로젝트가 쓰는 것만
 추렸다. **`className` 으로 크기·색을 덮어쓰지 마라 — 이유:** `cn` 이 충돌을 나중 값으로 정리하므로
-조용히 이긴다. 값을 바꿀 때는 이 문서와 소스 두 곳을 함께 고친다.
+조용히 적용된다. 값을 바꿀 때는 이 문서와 소스 두 곳을 함께 고친다.
 
 ### 받은 그대로의 값 (`checkbox.tsx:10`)
 
@@ -92,14 +92,14 @@ handwork 화면 어디에도 쓰인 적이 없다. **기존 9종의 `## 근거` 
 
 **`transition-colors` 에 `motion-reduce:transition-none` 이 빠져 있다** (`checkbox.tsx:10`).
 [`../tokens.md`](../tokens.md) 가 "전이를 넣으면 `motion-reduce:transition-none` 을 같은 줄에 넣는다"
-를 실측 8:8 로 정했다. **같은 줄에 넣는다. 이유:** 나중에 붙이려면 전이가 있는 줄을 전부 다시 찾아야
+를 화면에 나온 8:8 로 정했다. **같은 줄에 넣는다. 이유:** 나중에 붙이려면 전이가 있는 줄을 전부 다시 찾아야
 하고, 빠진 곳은 화면에서만 드러난다. **고칠 위치:** `../../src/ui/checkbox.tsx:10`.
 
 ## a11y
 
 - a11y:label — 라벨이 **필수**다. `<label>` 로 감싸거나 `htmlFor` 로 묶는다. **`aria-label` 로 대신하지 마라 — 이유:** 보이는 글자가 없으면 라벨을 눌러 켜는 동작이 사라지고, 16px 상자만 눌러야 한다. 부분 선택(`indeterminate`)은 Base UI 가 `aria-checked="mixed"` 를 붙인다 — 그 뜻을 글자로 다시 쓰지 마라
 - a11y:focus — 포커스 순서는 DOM 순서와 같고, `disabled` 상자는 포커스를 받지 않는다. **받은 소스의 포커스 표시는 `focus-visible:ring-3` 이고, [`../tokens.md`](../tokens.md) 가 정한 네 조각(`outline-2` · `outline-offset-2` · `outline-ring` · 인라인 링크에만 `rounded-sm`)과 다르다.** 두 방식을 섞지 마라 — 이유: 한 화면에서 포커스 표시가 두 모양이면 키보드 사용자가 지금 어디에 있는지 배울 수 없다. **폼 5종(`Input` · `Textarea` · `Checkbox` · `Switch` · `Select`)은 `ring-3` 한 벌로 통일하고, 그 밖의 20종은 `outline-2` 한 벌을 쓴다** — 이유: 폼 요소는 테두리를 이미 가졌고 `outline` 은 그 테두리 바깥에 또 하나의 선을 그어 두 겹으로 읽힌다. **고칠 위치:** 이 항목과 폼 5종 소스의 `focus-visible:` 조각
-- a11y:contrast — 켜짐 fg=`--primary-foreground` / bg=`--primary` 라이트 15.82 · 다크 16.13 ([`../tokens.md`](../tokens.md) `## 대비 검증` 의 "CTA 라벨/CTA 배경" 실측값, 4.5:1 통과). **꺼짐 상태의 테두리 `--input` / bg=`--background` 쌍은 미측정이다** — 테두리는 글자가 아니라 하한이 **3:1**(WCAG 1.4.11)이고, 다크의 `--input` 은 알파라 배경에 따라 실제 색이 달라져 고정 쌍으로 계산되지 않는다. 구현 뒤 렌더 화면에서 `getComputedStyle` 로 재서 [`../tokens.md`](../tokens.md) 에 한 줄을 추가한다
+- a11y:contrast — 켜짐 fg=`--primary-foreground` / bg=`--primary` 라이트 15.82 · 다크 16.13 ([`../tokens.md`](../tokens.md) `## 대비 검증` 의 "CTA 라벨/CTA 배경" 대비값, 4.5:1 통과). **꺼짐 상태의 테두리 `--input` / bg=`--background` 쌍은 미측정이다** — 테두리는 글자가 아니라 하한이 **3:1**(WCAG 1.4.11)이고, 다크의 `--input` 은 알파라 배경에 따라 실제 색이 달라져 고정 쌍으로 계산되지 않는다. 구현 뒤 렌더 화면에서 `getComputedStyle` 로 재서 [`../tokens.md`](../tokens.md) 에 한 줄을 추가한다
 - a11y:target — 상자는 16x16 이지만 실제 클릭 영역은 `after:absolute after:-inset-x-3 after:-inset-y-2` (`checkbox.tsx:10`)가 넓힌다 — **가로 16 + 12x2 = 40px, 세로 16 + 8x2 = 32px.** 24x24 최소를 넘는다. **`after:` 조각을 지우지 마라 — 이유:** 지우는 순간 클릭 영역이 16x16 이 되어 기준 아래로 떨어진다. 상자 둘을 세로로 나란히 놓을 때 **간격을 8px 이상 둔다** — 32px 영역이 겹치지 않게 하려면 그만큼이 필요하다
 - a11y:role — `checkbox` 다. Base UI 가 `<button role="checkbox">` 로 렌더하고 `aria-checked` 를 관리한다. **`<input type="checkbox">` 로 바꾸지 마라 — 이유:** 부분 선택 상태를 DOM 속성으로만 다룰 수 있게 되어 React 상태와 어긋날 자리가 생긴다. 여러 상자를 묶을 때는 부모에 `role="group"` 과 `aria-labelledby` 를 준다
 

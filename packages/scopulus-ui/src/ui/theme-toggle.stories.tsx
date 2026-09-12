@@ -6,7 +6,7 @@ import { ThemeToggle } from "./theme-toggle";
  * **구현을 바꾸지 않았다.** 스펙(`packages/scopulus-ui/design/components/ThemeToggle.md`)이 델타 문서이고,
  * 결론이 "`Button` 으로 바꾸지 않는다" 다. 이 파일이 `next-themes` 의 `setTheme` 과
  * `document.documentElement.classList` 를 직접 읽는 구조를 갖고 있어, `Button` 을 한 겹 끼우면
- * 그 구조가 두 파일로 갈라진다.
+ * 그 구조가 두 파일로 나뉜다.
  *
  * 스토리북에는 `next-themes` 프로바이더가 없다. `setTheme` 은 아무 일도 하지 않고, 대신
  * 애드온의 테마 데코레이터가 `.dark` 를 붙인다 — 앱과 같은 경로다. 그래서 아이콘 전환은

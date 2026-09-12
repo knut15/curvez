@@ -2,7 +2,7 @@
 
 purpose: 서브 페이지의 바깥 컨테이너 하나. 폭·좌우 여백·세로 여백을 한 자리에 모은다
 
-## 근거 — 실측 5회
+## 근거 — 화면에 5번 나온다
 
 같은 클래스 문자열이 다섯 파일에서 한 글자도 다르지 않게 반복된다.
 
@@ -65,7 +65,7 @@ PageShell 을 쓰지 않는 화면이다.
 
 - a11y:label — 해당 없음. `<main>` 은 문서에 하나뿐이라 이름이 필요 없다. `aria-label` 을 붙이지 마라 — 이유: 랜드마크가 하나일 때 이름을 주면 스크린리더가 "main, 무엇" 을 두 번 읽는다
 - a11y:focus — 포커스 대상이 0개다. 포커스 순서는 children 의 DOM 순서와 같고 PageShell 이 끼어들지 않는다. 스킵 링크를 두지 않는다 — 이유: `SiteHeader` 의 포커스 대상이 4개(로고·Cases·Labs·토글)라 건너뛸 비용이 크지 않다. 근거는 [`SiteHeader.md`](SiteHeader.md) 의 `a11y:focus`
-- a11y:contrast — 해당 없음. 자기 색을 갖지 않는다. 안쪽 텍스트의 대비는 `--foreground` / `--background` 라이트 15.82 · 다크 16.13 (`../tokens.md` 실측값)
+- a11y:contrast — 해당 없음. 자기 색을 갖지 않는다. 안쪽 텍스트의 대비는 `--foreground` / `--background` 라이트 15.82 · 다크 16.13 (`../tokens.md` 의 대비값)
 - a11y:target — 해당 없음. 클릭 대상이 아니다
 - a11y:role — `main` (landmark). `<div role="main">` 으로 쓰지 마라 — 이유: 요소가 이미 그 역할을 가진다
 

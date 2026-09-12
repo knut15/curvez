@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { cn } from "cn";
 
+import { buttonClass } from "./button";
+
 /**
  * 주소를 바꾸는 이동 하나. hover 와 focus 를 `--ring` 한 색으로 모은다.
  *
@@ -15,6 +17,16 @@ import { cn } from "cn";
  * `--ring` 은 라이브러리 토큰이고 handwork 에서 `--brand-accent` 와 값이 같다.
  *
  * 주소가 바뀌지 않는 동작에는 이것을 쓰지 마라. 그것은 `Button` 이다.
+ *
+ * **`cta` 는 버튼처럼 보이는 링크다.** 랜딩의 주 행동 두 자리가 그것이다. 모양은 `Button` 의
+ * `buttonClass` 를 그대로 입어서 두 벌이 되지 않는다. 요소는 `<a>` 로 남으므로 새 탭 열기와
+ * 주소 복사가 살아 있다 — `Button.md` 가 `variant="link"` 를 뺀 이유가 그 반대 방향(버튼을
+ * 링크처럼 보이게 하는 것)이라 여기에는 걸리지 않는다.
+ *
+ * 근거: shadcn/ui 랜딩의 `Get Started` · `View Components` 가 `<a>` 에 버튼 모양을 입힌
+ * 것이고 `role="button"` 을 붙이지 않는다(2026-09-11 확인). shadcn 문서도 링크에는
+ * `Button` 대신 `buttonVariants()` 를 쓰라고 적어 뒀다 — Base UI 의 `Button` 이 언제나
+ * `role="button"` 을 붙여 링크 역할을 덮기 때문이다.
  */
 export function AppLink({
   href,
@@ -24,10 +36,27 @@ export function AppLink({
 }: {
   href: string;
   children: React.ReactNode;
-  /** `inline`=글 안에 섞여 밑줄이 필요한 자리 / `bare`=위치로 이미 구분되는 자리 */
-  variant?: "inline" | "bare";
+  /**
+   * `inline`=글 안에 섞여 밑줄이 필요한 자리 / `bare`=위치로 이미 구분되는 자리 /
+   * `cta`=주 행동 / `cta-quiet`=그 옆의 두 번째 행동
+   */
+  variant?: "inline" | "bare" | "cta" | "cta-quiet";
   current?: boolean;
 }) {
+  if (variant === "cta" || variant === "cta-quiet") {
+    return (
+      <Link
+        href={href}
+        aria-current={current ? "page" : undefined}
+        className={buttonClass({
+          variant: variant === "cta" ? "default" : "outline",
+        })}
+      >
+        {children}
+      </Link>
+    );
+  }
+
   return (
     <Link
       href={href}

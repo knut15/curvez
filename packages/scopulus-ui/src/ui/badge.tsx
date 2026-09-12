@@ -5,7 +5,7 @@
  *
  * **스펙과 한 군데 다르다.** 스펙은 `status` prop 의 타입을 `진행 중 | 멈춤 | 마무리` 로
  * 잡았지만, `shared` 는 ARCH-001 로 `@/entities` 를 import 할 수 없다. 그 이름들은
- * `entities/lab/model/types.ts` 의 도메인 값이다. 그래서 여기서는 색을 가르는 축만
+ * `entities/lab/model/types.ts` 의 도메인 값이다. 그래서 여기서는 색을 정하는 기준만
  * `tone` 으로 받고, 어떤 status 가 어느 tone 인지는 부르는 쪽(`entities/lab`)이 정한다.
  * 화면에 나오는 것은 스펙과 같다 — `active` 가 `--ring`, `idle` 이 `--muted-foreground` 다.
  *

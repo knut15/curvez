@@ -3,7 +3,7 @@ import { createElement } from "react";
 /**
  * MDX 본문의 서식. cases 와 labs 가 같은 것을 쓴다.
  *
- * 두 화면이 각자 이 문자열을 들고 있으면 한쪽만 고쳐질 때 본문 서식이 조용히 갈린다.
+ * 두 화면이 각자 이 문자열을 들고 있으면 한쪽만 고쳐질 때 본문 서식이 조용히 달라진다.
  * 값의 근거는 `packages/scopulus-ui/design/tokens.md` 의 타이포·형태 절이다.
  */
 export const PROSE =
@@ -21,11 +21,15 @@ export const PROSE =
  *
  * `className`·`size`·`variant` 를 받지 않는다. 본문 서식이 화면마다 달라야 할 이유가 없다 —
  * 케이스와 기록이 같은 글이다.
+ *
+ * **가운데 정렬하지 않는다.** `mx-auto` 를 주면 68ch 상자가 바깥 칸 안에서 가운데로 가고,
+ * 왼쪽에 남은 제목과 본문 첫 줄이 어긋난다. 폭이 넓을수록 그 차이가 커진다 —
+ * 840px 칸에서 96px 이었다. 읽기 폭은 `max-w-[68ch]` 가 이미 잡는다.
  */
 export function Prose({ children }: { children: React.ReactNode }) {
   return createElement(
     "article",
-    { className: `mx-auto mt-10 max-w-[68ch] ${PROSE}` },
+    { className: `mt-10 max-w-[68ch] ${PROSE}` },
     children,
   );
 }

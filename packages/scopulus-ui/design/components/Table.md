@@ -37,7 +37,7 @@ overflow-x-auto">` 가 `<table>` 을 두른다 (`table.tsx:8-11`). 그 `<div>` �
 
 ### 2. handwork 사용처: 0곳
 
-handwork 화면 어디에도 쓰인 적이 없다. **기존 9종의 `## 근거` 에 있는 `파일:줄` 실측이 이 문서에는
+handwork 화면 어디에도 쓰인 적이 없다. **기존 9종의 `## 근거` 에 있는 `파일:줄` 이 이 문서에는
 없다.** 값의 출처는 위의 받은 소스 하나다.
 
 ### 3. 왜 20종에 들어가는가
@@ -108,12 +108,12 @@ handwork 화면 어디에도 쓰인 적이 없다. **기존 9종의 `## 근거` 
 | error         | 없다               | 표가 에러 상태를 갖지 않는다. 불러오기가 실패하면 표를 렌더하지 말고 그 자리에 `Alert variant="destructive"` 를 놓는다 — 이유: 머리 행만 남은 표는 값이 0개인 것과 구분되지 않는다                                                                 |
 
 **`TableRow` 의 `transition-colors` 에 `motion-reduce:transition-none` · `duration-150` · `ease-out`
-이 빠져 있다** (`table.tsx:59`). [`../tokens.md`](../tokens.md) 가 그 셋을 실측 8·9·9건으로 정했다.
-**같은 줄에 넣는다. 이유:** 값이 없으면 브라우저 기본값이 쓰여 같은 화면의 다른 요소와 속도가 갈리고,
+이 빠져 있다** (`table.tsx:59`). [`../tokens.md`](../tokens.md) 가 그 셋을 화면에 나온 8·9·9곳으로 정했다.
+**같은 줄에 넣는다. 이유:** 값이 없으면 브라우저 기본값이 쓰여 같은 화면의 다른 요소와 속도가 달라지고,
 행이 많은 표에서는 여러 행을 빠르게 지날 때 그 차이가 드러난다.
 **고칠 위치:** `../../src/ui/table.tsx:59`.
 
-**행 hover 가 [`../tokens.md`](../tokens.md) 의 실측 3종과 다르다.** 그 문서의 hover 표는
+**행 hover 가 [`../tokens.md`](../tokens.md) 의 화면에 나온 3종과 다르다.** 그 문서의 hover 표는
 링크(fg→`--ring`) · 면(bg→`--accent`) · 아이콘 버튼(bg→`--accent`, fg→`--accent-foreground`) 셋을
 적었고, 행의 `--muted` 알파 50% 는 그중에 없다.
 **`--muted` 알파 50% 를 그대로 둔다.**
@@ -127,7 +127,7 @@ handwork 화면 어디에도 쓰인 적이 없다. **기존 9종의 `## 근거` 
 
 - a11y:label — `TableCaption` 이 **필수**다. 표가 무엇의 표인지 말한다. **빼고 위에 `<h2>` 로 대신하지 마라 — 이유:** 제목과 표의 묶임이 DOM 에 남지 않아, 스크린리더로 표만 골라 훑을 때 이름 없는 표가 된다. 머리 칸은 `TableHead`(`<th>`)를 쓰고 `scope="col"` 을 준다 — 세로 머리면 `scope="row"` 다. **머리 칸을 `TableCell`(`<td>`)로 만들지 마라 — 이유:** 칸을 읽을 때 어느 열의 값인지가 함께 읽히지 않는다
 - a11y:focus — 표 자체는 포커스를 받지 않는다. **가로로 스크롤되는 표는 포커스를 받아야 한다** — 감싼 `<div>` 에 `tabIndex={0}` 과 `role="region"` 과 `aria-label` 을 준다. 이유: 마우스 없이는 가로 스크롤을 움직일 수 없다. 받은 소스의 `<div>` 에는 셋 다 없다 (`table.tsx:8-11`). **고칠 위치:** `../../src/ui/table.tsx:8-11`. 칸 안의 `AppLink` · `Button` 은 각자 자기 포커스 표시를 갖고, 순서는 행 왼쪽에서 오른쪽·위에서 아래다
-- a11y:contrast — 본문 글자 fg=`--foreground` / bg=`--background` 라이트 15.82 · 다크 16.13, 머리 글자도 같은 쌍이다 (`table.tsx:72` 가 `text-foreground` 를 명시한다). `TableCaption` fg=`--muted-foreground` / bg=`--background` 라이트 5.28 · 다크 7.97. 전부 4.5:1 통과 ([`../tokens.md`](../tokens.md) `## 대비 검증` 실측값). **hover·선택·바닥 행의 bg=`--muted` 알파 50% 위 글자 쌍은 미측정이다** — 알파가 얹힌 색은 배경에 따라 달라져 고정 쌍으로 계산되지 않는다. 구현 뒤 렌더 화면에서 `getComputedStyle` 로 재서 [`../tokens.md`](../tokens.md) 에 한 줄을 추가한다. 행을 가르는 테두리 `--border` 는 면 구분이라 글자 기준을 적용하지 않는다
+- a11y:contrast — 본문 글자 fg=`--foreground` / bg=`--background` 라이트 15.82 · 다크 16.13, 머리 글자도 같은 쌍이다 (`table.tsx:72` 가 `text-foreground` 를 명시한다). `TableCaption` fg=`--muted-foreground` / bg=`--background` 라이트 5.28 · 다크 7.97. 전부 4.5:1 통과 ([`../tokens.md`](../tokens.md) `## 대비 검증` 의 대비값). **hover·선택·바닥 행의 bg=`--muted` 알파 50% 위 글자 쌍은 미측정이다** — 알파가 얹힌 색은 배경에 따라 달라져 고정 쌍으로 계산되지 않는다. 구현 뒤 렌더 화면에서 `getComputedStyle` 로 재서 [`../tokens.md`](../tokens.md) 에 한 줄을 추가한다. 행을 가르는 테두리 `--border` 는 면 구분이라 글자 기준을 적용하지 않는다
 - a11y:target — 칸 자체는 클릭 대상이 아니라 24x24 규칙이 걸리지 않는다. 머리 칸 높이가 40px, 본문 칸이 글자 14px + `p-2`(8px x2) = **30px** 이다. 칸 안에 `Button` 을 넣으면 `size="icon-sm"`(32x32)까지만 들어간다 — `size="icon"`(40x40)은 행 높이를 40px 로 밀어 다른 행과 어긋난다. 같은 행에 버튼 둘을 놓을 때 `gap-2`(8px) 이상을 둔다. [`Checkbox.md`](Checkbox.md) 의 클릭 영역이 40x32 라 칸 하나를 거의 채운다 — **체크박스 열의 폭을 40px 아래로 줄이지 마라**
 - a11y:role — `table` · `rowgroup` · `row` · `columnheader` · `cell` 이 전부 암묵 역할이다. **`role` 을 지정하지 마라. 이유:** 태그가 이미 맞다. **`<div>` 로 표를 만들지 마라 — 이유:** 역할 여덟 개를 손으로 붙여야 하고 하나만 빠져도 스크린리더의 표 읽기 방식이 통째로 꺼진다. 정렬 가능한 열은 `TableHead` 에 `aria-sort` 를 준다 — 정렬 기능을 넣을 때 함께 적는다
 

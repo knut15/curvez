@@ -26,7 +26,7 @@ purpose: 한 줄짜리 글자를 받는다. 여러 줄이면 `Textarea`, 정해�
 
 ### 2. handwork 사용처: 0곳
 
-handwork 화면 어디에도 쓰인 적이 없다. **기존 9종의 `## 근거` 에 있는 `파일:줄` 실측이 이 문서에는
+handwork 화면 어디에도 쓰인 적이 없다. **기존 9종의 `## 근거` 에 있는 `파일:줄` 이 이 문서에는
 없다.** 값의 출처는 위의 받은 소스 하나다.
 
 ### 3. 왜 20종에 들어가는가
@@ -104,24 +104,24 @@ file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foregr
 
 **`transition-colors` 에 `motion-reduce:transition-none` 이 빠져 있다** (`input.tsx:11`).
 [`../tokens.md`](../tokens.md) 가 "전이를 넣으면 `motion-reduce:transition-none` 을 같은 줄에 넣는다"
-를 실측 8:8 로 정했다. **같은 줄에 넣는다. 이유:** 나중에 붙이려면 전이가 있는 줄을 전부 다시 찾아야
+를 화면에 나온 8:8 로 정했다. **같은 줄에 넣는다. 이유:** 나중에 붙이려면 전이가 있는 줄을 전부 다시 찾아야
 하고, 빠진 곳은 화면에서만 드러난다. **고칠 위치:** `../../src/ui/input.tsx:11`.
 
 **`duration` 과 `ease` 가 없다** (`input.tsx:11`). [`../tokens.md`](../tokens.md) 가
-`duration-150 ease-out` 을 실측 9건으로 정했다. **`duration-150 ease-out` 을 붙인다. 이유:**
-값이 없으면 브라우저 기본값이 쓰이고, 같은 화면의 다른 요소와 속도가 갈린다.
+`duration-150 ease-out` 을 화면에 나온 9곳으로 정했다. **`duration-150 ease-out` 을 붙인다. 이유:**
+값이 없으면 브라우저 기본값이 쓰이고, 같은 화면의 다른 요소와 속도가 달라진다.
 
 ## a11y
 
 - a11y:label — `<label htmlFor>` 가 **필수**다. **`placeholder` 로 대신하지 마라 — 이유:** 글자를 넣으면 사라지고, 스크린리더가 안내 글자를 이름으로 읽을지 설명으로 읽을지 브라우저마다 다르다. 라벨을 화면에 보이지 않게 해야 하면 `sr-only` 를 쓴다 — `aria-label` 은 음성 조작에서 말할 대상이 화면에 없게 만든다. `required` 를 준 필드는 라벨 글자에 필수임을 적는다 — 별표 하나만 쓰지 마라
 - a11y:focus — 포커스 순서는 DOM 순서와 같고, `disabled` 필드는 포커스를 받지 않는다. **받은 소스의 포커스 표시는 `focus-visible:ring-3` 이고, [`../tokens.md`](../tokens.md) 가 정한 네 조각(`outline-2` · `outline-offset-2` · `outline-ring` · 인라인 링크에만 `rounded-sm`)과 다르다.** 두 방식을 섞지 마라 — 이유: 한 화면에서 포커스 표시가 두 모양이면 키보드 사용자가 지금 어디에 있는지 배울 수 없다. **폼 5종은 `ring-3` 한 벌로 통일하고 그 밖의 20종은 `outline-2` 한 벌을 쓴다** — 이유: 폼 요소는 테두리를 이미 가졌고 `outline` 은 그 테두리 바깥에 또 하나의 선을 그어 두 겹으로 읽힌다. 같은 판단을 [`Checkbox.md`](Checkbox.md) 의 a11y:focus 가 적고 있다. **고칠 위치:** 이 항목과 폼 5종 소스의 `focus-visible:` 조각
-- a11y:contrast — 글자 fg=`--foreground` / bg=`--background` 라이트 15.82 · 다크 16.13, 안내 글자 fg=`--muted-foreground` / bg=`--background` 라이트 5.28 · 다크 7.97 ([`../tokens.md`](../tokens.md) `## 대비 검증` 실측값, 4.5:1 통과). **테두리 `--input` / bg=`--background` 쌍과 오류 테두리 `--destructive` / bg=`--background` 쌍은 미측정이다** — 테두리는 글자가 아니라 하한이 **3:1**(WCAG 1.4.11)이고, 다크의 `--input` 은 알파라 고정 쌍으로 계산되지 않는다. 구현 뒤 렌더 화면에서 `getComputedStyle` 로 재서 [`../tokens.md`](../tokens.md) 에 한 줄을 추가한다
+- a11y:contrast — 글자 fg=`--foreground` / bg=`--background` 라이트 15.82 · 다크 16.13, 안내 글자 fg=`--muted-foreground` / bg=`--background` 라이트 5.28 · 다크 7.97 ([`../tokens.md`](../tokens.md) `## 대비 검증` 의 대비값, 4.5:1 통과). **테두리 `--input` / bg=`--background` 쌍과 오류 테두리 `--destructive` / bg=`--background` 쌍은 미측정이다** — 테두리는 글자가 아니라 하한이 **3:1**(WCAG 1.4.11)이고, 다크의 `--input` 은 알파라 고정 쌍으로 계산되지 않는다. 구현 뒤 렌더 화면에서 `getComputedStyle` 로 재서 [`../tokens.md`](../tokens.md) 에 한 줄을 추가한다
 - a11y:target — 높이 32px · 폭 `w-full`. 24x24 최소를 넘는다. **`h-8` 을 더 낮추지 마라 — 이유:** 24px 아래로 내려가면 기준을 만족하지 못하고, 32px 은 이미 하한에서 8px 여유뿐이다. 필드를 세로로 쌓을 때 간격 8px 이상을 둔다 — [`../tokens.md`](../tokens.md) 의 "카드 안 요소 사이 8px" 과 같은 값이다
-- a11y:role — `textbox` (`<input type="text">` 의 암묵 역할). **`role` 을 지정하지 마라 — 이유:** `type` 에 따라 암묵 역할이 달라지는데(`search` 는 `searchbox`, `email`·`tel`·`url` 은 `textbox`) 하나로 고정하면 실제 동작과 읽히는 역할이 갈린다. **`type="number"` 를 쓰지 마라 — 이유:** 스크롤로 값이 바뀌고 브라우저마다 증감 단추의 크기가 달라 24x24 를 판정할 수 없다. 숫자는 `type="text" inputMode="numeric"` 으로 받는다
+- a11y:role — `textbox` (`<input type="text">` 의 암묵 역할). **`role` 을 지정하지 마라 — 이유:** `type` 에 따라 암묵 역할이 달라지는데(`search` 는 `searchbox`, `email`·`tel`·`url` 은 `textbox`) 하나로 고정하면 실제 동작과 읽히는 역할이 달라진다. **`type="number"` 를 쓰지 마라 — 이유:** 스크롤로 값이 바뀌고 브라우저마다 증감 단추의 크기가 달라 24x24 를 판정할 수 없다. 숫자는 `type="text" inputMode="numeric"` 으로 받는다
 
 ## responsive
 
-- 브레이크포인트 분기는 **1건**이다 — `text-base md:text-sm` (`input.tsx:11`). 768px 미만은 16px, 768px 이상은 14px 이다. **이 분기를 지우지 마라. 이유:** iOS Safari 는 글자 크기가 16px 미만인 입력 필드에 포커스가 가면 화면을 확대한다. 확대된 화면은 사용자가 손으로 되돌려야 한다. `md` 는 [`../tokens.md`](../tokens.md) 의 실측 15건짜리 브레이크포인트다
+- 브레이크포인트 분기는 **1건**이다 — `text-base md:text-sm` (`input.tsx:11`). 768px 미만은 16px, 768px 이상은 14px 이다. **이 분기를 지우지 마라. 이유:** iOS Safari 는 글자 크기가 16px 미만인 입력 필드에 포커스가 가면 화면을 확대한다. 확대된 화면은 사용자가 손으로 되돌려야 한다. `md` 는 [`../tokens.md`](../tokens.md) 의 화면에 15번 나온 브레이크포인트다
 - 폭이 `w-full min-w-0` 이다 (`input.tsx:11`). 폭은 부모가 정한다. `min-w-0` 이 있어 flex 안에서 줄어든다 — **그 조각을 지우지 마라. 이유:** flex 자식의 기본 `min-width` 는 `auto` 라, 없으면 긴 값을 넣었을 때 필드가 부모를 밀어낸다
 - 높이 32px · 좌우 여백 10px 이 모든 폭에서 같다. **375px 에서 필드 폭은 335px 이다** (375 - 화면 좌우 `px-5` 20px x2). 안쪽 여백을 빼면 글자에 쓸 수 있는 폭이 315px 이다
 - 필드를 가로로 두 개 놓지 마라. **이유:** 375px 에서 각 필드가 160px 이 되고, 그 폭에 16px 글자를 넣으면 열 자 남짓에서 잘린다. 두 필드가 꼭 한 줄이어야 하면 `md:` 이상에서만 가른다

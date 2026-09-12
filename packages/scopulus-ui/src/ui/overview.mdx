@@ -5,7 +5,7 @@ import { Meta } from "@storybook/addon-docs/blocks";
 # handwork 디자인 시스템
 
 **값은 전부 `packages/scopulus-ui/design/` 이 정본이다.** 이 스토리북은 그 값이 화면에서 실제로
-어떻게 나오는지를 보여주는 곳이고, 값을 새로 정하는 곳이 아니다. 두 곳이 다르면 문서가 이긴다.
+어떻게 나오는지를 보여주는 곳이고, 값을 새로 정하는 곳이 아니다. 두 곳이 다르면 문서를 따른다.
 
 ## 무엇을 보고 있나
 
@@ -20,19 +20,19 @@ import { Meta } from "@storybook/addon-docs/blocks";
 **취향으로 정한 값이 없다.** 컴포넌트는 전부 기존 화면 코드에서 같은 클래스 문자열이 몇 번
 반복되는지 세어 뽑았고, 그 횟수와 `파일:줄` 이 각 스펙의 `## 근거` 절에 있다.
 
-| 컴포넌트    | 실측  |
-| ----------- | ----- |
-| PageShell   | 5회   |
-| PageTitle   | 3+2회 |
-| AppLink     | 6곳   |
-| Separator   | 4회   |
-| Badge       | 4+2회 |
-| Card        | 2회   |
-| Prose       | 2곳   |
-| Button      | 1건   |
-| ThemeToggle | 1건   |
+| 컴포넌트    | 쓰던 것 |
+| ----------- | ------- |
+| PageShell   | 5회     |
+| PageTitle   | 3+2회   |
+| AppLink     | 6곳     |
+| Separator   | 4회     |
+| Badge       | 4+2회   |
+| Card        | 2회     |
+| Prose       | 2곳     |
+| Button      | 1건     |
+| ThemeToggle | 1건     |
 
-실측이 없는 축에는 값을 정하지 않았다. 고도(그림자)가 그렇다 — 앱 전체에서 `shadow` 가
+화면에서 값을 못 뽑은 자리에는 값을 정하지 않았다. 고도(그림자)가 그렇다 — 앱 전체에서 `shadow` 가
 **0건**이라 `tokens.md` 가 "쓰지 않는다" 로 못박았다.
 
 ## 테마를 바꾸는 법

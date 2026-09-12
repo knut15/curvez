@@ -5,7 +5,78 @@ purpose: 라이트·다크를 전환한다. 선택은 브라우저에 남고 다
 구현: `packages/scopulus-ui/src/ui/theme-toggle.tsx`. 사용처는 `apps/handwork/src/widgets/site-header.tsx:49` 하나다.
 
 **화면에 존재하는 유일한 `<button>` 이다** — `grep -rn '<button' apps/handwork/src --include='*.tsx'`
-가 1건(`theme-toggle.tsx:9`)이다. 그래서 이 디자인 시스템의 버튼 값이 전부 이 파일에서 실측됐다.
+가 1건(`theme-toggle.tsx:9`)이다. 그래서 이 디자인 시스템의 버튼 값이 전부 이 파일에서 나왔다.
+
+## 근거 — 화면에 2번 나온다
+
+```bash
+grep -rn '<ThemeToggle' apps/*/src --include='*.tsx' | grep -v stories
+```
+
+| 파일                                           | 줄  | 자리        |
+| ---------------------------------------------- | --- | ----------- |
+| `apps/handwork/src/widgets/site-header.tsx`    | 49  | 헤더 오른쪽 |
+| `apps/scopulus-ui/src/widgets/site-header.tsx` | 36  | 헤더 오른쪽 |
+
+두 앱이 같은 자리에 같은 모양으로 쓴다. **기준인 세 번에 못 미치지만 올렸다** — 두 앱이 각자
+들고 있으면 한쪽만 고쳐질 때 토글의 크기와 아이콘이 달라지고, 그것이 헤더에서 바로 보인다.
+
+## Button 과의 관계 — 면은 같고 컴포넌트는 따로 쓴다
+
+| 항목      | ThemeToggle 이 쓰던 것 (`theme-toggle.tsx:21`)          | `Button` 의 `ghost`+`icon` |
+| --------- | ------------------------------------------------------- | -------------------------- |
+| 크기      | `size-10` (40x40)                                       | 같다                       |
+| 반경      | `rounded-md` (8px)                                      | 같다                       |
+| 기본 fg   | `text-muted-foreground`                                 | 같다                       |
+| hover     | `hover:bg-accent hover:text-accent-foreground`          | 같다                       |
+| focus     | `focus-visible:outline-2 outline-offset-2 outline-ring` | 같다                       |
+| 눌림      | `active:scale-97` + `motion-reduce:active:scale-100`    | 같다                       |
+| 전이 속성 | `transition-[color,background-color,transform]`         | 같다                       |
+
+**면이 전부 같다. 그래도 `Button` 으로 바꾸지 않는다.**
+**이유:** 이 버튼은 `next-themes` 의 `setTheme` 과 `document.documentElement.classList` 를 직접 읽는
+클라이언트 컴포넌트이고(`theme-toggle.tsx:1` · `:3` · `:16`), 두 아이콘을 다 렌더한 뒤 CSS 로 고르는
+구조가 그 안에 박혀 있다(`:25-26`). `Button` 을 한 겹 끼우면 그 구조가 두 파일로 나뉘는데,
+얻는 것은 클래스 문자열 하나를 줄이는 것뿐이다.
+
+**대신 한 방향을 못박는다: `Button` 의 `ghost`+`icon` 이 이 파일을 따라간다.**
+[`Button.md`](Button.md) 의 "남기는 값" 표가 이 파일의 줄 번호를 근거로 적혀 있다.
+**고칠 때 순서:** `packages/scopulus-ui/src/ui/theme-toggle.tsx:21` 을 먼저 고치고
+[`Button.md`](Button.md) 의 표를 맞춘다. 반대로 하지 마라.
+
+## 아이콘 크기 — 20px 하나
+
+쓰던 것: `theme-toggle.tsx:25`(`hidden size-5 dark:block`) · `:26`(`size-5 dark:hidden`).
+`grep -rn 'size-5' apps/handwork/src --include='*.tsx'` 가 2건이고 둘 다 이 파일이다.
+
+**시스템의 아이콘 크기 단계는 `size-5`(20px) 하나다. 두 번째 크기를 만들지 마라.**
+**이유:** 아이콘이 쓰이는 자리가 이 파일뿐이다. 쓰이지 않는 단계를 만들면 처음 아이콘을 넣는
+사람이 둘 중 무엇을 골라야 하는지 판정할 수 없다.
+
+40px 상자 안에 20px 아이콘이면 사방 10px 이 남는다. 그 10px 은 [`../tokens.md`](../tokens.md) 의
+간격 스케일에 올리지 마라 — 간격이 아니라 상자와 아이콘의 차이로 계산된 값이다.
+
+**아이콘 라이브러리를 쓰지 않는다.** `apps/handwork/components.json` 의 `iconLibrary` 는 `lucide` 지만
+이 파일은 SVG 를 직접 그린다(`theme-toggle.tsx:31-63`).
+**이유:** 아이콘 두 개를 위해 `lucide-react` 를 클라이언트 번들에 넣지 않는다. 세 번째 아이콘이
+필요해지면 그때 판단한다.
+
+## 스토리북에서 검증되는 것과 안 되는 것
+
+다크 모드를 `@storybook/addon-themes` 의 클래스 데코레이터로 토글한다. `next-themes` 를 스토리북에
+띄우지 않는다 — 프로바이더가 하나 더 생기면 실제 앱과 다른 경로로 테마가 걸린다.
+
+**그래서 검증되는 것과 안 되는 것이 나뉜다. 이 구분을 스토리 파일에 적는다.**
+
+| 스토리로 검증되는 것                           | 검증되지 않는 것                                        |
+| ---------------------------------------------- | ------------------------------------------------------- |
+| `.dark` 일 때 해 아이콘, 라이트일 때 달 아이콘 | 클릭이 실제로 테마를 뒤집는가 (`setTheme` 이 안 붙는다) |
+| hover · focus-visible · active 의 면           | 첫 페인트 전에 `.dark` 가 붙는가 (하이드레이션 순서)    |
+| 40x40 상자와 20px 아이콘의 정렬                | 브라우저에 선택이 남는가                                |
+
+**검증되지 않는 셋은 스토리로 만들지 마라.**
+**이유:** 프로바이더 없이 흉내 낸 스토리는 통과해도 실제 동작을 말해 주지 않는다. 통과하는데
+화면에서는 깨지는 검사가 가장 나쁘다.
 
 ## props
 
@@ -54,63 +125,6 @@ purpose: 라이트·다크를 전환한다. 선택은 브라우저에 남고 다
 
 - 모든 폭에서 동일. 모바일에서도 헤더에 남는다. 브레이크포인트 분기가 0건이다
 - **[`Button.md`](Button.md) 의 `## responsive` 와 같은 판단이다.** 이유도 같다 — 40px 은 375px 화면에서도 24x24 최소를 여유 있게 넘는다
-
-## Button 과의 관계 — 면은 같고 컴포넌트는 따로 쓴다
-
-| 항목      | ThemeToggle 실측 (`theme-toggle.tsx:21`)                | `Button` 의 `ghost`+`icon` |
-| --------- | ------------------------------------------------------- | -------------------------- |
-| 크기      | `size-10` (40x40)                                       | 같다                       |
-| 반경      | `rounded-md` (8px)                                      | 같다                       |
-| 기본 fg   | `text-muted-foreground`                                 | 같다                       |
-| hover     | `hover:bg-accent hover:text-accent-foreground`          | 같다                       |
-| focus     | `focus-visible:outline-2 outline-offset-2 outline-ring` | 같다                       |
-| 눌림      | `active:scale-97` + `motion-reduce:active:scale-100`    | 같다                       |
-| 전이 속성 | `transition-[color,background-color,transform]`         | 같다                       |
-
-**면이 전부 같다. 그래도 `Button` 으로 바꾸지 않는다.**
-**이유:** 이 버튼은 `next-themes` 의 `setTheme` 과 `document.documentElement.classList` 를 직접 읽는
-클라이언트 컴포넌트이고(`theme-toggle.tsx:1` · `:3` · `:16`), 두 아이콘을 다 렌더한 뒤 CSS 로 고르는
-구조가 그 안에 박혀 있다(`:25-26`). `Button` 을 한 겹 끼우면 그 구조가 두 파일로 갈라지는데,
-얻는 것은 클래스 문자열 하나를 줄이는 것뿐이다.
-
-**대신 한 방향을 못박는다: `Button` 의 `ghost`+`icon` 이 이 파일을 따라간다.**
-[`Button.md`](Button.md) 의 "남기는 값" 표가 이 파일의 줄 번호를 근거로 적혀 있다.
-**고칠 때 순서:** `packages/scopulus-ui/src/ui/theme-toggle.tsx:21` 을 먼저 고치고
-[`Button.md`](Button.md) 의 표를 맞춘다. 반대로 하지 마라.
-
-## 아이콘 크기 — 20px 하나
-
-실측: `theme-toggle.tsx:25`(`hidden size-5 dark:block`) · `:26`(`size-5 dark:hidden`).
-`grep -rn 'size-5' apps/handwork/src --include='*.tsx'` 가 2건이고 둘 다 이 파일이다.
-
-**시스템의 아이콘 크기 단계는 `size-5`(20px) 하나다. 두 번째 크기를 만들지 마라.**
-**이유:** 아이콘이 쓰이는 자리가 이 파일뿐이다. 쓰이지 않는 단계를 만들면 처음 아이콘을 넣는
-사람이 둘 중 무엇을 골라야 하는지 판정할 수 없다.
-
-40px 상자 안에 20px 아이콘이면 사방 10px 이 남는다. 그 10px 은 [`../tokens.md`](../tokens.md) 의
-간격 스케일에 올리지 마라 — 간격이 아니라 상자와 아이콘의 차이로 계산된 값이다.
-
-**아이콘 라이브러리를 쓰지 않는다.** `apps/handwork/components.json` 의 `iconLibrary` 는 `lucide` 지만
-이 파일은 SVG 를 직접 그린다(`theme-toggle.tsx:31-63`).
-**이유:** 아이콘 두 개를 위해 `lucide-react` 를 클라이언트 번들에 넣지 않는다. 세 번째 아이콘이
-필요해지면 그때 판단한다.
-
-## 스토리북에서 검증되는 것과 안 되는 것
-
-다크 모드를 `@storybook/addon-themes` 의 클래스 데코레이터로 토글한다. `next-themes` 를 스토리북에
-띄우지 않는다 — 프로바이더가 하나 더 생기면 실제 앱과 다른 경로로 테마가 걸린다.
-
-**그래서 검증되는 것과 안 되는 것이 갈린다. 이 구분을 스토리 파일에 적는다.**
-
-| 스토리로 검증되는 것                           | 검증되지 않는 것                                        |
-| ---------------------------------------------- | ------------------------------------------------------- |
-| `.dark` 일 때 해 아이콘, 라이트일 때 달 아이콘 | 클릭이 실제로 테마를 뒤집는가 (`setTheme` 이 안 붙는다) |
-| hover · focus-visible · active 의 면           | 첫 페인트 전에 `.dark` 가 붙는가 (하이드레이션 순서)    |
-| 40x40 상자와 20px 아이콘의 정렬                | 브라우저에 선택이 남는가                                |
-
-**검증되지 않는 셋은 스토리로 만들지 마라.**
-**이유:** 프로바이더 없이 흉내 낸 스토리는 통과해도 실제 동작을 말해 주지 않는다. 통과하는데
-화면에서는 깨지는 검사가 가장 나쁘다.
 
 ## 상호작용
 

@@ -1,7 +1,7 @@
 /**
  * scopulusUI 의 토큰. 이 파일이 색·반경의 정본이다.
  *
- * 값의 설명과 대비 실측은 `../design/tokens.md` 에 있다. 그 문서는 이 파일의 사본이고,
+ * 값의 설명과 대비 검증은 `../design/tokens.md` 에 있다. 그 문서는 이 파일의 사본이고,
  * 둘이 다르면 **이 파일이 이긴다**.
  *
  * 이름은 shadcn 이 정한 것을 그대로 쓴다(`--background`, `--muted-foreground` …).

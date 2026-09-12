@@ -35,7 +35,7 @@ export const Default: Story = {
 
 /**
  * 2열 그리드에서 높이가 맞는지 본다. 카드를 감싸는 `<li className="flex">` 를 빼면 카드가
- * 내용 높이만큼만 차서 같은 행의 높이가 갈린다 — 그 차이를 여기서 드러낸다.
+ * 내용 높이만큼만 차서 같은 행의 높이가 달라진다 — 그 차이를 여기서 드러낸다.
  */
 export const InGrid: Story = {
   // `render` 가 children 을 직접 만들지만, args 는 컴포넌트 타입을 그대로 따르므로 채워 둔다.

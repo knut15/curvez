@@ -44,7 +44,7 @@ purpose: 닫힌 목록에서 하나를 고른다. 값이 열려 있으면 `Input
 
 ### 2. handwork 사용처: 0곳
 
-handwork 화면 어디에도 쓰인 적이 없다. **기존 9종의 `## 근거` 에 있는 `파일:줄` 실측이 이 문서에는
+handwork 화면 어디에도 쓰인 적이 없다. **기존 9종의 `## 근거` 에 있는 `파일:줄` 이 이 문서에는
 없다.** 값의 출처는 위의 받은 소스 하나다.
 
 ### 3. 왜 20종에 들어가는가
@@ -107,9 +107,9 @@ handwork 화면 어디에도 쓰인 적이 없다. **기존 9종의 `## 근거` 
 
 | 어긋나는 값                                                                         | `../tokens.md` 가 정한 것       | 어느 쪽을 쓰나                                                                                                                                                                  |
 | ----------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `px-1.5`(6px) — `SelectLabel` (`select.tsx:105`), `SelectItem` 의 `pl-1.5` (`:120`) | 간격 12단계에 `1.5` 스텝이 없다 | **`px-2`(8px)로 올린다.** 이유: 12단계 밖의 값이 하나 들어오면 스케일 밖 값이 맞는지 판정할 기준이 사라진다. 8px 은 실측 17건짜리 단계다                                        |
+| `px-1.5`(6px) — `SelectLabel` (`select.tsx:105`), `SelectItem` 의 `pl-1.5` (`:120`) | 간격 12단계에 `1.5` 스텝이 없다 | **`px-2`(8px)로 올린다.** 이유: 12단계 밖의 값이 하나 들어오면 스케일 밖 값이 맞는지 판정할 기준이 사라진다. 8px 은 화면에 17번 나온 단계다                                     |
 | `shadow-md` (`select.tsx:84`)                                                       | `## 고도` 절 — "쓰지 않는다"    | **그대로 둔다.** 같은 절이 되돌릴 조건을 "화면 위에 떠서 아래를 가리는 요소가 생길 때" 로 적었고 목록이 그 조건이다. 판단의 근거는 [`Popover.md`](Popover.md) 의 같은 표에 있다 |
-| `duration-100` (`select.tsx:84`)                                                    | `duration-150` (실측 9건)       | **`duration-150`.** 이유: 모션 값이 `--ease-out` 하나로 못박혀 있는데 시간만 두 값이면 어느 것이 의도인지 판정할 수 없다                                                        |
+| `duration-100` (`select.tsx:84`)                                                    | `duration-150` (화면에 9곳)     | **`duration-150`.** 이유: 모션 값이 `--ease-out` 하나로 못박혀 있는데 시간만 두 값이면 어느 것이 의도인지 판정할 수 없다                                                        |
 
 **고칠 위치:** 이 표와 `../../src/ui/select.tsx` 의 해당 줄.
 
@@ -131,7 +131,7 @@ handwork 화면 어디에도 쓰인 적이 없다. **기존 9종의 `## 근거` 
 | error         | `aria-invalid` | 트리거 `aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20`. 다크는 테두리가 `--destructive` 알파 50%, 링이 알파 40% 다 (`select.tsx:41`)                                                                                                                                                                                                   |
 
 **항목의 강조에 `focus:` 를 쓴다** (`select.tsx:120`). [`../tokens.md`](../tokens.md) 는
-"`focus:` 를 쓰지 말고 `focus-visible:` 만 쓴다" 를 실측 0건으로 정했다.
+"`focus:` 를 쓰지 말고 `focus-visible:` 만 쓴다" 를 화면에 나온 0곳으로 정했다.
 **여기서는 `focus:` 를 그대로 둔다.**
 **이유:** 그 금지의 근거가 "마우스로 누른 뒤에도 링이 남아 소음이 된다" 인데, 목록 항목의 포커스는
 화살표 키가 옮기는 것이고 누른 순간 목록이 닫혀 링이 남을 시간이 없다. 여기서 `focus-visible:` 을
@@ -140,14 +140,14 @@ handwork 화면 어디에도 쓰인 적이 없다. **기존 9종의 `## 근거` 
 
 **트리거의 `transition-colors` 에 `motion-reduce:transition-none` · `duration-150` · `ease-out` 이
 빠져 있다** (`select.tsx:41`). **같은 줄에 넣는다. 이유:** [`../tokens.md`](../tokens.md) 가 그 셋을
-실측 8·9·9건으로 정했고, 값이 없으면 브라우저 기본값이 쓰여 같은 화면의 다른 요소와 속도가 갈린다.
+화면에 나온 8·9·9곳으로 정했고, 값이 없으면 브라우저 기본값이 쓰여 같은 화면의 다른 요소와 속도가 달라진다.
 **고칠 위치:** `../../src/ui/select.tsx:41`.
 
 ## a11y
 
 - a11y:label — `<label htmlFor>` 가 **필수**다. **`SelectValue` 의 `placeholder` 로 대신하지 마라 — 이유:** 값을 고르면 사라져, 무엇을 고르는 칸인지 다시 확인할 수 없다. 항목을 묶을 때는 `SelectGroup` + `SelectLabel` 을 쓴다 — Base UI 가 `aria-labelledby` 로 묶는다. `SelectLabel` 을 `SelectGroup` 밖에 놓지 마라 — 이유: 묶임이 끊겨 항목처럼 읽힌다. 체크 표시(`CheckIcon`)는 장식이므로 `aria-hidden` 이다 — 고른 항목은 `aria-selected` 가 이미 말한다
 - a11y:focus — 닫혔을 때 포커스 대상은 트리거 1개다. 열리면 포커스가 목록으로 들어가고 고른 항목에 선다. 화살표 키로 옮기고 Enter·Space 로 고르며 Esc 로 닫는다. 글자를 치면 그 글자로 시작하는 항목으로 뛴다 — Base UI 가 처리한다. 닫히면 포커스가 트리거로 돌아간다. **트리거의 포커스 표시는 `focus-visible:ring-3` 이고 [`../tokens.md`](../tokens.md) 의 네 조각과 다르다. 폼 5종은 `ring-3` 한 벌로 통일한다** — 판단의 근거는 [`Checkbox.md`](Checkbox.md) 의 a11y:focus 에 있다
-- a11y:contrast — 트리거 글자 fg=`--foreground` / bg=`--background` 라이트 15.82 · 다크 16.13, 값이 없을 때 fg=`--muted-foreground` / bg=`--background` 라이트 5.28 · 다크 7.97. 목록은 `--popover` 가 `--card` 와 같은 값이라(`../../src/tokens.css:68-69` 라이트 · `:103-104` 다크) 카드 실측값이 그대로 적용된다 — 항목 글자 fg=`--popover-foreground` / bg=`--popover` 라이트 16.73 · 다크 14.84, `SelectLabel` fg=`--muted-foreground` / bg=`--popover` 라이트 5.59 · 다크 7.34. 전부 4.5:1 통과 ([`../tokens.md`](../tokens.md) `## 대비 검증` 실측값). **강조된 항목의 fg=`--accent-foreground` / bg=`--accent` 쌍은 미측정이다** — 구현 뒤 렌더 화면에서 `getComputedStyle` 로 재서 [`../tokens.md`](../tokens.md) 에 한 줄을 추가한다. 테두리 `--input` 과 오류 테두리 `--destructive` 도 미측정이고 하한은 **3:1**(WCAG 1.4.11)이다
+- a11y:contrast — 트리거 글자 fg=`--foreground` / bg=`--background` 라이트 15.82 · 다크 16.13, 값이 없을 때 fg=`--muted-foreground` / bg=`--background` 라이트 5.28 · 다크 7.97. 목록은 `--popover` 가 `--card` 와 같은 값이라(`../../src/tokens.css:68-69` 라이트 · `:103-104` 다크) 카드 대비값이 그대로 적용된다 — 항목 글자 fg=`--popover-foreground` / bg=`--popover` 라이트 16.73 · 다크 14.84, `SelectLabel` fg=`--muted-foreground` / bg=`--popover` 라이트 5.59 · 다크 7.34. 전부 4.5:1 통과 ([`../tokens.md`](../tokens.md) `## 대비 검증` 의 대비값). **강조된 항목의 fg=`--accent-foreground` / bg=`--accent` 쌍은 미측정이다** — 구현 뒤 렌더 화면에서 `getComputedStyle` 로 재서 [`../tokens.md`](../tokens.md) 에 한 줄을 추가한다. 테두리 `--input` 과 오류 테두리 `--destructive` 도 미측정이고 하한은 **3:1**(WCAG 1.4.11)이다
 - a11y:target — 트리거 높이 `default` 32px · `sm` 28px. 둘 다 24x24 최소를 넘는다. **`size="sm"` 을 `Input` 옆에 쓰지 마라 — 이유:** `Input` 이 32px 이라 밑선이 4px 어긋난다. 목록 항목의 높이는 글자 14px + `py-1`(4px x2) = **22px 로 24px 최소에 못 미친다.** **`py-1.5`(6px x2)로 올려 26px 로 만든다. 이유:** 24x24 는 포인터로 누르는 모든 대상에 걸리고, 목록 항목은 마우스로도 누른다. **고칠 위치:** `../../src/ui/select.tsx:120`
 - a11y:role — 트리거는 `combobox`, 목록은 `listbox`, 항목은 `option` 이다. Base UI 가 붙이고 `aria-expanded` · `aria-selected` 를 관리한다. **`role` 을 덮어쓰지 마라. 이유:** `menu`/`menuitem` 으로 바꾸면 "고르면 값이 남는다" 가 아니라 "누르면 행동이 실행된다" 로 읽힌다. **`<select>` 로 바꾸지 마라 — 이유:** 항목에 아이콘·묶음 라벨·구분선을 넣을 수 없고, 이 컴포넌트는 셋 다 갖는다
 
@@ -156,7 +156,7 @@ handwork 화면 어디에도 쓰인 적이 없다. **기존 9종의 `## 근거` 
 - 브레이크포인트 분기가 **0건**이다. `select.tsx` 전체에 `sm:`·`md:` 가 없다
 - 트리거 폭이 `w-fit` 이다 (`select.tsx:41`). **내용에 따라 폭이 변한다** — 값을 고를 때마다 트리거가 늘었다 줄었다 한다. **폼 안에서는 `className="w-full"` 을 준다. 이유:** 옆의 `Input` 이 `w-full` 이라(`input.tsx:11`) 폭이 들쭉날쭉하면 같은 폼의 필드가 서로 다른 것으로 읽힌다
 - 목록 폭은 `w-(--anchor-width)` 로 **트리거 폭을 따라간다** (`select.tsx:84`). 하한이 `min-w-36`(144px)이다. 트리거가 좁아도 목록은 144px 아래로 내려가지 않는다
-- 목록 높이는 `max-h-(--available-height)` 로 **화면에 남은 높이를 따라간다** (`select.tsx:84`). 넘치면 목록 안에서 세로 스크롤되고 위아래에 스크롤 단추가 뜬다 (`select.tsx:89,91`). **`max-h-*` 를 직접 주지 마라 — 이유:** 두 값이 겹치면 화면 아래에 닿았을 때 어느 쪽이 이기는지 화면에서만 드러난다
+- 목록 높이는 `max-h-(--available-height)` 로 **화면에 남은 높이를 따라간다** (`select.tsx:84`). 넘치면 목록 안에서 세로 스크롤되고 위아래에 스크롤 단추가 뜬다 (`select.tsx:89,91`). **`max-h-*` 를 직접 주지 마라 — 이유:** 두 값이 겹치면 화면 아래에 닿았을 때 어느 값이 적용되는지 화면에서만 드러난다
 - 항목 글자가 `whitespace-nowrap` 이다 (`select.tsx:125`). 긴 항목은 줄바꿈하지 않고 잘린다. **375px 에서 화면 좌우 여백을 뺀 335px 안에 끝나는 길이로 항목 글자를 쓴다**
 - `lg` 이상 브레이크포인트를 넣지 마라. **이유:** 폭이 트리거를 따라가므로 분기를 늘려도 화면이 달라지지 않는다
 

@@ -16,8 +16,13 @@ import { cn } from "cn";
  * `secondary` · `link` · `sm` · `lg` 는 여전히 쓰는 곳이 0이라 빼 둔다.
  *
  * **되살릴 때 고칠 위치:** 아래 `cva` 정의와 스펙의 같은 표, 두 곳이다.
+ *
+ * **`buttonClass` 를 내보낸다.** 버튼처럼 보이는 링크가 필요한 자리(랜딩 CTA)가 이 클래스를
+ * 그대로 입는다. 복사해 쓰면 두 벌이 되어 한쪽만 고쳐질 때 모양이 달라진다.
+ * 쓰는 쪽은 `AppLink` 다 — `<button>` 에 `role="button"` 이 붙으면 링크 의미가 사라지므로
+ * `Button` 에 `<a>` 를 넣는 방식은 쓰지 않는다.
  */
-const button = cva(
+export const buttonClass = cva(
   "inline-flex items-center justify-center rounded-md text-sm font-medium " +
     // 누를 때 크기가 줄어드므로 전이 속성에 transform 을 더한다.
     "transition-[color,background-color,transform] duration-150 ease-out " +
@@ -57,17 +62,18 @@ const button = cva(
  *
  * **`className` 도 같은 이유로 연다.** `Dialog` 가 닫기 버튼을 `absolute top-2 right-2` 로
  * 바깥에서 앉힌다(`dialog.tsx:65`). 위치는 버튼이 아니라 그것을 쓰는 자리가 정하는 값이다.
- * 색·크기를 여기서 덮어쓰지 마라 — `cn` 이 충돌을 나중 값으로 정리하므로 조용히 이긴다.
+ * 색·크기를 여기서 덮어쓰지 마라 — `cn` 이 충돌을 나중 값으로 정리하므로 조용히 적용된다.
  */
-type ButtonProps = VariantProps<typeof button> & React.ComponentProps<"button">;
+type ButtonProps = VariantProps<typeof buttonClass> &
+  React.ComponentProps<"button">;
 
 export function Button({ variant, size, className, ...rest }: ButtonProps) {
   return (
     <button
       // 폼 안에서 기본값이 submit 이라 의도하지 않은 전송이 일어난다.
-      // 부르는 쪽이 `type="submit"` 을 주면 그것이 이긴다 — rest 가 뒤에 온다.
+      // 부르는 쪽이 `type="submit"` 을 주면 그 값이 적용된다 — rest 가 뒤에 온다.
       type="button"
-      className={cn(button({ variant, size }), className)}
+      className={cn(buttonClass({ variant, size }), className)}
       {...rest}
     />
   );

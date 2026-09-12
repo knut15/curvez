@@ -16,7 +16,7 @@ export function PageTitle({
 }: {
   children: string;
   description?: React.ReactNode;
-  /** `index`=목록·오류 화면 / `detail`=상세 화면. 제목이 두 줄 이상이 되는 쪽만 갈린다. */
+  /** `index`=목록·오류 화면 / `detail`=상세 화면. 제목이 두 줄 이상이 되는 쪽만 다르다. */
   variant?: "index" | "detail";
 }) {
   return (

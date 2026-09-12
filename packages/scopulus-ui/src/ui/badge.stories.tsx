@@ -20,13 +20,13 @@ export default meta;
 // 컴포넌트 타입을 직접 주면 각 스토리가 유니온의 한 갈래를 고른다.
 type Story = StoryObj<typeof Badge>;
 
-/** 태그 칩. 실측 4자리가 전부 이 형태다. */
+/** 태그 칩. 화면에 4곳이 전부 이 형태다. */
 export const Tag: Story = {
   args: { children: "Next.js" },
 };
 
 /**
- * 칩이 여러 개일 때 `flex flex-wrap gap-2` 로 감싼다. 실측 네 자리 모두 같은 감싸개를 쓴다.
+ * 칩이 여러 개일 때 `flex flex-wrap gap-2` 로 감싼다. 화면에 네 곳 모두 같은 감싸개를 쓴다.
  * 목록 카드에서는 3개까지만 보이고 나머지는 `+N` 인데, 그 `+N` 은 Badge 가 아니라 그냥 글자다.
  */
 export const TagGroup: Story = {

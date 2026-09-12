@@ -36,7 +36,7 @@ export const AllElements: Story = {
           <a href="https://nextjs.org/docs">밑줄과 hover 색</a>으로 구분하고,
           hover 색은 사이트 전역에서 하나다.
         </p>
-        <h3>무엇을 버렸나</h3>
+        <h3>무엇을 빼고 무엇을 남겼나</h3>
         <p>
           인라인 코드는 <code>--ring</code> 처럼 면을 갖는다.
         </p>

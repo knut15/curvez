@@ -21,7 +21,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** 목록 화면. 실측 3곳(`case-index` · `lab-index` · `not-found`)이 이 형태다. */
+/** 목록 화면. 화면에 3곳(`case-index` · `lab-index` · `not-found`)이 이 형태다. */
 export const Index: Story = {
   args: {
     description: "어떤 제약에서 무엇을 고르고 무엇을 버렸는지를 씁니다.",
@@ -38,7 +38,7 @@ export const TitleOnly: Story = {};
 export const Detail: Story = {
   args: {
     variant: "detail",
-    children: "토큰 저장소의 경쟁 상태를 고치면서 무엇을 버렸나",
+    children: "토큰 저장소의 경쟁 상태를 고치면서 무엇을 빼고 무엇을 남겼나",
     description: "제약 · 선택 · 버린 것 순서로 읽습니다.",
   },
 };

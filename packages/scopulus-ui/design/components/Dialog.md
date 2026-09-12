@@ -35,7 +35,7 @@ purpose: 화면을 덮고 답을 받을 때까지 뒤의 조작을 막는다. �
 
 ### 2. handwork 사용처: 0곳
 
-handwork 화면 어디에도 쓰인 적이 없다. **기존 9종의 `## 근거` 에 있는 `파일:줄` 실측이 이 문서에는
+handwork 화면 어디에도 쓰인 적이 없다. **기존 9종의 `## 근거` 에 있는 `파일:줄` 이 이 문서에는
 없다.** 값의 출처는 위의 받은 소스 하나다.
 
 ### 3. 왜 20종에 들어가는가
@@ -115,7 +115,7 @@ handwork 화면 어디에도 쓰인 적이 없다. **기존 9종의 `## 근거` 
 | ------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `rounded-xl` (`dialog.tsx:54`)  | 반경 3단계 — `rounded-lg` 10px · `rounded-md` 8px · `rounded-sm` 6px | **`rounded-lg`.** 이유: "한 화면에 둥근 버튼과 각진 카드가 섞이면 어느 쪽이 의도인지 판정할 수 없다". 팝업만 14px 을 쓸 근거가 없다                                           |
 | `bg-black/10` (`dialog.tsx:32`) | 색 표 14행 어디에도 검정 리터럴이 없다                               | **`bg-foreground/10`.** 이유: 라이트의 `--foreground` 는 거의 검정이라 화면이 같고, 다크에서는 밝은 막이 되어 덮은 것이 보인다                                                |
-| `text-base` (`dialog.tsx:122`)  | "본문에 `text-base` 를 붙이지 마라" (실측 0건)                       | **`text-base` 를 유지한다.** 이유: 그 금지는 본문 글자에 대한 것이고, 여기는 `<h2>` 제목이다. 타이포 8단계의 "본문" 16px 과 같은 크기를 제목이 쓰는 것은 팝업이 작기 때문이다 |
+| `text-base` (`dialog.tsx:122`)  | "본문에 `text-base` 를 붙이지 마라" (화면에 0번 나온다)              | **`text-base` 를 유지한다.** 이유: 그 금지는 본문 글자에 대한 것이고, 여기는 `<h2>` 제목이다. 타이포 8단계의 "본문" 16px 과 같은 크기를 제목이 쓰는 것은 팝업이 작기 때문이다 |
 
 **고칠 위치:** 이 표와 `../../src/ui/dialog.tsx` 의 해당 줄.
 
@@ -134,25 +134,25 @@ handwork 화면 어디에도 쓰인 적이 없다. **기존 9종의 `## 근거` 
 
 **열고 닫는 전이는 `duration-100` 이다** (`dialog.tsx:32`, `:54`). 막은 `fade`, 팝업은
 `fade` + `zoom-95` 다. **`motion-reduce:` 짝이 빠져 있다** — [`../tokens.md`](../tokens.md) 가
-"전이를 넣으면 `motion-reduce:transition-none` 을 같은 줄에 넣는다" 를 실측 8:8 로 정했다.
+"전이를 넣으면 `motion-reduce:transition-none` 을 같은 줄에 넣는다" 를 화면에 나온 8:8 로 정했다.
 **`motion-reduce:animate-none` 을 두 줄에 넣는다. 이유:** 화면 한가운데가 100ms 동안 커지는 움직임은
 전정기관 이상이 있는 사용자에게 어지럼을 준다. **고칠 위치:** `../../src/ui/dialog.tsx:32` · `:54`.
 
-**`duration-100` 은 [`../tokens.md`](../tokens.md) 의 `duration-150`(실측 9건)과 다르다.**
+**`duration-100` 은 [`../tokens.md`](../tokens.md) 의 `duration-150`(화면에 9곳)과 다르다.**
 **`duration-150` 으로 맞춘다. 이유:** 같은 문서가 `--ease-out` 하나로 모션 값을 못박았고, 시간만
 두 값이면 어느 것이 의도인지 판정할 수 없다.
 
 ## a11y
 
-- a11y:label — `DialogTitle` 이 **필수**다. Base UI 가 `aria-labelledby` 로 팝업과 제목을 묶는다. 제목을 빼고 `aria-label` 로 대신하지 마라 — 이유: 보이는 제목이 없으면 스크린리더 사용자만 팝업의 이름을 알고 화면을 보는 사용자는 모른다. `DialogDescription` 은 선택이고, 넣으면 `aria-describedby` 로 묶인다. 닫기 버튼의 이름은 `<span className="sr-only">Close</span>` 다 (`dialog.tsx:72`) — **영어다. "닫기" 로 바꾼다. 이유:** 이 프로젝트의 화면 글자가 전부 한글이고, 한 낱말만 영어면 음성 조작에서 무엇을 말해야 하는지 갈린다. **고칠 위치:** `../../src/ui/dialog.tsx:72` 와 `:110`
+- a11y:label — `DialogTitle` 이 **필수**다. Base UI 가 `aria-labelledby` 로 팝업과 제목을 묶는다. 제목을 빼고 `aria-label` 로 대신하지 마라 — 이유: 보이는 제목이 없으면 스크린리더 사용자만 팝업의 이름을 알고 화면을 보는 사용자는 모른다. `DialogDescription` 은 선택이고, 넣으면 `aria-describedby` 로 묶인다. 닫기 버튼의 이름은 `<span className="sr-only">Close</span>` 다 (`dialog.tsx:72`) — **영어다. "닫기" 로 바꾼다. 이유:** 이 프로젝트의 화면 글자가 전부 한글이고, 한 낱말만 영어면 음성 조작에서 무엇을 말해야 하는지 달라진다. **고칠 위치:** `../../src/ui/dialog.tsx:72` 와 `:110`
 - a11y:focus — 열리면 포커스가 팝업 안으로 들어가고 닫히면 `DialogTrigger` 로 돌아간다. Base UI 가 처리한다. **포커스가 팝업 밖으로 나가지 않는다** — Tab 이 마지막 요소에서 첫 요소로 돈다. Esc 로 닫힌다. **`onOpenChange` 에서 닫기를 막지 마라 — 이유:** Esc 가 듣지 않는 팝업은 키보드만 쓰는 사용자를 가둔다. 뒤의 화면은 `inert` 가 되어 포커스 순서에서 빠진다
-- a11y:contrast — `--popover` 와 `--popover-foreground` 의 값은 `--card` · `--card-foreground` 와 **같다** (`../../src/tokens.css:66,68` 라이트 · `:101,103` 다크). 그래서 [`../tokens.md`](../tokens.md) 의 카드 실측값이 그대로 적용된다 — 제목 fg=`--popover-foreground` / bg=`--popover` 라이트 16.73 · 다크 14.84, 설명 fg=`--muted-foreground` / bg=`--popover` 라이트 5.59 · 다크 7.34. 둘 다 4.5:1 통과. **`DialogFooter` 의 bg=`--muted` 알파 50% 위 글자 쌍은 미측정이다** — 알파가 얹힌 색은 배경에 따라 달라져 고정 쌍으로 계산되지 않는다. 구현 뒤 렌더 화면에서 `getComputedStyle` 로 재서 [`../tokens.md`](../tokens.md) 에 한 줄을 추가한다
+- a11y:contrast — `--popover` 와 `--popover-foreground` 의 값은 `--card` · `--card-foreground` 와 **같다** (`../../src/tokens.css:66,68` 라이트 · `:101,103` 다크). 그래서 [`../tokens.md`](../tokens.md) 의 카드 대비값이 그대로 적용된다 — 제목 fg=`--popover-foreground` / bg=`--popover` 라이트 16.73 · 다크 14.84, 설명 fg=`--muted-foreground` / bg=`--popover` 라이트 5.59 · 다크 7.34. 둘 다 4.5:1 통과. **`DialogFooter` 의 bg=`--muted` 알파 50% 위 글자 쌍은 미측정이다** — 알파가 얹힌 색은 배경에 따라 달라져 고정 쌍으로 계산되지 않는다. 구현 뒤 렌더 화면에서 `getComputedStyle` 로 재서 [`../tokens.md`](../tokens.md) 에 한 줄을 추가한다
 - a11y:target — 닫기 버튼이 `size="icon-sm"` = **32x32** ([`Button.md`](Button.md) 의 size 표). 24x24 최소를 넘는다. 팝업 오른쪽 위 `top-2 right-2`(8px)에 앉는다 (`dialog.tsx:66`). `DialogFooter` 의 버튼은 `size="default"` 라 높이 40px 이고 서로 `gap-2`(8px)를 둔다 (`dialog.tsx:102`) — 인접 요소 최소 8px 규칙을 만족한다
 - a11y:role — `dialog` 다. Base UI 가 `role="dialog" aria-modal="true"` 를 붙인다. `DialogTitle` 은 `<h2>`, `DialogDescription` 은 `<p>` 로 렌더된다. **`role` 을 덮어쓰지 마라 — 이유:** `aria-modal` 이 빠지면 스크린리더가 팝업 뒤의 글자까지 읽어, 화면에서는 막혀 있는 것이 음성에서는 열려 있게 된다. **`alertdialog` 로 바꾸지 마라 — 이유:** 그 역할은 되돌릴 수 없는 행동을 확인받는 자리 전용이고, 이 프로젝트에 그런 자리가 0곳이다
 
 ## responsive
 
-- 브레이크포인트 분기는 **2건**이고 둘 다 `sm`(640px)이다. [`../tokens.md`](../tokens.md) 의 실측(`sm` 1회 · `md` 15회) 안이다
+- 브레이크포인트 분기는 **2건**이고 둘 다 `sm`(640px)이다. [`../tokens.md`](../tokens.md) 의 화면에 나온 횟수(`sm` 1회 · `md` 15회) 안이다
   - `DialogContent` 의 `max-w-[calc(100%-2rem)] sm:max-w-sm` (`dialog.tsx:54`) — 640px 미만은 화면 폭에서 좌우 16px 씩 뺀 값, 640px 이상은 384px 고정
   - `DialogFooter` 의 `flex-col-reverse sm:flex-row sm:justify-end` (`dialog.tsx:102`) — 640px 미만은 버튼이 세로로 쌓이고 **주된 행동이 위로 온다**(`-reverse`), 640px 이상은 가로로 오른쪽 정렬
 - **375px 화면에서 팝업 폭은 343px 이다** (375 - 16x2). 안쪽 여백 `p-4`(16px)를 빼면 본문에 쓸 수 있는 폭이 311px 이다

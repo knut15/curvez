@@ -14,7 +14,7 @@ import { defineConfig } from "vitest/config";
  *
  * `setupFiles` 를 두지 않는다. Storybook 10.3 부터 애드온이 `preview.ts` 의 데코레이터와
  * 전역 CSS 를 자동으로 싣는다. 손으로 `setProjectAnnotations` 를 부르면 애드온이 자동
- * 주입을 건너뛰어 오히려 조건이 갈린다.
+ * 주입을 건너뛰어 오히려 조건이 달라진다.
  */
 export default defineConfig({
   plugins: [storybookTest({ configDir: ".storybook" })],
