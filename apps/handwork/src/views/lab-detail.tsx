@@ -1,5 +1,5 @@
 import type { LabMeta } from "@/entities/lab/model/types";
-import { PROSE } from "@/shared/ui/prose";
+import { PROSE } from "@scopulus/ui";
 
 export function LabDetailView({
   meta,
@@ -14,7 +14,7 @@ export function LabDetailView({
         <h1 className="text-4xl leading-[1.15] font-bold tracking-[-0.02em] break-keep">
           {meta.title}
         </h1>
-        {/* 모노로 두지 않는다. status 가 한글이라 Geist Mono 에 글자가 없어 폰트가 갈린다. */}
+        {/* 모노로 두지 않는다. status 가 한글이라 Geist Mono 에 글자가 없어 폰트가 달라진다. */}
         <p className="mt-4 flex items-center gap-2 text-sm tracking-wide text-muted-foreground">
           <span
             aria-hidden
@@ -38,9 +38,7 @@ export function LabDetailView({
         </ul>
       </header>
 
-      <article className={`mx-auto mt-10 max-w-[68ch] ${PROSE}`}>
-        {children}
-      </article>
+      <article className={`mt-10 max-w-[68ch] ${PROSE}`}>{children}</article>
     </main>
   );
 }

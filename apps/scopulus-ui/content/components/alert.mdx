@@ -1,0 +1,108 @@
+import {
+  Alert,
+  AlertAction,
+  AlertDescription,
+  AlertTitle,
+  Button,
+} from "@scopulus/ui";
+import { RefreshCwIcon, TriangleAlertIcon } from "lucide-react";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    {
+      name: "variant",
+      type: `"default" | "destructive"`,
+      default: `"default"`,
+    },
+    {
+      name: "children",
+      type: "React.ReactNode",
+      required: true,
+      note: "AlertTitle · AlertDescription · AlertAction · svg",
+    },
+    { name: "...", type: "ComponentProps<'div'>", note: "그대로 흘러간다" },
+  ]}
+/>
+
+<Example
+  title="Alert"
+  center={false}
+  code={`<Alert>
+  <AlertTitle>초안이 저장되었습니다</AlertTitle>
+  <AlertDescription>발행하기 전까지는 나에게만 보입니다.</AlertDescription>
+</Alert>`}
+>
+  <Alert>
+    <AlertTitle>초안이 저장되었습니다</AlertTitle>
+    <AlertDescription>발행하기 전까지는 나에게만 보입니다.</AlertDescription>
+  </Alert>
+</Example>
+
+<Example
+  title="Variants"
+  center={false}
+  code={`<Alert>
+  <AlertTitle>초안이 저장되었습니다</AlertTitle>
+  <AlertDescription>발행하기 전까지는 나에게만 보입니다.</AlertDescription>
+</Alert>
+<Alert variant="destructive">
+  <AlertTitle>발행에 실패했습니다</AlertTitle>
+  <AlertDescription>본문 137번째 줄의 코드 블록이 닫히지 않았습니다.</AlertDescription>
+</Alert>`}
+>
+  <Alert>
+    <AlertTitle>초안이 저장되었습니다</AlertTitle>
+    <AlertDescription>발행하기 전까지는 나에게만 보입니다.</AlertDescription>
+  </Alert>
+  <Alert variant="destructive">
+    <AlertTitle>발행에 실패했습니다</AlertTitle>
+    <AlertDescription>
+      본문 137번째 줄의 코드 블록이 닫히지 않았습니다.
+    </AlertDescription>
+  </Alert>
+</Example>
+
+<Example
+  title="With icon"
+  center={false}
+  code={`<Alert variant="destructive">
+  <TriangleAlertIcon aria-hidden />
+  <AlertTitle>발행에 실패했습니다</AlertTitle>
+  <AlertDescription>본문 137번째 줄의 코드 블록이 닫히지 않았습니다.</AlertDescription>
+</Alert>`}
+>
+  <Alert variant="destructive">
+    <TriangleAlertIcon aria-hidden />
+    <AlertTitle>발행에 실패했습니다</AlertTitle>
+    <AlertDescription>
+      본문 137번째 줄의 코드 블록이 닫히지 않았습니다.
+    </AlertDescription>
+  </Alert>
+</Example>
+
+<Example
+  title="With action"
+  center={false}
+  code={`<Alert>
+  <AlertTitle>연결이 끊겼습니다</AlertTitle>
+  <AlertDescription>네트워크가 돌아오면 자동으로 다시 붙습니다.</AlertDescription>
+  <AlertAction>
+    <Button variant="outline" size="icon-sm" aria-label="다시 시도">
+      <RefreshCwIcon />
+    </Button>
+  </AlertAction>
+</Alert>`}
+>
+  <Alert>
+    <AlertTitle>연결이 끊겼습니다</AlertTitle>
+    <AlertDescription>
+      네트워크가 돌아오면 자동으로 다시 붙습니다.
+    </AlertDescription>
+    <AlertAction>
+      <Button variant="outline" size="icon-sm" aria-label="다시 시도">
+        <RefreshCwIcon />
+      </Button>
+    </AlertAction>
+  </Alert>
+</Example>

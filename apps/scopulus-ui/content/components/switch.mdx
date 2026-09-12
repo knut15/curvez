@@ -1,0 +1,65 @@
+import { Switch } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    {
+      name: "size",
+      type: `"sm" | "default"`,
+      default: `"default"`,
+      note: "24×14 · 32×18.4",
+    },
+    { name: "checked", type: "boolean", note: "제어로 쓸 때의 값" },
+    { name: "defaultChecked", type: "boolean", default: "false" },
+    { name: "onCheckedChange", type: "(checked: boolean) => void" },
+    { name: "disabled", type: "boolean", default: "false" },
+    { name: "required", type: "boolean", default: "false" },
+    { name: "name", type: "string", note: "폼 필드 이름" },
+    { name: "className", type: "string", note: "자리를 앉힐 때만 쓴다" },
+    {
+      name: "...",
+      type: "SwitchPrimitive.Root.Props",
+      note: "그대로 흘러간다",
+    },
+  ]}
+/>
+
+<Example
+  title="Switch"
+  code={`<Switch id="switch-comments" />
+<label htmlFor="switch-comments">댓글 받기</label>`}
+>
+  <Switch id="switch-comments" />
+  <label htmlFor="switch-comments">댓글 받기</label>
+</Example>
+
+<Example
+  title="Checked"
+  code={`<Switch id="switch-mail" defaultChecked />
+<label htmlFor="switch-mail">새 사례를 메일로 알림</label>`}
+>
+  <Switch id="switch-mail" defaultChecked />
+  <label htmlFor="switch-mail">새 사례를 메일로 알림</label>
+</Example>
+
+<Example
+  title="Sizes"
+  code={`<Switch id="switch-sm" size="sm" defaultChecked />
+<label htmlFor="switch-sm">sm</label>
+<Switch id="switch-default" defaultChecked />
+<label htmlFor="switch-default">default</label>`}
+>
+  <Switch id="switch-sm" size="sm" defaultChecked />
+  <label htmlFor="switch-sm">sm</label>
+  <Switch id="switch-default" defaultChecked />
+  <label htmlFor="switch-default">default</label>
+</Example>
+
+<Example
+  title="Disabled"
+  code={`<Switch id="switch-disabled" defaultChecked disabled />
+<label htmlFor="switch-disabled">공개 사례로 올린다</label>`}
+>
+  <Switch id="switch-disabled" defaultChecked disabled />
+  <label htmlFor="switch-disabled">공개 사례로 올린다</label>
+</Example>

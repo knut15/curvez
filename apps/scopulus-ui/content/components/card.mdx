@@ -1,0 +1,67 @@
+import { Badge, Card } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    { name: "href", type: "string", required: true },
+    { name: "children", type: "React.ReactNode", required: true },
+  ]}
+/>
+
+<Example
+  title="Card"
+  center={false}
+  code={`<Card href="/components/badge">
+  <span className="text-lg font-medium text-card-foreground">Badge</span>
+  <span className="text-sm text-muted-foreground">한 낱말짜리 메타 정보</span>
+</Card>`}
+>
+  <Card href="/components/badge">
+    <span className="text-lg font-medium text-card-foreground">Badge</span>
+    <span className="text-sm text-muted-foreground">한 낱말짜리 메타 정보</span>
+  </Card>
+</Example>
+
+<Example
+  title="With badges"
+  center={false}
+  code={`<Card href="/components/table">
+  <span className="text-lg font-medium text-card-foreground">Table</span>
+  <span className="flex flex-wrap gap-2">
+    <Badge>display</Badge>
+    <Badge>data</Badge>
+  </span>
+</Card>`}
+>
+  <Card href="/components/table">
+    <span className="text-lg font-medium text-card-foreground">Table</span>
+    <span className="flex flex-wrap gap-2">
+      <Badge>display</Badge>
+      <Badge>data</Badge>
+    </span>
+  </Card>
+</Example>
+
+<Example
+  title="Grid"
+  center={false}
+  code={`<div className="grid gap-4 md:grid-cols-2">
+  <Card href="/components/button">
+    <span className="text-lg font-medium text-card-foreground">Button</span>
+  </Card>
+  <Card href="/components/separator">
+    <span className="text-lg font-medium text-card-foreground">Separator</span>
+  </Card>
+</div>`}
+>
+  <div className="grid gap-4 md:grid-cols-2">
+    <Card href="/components/button">
+      <span className="text-lg font-medium text-card-foreground">Button</span>
+    </Card>
+    <Card href="/components/separator">
+      <span className="text-lg font-medium text-card-foreground">
+        Separator
+      </span>
+    </Card>
+  </div>
+</Example>

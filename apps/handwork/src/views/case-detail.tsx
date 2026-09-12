@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import type { CaseMeta } from "@/entities/case/model/types";
-import { PROSE } from "@/shared/ui/prose";
+import { PROSE } from "@scopulus/ui";
 
 type Neighbor = { slug: string; title: string } | null;
 
@@ -26,7 +26,7 @@ export function CaseDetailView({
         <h1 className="text-4xl leading-[1.15] font-bold tracking-[-0.02em] break-keep">
           {meta.title}
         </h1>
-        {/* 모노로 두지 않는다. role 이 한글이라 Geist Mono 에 글자가 없어 폰트가 갈린다. */}
+        {/* 모노로 두지 않는다. role 이 한글이라 Geist Mono 에 글자가 없어 폰트가 달라진다. */}
         <p className="mt-4 text-sm tracking-wide text-muted-foreground">
           {meta.date} · {meta.role}
         </p>
@@ -42,9 +42,7 @@ export function CaseDetailView({
         </ul>
       </header>
 
-      <article className={`mx-auto mt-10 max-w-[68ch] ${PROSE}`}>
-        {children}
-      </article>
+      <article className={`mt-10 max-w-[68ch] ${PROSE}`}>{children}</article>
 
       {prev || next ? (
         <nav

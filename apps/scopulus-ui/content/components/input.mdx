@@ -1,0 +1,57 @@
+import { Input } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    { name: "type", type: "string", default: `"text"` },
+    { name: "value", type: "string", note: "제어로 쓸 때의 값" },
+    { name: "defaultValue", type: "string", note: "비제어로 쓸 때의 처음 값" },
+    { name: "onChange", type: "(e) => void" },
+    { name: "placeholder", type: "string" },
+    { name: "disabled", type: "boolean", default: "false" },
+    { name: "required", type: "boolean", default: "false" },
+    { name: "aria-invalid", type: "boolean", default: "false" },
+    { name: "className", type: "string", note: "폭을 바꿀 때만 쓴다" },
+    { name: "...", type: "ComponentProps<'input'>", note: "그대로 흘러간다" },
+  ]}
+/>
+
+<Example
+  title="Input"
+  center={false}
+  code={`<label htmlFor="input-title">사례 제목</label>
+<Input id="input-title" placeholder="토큰 저장소의 경쟁 상태" />`}
+>
+  <label htmlFor="input-title">사례 제목</label>
+  <Input id="input-title" placeholder="토큰 저장소의 경쟁 상태" />
+</Example>
+
+<Example
+  title="With value"
+  center={false}
+  code={`<label htmlFor="input-value">사례 제목</label>
+<Input id="input-value" defaultValue="토큰 저장소의 경쟁 상태" />`}
+>
+  <label htmlFor="input-value">사례 제목</label>
+  <Input id="input-value" defaultValue="토큰 저장소의 경쟁 상태" />
+</Example>
+
+<Example
+  title="Invalid"
+  center={false}
+  code={`<label htmlFor="input-invalid">사례 제목</label>
+<Input id="input-invalid" aria-invalid defaultValue="제" />`}
+>
+  <label htmlFor="input-invalid">사례 제목</label>
+  <Input id="input-invalid" aria-invalid defaultValue="제" />
+</Example>
+
+<Example
+  title="Disabled"
+  center={false}
+  code={`<label htmlFor="input-disabled">사례 제목</label>
+<Input id="input-disabled" disabled defaultValue="토큰 저장소의 경쟁 상태" />`}
+>
+  <label htmlFor="input-disabled">사례 제목</label>
+  <Input id="input-disabled" disabled defaultValue="토큰 저장소의 경쟁 상태" />
+</Example>

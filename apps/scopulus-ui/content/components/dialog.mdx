@@ -1,0 +1,135 @@
+import {
+  Button,
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    { name: "open", type: "boolean", note: "제어로 쓸 때의 열림 여부" },
+    { name: "defaultOpen", type: "boolean", default: "false" },
+    { name: "onOpenChange", type: "(open: boolean) => void" },
+    {
+      name: "modal",
+      type: "boolean",
+      default: "true",
+      note: "뒤의 조작을 막는다",
+    },
+    {
+      name: "children",
+      type: "React.ReactNode",
+      required: true,
+      note: "DialogTrigger + DialogContent",
+    },
+    {
+      name: "DialogContent showCloseButton",
+      type: "boolean",
+      default: "true",
+      note: "오른쪽 위 X 버튼",
+    },
+    {
+      name: "DialogFooter showCloseButton",
+      type: "boolean",
+      default: "false",
+      note: "바닥의 Close 버튼",
+    },
+  ]}
+/>
+
+<Example
+  title="Dialog"
+  code={`<Dialog>
+  <DialogTrigger render={<Button variant="outline" />}>사례 지우기</DialogTrigger>
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>이 사례를 지울까요?</DialogTitle>
+      <DialogDescription>지운 사례는 되돌릴 수 없습니다.</DialogDescription>
+    </DialogHeader>
+    <DialogFooter>
+      <DialogClose render={<Button variant="outline" />}>취소</DialogClose>
+      <Button>지우기</Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>`}
+>
+  <Dialog>
+    <DialogTrigger render={<Button variant="outline" />}>
+      사례 지우기
+    </DialogTrigger>
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>이 사례를 지울까요?</DialogTitle>
+        <DialogDescription>지운 사례는 되돌릴 수 없습니다.</DialogDescription>
+      </DialogHeader>
+      <DialogFooter>
+        <DialogClose render={<Button variant="outline" />}>취소</DialogClose>
+        <Button>지우기</Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
+</Example>
+
+<Example
+  title="Without close button"
+  code={`<Dialog>
+  <DialogTrigger render={<Button variant="outline" />}>약관 보기</DialogTrigger>
+  <DialogContent showCloseButton={false}>
+    <DialogHeader>
+      <DialogTitle>이용 약관</DialogTitle>
+      <DialogDescription>2026년 9월 11일에 갱신되었습니다.</DialogDescription>
+    </DialogHeader>
+    <DialogFooter>
+      <DialogClose render={<Button />}>확인했습니다</DialogClose>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>`}
+>
+  <Dialog>
+    <DialogTrigger render={<Button variant="outline" />}>
+      약관 보기
+    </DialogTrigger>
+    <DialogContent showCloseButton={false}>
+      <DialogHeader>
+        <DialogTitle>이용 약관</DialogTitle>
+        <DialogDescription>2026년 9월 11일에 갱신되었습니다.</DialogDescription>
+      </DialogHeader>
+      <DialogFooter>
+        <DialogClose render={<Button />}>확인했습니다</DialogClose>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
+</Example>
+
+<Example
+  title="Footer close button"
+  code={`<Dialog>
+  <DialogTrigger render={<Button variant="ghost" />}>단축키</DialogTrigger>
+  <DialogContent showCloseButton={false}>
+    <DialogHeader>
+      <DialogTitle>단축키</DialogTitle>
+      <DialogDescription>저장은 Cmd S, 발행은 Cmd Enter 입니다.</DialogDescription>
+    </DialogHeader>
+    <DialogFooter showCloseButton />
+  </DialogContent>
+</Dialog>`}
+>
+  <Dialog>
+    <DialogTrigger render={<Button variant="ghost" />}>단축키</DialogTrigger>
+    <DialogContent showCloseButton={false}>
+      <DialogHeader>
+        <DialogTitle>단축키</DialogTitle>
+        <DialogDescription>
+          저장은 Cmd S, 발행은 Cmd Enter 입니다.
+        </DialogDescription>
+      </DialogHeader>
+      <DialogFooter showCloseButton />
+    </DialogContent>
+  </Dialog>
+</Example>

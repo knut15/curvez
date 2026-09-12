@@ -1,0 +1,92 @@
+import { Prose } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props rows={[{ name: "children", type: "React.ReactNode", required: true }]} />
+
+<Example
+  title="Prose"
+  center={false}
+  code={`<Prose>
+  <p>본문 문단은 68ch 에서 멈춘다.</p>
+  <div><a href="/docs/tokens">링크</a>는 밑줄을 갖는다.</div>
+</Prose>`}
+>
+  <Prose>
+    <p>본문 문단은 68ch 에서 멈춘다.</p>
+    {/* `<p>` 가 아니라 `<div>` 다. prettier 는 요소 자식이 있는 JSX 를 길이와 무관하게
+        쪼개고, 그러면 MDX 가 안쪽 글자를 또 `<p>` 로 감싸 `<p><p>` 가 된다. */}
+    <div>
+      <a href="/docs/tokens">링크</a>는 밑줄을 갖는다.
+    </div>
+  </Prose>
+</Example>
+
+<Example
+  title="Headings"
+  center={false}
+  code={`<Prose>
+  <h2>제목 둘째 단계</h2>
+  <p>h2 위에 48px 이 붙는다.</p>
+  <h3>제목 셋째 단계</h3>
+  <p>h3 위에는 32px 이다.</p>
+</Prose>`}
+>
+  <Prose>
+    <h2>제목 둘째 단계</h2>
+    <p>h2 위에 48px 이 붙는다.</p>
+    <h3>제목 셋째 단계</h3>
+    <p>h3 위에는 32px 이다.</p>
+  </Prose>
+</Example>
+
+<Example
+  title="Lists"
+  center={false}
+  code={`<Prose>
+  <ul>
+    <li>순서 없는 항목</li>
+    <li>두 번째 항목</li>
+  </ul>
+  <ol>
+    <li>순서 있는 항목</li>
+    <li>두 번째 항목</li>
+  </ol>
+</Prose>`}
+>
+  <Prose>
+    <ul>
+      <li>순서 없는 항목</li>
+      <li>두 번째 항목</li>
+    </ul>
+    <ol>
+      <li>순서 있는 항목</li>
+      <li>두 번째 항목</li>
+    </ol>
+  </Prose>
+</Example>
+
+<Example
+  title="Code and quote"
+  center={false}
+  code={`<Prose>
+  <div>
+    인라인 코드는 <code>--ring</code> 처럼 면을 갖는다.
+  </div>
+  <pre>
+    <code>export const PROSE = "leading-relaxed ...";</code>
+  </pre>
+  <blockquote>인용은 왼쪽에 2px 선을 두고 안쪽으로 밀어 넣는다.</blockquote>
+</Prose>`}
+>
+  <Prose>
+    {/* `<p>` 가 아니라 `<div>` 다. prettier 가 요소 자식이 있는 JSX 를 쪼개면
+        MDX 가 안쪽 글자를 또 `<p>` 로 감싸 `<p><p>` 가 된다. */}
+    <div>
+      인라인 코드는 <code>--ring</code> 처럼 면을 갖는다.
+    </div>
+    <pre>
+      <code>export const PROSE = "leading-relaxed ...";</code>
+    </pre>
+    <blockquote>인용은 왼쪽에 2px 선을 두고 안쪽으로 밀어 넣는다.</blockquote>
+  </Prose>
+</Example>

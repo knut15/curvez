@@ -1,0 +1,65 @@
+import {
+  ColorTokens,
+  ContrastPairs,
+  RadiusScale,
+  SpacingScale,
+  TypeScale,
+} from "@/widgets/token-visuals";
+
+## Naming
+
+면과 그 위의 글자가 짝입니다. `--primary` 가 면이고 `--primary-foreground` 가 그 위에 앉는
+글자와 아이콘입니다.
+
+이름은 shadcn 과 같습니다. Tailwind 테마가 이 이름을 직접 참조하므로 바꾸면 컴포넌트가 색을
+잃습니다.
+
+## Color
+
+중립 스케일이 무채색이 아니라 green-grey 색조를 띱니다. 링크 hover 와 포커스 링은 전부
+`--ring` 하나로 모입니다.
+
+<ColorTokens />
+
+## Contrast
+
+WCAG AA 를 넘는 조합입니다. 다른 짝을 쓰려면 대비를 직접 확인하십시오.
+
+<ContrastPairs />
+
+## Spacing
+
+<SpacingScale />
+
+## Typography
+
+<TypeScale />
+
+## Radius
+
+<RadiusScale />
+
+## Override
+
+토큰은 CSS 변수라 앱에서 다시 정의하면 그 값이 적용됩니다.
+
+```css
+@import "@scopulus/ui/tokens.css";
+
+:root {
+  --primary: oklch(0.55 0.18 264);
+  --radius: 0.25rem;
+}
+```
+
+라이트와 다크를 함께 바꾸려면 `.dark` 안에도 같은 이름을 정의합니다.
+
+## Export to Figma
+
+```bash
+node packages/scopulus-ui/scripts/export-tokens.mjs
+```
+
+W3C Design Tokens 형식의 JSON 이 나옵니다. 라이트와 다크가 두 모드로 들어갑니다.
+가져가는 것은 Tokens Studio 같은 플러그인으로 합니다 — Figma 의 Variables 쓰기 API 가
+Enterprise 조직 전용입니다.

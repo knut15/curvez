@@ -1,0 +1,97 @@
+import { Timeline, TimelineItem } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    {
+      name: "children",
+      type: "React.ReactNode",
+      required: true,
+      note: "TimelineItem 들",
+    },
+    {
+      name: "TimelineItem time",
+      type: "string",
+      required: true,
+      note: "화면에 보이는 시각",
+    },
+    {
+      name: "TimelineItem dateTime",
+      type: "string",
+      required: true,
+      note: "time 요소의 datetime 에 들어간다",
+    },
+    {
+      name: "TimelineItem children",
+      type: "React.ReactNode",
+      required: true,
+      note: "그때 무슨 일이 있었는지",
+    },
+  ]}
+/>
+
+<Example
+  title="Timeline"
+  center={false}
+  code={`<Timeline>
+  <TimelineItem time="2026-09-10" dateTime="2026-09-10">장바구니에 담았다.</TimelineItem>
+  <TimelineItem time="2026-09-11" dateTime="2026-09-11">결제를 마쳤다.</TimelineItem>
+  <TimelineItem time="2026-09-12" dateTime="2026-09-12">배송이 시작됐다.</TimelineItem>
+</Timeline>`}
+>
+  <Timeline>
+    <TimelineItem time="2026-09-10" dateTime="2026-09-10">
+      장바구니에 담았다.
+    </TimelineItem>
+    <TimelineItem time="2026-09-11" dateTime="2026-09-11">
+      결제를 마쳤다.
+    </TimelineItem>
+    <TimelineItem time="2026-09-12" dateTime="2026-09-12">
+      배송이 시작됐다.
+    </TimelineItem>
+  </Timeline>
+</Example>
+
+<Example
+  title="One item"
+  center={false}
+  code={`<Timeline>
+  <TimelineItem time="2026-09-12" dateTime="2026-09-12">여기서부터 기록을 남기기 시작했다.</TimelineItem>
+</Timeline>`}
+>
+  <Timeline>
+    <TimelineItem time="2026-09-12" dateTime="2026-09-12">
+      여기서부터 기록을 남기기 시작했다.
+    </TimelineItem>
+  </Timeline>
+</Example>
+
+<Example
+  title="Rich content"
+  center={false}
+  code={`<Timeline>
+  <TimelineItem time="2026년 9월" dateTime="2026-09">
+    <span className="font-medium">스펙을 먼저 썼다</span>
+    <span className="mt-1 block text-muted-foreground">값과 근거를 정하고 나서 구현으로 갔다.</span>
+  </TimelineItem>
+  <TimelineItem time="2026년 8월" dateTime="2026-08">
+    <span className="font-medium">화면에서 값을 셌다</span>
+    <span className="mt-1 block text-muted-foreground">간격 89건, 타이포 23건.</span>
+  </TimelineItem>
+</Timeline>`}
+>
+  <Timeline>
+    <TimelineItem time="2026년 9월" dateTime="2026-09">
+      <span className="font-medium">스펙을 먼저 썼다</span>
+      <span className="mt-1 block text-muted-foreground">
+        값과 근거를 정하고 나서 구현으로 갔다.
+      </span>
+    </TimelineItem>
+    <TimelineItem time="2026년 8월" dateTime="2026-08">
+      <span className="font-medium">화면에서 값을 셌다</span>
+      <span className="mt-1 block text-muted-foreground">
+        간격 89건, 타이포 23건.
+      </span>
+    </TimelineItem>
+  </Timeline>
+</Example>

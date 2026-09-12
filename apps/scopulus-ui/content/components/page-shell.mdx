@@ -1,0 +1,37 @@
+import { Example, Props } from "@/widgets/example";
+
+<Props rows={[{ name: "children", type: "React.ReactNode", required: true }]} />
+
+<Example
+  title="PageShell"
+  center={false}
+  code={`<PageShell>
+  <PageTitle>Changelog</PageTitle>
+  <Prose>{children}</Prose>
+</PageShell>`}
+>
+  <div className="rounded-md border border-dashed border-border p-4">
+    <div className="h-7 w-2/5 rounded bg-muted" />
+    <div className="mt-4 h-3 w-full rounded bg-muted" />
+    <div className="mt-2 h-3 w-full rounded bg-muted" />
+    <div className="mt-2 h-3 w-3/5 rounded bg-muted" />
+  </div>
+</Example>
+
+<Example
+  title="Fills the remaining height"
+  center={false}
+  code={`<body className="flex min-h-full flex-col">
+  <SiteHeader />
+  <PageShell>{children}</PageShell>
+  <SiteFooter />
+</body>`}
+>
+  <div className="flex h-56 flex-col">
+    <div className="h-8 shrink-0 rounded bg-muted" />
+    <div className="my-2 flex-1 rounded-md border border-dashed border-border p-4">
+      <div className="h-3 w-2/5 rounded bg-muted" />
+    </div>
+    <div className="h-8 shrink-0 rounded bg-muted" />
+  </div>
+</Example>

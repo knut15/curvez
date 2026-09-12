@@ -1,0 +1,50 @@
+import { Stat } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    {
+      name: "label",
+      type: "string",
+      required: true,
+      note: "이 숫자가 무엇인지",
+    },
+    {
+      name: "value",
+      type: "string",
+      required: true,
+      note: "다 만들어진 값 글자",
+    },
+  ]}
+/>
+
+<Example title="Stat" code={`<Stat label="누적 기록" value="1,284" />`}>
+  <Stat label="누적 기록" value="1,284" />
+</Example>
+
+<Example
+  title="In a row"
+  code={`<div className="flex gap-8">
+  <Stat label="누적 기록" value="1,284" />
+  <Stat label="이번 주" value="37" />
+  <Stat label="평균 길이" value="6.2분" />
+</div>`}
+>
+  <div className="flex gap-8">
+    <Stat label="누적 기록" value="1,284" />
+    <Stat label="이번 주" value="37" />
+    <Stat label="평균 길이" value="6.2분" />
+  </div>
+</Example>
+
+<Example
+  title="Tabular numbers"
+  center={false}
+  code={`<Stat label="1월" value="1,111" />
+<Stat label="2월" value="8,888" />
+<Stat label="3월" value="1,818" />`}
+>
+  <Stat label="1월" value="1,111" />
+  <Stat label="2월" value="8,888" />
+  <Stat label="3월" value="1,818" />
+</Example>

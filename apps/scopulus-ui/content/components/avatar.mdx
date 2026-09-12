@@ -1,0 +1,58 @@
+import { Avatar } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    {
+      name: "name",
+      type: "string",
+      required: true,
+      note: "alt 와 이니셜 양쪽에 쓴다",
+    },
+    { name: "src", type: "string", note: "없으면 이니셜이 선다" },
+    {
+      name: "size",
+      type: `"sm" | "default" | "lg"`,
+      default: `"default"`,
+    },
+  ]}
+/>
+
+<Example title="Avatar" code={`<Avatar name="김현우" />`}>
+  <Avatar name="김현우" />
+</Example>
+
+<Example
+  title="With image"
+  code={`<Avatar
+  name="김현우"
+  src="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2040%2040'%3E%3Crect%20width='40'%20height='40'%20fill='%235C6B68'/%3E%3Ccircle%20cx='20'%20cy='14'%20r='6'%20fill='%23EDF1F0'/%3E%3Ccircle%20cx='20'%20cy='36'%20r='11'%20fill='%23EDF1F0'/%3E%3C/svg%3E"
+/>`}
+>
+  <Avatar
+    name="김현우"
+    src="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2040%2040'%3E%3Crect%20width='40'%20height='40'%20fill='%235C6B68'/%3E%3Ccircle%20cx='20'%20cy='14'%20r='6'%20fill='%23EDF1F0'/%3E%3Ccircle%20cx='20'%20cy='36'%20r='11'%20fill='%23EDF1F0'/%3E%3C/svg%3E"
+  />
+</Example>
+
+<Example
+  title="Sizes"
+  code={`<Avatar size="sm" name="김현우" />
+<Avatar name="김현우" />
+<Avatar size="lg" name="김현우" />`}
+>
+  <Avatar size="sm" name="김현우" />
+  <Avatar name="김현우" />
+  <Avatar size="lg" name="김현우" />
+</Example>
+
+<Example
+  title="Initials from the name"
+  code={`<Avatar name="Ada Lovelace" />
+<Avatar name="김현우" />
+<Avatar name="scopulus" />`}
+>
+  <Avatar name="Ada Lovelace" />
+  <Avatar name="김현우" />
+  <Avatar name="scopulus" />
+</Example>

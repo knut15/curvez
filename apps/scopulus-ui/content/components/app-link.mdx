@@ -1,0 +1,80 @@
+import { AppLink } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    { name: "href", type: "string", required: true },
+    { name: "children", type: "React.ReactNode", required: true },
+    {
+      name: "variant",
+      type: `"inline" | "bare" | "cta" | "cta-quiet"`,
+      default: `"inline"`,
+    },
+    {
+      name: "current",
+      type: "boolean",
+      default: "false",
+      note: `true 면 aria-current="page" 가 붙는다`,
+    },
+  ]}
+/>
+
+<Example
+  title="AppLink"
+  code={`<AppLink href="/components">컴포넌트</AppLink>`}
+>
+  <AppLink href="/components">컴포넌트</AppLink>
+</Example>
+
+<Example
+  title="Variants"
+  code={`<AppLink href="/components" variant="inline">inline</AppLink>
+<AppLink href="/components" variant="bare">bare</AppLink>`}
+>
+  <AppLink href="/components" variant="inline">
+    inline
+  </AppLink>
+  <AppLink href="/components" variant="bare">
+    bare
+  </AppLink>
+</Example>
+
+<Example
+  title="Link that looks like a button"
+  code={`<AppLink href="/components" variant="cta">View Components</AppLink>
+<AppLink href="/docs/getting-started" variant="cta-quiet">Get Started</AppLink>`}
+>
+  <AppLink href="/components" variant="cta">
+    View Components
+  </AppLink>
+  <AppLink href="/docs/getting-started" variant="cta-quiet">
+    Get Started
+  </AppLink>
+</Example>
+
+<Example
+  title="Inherits the parent color"
+  center={false}
+  code={`<div className="text-foreground">
+  본문 색 위에서 <AppLink href="/components">컴포넌트</AppLink>
+</div>
+<div className="text-muted-foreground">
+  메타 줄 색 위에서 <AppLink href="/components">컴포넌트</AppLink>
+</div>`}
+>
+  <div className="text-foreground">
+    본문 색 위에서 <AppLink href="/components">컴포넌트</AppLink>
+  </div>
+  <div className="text-muted-foreground">
+    메타 줄 색 위에서 <AppLink href="/components">컴포넌트</AppLink>
+  </div>
+</Example>
+
+<Example
+  title="Current"
+  code={`<AppLink href="/components" variant="bare" current>Components</AppLink>`}
+>
+  <AppLink href="/components" variant="bare" current>
+    Components
+  </AppLink>
+</Example>

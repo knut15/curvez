@@ -28,7 +28,7 @@ purpose: 케이스 하나를 목록에서 대표한다. 카드 전체가 상세�
 
 - a11y:label — 카드 전체가 링크다. 접근 이름은 title 하나로 충분하므로 aria-label 을 중복 지정하지 않는다. 태그·날짜는 링크 이름에서 제외한다
 - a11y:focus — 카드당 포커스 대상은 **하나**다. 내부에 별도 링크를 두지 않는다. 포커스 순서는 DOM 순서와 같다
-- a11y:contrast — 제목 fg=--card-foreground / bg=--card 라이트 16.73 · 다크 14.84. 요약·날짜 fg=--muted-foreground / bg=--card 라이트 5.59 · 다크 7.34. 칩 글자/칩 배경 라이트 4.91 · 다크 6.51. 전부 실측값이다
+- a11y:contrast — 제목 fg=--card-foreground / bg=--card 라이트 16.73 · 다크 14.84. 요약·날짜 fg=--muted-foreground / bg=--card 라이트 5.59 · 다크 7.34. 칩 글자/칩 배경 라이트 4.91 · 다크 6.51. 전부 렌더 화면에서 잰 값이다
 - a11y:target — 카드 전체가 클릭 영역이라 24x24 를 크게 넘는다. 카드 사이 간격 gap-4(16px)로 인접 8px 규칙을 만족한다
 - a11y:role — link. 카드를 button 으로 만들지 않는다. 새 탭·주소 복사가 막힌다
 

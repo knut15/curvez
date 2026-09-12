@@ -1,0 +1,14 @@
+{
+  "extends": "@curvez/tsconfig/nextjs.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "jsx": "preserve",
+    "types": ["vitest/globals"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*", ".storybook/**/*", "vitest.config.mts"],
+  "exclude": ["node_modules"]
+}

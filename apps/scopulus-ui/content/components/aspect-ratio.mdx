@@ -1,0 +1,88 @@
+import { AspectRatio, Skeleton } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    {
+      name: "ratio",
+      type: `"square" | "video" | "4/3" | "3/2"`,
+      default: `"video"`,
+    },
+    {
+      name: "children",
+      type: "React.ReactNode",
+      required: true,
+      note: "상자를 채울 것",
+    },
+  ]}
+/>
+
+<Example
+  title="AspectRatio"
+  center={false}
+  code={`<AspectRatio>
+  <div className="flex size-full items-center justify-center rounded-lg bg-muted text-xs text-muted-foreground">
+    16:9
+  </div>
+</AspectRatio>`}
+>
+  <AspectRatio>
+    <div className="flex size-full items-center justify-center rounded-lg bg-muted text-xs text-muted-foreground">
+      16:9
+    </div>
+  </AspectRatio>
+</Example>
+
+<Example
+  title="Square"
+  center={false}
+  code={`<AspectRatio ratio="square">
+  <div className="flex size-full items-center justify-center rounded-lg border border-border text-xs text-muted-foreground">
+    1:1
+  </div>
+</AspectRatio>`}
+>
+  <AspectRatio ratio="square">
+    <div className="flex size-full items-center justify-center rounded-lg border border-border text-xs text-muted-foreground">
+      1:1
+    </div>
+  </AspectRatio>
+</Example>
+
+<Example
+  title="Ratios"
+  center={false}
+  code={`<AspectRatio ratio="4/3">
+  <div className="flex size-full items-center justify-center rounded-lg bg-muted text-xs text-muted-foreground">
+    4:3
+  </div>
+</AspectRatio>
+<AspectRatio ratio="3/2">
+  <div className="flex size-full items-center justify-center rounded-lg bg-muted text-xs text-muted-foreground">
+    3:2
+  </div>
+</AspectRatio>`}
+>
+  <AspectRatio ratio="4/3">
+    <div className="flex size-full items-center justify-center rounded-lg bg-muted text-xs text-muted-foreground">
+      4:3
+    </div>
+  </AspectRatio>
+  <AspectRatio ratio="3/2">
+    <div className="flex size-full items-center justify-center rounded-lg bg-muted text-xs text-muted-foreground">
+      3:2
+    </div>
+  </AspectRatio>
+</Example>
+
+<Example
+  title="Waiting for an image"
+  center={false}
+  code={`<AspectRatio>
+  <Skeleton className="size-full rounded-lg" />
+</AspectRatio>`}
+>
+  <AspectRatio>
+    <Skeleton className="size-full rounded-lg" />
+  </AspectRatio>
+</Example>

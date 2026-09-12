@@ -1,0 +1,103 @@
+import { Field, Input, Textarea } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    { name: "id", type: "string", required: true, note: "컨트롤의 id" },
+    { name: "label", type: "React.ReactNode", required: true },
+    { name: "description", type: "React.ReactNode", note: "컨트롤 아래 설명" },
+    {
+      name: "error",
+      type: "React.ReactNode",
+      note: "있으면 컨트롤이 aria-invalid 가 된다",
+    },
+    {
+      name: "children",
+      type: "(control: FieldControl) => React.ReactNode",
+      required: true,
+      note: "받은 것을 컨트롤에 그대로 펼친다",
+    },
+  ]}
+/>
+
+<Example
+  title="Field"
+  center={false}
+  code={`<Field id="field-title" label="사례 제목">
+  {(control) => <Input {...control} placeholder="토큰 저장소의 경쟁 상태" />}
+</Field>`}
+>
+  <Field id="field-title" label="사례 제목">
+    {(control) => <Input {...control} placeholder="토큰 저장소의 경쟁 상태" />}
+  </Field>
+</Example>
+
+<Example
+  title="With description"
+  center={false}
+  code={`<Field
+  id="field-summary"
+  label="사례 요약"
+  description="목록 카드에 그대로 실린다. 40자를 넘기지 않는다."
+>
+  {(control) => <Textarea {...control} rows={3} />}
+</Field>`}
+>
+  <Field
+    id="field-summary"
+    label="사례 요약"
+    description="목록 카드에 그대로 실린다. 40자를 넘기지 않는다."
+  >
+    {(control) => <Textarea {...control} rows={3} />}
+  </Field>
+</Example>
+
+<Example
+  title="With error"
+  center={false}
+  code={`<Field id="field-error" label="사례 제목" error="제목을 입력하십시오.">
+  {(control) => <Input {...control} defaultValue="제" />}
+</Field>`}
+>
+  <Field id="field-error" label="사례 제목" error="제목을 입력하십시오.">
+    {(control) => <Input {...control} defaultValue="제" />}
+  </Field>
+</Example>
+
+<Example
+  title="With description and error"
+  center={false}
+  code={`<Field
+  id="field-both"
+  label="사례 제목"
+  description="목록 카드에 그대로 실린다."
+  error="제목을 입력하십시오."
+>
+  {(control) => <Input {...control} defaultValue="제" />}
+</Field>`}
+>
+  <Field
+    id="field-both"
+    label="사례 제목"
+    description="목록 카드에 그대로 실린다."
+    error="제목을 입력하십시오."
+  >
+    {(control) => <Input {...control} defaultValue="제" />}
+  </Field>
+</Example>
+
+<Example
+  title="Disabled control"
+  center={false}
+  code={`<Field id="field-disabled" label="사례 제목">
+  {(control) => (
+    <Input {...control} disabled defaultValue="토큰 저장소의 경쟁 상태" />
+  )}
+</Field>`}
+>
+  <Field id="field-disabled" label="사례 제목">
+    {(control) => (
+      <Input {...control} disabled defaultValue="토큰 저장소의 경쟁 상태" />
+    )}
+  </Field>
+</Example>

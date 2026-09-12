@@ -1,0 +1,42 @@
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    { name: "children", type: "string", required: true },
+    { name: "description", type: "React.ReactNode" },
+    { name: "variant", type: `"index" | "detail"`, default: `"index"` },
+  ]}
+/>
+
+<Example
+  title="PageTitle"
+  center={false}
+  code={`<PageTitle>Changelog</PageTitle>`}
+>
+  <div className="text-4xl font-bold tracking-[-0.02em]">Changelog</div>
+</Example>
+
+<Example
+  title="With description"
+  center={false}
+  code={`<PageTitle description="바뀐 것을 날짜순으로 싣는다.">Changelog</PageTitle>`}
+>
+  <div>
+    <div className="text-4xl font-bold tracking-[-0.02em]">Changelog</div>
+    <div className="mt-3 max-w-[65ch] leading-relaxed break-keep text-muted-foreground">
+      바뀐 것을 날짜순으로 싣는다.
+    </div>
+  </div>
+</Example>
+
+<Example
+  title="Variants"
+  center={false}
+  code={`<PageTitle variant="index">Changelog</PageTitle>
+<PageTitle variant="detail">토큰 저장소의 경쟁 상태를 고치면서 무엇을 빼고 무엇을 남겼나</PageTitle>`}
+>
+  <div className="text-4xl font-bold tracking-[-0.02em]">Changelog</div>
+  <div className="text-4xl leading-[1.15] font-bold tracking-[-0.02em] break-keep">
+    토큰 저장소의 경쟁 상태를 고치면서 무엇을 빼고 무엇을 남겼나
+  </div>
+</Example>

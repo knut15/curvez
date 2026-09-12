@@ -1,0 +1,88 @@
+import { Breadcrumbs } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    {
+      name: "items",
+      type: "{ label: string; href?: string }[]",
+      required: true,
+      note: "마지막 항목이 지금 있는 자리다",
+    },
+    {
+      name: "label",
+      type: "string",
+      default: `"현재 위치"`,
+      note: "nav 의 이름",
+    },
+  ]}
+/>
+
+<Example
+  title="Breadcrumbs"
+  code={`<Breadcrumbs
+  items={[
+    { label: "Home", href: "/" },
+    { label: "Components", href: "/components" },
+    { label: "Breadcrumbs" },
+  ]}
+/>`}
+>
+  <Breadcrumbs
+    items={[
+      { label: "Home", href: "/" },
+      { label: "Components", href: "/components" },
+      { label: "Breadcrumbs" },
+    ]}
+  />
+</Example>
+
+<Example
+  title="Two levels"
+  code={`<Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Components" }]} />`}
+>
+  <Breadcrumbs
+    items={[{ label: "Home", href: "/" }, { label: "Components" }]}
+  />
+</Example>
+
+<Example
+  title="Current page only"
+  code={`<Breadcrumbs items={[{ label: "Components" }]} />`}
+>
+  <Breadcrumbs items={[{ label: "Components" }]} />
+</Example>
+
+<Example
+  title="Without an index page"
+  code={`<Breadcrumbs
+  items={[
+    { label: "Home", href: "/" },
+    { label: "Docs" },
+    { label: "Navigation", href: "/components" },
+    { label: "Breadcrumbs" },
+  ]}
+/>`}
+>
+  <Breadcrumbs
+    items={[
+      { label: "Home", href: "/" },
+      { label: "Docs" },
+      { label: "Navigation", href: "/components" },
+      { label: "Breadcrumbs" },
+    ]}
+  />
+</Example>
+
+<Example
+  title="Custom label"
+  code={`<Breadcrumbs
+  label="문서 경로"
+  items={[{ label: "Docs", href: "/docs" }, { label: "Getting Started" }]}
+/>`}
+>
+  <Breadcrumbs
+    label="문서 경로"
+    items={[{ label: "Docs", href: "/docs" }, { label: "Getting Started" }]}
+  />
+</Example>

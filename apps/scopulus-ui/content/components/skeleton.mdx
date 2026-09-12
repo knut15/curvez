@@ -1,0 +1,49 @@
+import { Skeleton } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    {
+      name: "className",
+      type: "string",
+      required: true,
+      note: "크기를 정하는 유일한 수단",
+    },
+    { name: "...", type: "ComponentProps<'div'>", note: "그대로 흘러간다" },
+  ]}
+/>
+
+<Example title="Skeleton" code={`<Skeleton className="h-5 w-48" />`}>
+  <Skeleton className="h-5 w-48" />
+</Example>
+
+<Example
+  title="Text lines"
+  center={false}
+  code={`<Skeleton className="h-4 w-full" />
+<Skeleton className="h-4 w-full" />
+<Skeleton className="h-4 w-2/5" />`}
+>
+  <Skeleton className="h-4 w-full" />
+  <Skeleton className="h-4 w-full" />
+  <Skeleton className="h-4 w-2/5" />
+</Example>
+
+<Example
+  title="Avatar and two lines"
+  code={`<div className="flex w-full max-w-sm items-center gap-3">
+  <Skeleton className="size-10 rounded-full" />
+  <div className="flex flex-1 flex-col gap-2">
+    <Skeleton className="h-4 w-1/2" />
+    <Skeleton className="h-4 w-4/5" />
+  </div>
+</div>`}
+>
+  <div className="flex w-full max-w-sm items-center gap-3">
+    <Skeleton className="size-10 rounded-full" />
+    <div className="flex flex-1 flex-col gap-2">
+      <Skeleton className="h-4 w-1/2" />
+      <Skeleton className="h-4 w-4/5" />
+    </div>
+  </div>
+</Example>

@@ -1,0 +1,230 @@
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    {
+      name: "Table",
+      type: "ComponentProps<'table'>",
+      note: "overflow-x-auto 인 div 로 한 겹 감싼다",
+    },
+    { name: "TableHeader", type: "ComponentProps<'thead'>" },
+    { name: "TableBody", type: "ComponentProps<'tbody'>" },
+    { name: "TableFooter", type: "ComponentProps<'tfoot'>" },
+    {
+      name: "TableRow",
+      type: "ComponentProps<'tr'>",
+      note: `data-state="selected" 가 선택 면을 켠다`,
+    },
+    {
+      name: "TableHead",
+      type: "ComponentProps<'th'>",
+      note: "scope 를 직접 붙인다",
+    },
+    { name: "TableCell", type: "ComponentProps<'td'>" },
+    {
+      name: "TableCaption",
+      type: "ComponentProps<'caption'>",
+      note: "표 아래에 그려진다",
+    },
+  ]}
+/>
+
+<Example
+  title="Table"
+  center={false}
+  code={`<Table>
+  <TableHeader>
+    <TableRow>
+      <TableHead scope="col">Component</TableHead>
+      <TableHead scope="col">Category</TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    <TableRow>
+      <TableCell>Badge</TableCell>
+      <TableCell>Data display</TableCell>
+    </TableRow>
+    <TableRow>
+      <TableCell>Card</TableCell>
+      <TableCell>Data display</TableCell>
+    </TableRow>
+    <TableRow>
+      <TableCell>Separator</TableCell>
+      <TableCell>Layout</TableCell>
+    </TableRow>
+  </TableBody>
+</Table>`}
+>
+  <Table>
+    <TableHeader>
+      <TableRow>
+        <TableHead scope="col">Component</TableHead>
+        <TableHead scope="col">Category</TableHead>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      <TableRow>
+        <TableCell>Badge</TableCell>
+        <TableCell>Data display</TableCell>
+      </TableRow>
+      <TableRow>
+        <TableCell>Card</TableCell>
+        <TableCell>Data display</TableCell>
+      </TableRow>
+      <TableRow>
+        <TableCell>Separator</TableCell>
+        <TableCell>Layout</TableCell>
+      </TableRow>
+    </TableBody>
+  </Table>
+</Example>
+
+<Example
+  title="With caption"
+  center={false}
+  code={`<Table>
+  <TableCaption>Data display 묶음 2종</TableCaption>
+  <TableHeader>
+    <TableRow>
+      <TableHead scope="col">Component</TableHead>
+      <TableHead scope="col">Category</TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    <TableRow>
+      <TableCell>Badge</TableCell>
+      <TableCell>Data display</TableCell>
+    </TableRow>
+    <TableRow>
+      <TableCell>Card</TableCell>
+      <TableCell>Data display</TableCell>
+    </TableRow>
+  </TableBody>
+</Table>`}
+>
+  <Table>
+    <TableCaption>Data display 묶음 2종</TableCaption>
+    <TableHeader>
+      <TableRow>
+        <TableHead scope="col">Component</TableHead>
+        <TableHead scope="col">Category</TableHead>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      <TableRow>
+        <TableCell>Badge</TableCell>
+        <TableCell>Data display</TableCell>
+      </TableRow>
+      <TableRow>
+        <TableCell>Card</TableCell>
+        <TableCell>Data display</TableCell>
+      </TableRow>
+    </TableBody>
+  </Table>
+</Example>
+
+<Example
+  title="With footer"
+  center={false}
+  code={`<Table>
+  <TableHeader>
+    <TableRow>
+      <TableHead scope="col">Category</TableHead>
+      <TableHead scope="col">Count</TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    <TableRow>
+      <TableCell>Data display</TableCell>
+      <TableCell>3</TableCell>
+    </TableRow>
+    <TableRow>
+      <TableCell>Layout</TableCell>
+      <TableCell>3</TableCell>
+    </TableRow>
+  </TableBody>
+  <TableFooter>
+    <TableRow>
+      <TableCell>합계</TableCell>
+      <TableCell>6</TableCell>
+    </TableRow>
+  </TableFooter>
+</Table>`}
+>
+  <Table>
+    <TableHeader>
+      <TableRow>
+        <TableHead scope="col">Category</TableHead>
+        <TableHead scope="col">Count</TableHead>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      <TableRow>
+        <TableCell>Data display</TableCell>
+        <TableCell>3</TableCell>
+      </TableRow>
+      <TableRow>
+        <TableCell>Layout</TableCell>
+        <TableCell>3</TableCell>
+      </TableRow>
+    </TableBody>
+    <TableFooter>
+      <TableRow>
+        <TableCell>합계</TableCell>
+        <TableCell>6</TableCell>
+      </TableRow>
+    </TableFooter>
+  </Table>
+</Example>
+
+<Example
+  title="Selected row"
+  center={false}
+  code={`<Table>
+  <TableHeader>
+    <TableRow>
+      <TableHead scope="col">Component</TableHead>
+      <TableHead scope="col">Category</TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    <TableRow data-state="selected">
+      <TableCell>Badge</TableCell>
+      <TableCell>Data display</TableCell>
+    </TableRow>
+    <TableRow>
+      <TableCell>Card</TableCell>
+      <TableCell>Data display</TableCell>
+    </TableRow>
+  </TableBody>
+</Table>`}
+>
+  <Table>
+    <TableHeader>
+      <TableRow>
+        <TableHead scope="col">Component</TableHead>
+        <TableHead scope="col">Category</TableHead>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      <TableRow data-state="selected">
+        <TableCell>Badge</TableCell>
+        <TableCell>Data display</TableCell>
+      </TableRow>
+      <TableRow>
+        <TableCell>Card</TableCell>
+        <TableCell>Data display</TableCell>
+      </TableRow>
+    </TableBody>
+  </Table>
+</Example>

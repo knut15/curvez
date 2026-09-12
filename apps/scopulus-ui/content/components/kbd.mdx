@@ -1,0 +1,44 @@
+import { Kbd } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    {
+      name: "children",
+      type: "string",
+      required: true,
+      note: "키 하나로 쓸 때",
+    },
+    {
+      name: "keys",
+      type: "string[]",
+      required: true,
+      note: "조합으로 쓸 때. 사이의 + 는 컴포넌트가 낸다",
+    },
+  ]}
+/>
+
+<Example title="Kbd" code={`<Kbd>K</Kbd>`}>
+  <Kbd>K</Kbd>
+</Example>
+
+<Example title="Key combination" code={`<Kbd keys={["⌘", "K"]} />`}>
+  <Kbd keys={["⌘", "K"]} />
+</Example>
+
+<Example title="Three keys" code={`<Kbd keys={["Ctrl", "Shift", "Del"]} />`}>
+  <Kbd keys={["Ctrl", "Shift", "Del"]} />
+</Example>
+
+<Example
+  title="In text"
+  center={false}
+  code={`<div>검색은 <Kbd keys={["⌘", "K"]} /> 로 연다.</div>`}
+>
+  {/* `<p>` 가 아니라 `<div>` 다. prettier 는 요소 자식이 있는 JSX 를 길이와 무관하게
+      여러 줄로 쪼개고, 그러면 MDX 가 안쪽 글자를 또 `<p>` 로 감싼다. `<p><p>` 는
+      브라우저 파서가 바깥을 강제로 닫아 하이드레이션이 어긋나고, `<div><p>` 는 유효하다. */}
+  <div>
+    검색은 <Kbd keys={["⌘", "K"]} /> 로 연다.
+  </div>
+</Example>

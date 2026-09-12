@@ -1,0 +1,61 @@
+import { Checkbox } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    { name: "checked", type: "boolean", note: "제어로 쓸 때의 값" },
+    { name: "defaultChecked", type: "boolean", default: "false" },
+    {
+      name: "indeterminate",
+      type: "boolean",
+      default: "false",
+      note: "부분 선택",
+    },
+    { name: "onCheckedChange", type: "(checked: boolean) => void" },
+    { name: "disabled", type: "boolean", default: "false" },
+    { name: "required", type: "boolean", default: "false" },
+    { name: "name", type: "string", note: "폼 필드 이름" },
+    { name: "className", type: "string", note: "자리를 앉힐 때만 쓴다" },
+    {
+      name: "...",
+      type: "CheckboxPrimitive.Root.Props",
+      note: "그대로 흘러간다",
+    },
+  ]}
+/>
+
+<Example
+  title="Checkbox"
+  code={`<Checkbox id="checkbox-publish" />
+<label htmlFor="checkbox-publish">공개 사례로 올린다</label>`}
+>
+  <Checkbox id="checkbox-publish" />
+  <label htmlFor="checkbox-publish">공개 사례로 올린다</label>
+</Example>
+
+<Example
+  title="Checked"
+  code={`<Checkbox id="checkbox-comments" defaultChecked />
+<label htmlFor="checkbox-comments">댓글을 허용한다</label>`}
+>
+  <Checkbox id="checkbox-comments" defaultChecked />
+  <label htmlFor="checkbox-comments">댓글을 허용한다</label>
+</Example>
+
+<Example
+  title="Invalid"
+  code={`<Checkbox id="checkbox-terms" aria-invalid />
+<label htmlFor="checkbox-terms">약관에 동의한다</label>`}
+>
+  <Checkbox id="checkbox-terms" aria-invalid />
+  <label htmlFor="checkbox-terms">약관에 동의한다</label>
+</Example>
+
+<Example
+  title="Disabled"
+  code={`<Checkbox id="checkbox-indexed" defaultChecked disabled />
+<label htmlFor="checkbox-indexed">검색 결과에 싣는다</label>`}
+>
+  <Checkbox id="checkbox-indexed" defaultChecked disabled />
+  <label htmlFor="checkbox-indexed">검색 결과에 싣는다</label>
+</Example>

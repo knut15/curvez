@@ -1,0 +1,52 @@
+import { Separator } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props rows={[{ name: "—", type: "—", note: "값을 받지 않는다" }]} />
+
+<Example
+  title="Separator"
+  center={false}
+  code={`<p>앞 덩어리가 여기서 끝난다.</p>
+<Separator />
+<p>뒤 덩어리가 여기서 시작한다.</p>`}
+>
+  <p>앞 덩어리가 여기서 끝난다.</p>
+  <Separator />
+  <p>뒤 덩어리가 여기서 시작한다.</p>
+</Example>
+
+<Example
+  title="Between sections"
+  center={false}
+  code={`<p>첫째 덩어리</p>
+<Separator />
+<p>둘째 덩어리</p>
+<Separator />
+<p>셋째 덩어리</p>`}
+>
+  <p>첫째 덩어리</p>
+  <Separator />
+  <p>둘째 덩어리</p>
+  <Separator />
+  <p>셋째 덩어리</p>
+</Example>
+
+<Example
+  title="Before a list"
+  center={false}
+  code={`<p className="text-sm text-muted-foreground">Data display</p>
+<Separator />
+<ul>
+  <li>Badge</li>
+  <li>Card</li>
+  <li>Table</li>
+</ul>`}
+>
+  <p className="text-sm text-muted-foreground">Data display</p>
+  <Separator />
+  <ul>
+    <li>Badge</li>
+    <li>Card</li>
+    <li>Table</li>
+  </ul>
+</Example>

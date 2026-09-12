@@ -1,0 +1,168 @@
+import {
+  Button,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@scopulus/ui";
+import { Trash2Icon } from "lucide-react";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    {
+      name: "delay",
+      type: "number",
+      default: "0",
+      note: "TooltipProvider 의 prop. 뜨기까지의 ms",
+    },
+    {
+      name: "closeDelay",
+      type: "number",
+      note: "TooltipProvider 의 prop. 사라지기까지의 ms",
+    },
+    { name: "open", type: "boolean", note: "제어로 쓸 때의 열림 여부" },
+    { name: "defaultOpen", type: "boolean", default: "false" },
+    { name: "onOpenChange", type: "(open: boolean) => void" },
+    {
+      name: "children",
+      type: "React.ReactNode",
+      required: true,
+      note: "TooltipTrigger + TooltipContent",
+    },
+    {
+      name: "side",
+      type: `"top" | "bottom" | "left" | "right" | "inline-start" | "inline-end"`,
+      default: `"top"`,
+      note: "TooltipContent 의 prop",
+    },
+    {
+      name: "sideOffset",
+      type: "number",
+      default: "4",
+      note: "TooltipContent 의 prop",
+    },
+    {
+      name: "align",
+      type: `"start" | "center" | "end"`,
+      default: `"center"`,
+      note: "TooltipContent 의 prop",
+    },
+    {
+      name: "alignOffset",
+      type: "number",
+      default: "0",
+      note: "TooltipContent 의 prop",
+    },
+  ]}
+/>
+
+<Example
+  title="Tooltip"
+  code={`<TooltipProvider>
+  <Tooltip>
+    <TooltipTrigger render={<Button variant="outline" />}>발행 취소</TooltipTrigger>
+    <TooltipContent>공개 주소가 즉시 사라집니다</TooltipContent>
+  </Tooltip>
+</TooltipProvider>`}
+>
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger render={<Button variant="outline" />}>
+        발행 취소
+      </TooltipTrigger>
+      <TooltipContent>공개 주소가 즉시 사라집니다</TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+</Example>
+
+<Example
+  title="Sides"
+  code={`<TooltipProvider>
+  <Tooltip>
+    <TooltipTrigger render={<Button variant="outline" />}>top</TooltipTrigger>
+    <TooltipContent side="top">위에 뜹니다</TooltipContent>
+  </Tooltip>
+  <Tooltip>
+    <TooltipTrigger render={<Button variant="outline" />}>right</TooltipTrigger>
+    <TooltipContent side="right">오른쪽에 뜹니다</TooltipContent>
+  </Tooltip>
+  <Tooltip>
+    <TooltipTrigger render={<Button variant="outline" />}>bottom</TooltipTrigger>
+    <TooltipContent side="bottom">아래에 뜹니다</TooltipContent>
+  </Tooltip>
+  <Tooltip>
+    <TooltipTrigger render={<Button variant="outline" />}>left</TooltipTrigger>
+    <TooltipContent side="left">왼쪽에 뜹니다</TooltipContent>
+  </Tooltip>
+</TooltipProvider>`}
+>
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger render={<Button variant="outline" />}>top</TooltipTrigger>
+      <TooltipContent side="top">위에 뜹니다</TooltipContent>
+    </Tooltip>
+    <Tooltip>
+      <TooltipTrigger render={<Button variant="outline" />}>
+        right
+      </TooltipTrigger>
+      <TooltipContent side="right">오른쪽에 뜹니다</TooltipContent>
+    </Tooltip>
+    <Tooltip>
+      <TooltipTrigger render={<Button variant="outline" />}>
+        bottom
+      </TooltipTrigger>
+      <TooltipContent side="bottom">아래에 뜹니다</TooltipContent>
+    </Tooltip>
+    <Tooltip>
+      <TooltipTrigger render={<Button variant="outline" />}>
+        left
+      </TooltipTrigger>
+      <TooltipContent side="left">왼쪽에 뜹니다</TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+</Example>
+
+<Example
+  title="Icon button"
+  code={`<TooltipProvider>
+  <Tooltip>
+    <TooltipTrigger
+      render={<Button variant="ghost" size="icon" aria-label="사례 지우기" />}
+    >
+      <Trash2Icon aria-hidden />
+    </TooltipTrigger>
+    <TooltipContent>사례 지우기</TooltipContent>
+  </Tooltip>
+</TooltipProvider>`}
+>
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger
+        render={<Button variant="ghost" size="icon" aria-label="사례 지우기" />}
+      >
+        <Trash2Icon aria-hidden />
+      </TooltipTrigger>
+      <TooltipContent>사례 지우기</TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+</Example>
+
+<Example
+  title="Delay"
+  code={`<TooltipProvider delay={700}>
+  <Tooltip>
+    <TooltipTrigger render={<Button variant="outline" />}>700ms</TooltipTrigger>
+    <TooltipContent>0.7초 뒤에 뜹니다</TooltipContent>
+  </Tooltip>
+</TooltipProvider>`}
+>
+  <TooltipProvider delay={700}>
+    <Tooltip>
+      <TooltipTrigger render={<Button variant="outline" />}>
+        700ms
+      </TooltipTrigger>
+      <TooltipContent>0.7초 뒤에 뜹니다</TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+</Example>

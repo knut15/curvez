@@ -1,0 +1,71 @@
+import { Textarea } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    { name: "value", type: "string", note: "제어로 쓸 때의 값" },
+    { name: "defaultValue", type: "string", note: "비제어로 쓸 때의 처음 값" },
+    { name: "onChange", type: "(e) => void" },
+    { name: "placeholder", type: "string" },
+    { name: "rows", type: "number", note: "처음 줄 수" },
+    { name: "disabled", type: "boolean", default: "false" },
+    { name: "required", type: "boolean", default: "false" },
+    { name: "aria-invalid", type: "boolean", default: "false" },
+    { name: "className", type: "string", note: "최소 높이를 바꿀 때만 쓴다" },
+    {
+      name: "...",
+      type: "ComponentProps<'textarea'>",
+      note: "그대로 흘러간다",
+    },
+  ]}
+/>
+
+<Example
+  title="Textarea"
+  center={false}
+  code={`<label htmlFor="textarea-symptom">증상</label>
+<Textarea id="textarea-symptom" placeholder="무엇이 어떻게 막혔는지 적어 주세요" />`}
+>
+  <label htmlFor="textarea-symptom">증상</label>
+  <Textarea
+    id="textarea-symptom"
+    placeholder="무엇이 어떻게 막혔는지 적어 주세요"
+  />
+</Example>
+
+<Example
+  title="With value"
+  center={false}
+  code={`<label htmlFor="textarea-value">증상</label>
+<Textarea id="textarea-value" defaultValue="토큰 갱신 요청이 겹칠 때 이전 토큰이 뒤늦게 덮어씁니다. 두 탭을 동시에 열고 만료 직전에 새로고침하면 세 번에 한 번꼴로 재현됩니다." />`}
+>
+  <label htmlFor="textarea-value">증상</label>
+  <Textarea
+    id="textarea-value"
+    defaultValue="토큰 갱신 요청이 겹칠 때 이전 토큰이 뒤늦게 덮어씁니다. 두 탭을 동시에 열고 만료 직전에 새로고침하면 세 번에 한 번꼴로 재현됩니다."
+  />
+</Example>
+
+<Example
+  title="Invalid"
+  center={false}
+  code={`<label htmlFor="textarea-invalid">증상</label>
+<Textarea id="textarea-invalid" aria-invalid defaultValue="막" />`}
+>
+  <label htmlFor="textarea-invalid">증상</label>
+  <Textarea id="textarea-invalid" aria-invalid defaultValue="막" />
+</Example>
+
+<Example
+  title="Disabled"
+  center={false}
+  code={`<label htmlFor="textarea-disabled">증상</label>
+<Textarea id="textarea-disabled" disabled defaultValue="토큰 갱신 요청이 겹칠 때 이전 토큰이 뒤늦게 덮어씁니다." />`}
+>
+  <label htmlFor="textarea-disabled">증상</label>
+  <Textarea
+    id="textarea-disabled"
+    disabled
+    defaultValue="토큰 갱신 요청이 겹칠 때 이전 토큰이 뒤늦게 덮어씁니다."
+  />
+</Example>

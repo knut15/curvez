@@ -1,0 +1,46 @@
+import { Badge } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    { name: "variant", type: `"tag" | "status"`, default: `"tag"` },
+    {
+      name: "tone",
+      type: `"active" | "idle"`,
+      note: "variant 가 status 면 필수",
+    },
+    { name: "children", type: "string", required: true },
+  ]}
+/>
+
+<Example title="Badge" code={`<Badge>auth</Badge>`}>
+  <Badge>auth</Badge>
+</Example>
+
+<Example
+  title="Variants"
+  code={`<Badge variant="tag">auth</Badge>
+<Badge variant="status" tone="active">진행 중</Badge>`}
+>
+  <Badge variant="tag">auth</Badge>
+  <Badge variant="status" tone="active">
+    진행 중
+  </Badge>
+</Example>
+
+<Example
+  title="Tones"
+  code={`<Badge variant="status" tone="active">진행 중</Badge>
+<Badge variant="status" tone="idle">멈춤</Badge>
+<Badge variant="status" tone="idle">마무리</Badge>`}
+>
+  <Badge variant="status" tone="active">
+    진행 중
+  </Badge>
+  <Badge variant="status" tone="idle">
+    멈춤
+  </Badge>
+  <Badge variant="status" tone="idle">
+    마무리
+  </Badge>
+</Example>

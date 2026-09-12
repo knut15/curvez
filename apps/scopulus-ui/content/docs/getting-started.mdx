@@ -1,0 +1,76 @@
+## Installation
+
+이 저장소 안에서 워크스페이스로 씁니다. npm 에 발행하지 않습니다.
+
+```json
+{
+  "dependencies": {
+    "@scopulus/ui": "workspace:*"
+  }
+}
+```
+
+## Import tokens
+
+컴포넌트보다 토큰이 먼저입니다. 색과 반경을 전부 CSS 변수에서 읽으므로, 변수가 없으면
+컴포넌트에 색이 붙지 않습니다.
+
+```css
+@import "tailwindcss";
+@import "shadcn/tailwind.css";
+@import "@scopulus/ui/tokens.css";
+```
+
+## Add the library to Tailwind's sources
+
+Tailwind v4 의 자동 탐지는 `node_modules` 를 건너뜁니다. 워크스페이스 패키지가 거기 심볼릭
+링크로 있어서, 이 줄이 없으면 **라이브러리에서만 쓰는 클래스가 생성되지 않습니다.** 오류도
+경고도 나지 않습니다.
+
+```css
+@source "../../../../packages/scopulus-ui/src";
+```
+
+## Usage
+
+```tsx
+import { Button, Card, Badge } from "@scopulus/ui";
+
+export function Example() {
+  return (
+    <Card href="/cases/token-store">
+      <Badge>auth</Badge>
+      <span className="text-lg font-medium">토큰 스토어의 레이스 컨디션</span>
+    </Card>
+  );
+}
+```
+
+`@scopulus/ui` 가 공개 API 의 전부입니다. 내부 경로(`@scopulus/ui/src/ui/button`)를 직접
+가져오면 파일을 옮기는 것이 파괴적 변경이 됩니다.
+
+## Dark mode
+
+`.dark` 클래스 하나로 전환합니다. 전환 장치는 앱이 정합니다.
+
+```tsx
+<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+  {children}
+</ThemeProvider>
+```
+
+`ThemeToggle` 이 이 프로바이더를 전제합니다. 그래서 `next-themes` 가 이 패키지의
+`peerDependencies` 입니다.
+
+## Typeface
+
+라이브러리는 `--font-sans` 를 읽기만 합니다. 값은 앱이 채웁니다.
+
+```css
+:root {
+  --font-sans: "Pretendard Variable", system-ui, sans-serif;
+}
+```
+
+서체는 브랜드의 값이지 컴포넌트의 값이 아닙니다. 라이브러리가 고정하면 쓰는 쪽이 자기 서체를
+쓸 수 없습니다.

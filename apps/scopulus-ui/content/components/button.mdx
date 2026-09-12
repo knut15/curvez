@@ -1,0 +1,70 @@
+import { AppLink, Button } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    {
+      name: "variant",
+      type: `"default" | "ghost" | "outline"`,
+      default: `"default"`,
+    },
+    {
+      name: "size",
+      type: `"default" | "icon" | "icon-sm"`,
+      default: `"default"`,
+    },
+    {
+      name: "aria-label",
+      type: "string",
+      note: "size 가 icon · icon-sm 이면 필수",
+    },
+    { name: "...", type: "ComponentProps<'button'>", note: "그대로 흘러간다" },
+  ]}
+/>
+
+<Example title="Button" code={`<Button>저장</Button>`}>
+  <Button>저장</Button>
+</Example>
+
+<Example
+  title="Variants"
+  code={`<Button>default</Button>
+<Button variant="outline">outline</Button>
+<Button variant="ghost">ghost</Button>`}
+>
+  <Button>default</Button>
+  <Button variant="outline">outline</Button>
+  <Button variant="ghost">ghost</Button>
+</Example>
+
+<Example
+  title="Sizes"
+  code={`<Button size="default">default</Button>
+<Button size="icon" aria-label="닫기">✕</Button>
+<Button size="icon-sm" aria-label="닫기">✕</Button>`}
+>
+  <Button size="default">default</Button>
+  <Button size="icon" aria-label="닫기">
+    ✕
+  </Button>
+  <Button size="icon-sm" aria-label="닫기">
+    ✕
+  </Button>
+</Example>
+
+<Example title="Disabled" code={`<Button disabled>저장</Button>`}>
+  <Button disabled>저장</Button>
+</Example>
+
+<Example
+  title="Link that looks like a button"
+  code={`<AppLink href="/components" variant="cta">View Components</AppLink>
+<AppLink href="/docs/getting-started" variant="cta-quiet">Get Started</AppLink>`}
+>
+  <AppLink href="/components" variant="cta">
+    View Components
+  </AppLink>
+  <AppLink href="/docs/getting-started" variant="cta-quiet">
+    Get Started
+  </AppLink>
+</Example>

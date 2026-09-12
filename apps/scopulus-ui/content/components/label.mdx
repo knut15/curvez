@@ -1,0 +1,53 @@
+import { Checkbox, Input, Label } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    {
+      name: "htmlFor",
+      type: "string",
+      required: true,
+      note: "이름을 붙일 컨트롤의 id",
+    },
+    { name: "children", type: "React.ReactNode", required: true },
+  ]}
+/>
+
+<Example
+  title="Label"
+  center={false}
+  code={`<Label htmlFor="label-title">사례 제목</Label>
+<Input id="label-title" placeholder="토큰 저장소의 경쟁 상태" />`}
+>
+  <Label htmlFor="label-title">사례 제목</Label>
+  <Input id="label-title" placeholder="토큰 저장소의 경쟁 상태" />
+</Example>
+
+<Example
+  title="Required"
+  center={false}
+  code={`<Label htmlFor="label-required">사례 제목 (필수)</Label>
+<Input id="label-required" required placeholder="토큰 저장소의 경쟁 상태" />`}
+>
+  <Label htmlFor="label-required">사례 제목 (필수)</Label>
+  <Input id="label-required" required placeholder="토큰 저장소의 경쟁 상태" />
+</Example>
+
+<Example
+  title="With checkbox"
+  code={`<Checkbox id="label-publish" />
+<Label htmlFor="label-publish">공개 사례로 올린다</Label>`}
+>
+  <Checkbox id="label-publish" />
+  <Label htmlFor="label-publish">공개 사례로 올린다</Label>
+</Example>
+
+<Example
+  title="Disabled control"
+  center={false}
+  code={`<Label htmlFor="label-disabled">사례 제목</Label>
+<Input id="label-disabled" disabled defaultValue="토큰 저장소의 경쟁 상태" />`}
+>
+  <Label htmlFor="label-disabled">사례 제목</Label>
+  <Input id="label-disabled" disabled defaultValue="토큰 저장소의 경쟁 상태" />
+</Example>
