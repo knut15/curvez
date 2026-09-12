@@ -1,71 +1,57 @@
 import { Input } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
 
-한 줄 텍스트 입력입니다. 여러 줄은 [Textarea](/components/textarea) 가 맡습니다.
+<Props
+  rows={[
+    { name: "type", type: "string", default: `"text"` },
+    { name: "value", type: "string", note: "제어로 쓸 때의 값" },
+    { name: "defaultValue", type: "string", note: "비제어로 쓸 때의 처음 값" },
+    { name: "onChange", type: "(e) => void" },
+    { name: "placeholder", type: "string" },
+    { name: "disabled", type: "boolean", default: "false" },
+    { name: "required", type: "boolean", default: "false" },
+    { name: "aria-invalid", type: "boolean", default: "false" },
+    { name: "className", type: "string", note: "폭을 바꿀 때만 쓴다" },
+    { name: "...", type: "ComponentProps<'input'>", note: "그대로 흘러간다" },
+  ]}
+/>
 
-<div className="flex flex-col gap-4 not-prose my-6">
-  <div className="flex w-72 flex-col gap-1.5">
-    <label htmlFor="doc-input-a" className="text-sm font-medium">
-      사례 제목
-    </label>
-    <Input id="doc-input-a" placeholder="토큰 저장소의 경쟁 상태" />
-  </div>
-  <div className="flex w-72 flex-col gap-1.5">
-    <label htmlFor="doc-input-b" className="text-sm font-medium">
-      사례 제목
-    </label>
-    <Input id="doc-input-b" aria-invalid defaultValue="제" />
-  </div>
-  <div className="flex w-72 flex-col gap-1.5">
-    <label htmlFor="doc-input-c" className="text-sm font-medium">
-      사례 제목
-    </label>
-    <Input id="doc-input-c" disabled defaultValue="토큰 저장소의 경쟁 상태" />
-  </div>
-</div>
+<Example
+  title="Input"
+  center={false}
+  code={`<label htmlFor="input-title">사례 제목</label>
+<Input id="input-title" placeholder="토큰 저장소의 경쟁 상태" />`}
+>
+  <label htmlFor="input-title">사례 제목</label>
+  <Input id="input-title" placeholder="토큰 저장소의 경쟁 상태" />
+</Example>
 
-## placeholder 는 라벨이 아니다
+<Example
+  title="With value"
+  center={false}
+  code={`<label htmlFor="input-value">사례 제목</label>
+<Input id="input-value" defaultValue="토큰 저장소의 경쟁 상태" />`}
+>
+  <label htmlFor="input-value">사례 제목</label>
+  <Input id="input-value" defaultValue="토큰 저장소의 경쟁 상태" />
+</Example>
 
-접근성 검사를 통과한다고 라벨이 있는 것이 아닙니다. **axe 는 `placeholder` 를 접근 가능한
-이름으로 인정합니다.**
+<Example
+  title="Invalid"
+  center={false}
+  code={`<label htmlFor="input-invalid">사례 제목</label>
+<Input id="input-invalid" aria-invalid defaultValue="제" />`}
+>
+  <label htmlFor="input-invalid">사례 제목</label>
+  <Input id="input-invalid" aria-invalid defaultValue="제" />
+</Example>
 
-스토리를 쓰면서 실제로 확인한 것입니다. `<label>` 만 지우고 테스트를 돌렸을 때는 그대로
-통과했고, `placeholder` 까지 지우자 그제야 `label` 규칙으로 걸렸습니다.
-
-```
-"Form elements must have labels (label)"
-  Element does not have an implicit (wrapped) <label>
-  Element does not have an explicit <label>
-  aria-label attribute does not exist or is empty
-```
-
-**그러니 검사만 믿지 마십시오.** `placeholder` 는 값을 입력하는 순간 사라져서, 무엇을 적는
-칸이었는지 다시 확인할 방법이 없어집니다. `<label htmlFor>` 를 쓰십시오 — 라벨을 눌러도
-칸에 포커스가 갑니다.
-
-## 잘못된 값은 aria-invalid 하나로
-
-테두리와 포커스 링이 `--destructive` 로 바뀌는 것은 전부 `aria-invalid` 에 걸려 있습니다.
-**상태 클래스를 따로 주지 마십시오.** 색을 직접 칠하면 화면은 붉어지지만 화면 낭독기는
-아무 말도 하지 않습니다.
-
-오류 문구를 붙일 때는 `aria-describedby` 로 묶으십시오. 색만으로 말하는 것은 색을 구분하지
-못하는 사람에게 아무것도 말하지 않는 것과 같습니다.
-
-## 글자 크기가 화면 폭에 따라 다르다
-
-`text-base` 로 시작해 `md:text-sm` 로 줄어듭니다 (`input.tsx:11`). 작은 화면에서만 16px 인
-값입니다 — 브라우저가 16px 미만인 입력칸에 포커스가 갈 때 화면을 확대하는 것을 피하려는
-것이고, shadcn 이 준 값을 그대로 두었습니다.
-
-높이는 `h-8` 로 고정입니다. [Button](/components/button) 의 기본 높이가 40px 이라, 입력칸과
-버튼을 한 줄에 놓으면 **높이가 맞지 않습니다.** 나란히 놓아야 하면 버튼 쪽에
-`className="h-8"` 을 주십시오.
-
-## 어디서 왔나
-
-shadcn `base-nova` 에서 받았습니다 — 2026-09-11.
-
-**handwork 사용처: 0곳.** 실측에서 나온 아홉과 근거가 다릅니다. 화면에서 세어 본 값이 아니라,
-컴포넌트 20종이 **폼 · 오버레이 · 피드백 · 데이터** 네 묶음을 덮게 하려고 받은 것입니다.
-`Input` 은 [Textarea](/components/textarea) · [Checkbox](/components/checkbox) ·
-[Switch](/components/switch) · [Select](/components/select) 와 함께 **폼** 묶음의 기본입니다.
+<Example
+  title="Disabled"
+  center={false}
+  code={`<label htmlFor="input-disabled">사례 제목</label>
+<Input id="input-disabled" disabled defaultValue="토큰 저장소의 경쟁 상태" />`}
+>
+  <label htmlFor="input-disabled">사례 제목</label>
+  <Input id="input-disabled" disabled defaultValue="토큰 저장소의 경쟁 상태" />
+</Example>

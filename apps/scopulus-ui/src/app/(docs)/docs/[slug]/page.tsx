@@ -1,14 +1,12 @@
 import { notFound } from "next/navigation";
-import { AppLink, PageShell, PageTitle, Prose } from "@scopulus/ui";
+import { AppLink, PageTitle, Prose } from "@scopulus/ui";
 
-import { SiteFooter } from "@/widgets/site-footer";
-import { SiteHeader } from "@/widgets/site-header";
 import { listSlugs } from "@/shared/lib/mdx-collection";
 
 const TITLES: Record<string, { title: string; summary: string }> = {
   "getting-started": {
     title: "시작하기",
-    summary: "설치하고 토큰을 깔고 첫 컴포넌트를 쓰기까지.",
+    summary: "설치부터 첫 컴포넌트까지.",
   },
   tokens: {
     title: "토큰",
@@ -18,7 +16,7 @@ const TITLES: Record<string, { title: string; summary: string }> = {
 };
 
 async function importDoc(slug: string) {
-  return import(`../../../../content/docs/${slug}.mdx`);
+  return import(`@content/docs/${slug}.mdx`);
 }
 
 export async function generateStaticParams() {
@@ -39,24 +37,20 @@ export default async function DocPage({
 
   return (
     <>
-      <SiteHeader current="/docs/getting-started" />
-      <PageShell>
-        <PageTitle description={meta.summary}>{meta.title}</PageTitle>
-        <Prose>
-          <Body />
-        </Prose>
-        {others.length > 0 ? (
-          <p className="mt-10 text-sm text-muted-foreground">
-            다음:{" "}
-            {others.map((s) => (
-              <AppLink key={s} href={`/docs/${s}`}>
-                {TITLES[s]?.title ?? s}
-              </AppLink>
-            ))}
-          </p>
-        ) : null}
-      </PageShell>
-      <SiteFooter />
+      <PageTitle description={meta.summary}>{meta.title}</PageTitle>
+      <Prose>
+        <Body />
+      </Prose>
+      {others.length > 0 ? (
+        <p className="mt-10 text-sm text-muted-foreground">
+          다음:{" "}
+          {others.map((s) => (
+            <AppLink key={s} href={`/docs/${s}`}>
+              {TITLES[s]?.title ?? s}
+            </AppLink>
+          ))}
+        </p>
+      ) : null}
     </>
   );
 }

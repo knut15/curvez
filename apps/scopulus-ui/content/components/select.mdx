@@ -6,20 +6,88 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
 
-목록에서 하나를 고릅니다. 값이 서넛을 넘고 한 줄에 다 펼칠 수 없을 때 씁니다.
+<Props
+  rows={[
+    { name: "value", type: "string", note: "제어로 쓸 때의 값" },
+    { name: "defaultValue", type: "string", note: "비제어로 쓸 때의 처음 값" },
+    { name: "onValueChange", type: "(value: string) => void" },
+    {
+      name: "items",
+      type: "Record<string, ReactNode>",
+      note: "트리거에 값 대신 라벨을 보여준다",
+    },
+    {
+      name: "disabled",
+      type: "boolean",
+      default: "false",
+      note: "전체 비활성",
+    },
+    { name: "required", type: "boolean", default: "false" },
+    { name: "name", type: "string", note: "폼 필드 이름" },
+    {
+      name: "children",
+      type: "ReactNode",
+      required: true,
+      note: "SelectTrigger + SelectContent",
+    },
+    {
+      name: "SelectTrigger size",
+      type: `"sm" | "default"`,
+      default: `"default"`,
+      note: "28px · 32px",
+    },
+    {
+      name: "SelectTrigger className",
+      type: "string",
+      note: "폭을 바꿀 때만 쓴다",
+    },
+    {
+      name: "SelectValue placeholder",
+      type: "ReactNode",
+      note: "값이 없을 때의 글자",
+    },
+    {
+      name: "SelectContent side",
+      type: `"top" | "bottom" | "left" | "right" | "inline-start" | "inline-end"`,
+      default: `"bottom"`,
+    },
+    { name: "SelectContent sideOffset", type: "number", default: "4" },
+    {
+      name: "SelectContent align",
+      type: `"start" | "center" | "end"`,
+      default: `"center"`,
+    },
+    { name: "SelectContent alignOffset", type: "number", default: "0" },
+    {
+      name: "SelectContent alignItemWithTrigger",
+      type: "boolean",
+      default: "true",
+      note: "고른 항목을 트리거 위에 겹쳐 띄운다",
+    },
+  ]}
+/>
 
-<div className="flex flex-col gap-1.5 not-prose my-6">
-  <span id="doc-select-label" className="text-sm font-medium">
-    공개 범위
-  </span>
+<Example
+  title="Select"
+  code={`<Select items={{ public: "공개", unlisted: "링크 아는 사람만", private: "비공개" }}>
+  <SelectTrigger aria-label="공개 범위" className="w-56">
+    <SelectValue placeholder="고르세요" />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectGroup>
+      <SelectItem value="public">공개</SelectItem>
+      <SelectItem value="unlisted">링크 아는 사람만</SelectItem>
+      <SelectItem value="private">비공개</SelectItem>
+    </SelectGroup>
+  </SelectContent>
+</Select>`}
+>
   <Select
     items={{ public: "공개", unlisted: "링크 아는 사람만", private: "비공개" }}
   >
-    <SelectTrigger
-      aria-labelledby="doc-select-label"
-      className="w-56 justify-between"
-    >
+    <SelectTrigger aria-label="공개 범위" className="w-56">
       <SelectValue placeholder="고르세요" />
     </SelectTrigger>
     <SelectContent>
@@ -30,61 +98,138 @@ import {
       </SelectGroup>
     </SelectContent>
   </Select>
-</div>
+</Example>
 
-## 트리거의 이름은 aria-labelledby 로만 온다
+<Example
+  title="Sizes"
+  code={`<Select items={{ public: "공개", private: "비공개" }}>
+  <SelectTrigger size="sm" aria-label="sm 크기" className="w-40">
+    <SelectValue placeholder="sm" />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectGroup>
+      <SelectItem value="public">공개</SelectItem>
+      <SelectItem value="private">비공개</SelectItem>
+    </SelectGroup>
+  </SelectContent>
+</Select>
+<Select items={{ public: "공개", private: "비공개" }}>
+  <SelectTrigger aria-label="default 크기" className="w-40">
+    <SelectValue placeholder="default" />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectGroup>
+      <SelectItem value="public">공개</SelectItem>
+      <SelectItem value="private">비공개</SelectItem>
+    </SelectGroup>
+  </SelectContent>
+</Select>`}
+>
+  <Select items={{ public: "공개", private: "비공개" }}>
+    <SelectTrigger size="sm" aria-label="sm 크기" className="w-40">
+      <SelectValue placeholder="sm" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectGroup>
+        <SelectItem value="public">공개</SelectItem>
+        <SelectItem value="private">비공개</SelectItem>
+      </SelectGroup>
+    </SelectContent>
+  </Select>
+  <Select items={{ public: "공개", private: "비공개" }}>
+    <SelectTrigger aria-label="default 크기" className="w-40">
+      <SelectValue placeholder="default" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectGroup>
+        <SelectItem value="public">공개</SelectItem>
+        <SelectItem value="private">비공개</SelectItem>
+      </SelectGroup>
+    </SelectContent>
+  </Select>
+</Example>
 
-트리거는 `role="combobox"` 입니다. **combobox 는 안쪽 글자가 접근 이름이 되지 못하는
-role 입니다.** 트리거에 "공개" 라고 떠 있어도 이름은 비어 있고, 그러면 접근성 검사가
-`aria-input-field-name` 으로 잡습니다.
+<Example
+  title="With default value"
+  code={`<Select defaultValue="public" items={{ public: "공개", private: "비공개" }}>
+  <SelectTrigger aria-label="공개 범위" className="w-56">
+    <SelectValue />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectGroup>
+      <SelectItem value="public">공개</SelectItem>
+      <SelectItem value="private">비공개</SelectItem>
+    </SelectGroup>
+  </SelectContent>
+</Select>`}
+>
+  <Select defaultValue="public" items={{ public: "공개", private: "비공개" }}>
+    <SelectTrigger aria-label="공개 범위" className="w-56">
+      <SelectValue />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectGroup>
+        <SelectItem value="public">공개</SelectItem>
+        <SelectItem value="private">비공개</SelectItem>
+      </SelectGroup>
+    </SelectContent>
+  </Select>
+</Example>
 
-Base UI 는 이름을 `Field` 컨텍스트나 `Select.Label` 에서만 찾습니다. **`<label htmlFor>` 는
-보지 않습니다** — [Checkbox](/components/checkbox) 나 [Input](/components/input) 에서 통하는
-방법이 여기서는 통하지 않습니다.
-
-```tsx
-<span id="scope-label">공개 범위</span>
-<Select>
-  <SelectTrigger aria-labelledby="scope-label">
+<Example
+  title="Invalid"
+  code={`<Select items={{ public: "공개", private: "비공개" }}>
+  <SelectTrigger aria-invalid aria-label="공개 범위" className="w-56">
     <SelectValue placeholder="고르세요" />
   </SelectTrigger>
-  …
-</Select>
-```
+  <SelectContent>
+    <SelectGroup>
+      <SelectItem value="public">공개</SelectItem>
+      <SelectItem value="private">비공개</SelectItem>
+    </SelectGroup>
+  </SelectContent>
+</Select>`}
+>
+  <Select items={{ public: "공개", private: "비공개" }}>
+    <SelectTrigger aria-invalid aria-label="공개 범위" className="w-56">
+      <SelectValue placeholder="고르세요" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectGroup>
+        <SelectItem value="public">공개</SelectItem>
+        <SelectItem value="private">비공개</SelectItem>
+      </SelectGroup>
+    </SelectContent>
+  </Select>
+</Example>
 
-## items 를 주지 않으면 원본 값이 보인다
-
-`SelectValue` 는 고른 항목의 **값**을 보여줍니다. `value="public"` 을 고르면 트리거에
-`public` 이 뜹니다. 라벨을 보이게 하려면 `Select` 에 `items` 를 주십시오.
-
-```tsx
-<Select items={{ public: "공개", unlisted: "링크 아는 사람만", private: "비공개" }}>
-```
-
-`SelectItem` 의 children 과 `items` 의 라벨을 **두 곳에 적게 됩니다.** 한 곳에서 만들어
-양쪽에 흘리는 편이 어긋나지 않습니다 — 위 예제도 같은 객체에서 항목을 펼쳐 씁니다.
-
-## 목록은 트리거 폭을 따라간다
-
-목록 폭이 `w-(--anchor-width)` 라 트리거와 같아지고, 최소 `min-w-36` 입니다
-(`select.tsx:84`). 긴 항목은 잘리지 않고 가로로 넘칩니다 — 트리거 폭을 항목에 맞춰
-잡으십시오.
-
-`alignItemWithTrigger` 기본값이 `true` 라 (`select.tsx:63`) **고른 항목이 트리거 위에
-겹쳐 뜹니다.** 네이티브 `select` 와 같은 움직임인데, 목록이 길면 화면 위아래로 밀려나므로
-위치를 예측하기 어렵습니다. 아래로 펼치게 하려면 `alignItemWithTrigger={false}` 를 주십시오.
-
-## 항목은 Group 으로 감싼다
-
-여백은 `SelectGroup` 이 갖고 있습니다 (`p-1`). `SelectContent` 는 children 을 그대로
-`List` 에 넣으므로 (`select.tsx:90`), 그룹 없이 `SelectItem` 만 넣으면 **항목이 면 가장자리에
-붙습니다.** 그룹이 하나뿐이어도 감싸십시오.
-
-## 어디서 왔나
-
-shadcn `base-nova` 에서 받았습니다 — 2026-09-11.
-
-**handwork 사용처: 0곳.** 실측에서 나온 아홉과 근거가 다릅니다. 화면에서 세어 본 값이 아니라,
-컴포넌트 20종이 **폼 · 오버레이 · 피드백 · 데이터** 네 묶음을 덮게 하려고 받은 것입니다.
-`Select` 는 **폼** 묶음에서 "여럿 중 하나" 를 맡습니다 — 둘 중 하나는
-[Switch](/components/switch), 여럿 중 여럿은 [Checkbox](/components/checkbox) 입니다.
+<Example
+  title="Disabled"
+  code={`<Select disabled defaultValue="public" items={{ public: "공개", private: "비공개" }}>
+  <SelectTrigger aria-label="공개 범위" className="w-56">
+    <SelectValue />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectGroup>
+      <SelectItem value="public">공개</SelectItem>
+      <SelectItem value="private">비공개</SelectItem>
+    </SelectGroup>
+  </SelectContent>
+</Select>`}
+>
+  <Select
+    disabled
+    defaultValue="public"
+    items={{ public: "공개", private: "비공개" }}
+  >
+    <SelectTrigger aria-label="공개 범위" className="w-56">
+      <SelectValue />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectGroup>
+        <SelectItem value="public">공개</SelectItem>
+        <SelectItem value="private">비공개</SelectItem>
+      </SelectGroup>
+    </SelectContent>
+  </Select>
+</Example>

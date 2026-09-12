@@ -1,48 +1,70 @@
-import { Button } from "@scopulus/ui";
+import { AppLink, Button } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
 
-주소를 바꾸지 않는 행동 하나입니다. 주소가 바뀌는 것은 [AppLink](/components/app-link) 가 맡습니다.
+<Props
+  rows={[
+    {
+      name: "variant",
+      type: `"default" | "ghost" | "outline"`,
+      default: `"default"`,
+    },
+    {
+      name: "size",
+      type: `"default" | "icon" | "icon-sm"`,
+      default: `"default"`,
+    },
+    {
+      name: "aria-label",
+      type: "string",
+      note: "size 가 icon · icon-sm 이면 필수",
+    },
+    { name: "...", type: "ComponentProps<'button'>", note: "그대로 흘러간다" },
+  ]}
+/>
 
-<div className="flex flex-wrap items-center gap-3 not-prose my-6">
-  <Button>기본</Button>
+<Example title="Button" code={`<Button>저장</Button>`}>
+  <Button>저장</Button>
+</Example>
+
+<Example
+  title="Variants"
+  code={`<Button>default</Button>
+<Button variant="outline">outline</Button>
+<Button variant="ghost">ghost</Button>`}
+>
+  <Button>default</Button>
   <Button variant="outline">outline</Button>
   <Button variant="ghost">ghost</Button>
-  <Button disabled>disabled</Button>
-</div>
+</Example>
 
-## 왜 variant 가 셋뿐인가
-
-`shadcn add button` 이 주는 것은 variant 6종 · size 7종입니다. 처음에는 **2종 · 2종**만
-남겼습니다 — 화면에서 `<button>` 실측이 **1건**이었고 버튼이 들어갈 자리가 둘뿐이었기
-때문입니다.
-
-그 뒤 `outline` 과 `icon-sm` 을 되살렸습니다. **전제가 깨졌습니다** — 라이브러리가 되면서
-[Dialog](/components/dialog) 가 닫기 버튼에 `icon-sm`, 바닥 버튼에 `outline` 을 씁니다.
-쓰는 곳이 생긴 값은 더 이상 미사용이 아닙니다.
-
-`secondary` · `link` · `sm` · `lg` 는 여전히 쓰는 곳이 0이라 빼 뒀습니다.
-
-- `secondary` — `--secondary` 와 `--accent` 가 같은 값이라 `ghost` 와 화면에서 구분되지 않습니다
-- `link` — 그 자리는 `AppLink` 가 맡습니다. 주소가 바뀌는 것과 아닌 것의 구분을 화면에서 지웁니다
-
-## 크기
-
-<div className="flex flex-wrap items-center gap-3 not-prose my-6">
-  <Button size="default">default · 40px</Button>
-  <Button size="icon" aria-label="아이콘 40">
-    ●
+<Example
+  title="Sizes"
+  code={`<Button size="default">default</Button>
+<Button size="icon" aria-label="닫기">✕</Button>
+<Button size="icon-sm" aria-label="닫기">✕</Button>`}
+>
+  <Button size="default">default</Button>
+  <Button size="icon" aria-label="닫기">
+    ✕
   </Button>
-  <Button size="icon-sm" aria-label="아이콘 32">
-    ●
+  <Button size="icon-sm" aria-label="닫기">
+    ✕
   </Button>
-</div>
+</Example>
 
-`size="icon"` 이면 `aria-label` 이 **필수**입니다. 보이는 라벨이 없어 이름이 거기서만 옵니다.
-빠지면 접근성 검사가 `button-name` 으로 잡습니다.
+<Example title="Disabled" code={`<Button disabled>저장</Button>`}>
+  <Button disabled>저장</Button>
+</Example>
 
-## 느슨한 것
-
-`onClick` · `children` · `className` 이 전부 선택입니다. Base UI 의 `render` 패턴이 바깥에서
-핸들러와 내용을 주입하는데, 필수로 두면 라이브러리 안에서 조합이 불가능합니다.
-
-**그 대가로 빈 버튼과 핸들러 없는 버튼을 타입이 막지 못합니다.** `className` 으로 색과 크기를
-덮어쓰지 마십시오 — `cn` 이 충돌을 나중 값으로 정리하므로 조용히 이깁니다.
+<Example
+  title="Link that looks like a button"
+  code={`<AppLink href="/components" variant="cta">View Components</AppLink>
+<AppLink href="/docs/getting-started" variant="cta-quiet">Get Started</AppLink>`}
+>
+  <AppLink href="/components" variant="cta">
+    View Components
+  </AppLink>
+  <AppLink href="/docs/getting-started" variant="cta-quiet">
+    Get Started
+  </AppLink>
+</Example>

@@ -1,0 +1,75 @@
+import { Label, Range } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    { name: "id", type: "string", note: "라벨이 가리킬 id" },
+    { name: "min", type: "number", default: "0" },
+    { name: "max", type: "number", default: "100" },
+    { name: "step", type: "number", default: "1" },
+    { name: "value", type: "number", note: "제어로 쓸 때의 값" },
+    { name: "defaultValue", type: "number", note: "비제어로 쓸 때의 처음 값" },
+    { name: "onChange", type: "(e) => void" },
+    { name: "disabled", type: "boolean", default: "false" },
+    { name: "aria-invalid", type: "boolean", default: "false" },
+    {
+      name: "...",
+      type: "ComponentProps<'input'>",
+      note: "className 만 빼고 그대로 흘러간다",
+    },
+  ]}
+/>
+
+<Example
+  title="Range"
+  center={false}
+  code={`<Label htmlFor="range-width">본문 폭</Label>
+<Range id="range-width" min={0} max={100} defaultValue={40} />`}
+>
+  <Label htmlFor="range-width">본문 폭</Label>
+  <Range id="range-width" min={0} max={100} defaultValue={40} />
+</Example>
+
+<Example
+  title="Stepped"
+  center={false}
+  code={`<Label htmlFor="range-quality">이미지 품질</Label>
+<Range id="range-quality" min={0} max={100} step={25} defaultValue={50} />`}
+>
+  <Label htmlFor="range-quality">이미지 품질</Label>
+  <Range id="range-quality" min={0} max={100} step={25} defaultValue={50} />
+</Example>
+
+<Example
+  title="Custom range"
+  center={false}
+  code={`<Label htmlFor="range-breakpoint">브레이크포인트</Label>
+<Range
+  id="range-breakpoint"
+  min={320}
+  max={1024}
+  step={8}
+  defaultValue={768}
+  aria-valuetext="768px"
+/>`}
+>
+  <Label htmlFor="range-breakpoint">브레이크포인트</Label>
+  <Range
+    id="range-breakpoint"
+    min={320}
+    max={1024}
+    step={8}
+    defaultValue={768}
+    aria-valuetext="768px"
+  />
+</Example>
+
+<Example
+  title="Disabled"
+  center={false}
+  code={`<Label htmlFor="range-disabled">본문 폭</Label>
+<Range id="range-disabled" min={0} max={100} defaultValue={40} disabled />`}
+>
+  <Label htmlFor="range-disabled">본문 폭</Label>
+  <Range id="range-disabled" min={0} max={100} defaultValue={40} disabled />
+</Example>

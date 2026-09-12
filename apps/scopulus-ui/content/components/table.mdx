@@ -1,5 +1,4 @@
 import {
-  Badge,
   Table,
   TableBody,
   TableCaption,
@@ -9,97 +8,223 @@ import {
   TableHeader,
   TableRow,
 } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
 
-행과 열로 읽는 데이터입니다. 네이티브 `table` 요소를 그대로 쓰고 스타일만 얹습니다.
+<Props
+  rows={[
+    {
+      name: "Table",
+      type: "ComponentProps<'table'>",
+      note: "overflow-x-auto 인 div 로 한 겹 감싼다",
+    },
+    { name: "TableHeader", type: "ComponentProps<'thead'>" },
+    { name: "TableBody", type: "ComponentProps<'tbody'>" },
+    { name: "TableFooter", type: "ComponentProps<'tfoot'>" },
+    {
+      name: "TableRow",
+      type: "ComponentProps<'tr'>",
+      note: `data-state="selected" 가 선택 면을 켠다`,
+    },
+    {
+      name: "TableHead",
+      type: "ComponentProps<'th'>",
+      note: "scope 를 직접 붙인다",
+    },
+    { name: "TableCell", type: "ComponentProps<'td'>" },
+    {
+      name: "TableCaption",
+      type: "ComponentProps<'caption'>",
+      note: "표 아래에 그려진다",
+    },
+  ]}
+/>
 
-<div className="not-prose my-6 max-w-2xl">
+<Example
+  title="Table"
+  center={false}
+  code={`<Table>
+  <TableHeader>
+    <TableRow>
+      <TableHead scope="col">Component</TableHead>
+      <TableHead scope="col">Category</TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    <TableRow>
+      <TableCell>Badge</TableCell>
+      <TableCell>Data display</TableCell>
+    </TableRow>
+    <TableRow>
+      <TableCell>Card</TableCell>
+      <TableCell>Data display</TableCell>
+    </TableRow>
+    <TableRow>
+      <TableCell>Separator</TableCell>
+      <TableCell>Layout</TableCell>
+    </TableRow>
+  </TableBody>
+</Table>`}
+>
   <Table>
-    <TableCaption>최근 사례 3건</TableCaption>
     <TableHeader>
       <TableRow>
-        <TableHead scope="col">제목</TableHead>
-        <TableHead scope="col">스택</TableHead>
-        <TableHead scope="col" className="text-right">
-          걸린 날
-        </TableHead>
+        <TableHead scope="col">Component</TableHead>
+        <TableHead scope="col">Category</TableHead>
       </TableRow>
     </TableHeader>
     <TableBody>
       <TableRow>
-        <TableCell className="font-medium">토큰 저장소의 경쟁 상태</TableCell>
-        <TableCell>
-          <Badge>Next.js</Badge>
-        </TableCell>
-        <TableCell className="text-right">3</TableCell>
+        <TableCell>Badge</TableCell>
+        <TableCell>Data display</TableCell>
       </TableRow>
       <TableRow>
-        <TableCell className="font-medium">빌드 캐시가 비워지는 문제</TableCell>
-        <TableCell>
-          <Badge>Turborepo</Badge>
-        </TableCell>
-        <TableCell className="text-right">8</TableCell>
+        <TableCell>Card</TableCell>
+        <TableCell>Data display</TableCell>
       </TableRow>
       <TableRow>
-        <TableCell className="font-medium">다크 모드 첫 화면 깜빡임</TableCell>
-        <TableCell>
-          <Badge>next-themes</Badge>
-        </TableCell>
-        <TableCell className="text-right">1</TableCell>
+        <TableCell>Separator</TableCell>
+        <TableCell>Layout</TableCell>
+      </TableRow>
+    </TableBody>
+  </Table>
+</Example>
+
+<Example
+  title="With caption"
+  center={false}
+  code={`<Table>
+  <TableCaption>Data display 묶음 2종</TableCaption>
+  <TableHeader>
+    <TableRow>
+      <TableHead scope="col">Component</TableHead>
+      <TableHead scope="col">Category</TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    <TableRow>
+      <TableCell>Badge</TableCell>
+      <TableCell>Data display</TableCell>
+    </TableRow>
+    <TableRow>
+      <TableCell>Card</TableCell>
+      <TableCell>Data display</TableCell>
+    </TableRow>
+  </TableBody>
+</Table>`}
+>
+  <Table>
+    <TableCaption>Data display 묶음 2종</TableCaption>
+    <TableHeader>
+      <TableRow>
+        <TableHead scope="col">Component</TableHead>
+        <TableHead scope="col">Category</TableHead>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      <TableRow>
+        <TableCell>Badge</TableCell>
+        <TableCell>Data display</TableCell>
+      </TableRow>
+      <TableRow>
+        <TableCell>Card</TableCell>
+        <TableCell>Data display</TableCell>
+      </TableRow>
+    </TableBody>
+  </Table>
+</Example>
+
+<Example
+  title="With footer"
+  center={false}
+  code={`<Table>
+  <TableHeader>
+    <TableRow>
+      <TableHead scope="col">Category</TableHead>
+      <TableHead scope="col">Count</TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    <TableRow>
+      <TableCell>Data display</TableCell>
+      <TableCell>3</TableCell>
+    </TableRow>
+    <TableRow>
+      <TableCell>Layout</TableCell>
+      <TableCell>3</TableCell>
+    </TableRow>
+  </TableBody>
+  <TableFooter>
+    <TableRow>
+      <TableCell>합계</TableCell>
+      <TableCell>6</TableCell>
+    </TableRow>
+  </TableFooter>
+</Table>`}
+>
+  <Table>
+    <TableHeader>
+      <TableRow>
+        <TableHead scope="col">Category</TableHead>
+        <TableHead scope="col">Count</TableHead>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      <TableRow>
+        <TableCell>Data display</TableCell>
+        <TableCell>3</TableCell>
+      </TableRow>
+      <TableRow>
+        <TableCell>Layout</TableCell>
+        <TableCell>3</TableCell>
       </TableRow>
     </TableBody>
     <TableFooter>
       <TableRow>
-        <TableCell colSpan={2}>합계</TableCell>
-        <TableCell className="text-right">12</TableCell>
+        <TableCell>합계</TableCell>
+        <TableCell>6</TableCell>
       </TableRow>
     </TableFooter>
   </Table>
-</div>
+</Example>
 
-## scope 는 직접 준다
-
-`TableHead` 는 `<th>` 를 내지만 `scope` 를 붙이지 않습니다. **머리글이 한 행뿐이면 브라우저가
-열 머리글로 추론하지만, 행 머리글이 섞이거나 머리글이 두 줄이면 추론이 갈립니다.**
-
-```tsx
-<TableHead scope="col">제목</TableHead>
-```
-
-`props` 가 그대로 흘러가므로 붙이면 됩니다. 빈 `<th>` 는 만들지 마십시오 — 체크박스 열처럼
-보이는 글자가 없어야 하는 자리라면 `className="sr-only"` 로 이름을 숨겨서 넣으십시오.
-
-## 감싸개가 가로 스크롤을 가져간다
-
-`Table` 은 `<table>` 하나가 아니라 **`overflow-x-auto` 인 `<div>` 로 한 겹 감싼 것**입니다
-(`table.tsx:10`). 좁은 화면에서 표만 가로로 밀리고 페이지 전체는 밀리지 않습니다.
-
-셀이 `whitespace-nowrap` 이라 **글자가 줄바꿈되지 않고 표가 옆으로 늘어납니다.** 긴 글이
-들어가는 열은 해당 셀에 `whitespace-normal` 을 주십시오.
-
-## 캡션은 표 아래에 붙는다
-
-`TableCaption` 은 `caption-bottom` 이라 화면에서는 표 아래에 보입니다. **DOM 순서는
-`<table>` 의 첫 자식이어야 합니다** — HTML 이 `<caption>` 의 위치를 그렇게 정해 두었고,
-화면 낭독기도 그 순서로 읽습니다.
-
-```tsx
-<Table>
-  <TableCaption>최근 사례 3건</TableCaption>
-  <TableHeader>…</TableHeader>
-</Table>
-```
-
-## 정렬과 선택은 없다
-
-`data-[state=selected]` 에 걸린 바탕색은 있지만 **그 상태를 만드는 것은 이 컴포넌트가
-아닙니다.** 정렬 · 선택 · 페이지 나누기는 부르는 쪽이 갖습니다. 표는 값을 화면에 놓는
-것까지만 합니다.
-
-## 어디서 왔나
-
-shadcn `base-nova` 에서 받았습니다 — 2026-09-11.
-
-**handwork 사용처: 0곳.** 실측에서 나온 아홉과 근거가 다릅니다. 화면에서 세어 본 값이 아니라,
-컴포넌트 20종이 **폼 · 오버레이 · 피드백 · 데이터** 네 묶음을 덮게 하려고 받은 것입니다.
-`Table` 은 그 가운데 **데이터** 묶음을 혼자 맡습니다 — 목록을 면으로 보여주는
-[Card](/components/card) 와 갈리는 자리가 여기입니다.
+<Example
+  title="Selected row"
+  center={false}
+  code={`<Table>
+  <TableHeader>
+    <TableRow>
+      <TableHead scope="col">Component</TableHead>
+      <TableHead scope="col">Category</TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    <TableRow data-state="selected">
+      <TableCell>Badge</TableCell>
+      <TableCell>Data display</TableCell>
+    </TableRow>
+    <TableRow>
+      <TableCell>Card</TableCell>
+      <TableCell>Data display</TableCell>
+    </TableRow>
+  </TableBody>
+</Table>`}
+>
+  <Table>
+    <TableHeader>
+      <TableRow>
+        <TableHead scope="col">Component</TableHead>
+        <TableHead scope="col">Category</TableHead>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      <TableRow data-state="selected">
+        <TableCell>Badge</TableCell>
+        <TableCell>Data display</TableCell>
+      </TableRow>
+      <TableRow>
+        <TableCell>Card</TableCell>
+        <TableCell>Data display</TableCell>
+      </TableRow>
+    </TableBody>
+  </Table>
+</Example>

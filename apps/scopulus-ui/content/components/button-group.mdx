@@ -1,0 +1,81 @@
+import { Button, ButtonGroup } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    {
+      name: "label",
+      type: "string",
+      required: true,
+      note: "묶음의 이름. aria-label 로 들어간다",
+    },
+    {
+      name: "children",
+      type: "React.ReactNode",
+      required: true,
+      note: "Button 둘 이상",
+    },
+  ]}
+/>
+
+<Example
+  title="ButtonGroup"
+  code={`<ButtonGroup label="정렬">
+  <Button variant="outline">최신순</Button>
+  <Button variant="outline">오래된순</Button>
+  <Button variant="outline">이름순</Button>
+</ButtonGroup>`}
+>
+  <ButtonGroup label="정렬">
+    <Button variant="outline">최신순</Button>
+    <Button variant="outline">오래된순</Button>
+    <Button variant="outline">이름순</Button>
+  </ButtonGroup>
+</Example>
+
+<Example
+  title="Two buttons"
+  code={`<ButtonGroup label="보기">
+  <Button variant="outline">목록</Button>
+  <Button variant="outline">격자</Button>
+</ButtonGroup>`}
+>
+  <ButtonGroup label="보기">
+    <Button variant="outline">목록</Button>
+    <Button variant="outline">격자</Button>
+  </ButtonGroup>
+</Example>
+
+<Example
+  title="Icon buttons"
+  code={`<ButtonGroup label="순서 바꾸기">
+  <Button variant="outline" size="icon" aria-label="위로">↑</Button>
+  <Button variant="outline" size="icon" aria-label="아래로">↓</Button>
+</ButtonGroup>`}
+>
+  <ButtonGroup label="순서 바꾸기">
+    <Button variant="outline" size="icon" aria-label="위로">
+      ↑
+    </Button>
+    <Button variant="outline" size="icon" aria-label="아래로">
+      ↓
+    </Button>
+  </ButtonGroup>
+</Example>
+
+<Example
+  title="With a disabled button"
+  code={`<ButtonGroup label="쪽 이동">
+  <Button variant="outline" disabled>이전</Button>
+  <Button variant="outline">1</Button>
+  <Button variant="outline">다음</Button>
+</ButtonGroup>`}
+>
+  <ButtonGroup label="쪽 이동">
+    <Button variant="outline" disabled>
+      이전
+    </Button>
+    <Button variant="outline">1</Button>
+    <Button variant="outline">다음</Button>
+  </ButtonGroup>
+</Example>

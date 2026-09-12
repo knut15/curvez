@@ -1,45 +1,31 @@
-import { ThemeToggle } from "@scopulus/ui";
+import { AppLink, ThemeToggle } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
 
-라이트와 다크를 전환합니다. 선택은 브라우저에 남고 다음 방문에 이어집니다.
+<Props
+  rows={[
+    {
+      name: "없음",
+      type: "—",
+      note: "상태를 스스로 읽고 쓴다. 부모가 넘길 값이 없다",
+    },
+  ]}
+/>
 
-<div className="not-prose my-6 flex items-center gap-4 rounded-lg border border-border p-6">
+<Example title="ThemeToggle" code={`<ThemeToggle />`}>
   <ThemeToggle />
-  <span className="text-sm text-muted-foreground">
-    눌러 보십시오. 이 페이지 전체가 뒤집힙니다.
-  </span>
-</div>
+</Example>
 
-## 프로바이더를 전제한다
-
-`next-themes` 의 `useTheme` 을 직접 읽습니다. 그래서 그 패키지가 이 라이브러리의
-`peerDependencies` 이고, 앱 루트에 `ThemeProvider` 가 있어야 합니다.
-
-**라이브러리가 전환 장치를 정하지 않습니다.** 정하면 다른 상태 관리를 쓰는 앱이 이 컴포넌트를
-쓸 수 없습니다. 토글하는 것은 `.dark` 클래스 하나뿐입니다.
-
-## 마운트 상태를 두지 않는다
-
-두 아이콘을 **다 그리고 CSS 로 고릅니다.**
-
-```tsx
-<SunIcon className="hidden size-5 dark:block" />
-<MoonIcon className="size-5 dark:hidden" />
-```
-
-프로바이더가 첫 페인트 전에 `.dark` 를 붙이므로 자바스크립트 상태가 필요 없습니다.
-`mounted` 플래그를 쓰는 교과서적 패턴은 React Compiler 의 `set-state-in-effect` 규칙에
-걸리고, 마운트 전에 빈 상자가 보입니다.
-
-## 방향은 클래스에서 읽는다
-
-`resolvedTheme` 이 아니라 `document.documentElement.classList` 를 봅니다. 그 값은 하이드레이션
-전에 `undefined` 라, 기준으로 삼으면 **첫 클릭이 반대로 갑니다.**
-
-## Button 을 쓰지 않는다
-
-면은 `Button` 의 `ghost` + `icon` 과 완전히 같습니다. 그래도 바꾸지 않습니다 — 이 파일이
-프로바이더를 읽고 두 아이콘을 CSS 로 고르는 구조를 갖고 있어서, 한 겹 끼우면 그 구조가 두
-파일로 갈라집니다. 얻는 것은 클래스 문자열 하나뿐입니다.
-
-**대신 방향을 못박습니다.** `Button` 의 `ghost`+`icon` 이 이 파일을 따라갑니다. 값을 고칠 때는
-이 파일을 먼저 고치고 `Button` 을 맞춥니다.
+<Example
+  title="In a header"
+  code={`<nav className="flex items-center gap-4">
+  <AppLink href="/components" variant="bare">Components</AppLink>
+  <ThemeToggle />
+</nav>`}
+>
+  <nav className="flex items-center gap-4">
+    <AppLink href="/components" variant="bare">
+      Components
+    </AppLink>
+    <ThemeToggle />
+  </nav>
+</Example>

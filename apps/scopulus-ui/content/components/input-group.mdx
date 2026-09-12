@@ -1,0 +1,127 @@
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  Label,
+} from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    {
+      name: "InputGroup children",
+      type: "React.ReactNode",
+      required: true,
+      note: "애드온과 InputGroupInput 의 나열",
+    },
+    {
+      name: "InputGroupAddon side",
+      type: `"start" | "end"`,
+      default: `"start"`,
+    },
+    {
+      name: "InputGroupAddon children",
+      type: "React.ReactNode",
+      required: true,
+    },
+    { name: "InputGroupInput id", type: "string" },
+    { name: "InputGroupInput placeholder", type: "string" },
+    { name: "InputGroupInput disabled", type: "boolean", default: "false" },
+    { name: "InputGroupInput aria-invalid", type: "boolean", default: "false" },
+    {
+      name: "InputGroupInput ...",
+      type: "ComponentProps<'input'>",
+      note: "className 만 빼고 그대로 흘러간다",
+    },
+  ]}
+/>
+
+<Example
+  title="Prefix"
+  center={false}
+  code={`<Label htmlFor="group-url">사례 주소</Label>
+<InputGroup>
+  <InputGroupAddon>https://</InputGroupAddon>
+  <InputGroupInput id="group-url" placeholder="handwork.kr/cases/1" />
+</InputGroup>`}
+>
+  <Label htmlFor="group-url">사례 주소</Label>
+  <InputGroup>
+    <InputGroupAddon>https://</InputGroupAddon>
+    <InputGroupInput id="group-url" placeholder="handwork.kr/cases/1" />
+  </InputGroup>
+</Example>
+
+<Example
+  title="Suffix"
+  center={false}
+  code={`<Label htmlFor="group-hours">걸린 시간</Label>
+<InputGroup>
+  <InputGroupInput id="group-hours" inputMode="numeric" placeholder="12" />
+  <InputGroupAddon side="end">시간</InputGroupAddon>
+</InputGroup>`}
+>
+  <Label htmlFor="group-hours">걸린 시간</Label>
+  <InputGroup>
+    <InputGroupInput id="group-hours" inputMode="numeric" placeholder="12" />
+    <InputGroupAddon side="end">시간</InputGroupAddon>
+  </InputGroup>
+</Example>
+
+<Example
+  title="Both sides"
+  center={false}
+  code={`<Label htmlFor="group-budget">월 예산</Label>
+<InputGroup>
+  <InputGroupAddon>₩</InputGroupAddon>
+  <InputGroupInput id="group-budget" inputMode="numeric" placeholder="1,200,000" />
+  <InputGroupAddon side="end">/ 월</InputGroupAddon>
+</InputGroup>`}
+>
+  <Label htmlFor="group-budget">월 예산</Label>
+  <InputGroup>
+    <InputGroupAddon>₩</InputGroupAddon>
+    <InputGroupInput
+      id="group-budget"
+      inputMode="numeric"
+      placeholder="1,200,000"
+    />
+    <InputGroupAddon side="end">/ 월</InputGroupAddon>
+  </InputGroup>
+</Example>
+
+<Example
+  title="Invalid"
+  center={false}
+  code={`<Label htmlFor="group-invalid">사례 주소</Label>
+<InputGroup>
+  <InputGroupAddon>https://</InputGroupAddon>
+  <InputGroupInput id="group-invalid" aria-invalid defaultValue="handw" />
+</InputGroup>`}
+>
+  <Label htmlFor="group-invalid">사례 주소</Label>
+  <InputGroup>
+    <InputGroupAddon>https://</InputGroupAddon>
+    <InputGroupInput id="group-invalid" aria-invalid defaultValue="handw" />
+  </InputGroup>
+</Example>
+
+<Example
+  title="Disabled"
+  center={false}
+  code={`<Label htmlFor="group-disabled">사례 주소</Label>
+<InputGroup>
+  <InputGroupAddon>https://</InputGroupAddon>
+  <InputGroupInput id="group-disabled" disabled defaultValue="handwork.kr/cases/1" />
+</InputGroup>`}
+>
+  <Label htmlFor="group-disabled">사례 주소</Label>
+  <InputGroup>
+    <InputGroupAddon>https://</InputGroupAddon>
+    <InputGroupInput
+      id="group-disabled"
+      disabled
+      defaultValue="handwork.kr/cases/1"
+    />
+  </InputGroup>
+</Example>

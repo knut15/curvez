@@ -1,56 +1,67 @@
-## 정본은 CSS 다
+import {
+  ColorTokens,
+  ContrastPairs,
+  RadiusScale,
+  SpacingScale,
+  TypeScale,
+} from "@/widgets/token-visuals";
 
-값의 출처는 `packages/scopulus-ui/tokens.css` 하나입니다. `design/tokens.md` 는 그 파일의
-사본이고, 둘이 다르면 **CSS 가 이깁니다.**
+## Naming
 
-사본이 낡는 것은 사람이 아니라 기계가 잡습니다.
+면과 그 위의 글자가 짝입니다. `--primary` 가 면이고 `--primary-foreground` 가 그 위에 앉는
+글자와 아이콘입니다.
 
-```bash
-node packages/scopulus-ui/scripts/check-contrast.mjs
+이름은 shadcn 과 같습니다. Tailwind 테마가 이 이름을 직접 참조하므로 바꾸면 컴포넌트가 색을
+잃습니다.
+
+## Color
+
+중립 스케일이 무채색이 아니라 green-grey 색조를 띱니다. 링크 hover 와 포커스 링은 전부
+`--ring` 하나로 모입니다.
+
+<ColorTokens />
+
+## Contrast
+
+WCAG AA 를 넘는 조합입니다. 다른 짝을 쓰려면 대비를 직접 확인하십시오.
+
+<ContrastPairs />
+
+## Spacing
+
+<SpacingScale />
+
+## Typography
+
+<TypeScale />
+
+## Radius
+
+`--radius` 하나에서 나머지가 파생됩니다. 이 값을 바꾸면 모든 단계가 같이 움직입니다.
+
+<RadiusScale />
+
+## Override
+
+토큰은 CSS 변수라 앱에서 다시 정의하면 그 값이 적용됩니다.
+
+```css
+@import "@scopulus/ui/tokens.css";
+
+:root {
+  --primary: oklch(0.55 0.18 264);
+  --radius: 0.25rem;
+}
 ```
 
-이 명령이 두 가지를 봅니다 — 대비 쌍이 WCAG AA 를 넘는지, 그리고 **CSS 의 토큰을 hex 로 바꾼
-값이 문서의 표와 같은지.** 두 번째가 없으면 첫 번째는 자기 자신만 검사합니다.
+라이트와 다크를 함께 바꾸려면 `.dark` 안에도 같은 이름을 정의합니다.
 
-## 색
-
-이름은 shadcn 이 정한 것을 그대로 씁니다 — `--background`, `--muted-foreground` 처럼.
-Tailwind 테마와 shadcn 컴포넌트가 그 이름을 직접 참조하므로, 바꾸면 받아 온 컴포넌트가
-전부 동작하지 않습니다.
-
-**중립 스케일이 무채색이 아닙니다.** 명도는 기본값과 거의 같게 두고 채도만 얹어
-green-grey 색조를 띠게 했습니다. 무채색을 그대로 쓰면 브랜드 색이 깔린 면과 본문 배경이
-서로 다른 팔레트로 읽혀 이음매가 보입니다.
-
-**상호작용 색은 하나입니다.** 링크 hover 와 포커스 링이 전부 `--ring` 으로 모입니다.
-화면마다 hover 색이 다르면 "여기를 누를 수 있다" 를 색으로 배울 수 없습니다.
-
-## 간격 · 타이포 · 상태
-
-**실측입니다.** 실제 화면 코드에서 Tailwind 클래스가 몇 번 쓰였는지 세어 나왔습니다.
-간격 89건 12단계, 타이포 58건, 상태 41건.
-
-각 축의 재현 명령이 `design/tokens.md` 에 그대로 적혀 있습니다. 세는 방법이 문서에 없으면
-다음 사람이 다른 방법으로 세고 다른 답을 얻습니다.
-
-## 고도는 쓰지 않는다
-
-그림자를 쓰지 않습니다. `shadow` · `drop-shadow` 가 앱 전체에서 **0건**이었습니다.
-
-**실측이 없는 축에 값을 정하지 않습니다.** 정하면 검증되지 않은 값이 남고, 다음 사람은 그것이
-결정인지 방치인지 구분할 수 없습니다.
-
-면을 가르는 것은 그림자가 아니라 1px 테두리와 한 단계 밝은 배경입니다.
-
-## Figma 로 가져가기
+## Export to Figma
 
 ```bash
 node packages/scopulus-ui/scripts/export-tokens.mjs
 ```
 
-W3C Design Tokens 형식으로 `design/tokens.figma.json` 을 냅니다. 라이트와 다크가 두 모드로
-들어갑니다.
-
-**코드에서 Figma 컴포넌트를 만들 수는 없습니다.** REST API 는 노드 쓰기 자체가 없고, Variables
-쓰기 엔드포인트는 Enterprise 조직 전용입니다. 그래서 파일까지만 만들고, 가져가는 것은 사람이
-Tokens Studio 같은 플러그인으로 합니다.
+W3C Design Tokens 형식의 JSON 이 나옵니다. 라이트와 다크가 두 모드로 들어갑니다.
+가져가는 것은 Tokens Studio 같은 플러그인으로 합니다 — Figma 의 Variables 쓰기 API 가
+Enterprise 조직 전용입니다.

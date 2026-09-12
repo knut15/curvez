@@ -1,0 +1,57 @@
+import { Progress } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    {
+      name: "value",
+      type: "number",
+      required: true,
+      note: "0~100. 범위 밖 값은 양끝으로 잘린다",
+    },
+    {
+      name: "label",
+      type: "string",
+      required: true,
+      note: "화면 낭독기가 읽는 이름",
+    },
+  ]}
+/>
+
+<Example
+  title="Progress"
+  center={false}
+  code={`<Progress value={60} label="내보내기 진행률" />`}
+>
+  <Progress value={60} label="내보내기 진행률" />
+</Example>
+
+<Example
+  title="Zero"
+  center={false}
+  code={`<Progress value={0} label="내보내기 진행률" />`}
+>
+  <Progress value={0} label="내보내기 진행률" />
+</Example>
+
+<Example
+  title="Complete"
+  center={false}
+  code={`<Progress value={100} label="내보내기 진행률" />`}
+>
+  <Progress value={100} label="내보내기 진행률" />
+</Example>
+
+<Example
+  title="With a caption"
+  center={false}
+  code={`<div className="flex w-full flex-col gap-2">
+  <p className="text-sm text-muted-foreground">내보내기 60%</p>
+  <Progress value={60} label="내보내기 진행률" />
+</div>`}
+>
+  <div className="flex w-full flex-col gap-2">
+    <p className="text-sm text-muted-foreground">내보내기 60%</p>
+    <Progress value={60} label="내보내기 진행률" />
+  </div>
+</Example>

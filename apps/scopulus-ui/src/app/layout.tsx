@@ -18,9 +18,9 @@ const pretendard = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "scopulusUI",
+  title: "ScopulusUI",
   description:
-    "handwork 화면에서 실측해 뽑은 컴포넌트와, 그 위에 얹은 프리미티브. 취향으로 정한 값이 없다.",
+    "취향으로 정한 값이 없는 컴포넌트 라이브러리. 값마다 화면에 몇 번 나왔는지와 `파일:줄` 이 스펙에 근거로 붙어 있다.",
 };
 
 export default function RootLayout({

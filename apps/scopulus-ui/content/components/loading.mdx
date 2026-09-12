@@ -1,0 +1,51 @@
+import { Button, Loading } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    {
+      name: "label",
+      type: "string",
+      default: `"불러오는 중"`,
+      note: "동작 줄이기를 켜면 보인다",
+    },
+    {
+      name: "size",
+      type: `"sm" | "default"`,
+      default: `"default"`,
+    },
+  ]}
+/>
+
+<Example title="Loading" code={`<Loading />`}>
+  <Loading />
+</Example>
+
+<Example title="Small" code={`<Loading size="sm" />`}>
+  <Loading size="sm" />
+</Example>
+
+<Example
+  title="In a button"
+  code={`<Button disabled className="gap-2">
+  <Loading size="sm" label="저장 중" />
+  저장
+</Button>`}
+>
+  <Button disabled className="gap-2">
+    <Loading size="sm" label="저장 중" />
+    저장
+  </Button>
+</Example>
+
+<Example
+  title="Centered in a panel"
+  center={false}
+  code={`<div className="flex h-40 items-center justify-center rounded-lg border border-border">
+  <Loading />
+</div>`}
+>
+  <div className="flex h-40 items-center justify-center rounded-lg border border-border">
+    <Loading />
+  </div>
+</Example>

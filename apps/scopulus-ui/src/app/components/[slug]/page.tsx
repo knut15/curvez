@@ -1,15 +1,6 @@
 import { notFound } from "next/navigation";
-import {
-  AppLink,
-  Badge,
-  PageShell,
-  PageTitle,
-  Prose,
-  Separator,
-} from "@scopulus/ui";
+import { AppLink, PageTitle, Separator } from "@scopulus/ui";
 
-import { SiteFooter } from "@/widgets/site-footer";
-import { SiteHeader } from "@/widgets/site-header";
 import { componentMeta, listComponents } from "@/shared/lib/components";
 import { listSlugs } from "@/shared/lib/mdx-collection";
 
@@ -18,7 +9,7 @@ import { listSlugs } from "@/shared/lib/mdx-collection";
  * 대상 파일을 모으는데, 디렉터리까지 변수로 만들면 무엇을 모아야 할지 알 수 없게 된다.
  */
 async function importDoc(slug: string) {
-  return import(`../../../../content/components/${slug}.mdx`);
+  return import(`@content/components/${slug}.mdx`);
 }
 
 export async function generateStaticParams() {
@@ -42,58 +33,46 @@ export default async function ComponentPage({
 
   return (
     <>
-      <SiteHeader current="/components" />
-      <PageShell>
-        <p className="flex items-center gap-2">
-          <AppLink href="/components" variant="bare">
-            <span className="text-sm text-muted-foreground">← Components</span>
+      <p className="flex items-center gap-2">
+        <AppLink href="/components" variant="bare">
+          <span className="text-sm text-muted-foreground">← Components</span>
+        </AppLink>
+      </p>
+
+      <div className="mt-6">
+        <PageTitle
+          variant="detail"
+          description={`ScopulusUI 의 ${meta.name} Components 입니다.`}
+        >
+          {meta.name}
+        </PageTitle>
+      </div>
+
+      {/* `Prose` 를 쓰지 않는다. 그것은 `mx-auto max-w-[68ch]` 로 읽기 폭을 잡는데,
+          컴포넌트 원고는 `Props` 와 `Example` 뿐이고 둘 다 `not-prose` 다. 68ch 로 좁히면
+          제목만 왼쪽에 남아 96px 어긋나고, 프리뷰 상자도 좁아진다. 읽는 글은 `/docs` 가 맡는다. */}
+      <div className="mt-10">
+        <Body />
+      </div>
+
+      <Separator />
+
+      <nav className="flex justify-between gap-4 text-sm">
+        {prev ? (
+          <AppLink href={`/components/${prev.slug}`} variant="bare">
+            ← {prev.name}
           </AppLink>
-        </p>
-
-        <div className="mt-6 flex items-center gap-2">
-          <Badge
-            variant="status"
-            tone={meta.origin === "measured" ? "active" : "idle"}
-          >
-            {meta.origin === "measured" ? "실측" : "받은 것"}
-          </Badge>
-          {meta.evidence ? (
-            <Badge>{meta.evidence}</Badge>
-          ) : (
-            <Badge>사용처 0곳</Badge>
-          )}
-        </div>
-
-        <div className="mt-3">
-          <PageTitle variant="detail" description={meta.summary}>
-            {meta.name}
-          </PageTitle>
-        </div>
-
-        <Prose>
-          <Body />
-        </Prose>
-
-        <Separator />
-
-        <nav className="flex justify-between gap-4 text-sm">
-          {prev ? (
-            <AppLink href={`/components/${prev.slug}`} variant="bare">
-              ← {prev.name}
-            </AppLink>
-          ) : (
-            <span />
-          )}
-          {next ? (
-            <AppLink href={`/components/${next.slug}`} variant="bare">
-              {next.name} →
-            </AppLink>
-          ) : (
-            <span />
-          )}
-        </nav>
-      </PageShell>
-      <SiteFooter />
+        ) : (
+          <span />
+        )}
+        {next ? (
+          <AppLink href={`/components/${next.slug}`} variant="bare">
+            {next.name} →
+          </AppLink>
+        ) : (
+          <span />
+        )}
+      </nav>
     </>
   );
 }

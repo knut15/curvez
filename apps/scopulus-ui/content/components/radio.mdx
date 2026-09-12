@@ -1,0 +1,99 @@
+import { Radio, RadioGroup } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    { name: "RadioGroup legend", type: "React.ReactNode", required: true },
+    { name: "RadioGroup children", type: "React.ReactNode", required: true },
+    { name: "Radio name", type: "string", note: "같은 값끼리 하나만 켜진다" },
+    { name: "Radio value", type: "string", note: "폼이 보내는 값" },
+    { name: "Radio children", type: "React.ReactNode", required: true },
+    { name: "Radio checked", type: "boolean", note: "제어로 쓸 때의 값" },
+    { name: "Radio defaultChecked", type: "boolean", default: "false" },
+    { name: "Radio onChange", type: "(e) => void" },
+    { name: "Radio disabled", type: "boolean", default: "false" },
+    { name: "Radio required", type: "boolean", default: "false" },
+    { name: "Radio aria-invalid", type: "boolean", default: "false" },
+    {
+      name: "Radio ...",
+      type: "ComponentProps<'input'>",
+      note: "className · type 만 빼고 그대로 흘러간다",
+    },
+  ]}
+/>
+
+<Example
+  title="Radio"
+  center={false}
+  code={`<RadioGroup legend="공개 범위">
+  <Radio name="visibility" value="public" defaultChecked>공개</Radio>
+  <Radio name="visibility" value="link">링크를 아는 사람만</Radio>
+  <Radio name="visibility" value="private">비공개</Radio>
+</RadioGroup>`}
+>
+  <RadioGroup legend="공개 범위">
+    <Radio name="visibility" value="public" defaultChecked>
+      공개
+    </Radio>
+    <Radio name="visibility" value="link">
+      링크를 아는 사람만
+    </Radio>
+    <Radio name="visibility" value="private">
+      비공개
+    </Radio>
+  </RadioGroup>
+</Example>
+
+<Example
+  title="Nothing checked"
+  center={false}
+  code={`<RadioGroup legend="배포 방식">
+  <Radio name="deploy" value="manual">손으로 올린다</Radio>
+  <Radio name="deploy" value="auto">머지하면 자동으로 올린다</Radio>
+</RadioGroup>`}
+>
+  <RadioGroup legend="배포 방식">
+    <Radio name="deploy" value="manual">
+      손으로 올린다
+    </Radio>
+    <Radio name="deploy" value="auto">
+      머지하면 자동으로 올린다
+    </Radio>
+  </RadioGroup>
+</Example>
+
+<Example
+  title="Disabled"
+  center={false}
+  code={`<RadioGroup legend="요금제">
+  <Radio name="plan" value="free" defaultChecked>무료</Radio>
+  <Radio name="plan" value="team" disabled>팀 (준비 중)</Radio>
+</RadioGroup>`}
+>
+  <RadioGroup legend="요금제">
+    <Radio name="plan" value="free" defaultChecked>
+      무료
+    </Radio>
+    <Radio name="plan" value="team" disabled>
+      팀 (준비 중)
+    </Radio>
+  </RadioGroup>
+</Example>
+
+<Example
+  title="Invalid"
+  center={false}
+  code={`<RadioGroup legend="공개 범위 (필수)">
+  <Radio name="required-visibility" value="public" aria-invalid>공개</Radio>
+  <Radio name="required-visibility" value="private" aria-invalid>비공개</Radio>
+</RadioGroup>`}
+>
+  <RadioGroup legend="공개 범위 (필수)">
+    <Radio name="required-visibility" value="public" aria-invalid>
+      공개
+    </Radio>
+    <Radio name="required-visibility" value="private" aria-invalid>
+      비공개
+    </Radio>
+  </RadioGroup>
+</Example>

@@ -1,0 +1,106 @@
+import { Badge, Button, Indicator } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
+
+<Props
+  rows={[
+    {
+      name: "position",
+      type: `"top-right" | "top-left" | "bottom-right" | "bottom-left"`,
+      default: `"top-right"`,
+    },
+    {
+      name: "badge",
+      type: "React.ReactNode",
+      required: true,
+      note: "모서리에 얹을 것",
+    },
+    {
+      name: "children",
+      type: "React.ReactNode",
+      required: true,
+      note: "표시가 붙을 대상",
+    },
+  ]}
+/>
+
+<Example
+  title="Indicator"
+  code={`<Indicator badge={<Badge>3</Badge>}>
+  <Button variant="outline" size="icon" aria-label="알림">●</Button>
+</Indicator>`}
+>
+  <Indicator badge={<Badge>3</Badge>}>
+    <Button variant="outline" size="icon" aria-label="알림">
+      ●
+    </Button>
+  </Indicator>
+</Example>
+
+<Example
+  title="Positions"
+  code={`<Indicator badge={<Badge>N</Badge>} position="top-right">
+  <span className="block size-20 rounded-lg bg-muted" />
+</Indicator>
+<Indicator badge={<Badge>N</Badge>} position="top-left">
+  <span className="block size-20 rounded-lg bg-muted" />
+</Indicator>
+<Indicator badge={<Badge>N</Badge>} position="bottom-right">
+  <span className="block size-20 rounded-lg bg-muted" />
+</Indicator>
+<Indicator badge={<Badge>N</Badge>} position="bottom-left">
+  <span className="block size-20 rounded-lg bg-muted" />
+</Indicator>`}
+>
+  <Indicator badge={<Badge>N</Badge>} position="top-right">
+    <span className="block size-20 rounded-lg bg-muted" />
+  </Indicator>
+  <Indicator badge={<Badge>N</Badge>} position="top-left">
+    <span className="block size-20 rounded-lg bg-muted" />
+  </Indicator>
+  <Indicator badge={<Badge>N</Badge>} position="bottom-right">
+    <span className="block size-20 rounded-lg bg-muted" />
+  </Indicator>
+  <Indicator badge={<Badge>N</Badge>} position="bottom-left">
+    <span className="block size-20 rounded-lg bg-muted" />
+  </Indicator>
+</Example>
+
+<Example
+  title="Dot"
+  code={`<Indicator
+  badge={
+    <span className="block size-2 rounded-full bg-ring">
+      <span className="sr-only">읽지 않음</span>
+    </span>
+  }
+>
+  <Button variant="outline" size="icon-sm" aria-label="받은 글">✉</Button>
+</Indicator>`}
+>
+  <Indicator
+    badge={
+      <span className="block size-2 rounded-full bg-ring">
+        <span className="sr-only">읽지 않음</span>
+      </span>
+    }
+  >
+    <Button variant="outline" size="icon-sm" aria-label="받은 글">
+      ✉
+    </Button>
+  </Indicator>
+</Example>
+
+<Example
+  title="On a surface"
+  code={`<Indicator badge={<Badge>새 글</Badge>}>
+  <span className="flex size-24 items-center justify-center rounded-lg bg-muted text-xs text-muted-foreground">
+    이미지
+  </span>
+</Indicator>`}
+>
+  <Indicator badge={<Badge>새 글</Badge>}>
+    <span className="flex size-24 items-center justify-center rounded-lg bg-muted text-xs text-muted-foreground">
+      이미지
+    </span>
+  </Indicator>
+</Example>

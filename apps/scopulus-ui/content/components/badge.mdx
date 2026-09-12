@@ -1,14 +1,39 @@
 import { Badge } from "@scopulus/ui";
+import { Example, Props } from "@/widgets/example";
 
-한 낱말짜리 메타 정보를 본문과 구분해 얹습니다. 태그 칩과 상태 둘을 맡습니다.
+<Props
+  rows={[
+    { name: "variant", type: `"tag" | "status"`, default: `"tag"` },
+    {
+      name: "tone",
+      type: `"active" | "idle"`,
+      note: "variant 가 status 면 필수",
+    },
+    { name: "children", type: "string", required: true },
+  ]}
+/>
 
-<div className="flex flex-wrap items-center gap-3 not-prose my-6">
-  <Badge>Next.js</Badge>
-  <Badge>App Router</Badge>
-  <Badge>MDX</Badge>
-</div>
+<Example title="Badge" code={`<Badge>auth</Badge>`}>
+  <Badge>auth</Badge>
+</Example>
 
-<div className="flex flex-col gap-3 not-prose my-6">
+<Example
+  title="Variants"
+  code={`<Badge variant="tag">auth</Badge>
+<Badge variant="status" tone="active">진행 중</Badge>`}
+>
+  <Badge variant="tag">auth</Badge>
+  <Badge variant="status" tone="active">
+    진행 중
+  </Badge>
+</Example>
+
+<Example
+  title="Tones"
+  code={`<Badge variant="status" tone="active">진행 중</Badge>
+<Badge variant="status" tone="idle">멈춤</Badge>
+<Badge variant="status" tone="idle">마무리</Badge>`}
+>
   <Badge variant="status" tone="active">
     진행 중
   </Badge>
@@ -18,32 +43,4 @@ import { Badge } from "@scopulus/ui";
   <Badge variant="status" tone="idle">
     마무리
   </Badge>
-</div>
-
-## 상태를 색으로 가르지 않는다
-
-상태가 셋인데 색은 둘입니다. `진행 중` 만 `--ring` 이고 나머지는 중립입니다.
-
-**강조색을 하나만 쓰기 때문입니다.** 셋을 색으로 가르려면 색이 셋 필요하고, 그러면 강조가
-어디 있는지 판정할 수 없습니다. 차이는 옆에 붙은 글자가 말합니다.
-
-**점은 `aria-hidden` 입니다.** 색만으로 말하는 장식이고 그 뜻은 글자가 이미 말합니다.
-
-## 도메인 값을 모른다
-
-`tone` 은 `active` 와 `idle` 둘뿐입니다. 어떤 상태가 어느 tone 인지는 **부르는 쪽이**
-정합니다.
-
-```tsx
-<Badge variant="status" tone={item.status === "진행 중" ? "active" : "idle"}>
-  {item.status}
-</Badge>
-```
-
-**이유:** 라이브러리가 앱의 도메인 값을 타입에 담으면, 그 앱 없이는 라이브러리를 쓸 수
-없습니다. 색을 가르는 축만 받고 이름은 받지 않습니다.
-
-## 서체를 재설정하지 않는다
-
-바깥에 `font-mono` 가 걸려 있으면 배지 안의 글자도 그 서체로 떨어집니다. 한글 글립이 없는
-서체라면 대체 서체로 갈립니다 — 모노·대문자·자간은 배지 밖에만 붙이십시오.
+</Example>
