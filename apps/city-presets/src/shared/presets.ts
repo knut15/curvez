@@ -52,13 +52,13 @@ export const PRESETS: Preset[] = [
     stem: "06-lisbon",
     name: "리스본",
     mood: "늦여름 오후",
-    note: "해가 낮아지며 모든 것에 금빛이 한 겹 앉는 오후",
+    note: "모든 것에 금빛이 한 겹 앉는 오후",
   },
   {
     stem: "07-havana",
     name: "하바나",
     mood: "햇빛 강한 오후",
-    note: "오래 볕에 둔 사진처럼 색이 바래고 공기가 느슨해진다",
+    note: "오래 볕에 둔 사진처럼 색이 바랜 오후",
   },
   {
     stem: "08-seattle",
