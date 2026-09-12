@@ -1,20 +1,30 @@
+import { Button } from "@scopulus/ui";
+
+import { PresetPicker } from "@/widgets/preset-picker";
+
 /**
- * 화면은 아직 뼈대다. 무엇을 그릴지는 `docs/GOAL.md` 5절이 정해 두었고,
- * 그 앞에 2~5절의 셰이더 이식과 72장 전수 판정이 끝나야 한다.
+ * 한 화면으로 끝낸다. 사진을 고르기 전에는 데모 사진이 뷰어에 들어가 있다.
+ *
+ * 사진 고르기는 아직 붙지 않았다. 셰이더 이식(`docs/GOAL.md` 빌드 순서 1~5번)이
+ * 끝나야 고른 사진에 입힐 것이 생긴다.
  */
 export default function Home() {
   return (
-    <main className="mx-auto flex max-w-2xl flex-1 flex-col justify-center gap-4 px-6 py-24">
-      <h1 className="text-3xl font-semibold tracking-tight">city-presets</h1>
-      <p className="text-muted-foreground">
-        사진 한 장에 도시 이름의 색 하나를 건다. 계산은 브라우저 안에서만 돌고
-        사진은 기기 밖으로 나가지 않는다.
-      </p>
-      <p className="text-sm text-muted-foreground">
-        값의 정본은 <code className="font-mono">presets/grade.py</code> 의{" "}
-        <code className="font-mono">PRESETS</code> 이고, 만들 것과 완료 기준은{" "}
-        <code className="font-mono">docs/GOAL.md</code> 에 있다.
-      </p>
-    </main>
+    <div className="mx-auto flex h-dvh w-full max-w-[430px] flex-col border-border sm:border-x">
+      <header className="shrink-0 px-5 py-3.5">
+        <span className="text-[13px] font-medium tracking-tight">
+          city-presets
+        </span>
+      </header>
+
+      <PresetPicker />
+
+      <div className="shrink-0 px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        {/* 높이만 덮는다. 기본 h-10(40px)은 모바일 최소 터치 영역 44px 에 못 미친다 */}
+        <Button type="button" className="h-12 w-full text-[15px]">
+          사진 고르기
+        </Button>
+      </div>
+    </div>
   );
 }

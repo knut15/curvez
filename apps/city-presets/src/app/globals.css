@@ -1,12 +1,43 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-/* 색·반경 토큰의 정본은 라이브러리다. */
 @import "@scopulus/ui/tokens.css";
 
 /* Tailwind v4 의 자동 탐지는 `node_modules` 를 건너뛰는데 `@scopulus/ui` 는 거기
    심볼릭 링크로 있다. 넣지 않으면 라이브러리에서만 쓰는 클래스가 조용히 빠진다. */
 @source "../../../../packages/scopulus-ui/src";
+
+/**
+ * 이 앱의 색. scopulusUI 토큰을 이름 그대로 덮어쓴다 — 라이브러리 컴포넌트가
+ * 그 이름을 직접 참조하므로 이름을 바꾸면 컴포넌트가 동작하지 않는다.
+ *
+ * **채도를 전부 0 으로 내린다.** scopulus 의 기본값은 초록을 살짝 띠는데
+ * (oklch hue 165~183), 색 보정 도구에서 배경이 색을 띠면 사진의 색을 잘못 읽는다.
+ * 이 화면에서 색을 가진 것은 사진뿐이다.
+ */
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.2274 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2274 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2274 0 0);
+  --primary: oklch(0.2274 0 0);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.9702 0 0);
+  --secondary-foreground: oklch(0.2274 0 0);
+  --muted: oklch(0.9702 0 0);
+  --muted-foreground: oklch(0.5544 0 0);
+  --accent: oklch(0.9702 0 0);
+  --accent-foreground: oklch(0.2274 0 0);
+  --border: oklch(0.9219 0 0);
+  --input: oklch(0.9219 0 0);
+  --ring: oklch(0.5544 0 0);
+}
+
+@theme inline {
+  --font-serif: var(--font-serif);
+}
 
 @layer base {
   * {
@@ -17,5 +48,7 @@
   }
   html {
     @apply font-sans;
+    /* 사진 사이를 스크롤하는 화면이라 가로로 흔들릴 자리를 두지 않는다 */
+    overflow-x: hidden;
   }
 }

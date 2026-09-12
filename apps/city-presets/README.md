@@ -31,8 +31,13 @@ pnpm --filter city-presets dev     # http://localhost:3002
 cd presets
 python3 grade.py base/01-base-outdoor.png        # graded/<원본이름>/ 에 12장 (검수용)
 python3 frame.py 01-base-outdoor 04-base-flowers # framed/<원본이름>/ 에 흰 테두리 + 값
-python3 hero.py                                  # hero-framed/ 에 대표 이미지 12장 (판매용)
+python3 hero.py                                  # hero-graded/ · hero-framed/ 에 12장씩
+python3 web_assets.py                            # public/demo/ 에 웹용 36장
 ```
+
+`web_assets.py` 는 `hero.py` 가 만든 `hero-graded/` 를 읽으므로 그 뒤에 돌린다.
+`public/demo/` 만 다른 생성물과 달리 커밋한다 — 사이트가 빌드될 때 있어야 하고,
+빌드 기계에 파이썬과 원본 PNG 80MB 를 두지 않기 위해서다.
 
 `graded/` · `framed/` · `hero-graded/` · `hero-framed/` 는 커밋하지 않는다. 위 세 줄로 다시 나온다.
 커밋하는 것은 입력(`presets/base/`·`presets/hero/`)과 코드뿐이다. 생성 모델은 같은 프롬프트로 같은 그림을 다시
