@@ -495,7 +495,12 @@ export function PresetPicker() {
                           </Button>
                         }
                       />
-                      <DialogContent className="grid gap-3 p-5">
+                      {/* 중첩이라 배경막을 켜 줘야 한다. 안 켜면 뒤의 프레임이 또렷하게 보여
+                          어느 것을 만지는 중인지 흐려진다 */}
+                      <DialogContent
+                        overlay={{ forceRender: true }}
+                        className="grid gap-3 p-5"
+                      >
                         <DialogTitle className="text-[15px] font-medium">
                           프레임에 찍을 글자
                         </DialogTitle>
