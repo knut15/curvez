@@ -8,7 +8,7 @@
 사진 아래에 찍는 값이 곧 이 값이다. 지어낸 숫자가 아니다.
 """
 import numpy as np, colorsys
-from PIL import Image, ImageFilter
+from PIL import Image
 
 def srgb2lin(x): return np.where(x <= 0.04045, x/12.92, ((x+0.055)/1.055)**2.4)
 def lin2srgb(x):
@@ -16,6 +16,92 @@ def lin2srgb(x):
     return np.where(x <= 0.0031308, x*12.92, 1.055*x**(1/2.4) - 0.055)
 def luma(a): return (0.2126*a[...,0] + 0.7152*a[...,1] + 0.0722*a[...,2])[...,None]
 def hue_rgb(deg): return np.array(colorsys.hsv_to_rgb(deg/360.0, 1.0, 1.0))
+
+
+# ── 언어를 건너면 달라지는 세 가지. 셰이더와 같은 것을 쓰도록 여기에 명시한다 ──
+# 무엇이 왜 갈리는지는 `docs/GOAL.md` 2절에 있다.
+
+BLUR_SCALE = 4  # 블러는 1/4 로 줄여서 건다. 전 해상도 133탭은 폰에서 돌지 않는다
+
+def _gauss_kernel(sigma):
+    """정규화된 1차원 가우시안. 3시그마에서 자른다. 셰이더가 같은 값을 받는다."""
+    r = int(np.ceil(3 * sigma))
+    x = np.arange(-r, r + 1, dtype=np.float64)
+    w = np.exp(-(x * x) / (2 * sigma * sigma))
+    return w / w.sum()
+
+def _downsample(a, s):
+    """s×s 블록 평균. 가장자리는 복제해서 s 의 배수로 채운다."""
+    h, w = a.shape[:2]
+    ph, pw = (-h) % s, (-w) % s
+    if ph or pw:
+        a = np.pad(a, ((0, ph), (0, pw), (0, 0)), mode='edge')
+    return a.reshape(a.shape[0]//s, s, a.shape[1]//s, s, 3).mean(axis=(1, 3))
+
+def _blur1d(a, k, axis):
+    r = (len(k) - 1) // 2
+    pad = [(0, 0)] * a.ndim
+    pad[axis] = (r, r)
+    ap = np.pad(a, pad, mode='edge')
+    out = np.zeros_like(a)
+    for i, wgt in enumerate(k):
+        sl = [slice(None)] * a.ndim
+        sl[axis] = slice(i, i + a.shape[axis])
+        out += wgt * ap[tuple(sl)]
+    return out
+
+def _upsample(lo, h, w, s):
+    """GPU 의 텍셀 중심 규약으로 되돌린다. 셰이더는 texelFetch 로 같은 식을 쓴다."""
+    lh, lw = lo.shape[:2]
+    fy = (np.arange(h) + 0.5) / s - 0.5
+    fx = (np.arange(w) + 0.5) / s - 0.5
+    y0 = np.floor(fy).astype(np.int64); ty = (fy - y0)[:, None, None]
+    x0 = np.floor(fx).astype(np.int64); tx = (fx - x0)[None, :, None]
+    y0c, y1c = np.clip(y0, 0, lh-1), np.clip(y0+1, 0, lh-1)
+    x0c, x1c = np.clip(x0, 0, lw-1), np.clip(x0+1, 0, lw-1)
+    a00 = lo[np.ix_(y0c, x0c)]; a01 = lo[np.ix_(y0c, x1c)]
+    a10 = lo[np.ix_(y1c, x0c)]; a11 = lo[np.ix_(y1c, x1c)]
+    top = a00 + (a01 - a00) * tx
+    bot = a10 + (a11 - a10) * tx
+    return top + (bot - top) * ty
+
+def blur(a, radius):
+    """`ImageFilter.GaussianBlur` 를 쓰지 않는다. PIL 은 박스 3번으로 근사하는데
+    그 근사를 셰이더에서 똑같이 재현할 방법이 없다."""
+    lo = _downsample(a, BLUR_SCALE)
+    k = _gauss_kernel(radius / BLUR_SCALE)
+    lo = _blur1d(_blur1d(lo, k, 1), k, 0)
+    return _upsample(lo, a.shape[0], a.shape[1], BLUR_SCALE)
+
+def _hash01(xx, yy, seed):
+    """픽셀 좌표만으로 정해지는 난수. 시드 기반 RNG 는 언어를 건너면 다른 수열을 준다.
+    uint32 랩어라운드라 파이썬과 GLSL 이 비트까지 같은 값을 낸다."""
+    M = np.uint64(0xFFFFFFFF)
+    h = (xx.astype(np.uint64) * np.uint64(374761393)
+         + yy.astype(np.uint64) * np.uint64(668265263)
+         + np.uint64(seed) * np.uint64(2246822519)) & M
+    h = ((h ^ (h >> np.uint64(13))) * np.uint64(1274126177)) & M
+    h = (h ^ (h >> np.uint64(16))) & np.uint64(0xFFFFFF)
+    return h.astype(np.float64) / 16777216.0
+
+def grain_noise(h_, w_):
+    """균등난수 셋을 더해 정규분포에 가깝게 만든다(Irwin-Hall). 표준편차 1.
+    Box-Muller 를 쓰지 않는 이유는 sin·log 의 정밀도가 GPU 와 CPU 에서 다르기 때문이다."""
+    yy, xx = np.mgrid[0:h_, 0:w_]
+    u = sum(_hash01(xx, yy, s) for s in (1, 2, 3))
+    return (u - 1.5) / 0.5
+
+def hue_deg(a):
+    """실수 HSV 의 색상만. PIL 의 `convert('HSV')` 는 정수 0–255 색상환이라
+    한 칸이 1.41도다. 셰이더는 실수로 계산하므로 여기도 실수로 맞춘다."""
+    r, g, b = a[..., 0], a[..., 1], a[..., 2]
+    mx, mn = a.max(axis=2), a.min(axis=2)
+    d = mx - mn
+    safe = np.where(d == 0, 1.0, d)
+    h = np.where(mx == r, ((g - b) / safe) % 6.0,
+        np.where(mx == g, ((b - r) / safe) + 2.0,
+                          ((r - g) / safe) + 4.0))
+    return np.where(d == 0, 0.0, h) * 60.0
 
 SLIDERS = ['exposure','brilliance','highlights','shadows','contrast','brightness',
            'black_point','saturation','vibrance','warmth','tint','definition','vignette',
@@ -50,10 +136,9 @@ def grade(img, *, split_shadow=None, split_high=None, hue_sat=None, **v):
         bp = p['black_point']*0.14
         a = np.clip((a-bp)/(1-bp), 0, 1) if bp > 0 else np.clip(a*(1+bp) - bp, 0, 1)
     if p['definition']:
-        blur = np.asarray(Image.fromarray((a*255).astype(np.uint8))
-                          .filter(ImageFilter.GaussianBlur(22)), dtype=np.float64)/255.0
+        lo = blur(a, 22)
         m = np.clip(1 - np.abs(luma(a)-0.5)*1.6, 0, 1)
-        a = np.clip(a + (a-blur)*p['definition']*1.4*m, 0, 1)
+        a = np.clip(a + (a-lo)*p['definition']*1.4*m, 0, 1)
 
     # 스플릿 토닝 — 아이폰에 없다. (색상 각도, 강도 0..100)
     L = luma(a)
@@ -73,16 +158,15 @@ def grade(img, *, split_shadow=None, split_high=None, hue_sat=None, **v):
 
     # 색상별 채도 — 아이폰에 없다. [(중심각, 폭, 증감)]
     if hue_sat:
-        hsv = np.asarray(Image.fromarray((a*255).astype(np.uint8)).convert('HSV'), dtype=np.float64)
+        hdeg = hue_deg(a)
         for center, width, amt in hue_sat:
-            dd = np.abs(((hsv[...,0]*360/255) - center + 180) % 360 - 180)
+            dd = np.abs((hdeg - center + 180) % 360 - 180)
             w = np.clip(1 - dd/width, 0, 1)[...,None]
             g = luma(a)
             a = np.clip(a + w*((a-g)*(amt/100.0)), 0, 1)
 
     if p['bloom']:
-        br = np.asarray(Image.fromarray((a*255).astype(np.uint8))
-                        .filter(ImageFilter.GaussianBlur(28)), dtype=np.float64)/255.0
+        br = blur(a, 28)
         m = np.clip((luma(a)-0.6)/0.4, 0, 1)
         a = np.clip(a + br*m*p['bloom'], 0, 1)
     if p['vignette']:
@@ -91,8 +175,7 @@ def grade(img, *, split_shadow=None, split_high=None, hue_sat=None, **v):
         r = np.sqrt(((xx-w_/2)/(w_/2))**2 + ((yy-h_/2)/(h_/2))**2)
         a = np.clip(a*(1 - p['vignette']*0.55*np.clip(r-0.45,0,None)[...,None]), 0, 1)
     if p['grain']:
-        rng = np.random.default_rng(7)
-        n = rng.normal(0, p['grain']*0.06, a.shape[:2])[...,None]
+        n = (grain_noise(*a.shape[:2]) * (p['grain']*0.06))[...,None]
         a = np.clip(a + n*(1 - np.abs(luma(a)-0.5)*1.2), 0, 1)
 
     return Image.fromarray((np.clip(a,0,1)*255+0.5).astype(np.uint8))

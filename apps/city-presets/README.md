@@ -7,15 +7,21 @@
 
 ## 파일
 
-| 경로                            | 무엇                                                                 |
-| ------------------------------- | -------------------------------------------------------------------- |
-| `presets/grade.py`              | **값의 정본.** 열두 개의 슬라이더 값과 적용 순서                     |
-| `presets/frame.py`              | 사진 아래에 흰 테두리와 적용값 스트립을 붙인다                       |
-| `presets/hero.py`               | 팔레트마다 짝지은 사진 한 장에 그 프리셋만 걸어 대표 이미지를 만든다 |
-| `presets/base/`                 | 기준 사진 다섯 장. 아래 표 참조                                      |
-| `presets/hero/`                 | 팔레트별 대표 사진 12장. 파일 이름이 어느 프리셋을 걸지를 정한다     |
-| `presets/reference/prompts.tsv` | 초기 레퍼런스 이미지를 만든 프롬프트. 기록용                         |
-| `src/`                          | 브라우저 구현. 지금은 뼈대뿐이고 셰이더는 아직 없다                  |
+| 경로                            | 무엇                                                                    |
+| ------------------------------- | ----------------------------------------------------------------------- |
+| `presets/grade.py`              | **값의 정본.** 열두 개의 슬라이더 값과 적용 순서                        |
+| `presets/frame.py`              | 사진 아래에 흰 테두리와 적용값 스트립을 붙인다                          |
+| `presets/hero.py`               | 팔레트마다 짝지은 사진 한 장에 그 프리셋만 걸어 대표 이미지를 만든다    |
+| `presets/web_assets.py`         | 데모 이미지를 웹 크기로 줄여 `public/demo/` 에 넣는다                   |
+| `presets/export_values.py`      | 값을 `src/shared/preset-values.ts` 로 내보낸다. 손으로 옮겨 적지 않는다 |
+| `presets/compare.py`            | 두 이미지가 같은지 판정한다 (평균 절대차·1레벨 초과 비율)               |
+| `presets/distance.py`           | 열두 개가 서로 갈리는지 66쌍 거리로 판정한다                            |
+| `presets/base/`                 | 기준 사진 여섯 장. 아래 표 참조                                         |
+| `presets/hero/`                 | 팔레트별 대표 사진 12장. 파일 이름이 어느 프리셋을 걸지를 정한다        |
+| `presets/reference/prompts.tsv` | 초기 레퍼런스 이미지를 만든 프롬프트. 기록용                            |
+| `public/demo/`                  | 화면이 쓰는 데모 36장. **생성물이지만 커밋한다**                        |
+| `src/shared/grade-gl.ts`        | `grade.py` 를 옮긴 WebGL2 셰이더. 브라우저의 계산 전부                  |
+| `src/app/verify/`               | 셰이더가 파이썬과 같은 그림을 내는지 판정하는 화면                      |
 
 ## 돌리는 법
 
@@ -42,6 +48,33 @@ python3 web_assets.py                            # public/demo/ 에 웹용 36장
 `graded/` · `framed/` · `hero-graded/` · `hero-framed/` 는 커밋하지 않는다. 위 세 줄로 다시 나온다.
 커밋하는 것은 입력(`presets/base/`·`presets/hero/`)과 코드뿐이다. 생성 모델은 같은 프롬프트로 같은 그림을 다시
 주지 않으므로 입력은 보관하고, 계산으로 나오는 것은 보관하지 않는다.
+
+## 셰이더가 파이썬과 같은지 판정하기
+
+브라우저 구현은 `presets/grade.py` 를 옮겨 담은 것이다. 같은 그림이 나오는지는
+`/verify` 가 기계로 판정한다. 기준은 [GOAL](docs/GOAL.md) 3절 — 평균 절대차 0.5 레벨 미만,
+1레벨 초과 픽셀 1% 미만, 여섯 원본 × 12 프리셋 = **72장 전수**.
+
+기준 이미지는 커밋하지 않는다(479MB). 돌리기 전에 만든다.
+
+```bash
+cd presets
+python3 - <<'EOF'
+import pathlib, sys; sys.path.insert(0, '.')
+from PIL import Image
+from grade import grade, PRESETS
+out = pathlib.Path('../public/.verify'); out.mkdir(parents=True, exist_ok=True)
+for b in sorted(pathlib.Path('base').glob('*.png')):
+    im = Image.open(b).convert('RGB')
+    im.save(out / b.name)
+    for name, params in PRESETS.items():
+        grade(im, **params).save(out / f'{b.stem}__{name}.png')
+EOF
+cd .. && pnpm dev    # http://localhost:3002/verify 에서 「72장 판정」
+```
+
+**값을 고치면 생성물도 전부 다시 뽑는다.** `hero.py` → `web_assets.py` → `export_values.py` 순이다.
+그러지 않으면 화면의 데모와 실제로 걸리는 색이 갈린다.
 
 ## 값을 고칠 때
 

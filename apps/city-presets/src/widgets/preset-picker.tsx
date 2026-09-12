@@ -15,6 +15,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 
 import { Button } from "@scopulus/ui";
 
+import { Grader } from "@/shared/grade-gl";
 import { PRESETS } from "@/shared/presets";
 
 import "swiper/css";
@@ -34,6 +35,8 @@ export function PresetPicker() {
   const [intro, setIntro] = useState(true);
   const [photo, setPhoto] = useState<string | null>(null);
   const frame = useRef<HTMLDivElement>(null);
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const grader = useRef<Grader | null>(null);
   const file = useRef<HTMLInputElement>(null);
   const sliding = useRef(false);
   const raf = useRef(0);
@@ -98,6 +101,49 @@ export function PresetPicker() {
     };
   }, [photo]);
 
+  /**
+   * 고른 사진에 지금 도시의 색을 건다. 계산은 전부 이 기기의 GPU 안에서 돈다.
+   *
+   * 미리보기는 긴 변 2048 로 줄여서 건다. 블러 반경이 픽셀 단위라 원본 크기에서
+   * 걸면 데모 사진과 다른 세기로 보이고, 1,200만 화소를 도시마다 다시 거는 것은
+   * 누를 때마다 기다리게 만든다. 원본 해상도로 내보내는 것은 받기를 붙일 때다.
+   */
+  useEffect(() => {
+    const el = canvas.current;
+    if (!photo || !el) return;
+    let dead = false;
+    const img = new window.Image();
+    img.onload = async () => {
+      if (dead) return;
+      const cap = 2048;
+      const k = Math.min(
+        1,
+        cap / Math.max(img.naturalWidth, img.naturalHeight),
+      );
+      const w = Math.max(1, Math.round(img.naturalWidth * k));
+      const h = Math.max(1, Math.round(img.naturalHeight * k));
+      try {
+        // 셰이더에 올리기 전에 줄인다. 원본 크기로 올리면 뷰포트가 w×h 라
+        // 왼쪽 위 귀퉁이만 잘려 나온다.
+        const bmp = await createImageBitmap(img, {
+          resizeWidth: w,
+          resizeHeight: h,
+          resizeQuality: "high",
+        });
+        if (dead) return bmp.close();
+        grader.current ??= new Grader(el);
+        grader.current.render(bmp, w, h, preset.stem);
+        bmp.close();
+      } catch (err) {
+        console.error("[city-presets] 색을 걸지 못했다", err);
+      }
+    };
+    img.src = photo;
+    return () => {
+      dead = true;
+    };
+  }, [photo, preset.stem]);
+
   function onPick(e: ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     // 같은 사진을 다시 골라도 change 가 나게 값을 비운다
@@ -146,20 +192,67 @@ export function PresetPicker() {
     e.preventDefault();
   }
 
+  /**
+   * 이음매이자 손잡이다. 좌우로 끌면 원본과 적용본의 경계가 따라 움직인다.
+   * 보이는 것은 1px 선이지만 잡는 자리는 32px 다 — 1px 을 손가락으로 집을 수 없다.
+   *
+   * 선은 한 겹이고 뒤에 깔린 것의 밝기를 뒤집어 칠한다 — 어두운 사진에서는 밝게,
+   * 밝은 사진과 사진 밖 흰 지면에서는 어둡게 선다. `grayscale` 을 같이 거는 이유는
+   * 뒤집기만 하면 선이 보색으로 물들어서다.
+   *
+   * 데모와 고른 사진 두 갈래가 같은 것을 쓴다.
+   */
+  const handle = (
+    <div
+      role="slider"
+      tabIndex={0}
+      aria-label="원본과 적용본의 경계"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(split)}
+      aria-valuetext={`왼쪽 ${Math.round(split)}퍼센트가 원본`}
+      onPointerDown={onHandleDown}
+      onPointerMove={onHandleMove}
+      onPointerUp={onHandleUp}
+      onPointerCancel={onHandleUp}
+      onKeyDown={onHandleKey}
+      style={{ left: `${split}%` }}
+      className={`absolute -top-4 -bottom-4 z-10 w-8 -translate-x-1/2 cursor-ew-resize touch-none focus-visible:outline-none ${
+        intro ? "pointer-events-none" : ""
+      }`}
+    >
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 opacity-60 backdrop-grayscale backdrop-invert"
+      />
+    </div>
+  );
+
   return (
     <>
       <div ref={frame} className="relative min-h-0 flex-1 bg-muted">
         {photo ? (
-          // 고른 사진은 아직 색이 걸리지 않는다. 값을 셰이더로 옮기는 일이
-          // 끝나야 오른쪽 절반에 보여 줄 것이 생긴다 — `docs/GOAL.md` 빌드 순서 1~5번.
-          <Image
-            src={photo}
-            alt="고른 사진"
-            fill
-            sizes="430px"
-            unoptimized
-            className="object-cover"
-          />
+          <>
+            <Image
+              src={photo}
+              alt="고른 사진의 원본"
+              fill
+              sizes="430px"
+              unoptimized
+              className="object-cover"
+            />
+            <div
+              className="absolute inset-0"
+              style={{ clipPath: `inset(0 0 0 ${split}%)` }}
+            >
+              <canvas
+                ref={canvas}
+                aria-label={`${preset.name} 색을 입힌 같은 사진`}
+                className="size-full object-cover"
+              />
+            </div>
+            {handle}
+          </>
         ) : (
           <>
             <Image
@@ -186,35 +279,7 @@ export function PresetPicker() {
               />
             </div>
 
-            {/* 이음매이자 손잡이다. 좌우로 끌면 원본과 적용본의 경계가 따라 움직인다.
-              보이는 것은 1px 선이지만 잡는 자리는 32px 다 — 1px 을 손가락으로 집을 수 없다.
-
-              선은 한 겹이고 뒤에 깔린 것의 밝기를 뒤집어 칠한다 — 어두운 사진에서는 밝게,
-              밝은 사진과 사진 밖 흰 지면에서는 어둡게 선다. `grayscale` 을 같이 거는 이유는
-              뒤집기만 하면 선이 보색으로 물들어서다. */}
-            <div
-              role="slider"
-              tabIndex={0}
-              aria-label="원본과 적용본의 경계"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={Math.round(split)}
-              aria-valuetext={`왼쪽 ${Math.round(split)}퍼센트가 원본`}
-              onPointerDown={onHandleDown}
-              onPointerMove={onHandleMove}
-              onPointerUp={onHandleUp}
-              onPointerCancel={onHandleUp}
-              onKeyDown={onHandleKey}
-              style={{ left: `${split}%` }}
-              className={`absolute -top-4 -bottom-4 z-10 w-8 -translate-x-1/2 cursor-ew-resize touch-none focus-visible:outline-none ${
-                intro ? "pointer-events-none" : ""
-              }`}
-            >
-              <span
-                aria-hidden
-                className="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 opacity-60 backdrop-grayscale backdrop-invert"
-              />
-            </div>
+            {handle}
           </>
         )}
       </div>
