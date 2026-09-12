@@ -513,7 +513,7 @@ export function PresetPicker() {
                         </label>
                         <label className="grid gap-1.5">
                           <span className="text-[13px] text-muted-foreground">
-                            무드
+                            설명
                           </span>
                           <Input
                             value={frameMood}
