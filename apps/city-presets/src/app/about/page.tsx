@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
+import { AppLink } from "@scopulus/ui";
 
 import { PRESETS } from "@/shared/presets";
 import { Brand } from "@/widgets/brand";
 
 export const metadata: Metadata = {
-  title: "열두 도시의 색 — Shadetide",
+  title: "열두 도시의 색 — satinhaze",
   description:
     "도시 이름은 찍을 장소가 아니라 색의 이름이다. 열두 개가 새벽에서 밤으로, 겨울에서 겨울로 이어진다.",
 };
@@ -21,14 +21,11 @@ export const metadata: Metadata = {
 export default function About() {
   return (
     <div className="mx-auto w-full max-w-[430px] border-border sm:border-x">
-      <header className="flex items-baseline justify-between px-5 py-3.5">
+      <header className="flex items-center justify-between px-5 py-2">
         <Brand />
-        <Link
-          href="/"
-          className="text-[13px] text-muted-foreground underline-offset-4 hover:underline"
-        >
-          도구
-        </Link>
+        <AppLink href="/" variant="cta-quiet">
+          필터 적용
+        </AppLink>
       </header>
 
       <section className="px-5 pt-8 pb-10">
@@ -96,13 +93,10 @@ export default function About() {
         ))}
       </main>
 
-      <footer className="border-t border-border px-5 py-10">
-        <Link
-          href="/"
-          className="flex h-12 w-full items-center justify-center rounded-md bg-primary text-[15px] font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-        >
-          내 사진에 입혀 보기
-        </Link>
+      <footer className="flex justify-center border-t border-border px-5 py-10">
+        <AppLink href="/" variant="cta">
+          내 사진에 적용하기
+        </AppLink>
       </footer>
     </div>
   );
