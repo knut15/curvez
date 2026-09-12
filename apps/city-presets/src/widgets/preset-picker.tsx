@@ -21,6 +21,7 @@ import {
   DialogTrigger,
 } from "@scopulus/ui";
 
+import { exportFramed, exportPhoto, save } from "@/shared/export-image";
 import { drawFrame } from "@/shared/frame-canvas";
 import { Grader } from "@/shared/grade-gl";
 import { PRESETS } from "@/shared/presets";
@@ -48,6 +49,7 @@ export function PresetPicker() {
   const [framed, setFramed] = useState<HTMLCanvasElement | null>(null);
   const [frameOpen, setFrameOpen] = useState(false);
   const [frameError, setFrameError] = useState<string | null>(null);
+  const [saving, setSaving] = useState<"photo" | "frame" | null>(null);
   const grader = useRef<Grader | null>(null);
   const file = useRef<HTMLInputElement>(null);
   const sliding = useRef(false);
@@ -193,6 +195,28 @@ export function PresetPicker() {
       dead = true;
     };
   }, [frameOpen, framed, photo, preset.stem]);
+
+  /**
+   * 받기. **원본 해상도 그대로 다시 건다** — 화면의 것은 긴 변 2048 로 줄인
+   * 미리보기라 그대로 내보내면 작아진 사진을 받게 된다.
+   */
+  async function download(kind: "photo" | "frame") {
+    if (!photo || saving) return;
+    setSaving(kind);
+    try {
+      const blob =
+        kind === "photo"
+          ? await exportPhoto(photo, preset.stem)
+          : await exportFramed(photo, preset.stem);
+      const suffix = kind === "frame" ? "-frame" : "";
+      save(blob, `city-presets-${preset.stem}${suffix}.jpg`);
+    } catch (err) {
+      console.error("[city-presets] 받지 못했다", err);
+      setFrameError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSaving(null);
+    }
+  }
 
   function onPick(e: ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -399,14 +423,26 @@ export function PresetPicker() {
           onChange={onPick}
           className="hidden"
         />
+        {/* 사진이 있으면 받기가 앞에 선다. 고르는 것은 이미 한 일이다 */}
+        {photo && (
+          <Button
+            type="button"
+            onClick={() => download("photo")}
+            disabled={saving !== null}
+            className="mb-2 h-12 w-full text-[15px]"
+          >
+            {saving === "photo" ? "만드는 중" : "받기"}
+          </Button>
+        )}
         <div className="flex gap-2">
           {/* 높이만 덮는다. 기본 h-10(40px)은 모바일 최소 터치 영역 44px 에 못 미친다 */}
           <Button
             type="button"
+            variant={photo ? "outline" : "default"}
             onClick={() => file.current?.click()}
             className="h-12 flex-1 text-[15px]"
           >
-            {photo ? "다른 사진 고르기" : "사진 고르기"}
+            {photo ? "다른 사진" : "사진 고르기"}
           </Button>
           <Dialog open={frameOpen} onOpenChange={setFrameOpen}>
             <DialogTrigger
@@ -429,10 +465,22 @@ export function PresetPicker() {
                   {frameError}
                 </p>
               ) : (
-                <canvas
-                  ref={setFramed}
-                  className="max-h-full max-w-full object-contain"
-                />
+                <>
+                  <canvas
+                    ref={setFramed}
+                    className="max-h-full max-w-full object-contain"
+                  />
+                  {photo && (
+                    <Button
+                      type="button"
+                      onClick={() => download("frame")}
+                      disabled={saving !== null}
+                      className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 h-12 -translate-x-1/2 px-8 text-[15px]"
+                    >
+                      {saving === "frame" ? "만드는 중" : "프레임 받기"}
+                    </Button>
+                  )}
+                </>
               )}
             </DialogContent>
           </Dialog>

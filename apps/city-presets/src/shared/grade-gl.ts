@@ -284,6 +284,8 @@ export class Grader {
   private progs: Record<string, WebGLProgram>;
   private targets: Target[] = [];
   private format: number;
+  /** 이번 렌더에 쓰는 정밀도. 큰 사진에서는 내려간다 */
+  private pass = 0;
 
   /** 이 기기가 그 형식으로 그릴 수 있는지 실제로 프레임버퍼를 만들어 본다 */
   private renderable(gl: WebGL2RenderingContext, format: number) {
@@ -335,7 +337,7 @@ export class Grader {
     const gl = this.gl;
     const tex = gl.createTexture()!;
     gl.bindTexture(gl.TEXTURE_2D, tex);
-    gl.texStorage2D(gl.TEXTURE_2D, 1, this.format, w, h);
+    gl.texStorage2D(gl.TEXTURE_2D, 1, this.pass, w, h);
     for (const k of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) {
       gl.texParameteri(gl.TEXTURE_2D, k, gl.NEAREST);
     }
@@ -351,6 +353,10 @@ export class Grader {
       tex,
       0,
     );
+    if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+      // 여기서 멈추지 않으면 아무 일도 안 일어난 채 새까만 그림이 나온다
+      throw new Error(`${w}×${h} 버퍼를 만들지 못했다. 사진이 너무 크다`);
+    }
     const t = { fb, tex, w, h };
     this.targets.push(t);
     return t;
@@ -408,6 +414,11 @@ export class Grader {
     return out;
   }
 
+  /** 다 쓴 컨텍스트를 놓는다. 브라우저는 WebGL 컨텍스트를 몇 개까지만 들고 있는다 */
+  dispose() {
+    this.gl.getExtension("WEBGL_lose_context")?.loseContext();
+  }
+
   /**
    * 사진 한 장에 프리셋 하나를 걸어 캔버스에 그린다.
    *
@@ -423,6 +434,9 @@ export class Grader {
     this.canvas.width = w;
     this.canvas.height = h;
     this.targets = [];
+    // 전 해상도 사진에서는 32비트 두 장이 800MB 를 넘어 조용히 비어 버린다.
+    // 16비트로 내려도 파이썬과의 차이는 평균 0.08 로 기준(0.5)의 6분의 1이다.
+    this.pass = w * h > 8e6 ? gl.RGBA16F : this.format;
 
     const input = gl.createTexture()!;
     gl.bindTexture(gl.TEXTURE_2D, input);
@@ -526,6 +540,9 @@ export class Grader {
     gl.uniform1f(gl.getUniformLocation(pf, "uGrain"), n("grain") * 0.06);
     gl.uniform2i(gl.getUniformLocation(pf, "uSize"), w, h);
     this.draw(pf, null, w, h);
+
+    const err = gl.getError();
+    if (err !== gl.NO_ERROR) throw new Error(`그리는 중 실패했다 (GL ${err})`);
 
     gl.deleteTexture(input);
     for (const t of this.targets) {
