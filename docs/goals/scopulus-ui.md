@@ -3,7 +3,7 @@
 handwork 안에 있던 컴포넌트를 **독립 라이브러리 `@scopulus/ui`** 로 뽑고, 그것을 보여주는
 **문서 사이트를 GitHub Pages 에 올린다.** handwork 는 그 사이트를 Labs 글 하나로 링크한다.
 
-이 문서는 실행 지시문이다. 값이 갈리면 여기가 정본이고, 여기에 없는 값은 지어내지 않고 묻는다.
+이 문서는 실행 지시문이다. 값이 서로 다르면 여기가 정본이고 여기에 없는 값은 지어내지 않고 묻는다.
 
 ---
 
@@ -21,7 +21,7 @@ handwork 안에 있던 컴포넌트를 **독립 라이브러리 `@scopulus/ui`**
 | 배포          | 같은 저장소 GitHub Pages → `knut15.github.io/curvez/`            | 사용자 결정                                                            |
 | handwork 링크 | **Labs 글 하나**                                                 | Labs 가 이미 "만든 것의 기록" 으로 정의돼 있다                         |
 
-## 2. 실측 — 지금 상태
+## 2. 지금 상태
 
 ```
 컴포넌트 구현    10개   apps/handwork/src/shared/ui/
@@ -106,7 +106,7 @@ Button · Card · Badge · AppLink · Separator · PageShell · PageTitle · Pro
 **스펙·스토리·play 함수를 그대로 가져간다.** 값을 바꾸지 않는다.
 
 **`ThemeProvider` 는 옮기지 않는다.** `app/layout.tsx` 의 배선이지 컴포넌트가 아니고, 스펙도 없다.
-**`ThemeToggle` 은 옮긴다.** 스펙과 스토리를 가진 컴포넌트이고, 사이트에서 보여줄 것이다.
+**`ThemeToggle` 은 옮긴다.** 스펙과 스토리를 가진 컴포넌트이고 사이트에서 보여줄 것이다.
 그 대가로 **`next-themes` 가 패키지의 `peerDependencies` 가 된다.**
 **바꿀 때 고칠 위치:** `packages/scopulus-ui/package.json` 의 `peerDependencies` 와
 `src/ui/theme-toggle.tsx`.
@@ -121,9 +121,9 @@ Button · Card · Badge · AppLink · Separator · PageShell · PageTitle · Pro
 | 데이터   | Table                                         |
 
 **전부 shadcn `base-nova` 로 받아 토큰만 맞춘다.** 손으로 새로 쓰지 않는다 — Button 때와 달리
-이것들은 이 프로젝트가 줄일 근거(실측)가 없다.
+이것들은 이 사이트에서 쓰던 것이 아니다.
 
-### 신규 컴포넌트의 근거는 실측이 아니다 — 그렇게 적는다
+### 신규 컴포넌트는 화면에서 쓰던 것이 아니다 — 그렇게 적는다
 
 기존 9종의 스펙은 `## 근거` 에 **"같은 클래스 문자열이 몇 번 반복되는가"** 를 `파일:줄` 로
 적었다. 신규 11종에는 그 근거가 **없다.** 화면에 쓰인 적이 없기 때문이다.
@@ -131,7 +131,7 @@ Button · Card · Badge · AppLink · Separator · PageShell · PageTitle · Pro
 **없는 근거를 지어내지 마라.** 신규 스펙의 `## 근거` 는 이 셋을 적는다.
 
 1. **출처** — `shadcn add <이름>` 으로 받은 `base-nova` 소스. 받은 날짜와 variant/size 목록
-2. **handwork 사용처: 0곳** — 명시한다. 기존 9종과 섞이면 어느 것이 검증된 값인지 갈린다
+2. **handwork 사용처: 0곳** — 명시한다. 기존 9종과 섞이면 어느 것이 검증된 값인지 구분되지 않는다
 3. **왜 20종에 들어가는가** — 폼·오버레이·피드백·데이터 네 묶음을 덮기 위해서다.
    그 밖의 이유를 적지 마라
 
@@ -269,7 +269,7 @@ node packages/scopulus-ui/scripts/check-contrast.mjs   # 실패 0건
 pnpm test                                            # 스토리마다 axe. 위반이면 실패
 ```
 
-**신규 11종이 들어오면 대비 쌍이 늘어난다.** 현재 20쌍이고, 새 쌍은 렌더 화면에서 재서
+**신규 11종이 들어오면 대비 쌍이 늘어난다.** 현재 20쌍이고 새 쌍은 렌더 화면에서 재서
 `tokens.md` 의 `## 대비 검증` 에 같은 형식으로 추가한다.
 
 ### G4. 버전 일치
@@ -292,7 +292,7 @@ MDX 안의 내부 링크와 `파일:줄` 참조가 실재하는지 본다. **이
 ### 각 게이트는 음성 검사로 확인한다
 
 **"실패 0건" 은 그 자체로 아무것도 증명하지 않는다.** 결함이 있는 입력에도 0건이 나올 수 있다.
-G2·G4·G5 는 각각 일부러 깨뜨려 잡히는지 확인하고, 그 출력을 보고에 원문으로 남긴다.
+G2·G4·G5 는 각각 일부러 깨뜨려 잡히는지 확인하고 그 출력을 보고에 원문으로 남긴다.
 
 ---
 
@@ -322,7 +322,7 @@ G2·G4·G5 는 각각 일부러 깨뜨려 잡히는지 확인하고, 그 출력�
     → 검증: `/labs` 에 항목이 뜨고 상세에서 사이트로 나가는 링크가 산다
 
 **5번을 3번보다 먼저 하지 않는다.** 이동이 끝나기 전에 새 컴포넌트를 만들면 두 곳에 컴포넌트가
-생기고, 어느 쪽이 정본인지 판정할 근거가 사라진다.
+생기고 어느 쪽이 정본인지 판정할 근거가 사라진다.
 
 ---
 
@@ -338,7 +338,7 @@ G2·G4·G5 는 각각 일부러 깨뜨려 잡히는지 확인하고, 그 출력�
 | `handwork-ui`            | `packages/scopulus-ui/src/`, `packages/scopulus-ui/.storybook/`, `packages/scopulus-ui/scripts/`, `apps/scopulus-ui/` |
 
 **이유:** 에이전트 이름을 바꾸면 `.claude/`·`team.md`·핸드오프 이력의 참조가 전부 어긋난다.
-이름이 소유 범위보다 좁아진 것은 사실이지만, 그 불일치는 문서 한 줄로 적어 두면 읽을 수 있다.
+이름이 소유 범위보다 좁아진 것은 사실이지만 그 불일치는 문서 한 줄로 적어 두면 읽을 수 있다.
 
 **반대 의견이 있으면 실행 전에 말한다.** `scopulus-ui-design` · `scopulus-ui-impl` 로 바꾸는 것도
 합리적이다 — 그때는 `.claude/agents/` 2파일 · `.claude/skills/` 2파일 · `.curvez/team.md` 를
@@ -348,7 +348,7 @@ G2·G4·G5 는 각각 일부러 깨뜨려 잡히는지 확인하고, 그 출력�
 에이전트의 소유 경로와 안 겹치므로 예외 선언이 필요 없다** — `curvez-nextjs` 는
 `${paths.web}` = `apps/handwork` 만 소유한다.
 
-**`apps/scopulus-ui/` 는 겹친다.** `${paths.web}` 가 `apps/handwork` 하나라 문자열로는 안 겹치지만,
+**`apps/scopulus-ui/` 는 겹친다.** `${paths.web}` 가 `apps/handwork` 하나라 문자열로는 안 겹치지만
 프로파일의 `paths.web` 을 어떻게 둘지 정해야 한다 — 13절.
 
 ---

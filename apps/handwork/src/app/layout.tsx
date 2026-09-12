@@ -11,7 +11,7 @@ const geistMono = Geist_Mono({
 });
 
 // Pretendard 는 Google Fonts 에 없어 npm 패키지의 가변 폰트를 로컬로 싣는다.
-// 본문과 워드마크가 같은 서체를 쓰고, 굵기만 갈린다.
+// 본문과 워드마크가 같은 서체를 쓰고, 굵기만 다르다.
 const pretendard = localFont({
   src: "../../node_modules/pretendard/dist/web/variable/woff2/PretendardVariable.woff2",
   variable: "--font-sans",

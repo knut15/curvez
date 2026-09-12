@@ -4,7 +4,7 @@ import type { CaseSummary } from "../model/types";
 
 /**
  * 카드 전체가 링크 하나다. 안에 별도 링크를 두지 않는다 —
- * 카드마다 탭이 여러 번 필요해지고 접근 이름도 갈린다.
+ * 카드마다 탭이 여러 번 필요해지고 접근 이름도 달라진다.
  */
 export function CaseCard({ item }: { item: CaseSummary }) {
   const shown = item.tags.slice(0, 3);

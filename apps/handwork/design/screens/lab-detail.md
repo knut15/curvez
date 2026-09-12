@@ -23,7 +23,7 @@ exit: 헤더로 다른 화면
     - role: MDX 본문
     - priority: 2
     - layout: max-w-[68ch] 단일 열
-    - **서식은 `shared/ui/prose.ts` 의 `PROSE` 하나를 case-detail 과 함께 쓴다.** 두 화면이 각자 들고 있으면 한쪽만 고쳐질 때 본문 서식이 조용히 갈린다
+    - **서식은 `shared/ui/prose.ts` 의 `PROSE` 하나를 case-detail 과 함께 쓴다.** 두 화면이 각자 들고 있으면 한쪽만 고쳐질 때 본문 서식이 조용히 달라진다
 - region: footer
   - role: 저작권 한 줄
   - component: SiteFooter
@@ -36,7 +36,7 @@ exit: 헤더로 다른 화면
 
 - state:default — 본문이 있는 기록 하나
 - state:loading — 없다. 정적 생성이라 런타임 데이터 요청이 0건이다
-- state:empty — 이 화면에는 빈 상태가 없다. 단건 조회이고, 없는 slug 는 state:error 로 간다
+- state:empty — 이 화면에는 빈 상태가 없다. 단건 조회이고 없는 slug 는 state:error 로 간다
 - state:error — 없는 slug 는 Next 의 notFound() 로 404 를 반환한다. 문구와 링크는 app/not-found.tsx 가 그린다. 재시도 버튼을 두지 않는다 — 다시 눌러도 결과가 같다
 
 ## responsive

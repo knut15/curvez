@@ -3,7 +3,7 @@
 **받는 사람: `curvez-nextjs`.** 화면 코드(`apps/handwork/src/views/` · `widgets/` · `app/`)는 그 담당이
 소유한다. `handwork-ui` 는 `shared/ui/` 까지만 만들고 거기를 건드리지 않았다. 이 문서가 인수인계다.
 
-**프리미티브 9종은 이미 있다.** 이 문서는 "만들어라" 가 아니라 **"있는 것으로 화면을 어떻게 바꾸는가"** 다.
+**프리미티브 9종은 이미 있다.** 이 문서는 만들라는 지시가 아니라 **있는 것으로 화면을 어떻게 바꾸는지**를 적는다.
 
 | 파일                                           | export            | props                                          |
 | ---------------------------------------------- | ----------------- | ---------------------------------------------- |
@@ -17,11 +17,11 @@
 | `packages/scopulus-ui/src/ui/prose.ts`         | `Prose` + `PROSE` | `children`                                     |
 | `packages/scopulus-ui/src/ui/theme-toggle.tsx` | `ThemeToggle`     | 없음                                           |
 
-각 컴포넌트의 스펙은 [`components/`](components/) 아래에 있다. 값이 갈리면 그쪽이 정본이다.
+각 컴포넌트의 스펙은 [`components/`](components/) 아래에 있다. 값이 서로 다르면 그쪽이 정본이다.
 
 ---
 
-## 스펙과 구현이 갈린 곳 둘 — 먼저 읽어라
+## 스펙과 구현이 다른 곳 둘 — 먼저 읽어라
 
 ### 1. `Badge` 의 `status` 가 `tone` 이 됐다
 
@@ -42,7 +42,7 @@ tone={item.status === "진행 중" ? "active" : "idle"}
 ```
 
 `멈춤` 과 `마무리` 가 둘 다 `idle` 인 것은 실수가 아니다. 근거는
-[`components/Badge.md`](components/Badge.md) 의 점 색 표다 — 강조색이 하나라 셋을 색으로 가를 수 없고,
+[`components/Badge.md`](components/Badge.md) 의 점 색 표다 — 강조색이 하나라 셋을 색으로 가를 수 없고
 `멈춤`/`마무리` 의 차이는 옆 글자가 말한다.
 
 ### 2. `Prose` 가 `prose.ts` 안에 `createElement` 로 들어갔다
@@ -65,10 +65,10 @@ tone={item.status === "진행 중" ? "active" : "idle"}
 
 ## 순서와 그 이유
 
-**값이 바뀌지 않는 넷을 먼저 하고, 바뀌는 셋을 나중에 한다.**
+**값이 바뀌지 않는 넷을 먼저 하고 바뀌는 셋을 나중에 한다.**
 
 **이유:** 순수 치환 단계를 먼저 끝내면 그 뒤에 화면에서 눈에 띄는 차이는 전부 의도된 것이다.
-섞어서 하면 "이게 바뀐 게 맞나" 를 단계마다 판정해야 하고, 게이트는 그 차이를 못 본다.
+섞어서 하면 바뀐 것이 맞는지를 단계마다 판정해야 하고 게이트는 그 차이를 못 본다.
 
 | 단계 | 무엇을      | 대상 | 값 변화               |
 | ---- | ----------- | ---: | --------------------- |
@@ -81,7 +81,7 @@ tone={item.status === "진행 중" ? "active" : "idle"}
 | 7    | `Badge`     |    6 | **2곳** + 마크업 조정 |
 
 `Button` 은 대상이 0곳이다. 화면에 버튼이 들어갈 자리가 아직 없다 — 근거는
-[`components/Button.md`](components/Button.md) 의 `## 근거` 절이고 실측 `<button>` 1건이 `ThemeToggle` 이다.
+[`components/Button.md`](components/Button.md) 의 `## 근거` 절이고 화면에 나온 `<button>` 1건이 `ThemeToggle` 이다.
 
 ---
 
@@ -179,7 +179,7 @@ import { Prose } from "@scopulus/ui";
 두 파일의 `import { PROSE }` 를 `import { Prose }` 로 바꾼다
 (`apps/handwork/src/views/case-detail.tsx:4` · `apps/handwork/src/views/lab-detail.tsx:2`).
 
-**끝나면 `handwork-ui` 에게 알린다.** 위 "갈린 곳 2" 의 3번을 그쪽이 한다.
+**끝나면 `handwork-ui` 에게 알린다.** 위 "다른 곳 2" 의 3번을 그쪽이 한다.
 
 ---
 
@@ -283,7 +283,7 @@ import { AppLink } from "@scopulus/ui";
 | `apps/handwork/src/widgets/site-header.tsx:24` | 워드마크 링크가 `inline-flex items-center py-2` 를 갖는다                                                        |
 
 **`AppLink` 는 `className` 을 받지 않아 그 클래스들을 실을 수 없다.** 그런데 `py-2` 는 링크
-자신이 가져야 한다 — [`components/SiteHeader.md`](components/SiteHeader.md) 의 `a11y:target` 이 실측을 기록했다:
+자신이 가져야 한다 — [`components/SiteHeader.md`](components/SiteHeader.md) 의 `a11y:target` 이 잰 값을 기록했다:
 링크 상자 39x33 · 31x33, "바에 여백을 몰아 주면 링크의 클릭 영역이 글자 높이(11px)에 머문다".
 감싸는 `<span>` 으로 옮기면 최소 타깃 24x24 를 잃는다.
 
@@ -334,12 +334,12 @@ import { PageTitle } from "@scopulus/ui";
 `apps/handwork/src/views/lab-index.tsx:8` 이 `max-w-[60ch]` 인데 `PageTitle` 은 `max-w-[65ch]` 다
 (`packages/scopulus-ui/src/ui/page-title.tsx:34`).
 
-**화면이 실제로 달라진다.** Labs 화면의 설명 문단이 5ch 만큼 넓어지고, 줄바꿈 지점이 옮겨간다.
+**화면이 실제로 달라진다.** Labs 화면의 설명 문단이 5ch 만큼 넓어지고 줄바꿈 지점이 옮겨간다.
 문단이 세 줄이라 한 줄이 줄어들 수 있다.
 
 **이유:** 65ch·60ch·폭 없음 셋이 전부 "제목 밑의 한 문단" 으로 같은 의미다. 값이 다른데 의미가
 같으면 통일한다. 65ch 를 고른 근거는 [`components/PageTitle.md`](components/PageTitle.md) 에 있다 —
-본문 폭 `max-w-[68ch]` 에 가장 가까워, 같은 사이트에서 설명과 본문의 줄바꿈이 크게 갈리지 않는다.
+본문 폭 `max-w-[68ch]` 에 가장 가까워 같은 사이트에서 설명과 본문의 줄바꿈이 크게 달라지지 않는다.
 
 **되돌릴 위치:** `packages/scopulus-ui/src/ui/page-title.tsx:34` 한 곳.
 
@@ -421,7 +421,7 @@ import { Separator } from "@scopulus/ui";
   >
 ```
 
-**화면이 실제로 달라진다.** 본문과 선 사이가 48px → 32px 으로 좁아지고, 선과 이웃 링크 사이가
+**화면이 실제로 달라진다.** 본문과 선 사이가 48px → 32px 으로 좁아지고 선과 이웃 링크 사이가
 24px → 32px 으로 넓어진다.
 
 **이유:** 위아래가 같아야 선이 두 덩어리의 가운데에 놓인다. 48/24 는 선이 아래 블록에 붙어 있어
@@ -533,7 +533,7 @@ import { Badge } from "@scopulus/ui";
 
 **모노·대문자·자간을 바깥에서 떼어 `·` 와 날짜에만 붙여야 한다.**
 **이유:** `Badge` 는 서체를 재설정하지 않는다. 바깥에 `font-mono` 를 두면 배지 안의 한글이
-Geist Mono 로 떨어지고, 그 폰트에 한글 글립이 없어 대체 서체로 갈린다. 지금 코드가
+Geist Mono 로 떨어지고 그 폰트에 한글 글립이 없어 대체 서체로 달라진다. 지금 코드가
 `apps/handwork/src/entities/lab/ui/lab-card.tsx:27` 에서 `font-sans tracking-normal normal-case` 로
 되돌리고 있는 것이 바로 그 문제를 막는 장치다. 근거는
 [`tokens.md`](tokens.md) 의 `### 서체 — 2종` 절이다.
@@ -564,7 +564,7 @@ Geist Mono 로 떨어지고, 그 폰트에 한글 글립이 없어 대체 서체
 
 - LabCard 의 상태 글자가 11.2px → 12px 으로 커지고 자간 0.1em 이 사라진다
 - 기록 상세의 상태 글자가 14px → 12px 으로 작아진다
-- 상세에서 `{meta.status} · {meta.date}` 가 한 텍스트 노드였는데 둘로 갈라져, 그 사이가 공백에서 `gap-2`(8px)가 된다
+- 상세에서 `{meta.status} · {meta.date}` 가 한 텍스트 노드였는데 둘로 나뉘어 그 사이가 공백에서 `gap-2`(8px)가 된다
 
 **이유:** 같은 배지가 화면마다 다른 크기로 나오면 그것은 컴포넌트가 아니라 우연히 비슷한 두 개다.
 `Badge` 를 쓰는 목적이 그 둘을 하나로 만드는 것이다. 5단계의 65ch 통일, 6단계의 32/32 통일과 같은 판단이다.
@@ -650,7 +650,7 @@ tokens.figma.json 이 globals.css 와 일치한다
 | 5   | `--foreground` / `--muted`(인라인 코드·`pre`)의 대비               | [`tokens.md`](tokens.md) 의 대비 검증 목록                      |
 | 6   | 본문에 가로로 넘치는 코드 블록이 실제로 있는가                     | [`components/Prose.md`](components/Prose.md) 의 `a11y:focus`    |
 
-### 1번에 대한 실측과 그 한계
+### 1번을 재 본 결과와 그 한계
 
 `handwork-ui` 가 랜딩 오버레이 색을 `ground` 5색에 대해 재봤다.
 
@@ -663,7 +663,7 @@ tokens.figma.json 이 globals.css 와 일치한다
 아니다. 단색 기준으로 판정하면 통과할 수 없는 검사를 만든다 —
 [`tokens.md`](tokens.md) 가 면과 면의 구분을 대비 목록에서 뺀 것과 같은 판단이다.
 
-**해야 할 일:** 다섯 배경 각각에서 워드마크가 실제로 놓이는 영역의 픽셀을 재고, 미달이면
+**해야 할 일:** 다섯 배경 각각에서 워드마크가 실제로 놓이는 영역의 픽셀을 재고 미달이면
 스크림(반투명 면)을 넣을지 워드마크 위치를 옮길지 판정한다. **지금 값을 지어내지 마라.**
 
 ---
@@ -674,5 +674,5 @@ tokens.figma.json 이 globals.css 와 일치한다
 | ------------------------ | --------------------------------------------------------------------------------------------------- |
 | `handwork-ui`            | 3단계가 끝났다는 사실. `packages/scopulus-ui/src/ui/prose.ts:9-10` 문자열을 지우고 `.tsx` 로 바꾼다 |
 | `handwork-ui`            | 헤더를 옮기려면 `AppLink` 에 `variant="nav"` 가 필요하다는 것 (4단계 마지막)                        |
-| `handwork-design-system` | 위 표의 1·2·5번 실측값. [`tokens.md`](tokens.md) 는 그쪽 소유다                                     |
+| `handwork-design-system` | 위 표의 1·2·5번을 잰 값. [`tokens.md`](tokens.md) 는 그쪽 소유다                                    |
 | `curvez-orchestrator`    | 값이 바뀐 다섯 곳(5단계 2곳 · 6단계 1곳 · 7단계 2곳). 화면이 실제로 달라진다                        |

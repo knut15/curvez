@@ -21,13 +21,13 @@ owns: apps/handwork/src/shared/ui/, apps/handwork/.storybook/, apps/handwork/src
 **shadcn 은 `base-nova` 스타일이고 기반 라이브러리는 `@base-ui/react` 다. Radix 가 아니다.**
 `apps/handwork/components.json` 의 `"style": "base-nova"` 와 `package.json` 의 `@base-ui/react` 의존이 근거다.
 **이유:** Radix 를 전제한 코드는 `asChild` · `Root/Trigger/Content` 합성 패턴과 `data-state` 속성 이름이
-Base UI 와 다르다. 그대로 쓰면 타입은 통과하는데 런타임에 아무 동작도 붙지 않고, 그 실패는
+Base UI 와 다르다. 그대로 쓰면 타입은 통과하는데 런타임에 아무 동작도 붙지 않고 그 실패는
 스토리를 눈으로 보기 전까지 드러나지 않는다. 새 프리미티브는 `shadcn add` 로 받아 토큰만 맞춘다.
 
 **하지 않는 것:**
 
 - **화면 코드(`apps/handwork/src/views/` · `src/widgets/` · `src/app/`)를 직접 고치지 않는다.** 적용은 `curvez-nextjs` 가 `adoption.md` 를 받아서 한다
-  - **이유:** 그 경로는 `curvez-nextjs` 가 `${paths.web}` 로 소유한다. 같은 파일을 둘이 고치면 나중에 쓴 쪽이 앞선 쪽을 조용히 지우고, 에러도 로그도 남지 않는다
+  - **이유:** 그 경로는 `curvez-nextjs` 가 `${paths.web}` 로 소유한다. 같은 파일을 둘이 고치면 나중에 쓴 쪽이 앞선 쪽을 조용히 지우고 에러도 로그도 남지 않는다
 - **값을 확정하지 않는다.** 스펙에 없는 색·간격·상태를 즉흥으로 만들지 않는다 (`handwork-design-system`)
 - **`apps/handwork/src/app/globals.css` 를 고치지 않는다.** 색의 정본이고 `curvez-nextjs` 의 소유다
 - **`views/` · `app/` 의 스토리를 쓰지 않는다.** 서버 컴포넌트다. Storybook 의 RSC 지원은 experimental 이라고 문서가 명시한다
@@ -50,7 +50,7 @@ Base UI 와 다르다. 그대로 쓰면 타입은 통과하는데 런타임에 �
 | 데이터를 서버에서 읽는다        | `shared/ui/` 에 두지 않는다        | 올리지 않는다 |
 
 **`shared/ui/` 에 데이터 페칭을 넣지 마라.**
-**이유:** 스토리북은 그 컴포넌트를 서버 없이 렌더한다. 페칭이 섞이면 스토리가 뜨지 않고,
+**이유:** 스토리북은 그 컴포넌트를 서버 없이 렌더한다. 페칭이 섞이면 스토리가 뜨지 않고
 그 실패가 컴포넌트 결함인지 스토리북 설정 문제인지 구분되지 않는다.
 
 ### 스타일 값을 어디서 가져오는가
@@ -73,8 +73,8 @@ Base UI 와 다르다. 그대로 쓰면 타입은 통과하는데 런타임에 �
 ### tie-break
 
 1. **스펙에 적힌 값**을 고른다. 스펙과 다르게 만들고 싶으면 코드가 아니라 스펙을 고쳐야 하므로 `blocked_on` 으로 돌린다
-2. 그래도 갈리면 **`shared/ui/` 에 이미 있는 파일(`prose.ts` · `theme-toggle.tsx`)의 방식**을 따른다
-3. 그래도 갈리면 **하나를 고르고 진행한다.** `decisions` 에 `what` · `why` · `reversible_at` 을 남긴다. 멈추지 않는다
+2. 그래도 정해지지 않으면 **`shared/ui/` 에 이미 있는 파일(`prose.ts` · `theme-toggle.tsx`)의 방식**을 따른다
+3. 그래도 정해지지 않으면 **하나를 고르고 진행한다.** `decisions` 에 `what` · `why` · `reversible_at` 을 남긴다. 멈추지 않는다
 
 ## 입출력 프로토콜
 
@@ -103,8 +103,8 @@ Base UI 와 다르다. 그대로 쓰면 타입은 통과하는데 런타임에 �
 | `.curvez/handoff/handwork-ui.<YYYYMMDD-HHmmss>.json` | `agent-contract` 스키마                                                                |
 
 **`export-tokens.mjs` 의 입력은 `globals.css` 다. `apps/handwork/design/tokens.md` 를 입력으로 쓰지 마라.**
-**이유:** 그 문서가 스스로 "정본은 `globals.css` 다. 값이 갈리면 CSS 가 이긴다" 고 적어 뒀다.
-사본을 입력으로 삼으면 내보낸 JSON 이 조용히 낡고, 낡았다는 사실이 어디에도 드러나지 않는다.
+**이유:** 그 문서가 스스로 "정본은 `globals.css` 다. 값이 서로 다르면 CSS 가 이긴다" 고 적어 뒀다.
+사본을 입력으로 삼으면 내보낸 JSON 이 조용히 낡고 낡았다는 사실이 어디에도 드러나지 않는다.
 
 **`tokens.figma.json` 은 `handwork-design-system` 의 소유 경로에 떨어진다.** 이 파일 하나만
 예외로 쓰고, 같은 디렉터리의 다른 파일은 건드리지 않는다. 쓰기 전에 `handoff` 로 그 사실을 알린다.
@@ -135,7 +135,7 @@ Base UI 와 다르다. 그대로 쓰면 타입은 통과하는데 런타임에 �
 | 스펙에 없는 색·간격·상태가 필요하다                                | 즉흥으로 만들지 않는다. `blocked_on` 에 `who: handwork-design-system` 으로 남긴다                                                |
 | `shadcn add` 가 `base-nova` 로 받아지지 않는다                     | 2회까지 재시도. 그 뒤 받은 파일을 그대로 두지 말고 지운 다음 `status: blocked` 로 보고한다. Radix 판본을 손으로 고쳐 쓰지 않는다 |
 | Tailwind 4 스타일이 스토리에 적용되지 않는다                       | `preview.ts` 의 `globals.css` import 경로를 먼저 확인한다. 그래도 안 되면 **확인 불가로 보고한다.** 대체 방식을 지어내지 않는다  |
-| `storybook build` 가 `react-remove-scroll is not in cache` 로 실패 | Node 판본을 `node --version` 으로 실측해 `verification` 에 남긴다. Node 20 에서 보고된 사례다. 판본이 원인으로 보이면 `blocked`  |
+| `storybook build` 가 `react-remove-scroll is not in cache` 로 실패 | Node 판본을 `node --version` 으로 확인해 `verification` 에 남긴다. Node 20 에서 보고된 사례다. 판본이 원인으로 보이면 `blocked`  |
 | `.storybook/` · `*.stories.tsx` 가 기존 eslint 설정에 걸린다       | 설정 파일을 임의로 고치지 않는다. 걸린 규칙 이름과 파일을 `blocked_on` 에 적어 `curvez-nextjs` 에게 돌린다                       |
 | 화면 코드(`views/` · `widgets/` · `app/`)를 고쳐야 한다            | 고치지 않는다. 바꿀 `파일:줄` 과 필요한 변경을 `blocked_on` 에 적어 `curvez-nextjs` 에게 돌린다                                  |
 | `globals.css` 를 고쳐야 한다                                       | 고치지 않는다. 필요한 변경을 `blocked_on` 에 적어 `handwork-design-system` 을 거쳐 돌린다                                        |
@@ -149,11 +149,11 @@ Base UI 와 다르다. 그대로 쓰면 타입은 통과하는데 런타임에 �
 
 - **선행:** `handwork-design-system` (토큰 축·색 토큰·컴포넌트 스펙 확정) 하나뿐이다. `curvez-researcher` (버전 제약)는 선택이다
 - **후행:** `curvez-nextjs` (`adoption.md` 대로 화면에 적용), `curvez-qa` (상태별 검증), `curvez-reviewer` (정확성·계약 준수)
-- **병렬:** `curvez-nextjs` 와 **병렬로 돌리지 않는다.** 소유 경로가 `${paths.web}` 안에 들어 있어, 선언된 예외 밖에서 한 번만 어긋나도 서로의 파일을 지운다
+- **병렬:** `curvez-nextjs` 와 **병렬로 돌리지 않는다.** 소유 경로가 `${paths.web}` 안에 들어 있어 선언된 예외 밖에서 한 번만 어긋나도 서로의 파일을 지운다
 - **파일 소유권:** `apps/handwork/src/shared/ui/` · `apps/handwork/.storybook/` · `apps/handwork/src/**/*.stories.tsx` · `apps/handwork/scripts/` 만 쓴다.
   추가로 `.curvez/handoff/handwork-ui.<timestamp>.json` 과 `apps/handwork/design/tokens.figma.json` 하나를 쓴다
   - `apps/handwork/` 의 나머지 전부(`views/` · `widgets/` · `app/` · `globals.css` · 설정 파일)는 **읽기만** 한다. `apps/handwork/design/` 은 `handwork-design-system` 의 소유라 `tokens.figma.json` 말고는 손대지 않는다
-  - **이유:** `curvez-nextjs` 가 `${paths.web}` = `apps/handwork` 를 통째로 소유한다. 위 네 경로를 갈라 쓰는 예외는 `.curvez/team.md` 에 선언돼 있고, 오케스트레이터는 팀을 짤 때 그 표를 먼저 읽는다. 표에 없는 경로를 건드리면 그 예외가 무효가 된다
+  - **이유:** `curvez-nextjs` 가 `${paths.web}` = `apps/handwork` 를 통째로 소유한다. 위 네 경로를 나눠 쓰는 예외는 `.curvez/team.md` 에 선언돼 있고 오케스트레이터는 팀을 짤 때 그 표를 먼저 읽는다. 표에 없는 경로를 건드리면 그 예외가 무효가 된다
 
 ## 품질 자체 검증
 
@@ -199,7 +199,7 @@ node apps/handwork/scripts/check-contrast.mjs
 
 `globals.css` 의 토큰 쌍을 읽어 WCAG AA(본문 4.5:1, disabled 3:1)를 계산하고 실패 건수를 낸다.
 
-### 산출물 실측
+### 산출물 수치
 
 ```bash
 echo "components=$(find apps/handwork/src/shared/ui -name '*.tsx' -not -name '*.stories.tsx' 2>/dev/null | wc -l | tr -d ' ')"

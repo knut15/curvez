@@ -1,7 +1,7 @@
 # screen: case-detail
 
 route: /cases/[slug]
-goal: 방문자가 하나의 케이스에서 "어떤 제약에서 무엇을 골랐고 무엇을 버렸나"를 끝까지 읽는다
+goal: 방문자가 하나의 케이스에서 "어떤 제약에서 무엇을 골랐고 무엇을 빼고 무엇을 남겼나"를 끝까지 읽는다
 entry: home 의 카드 · case-index 의 카드 · 외부 링크
 exit: 목록으로 돌아가기 → case-index · 다음 케이스 → case-detail
 
@@ -19,7 +19,7 @@ exit: 목록으로 돌아가기 → case-index · 다음 케이스 → case-deta
     - content: h1 · 메타 한 줄(date, role) · 태그 칩 n개
     - tokens: 메타=--muted-foreground, 칩 bg=--muted, 칩 radius=`rounded-sm`
     - type: h1 `text-4xl` `tracking-[-0.02em]` `leading-[1.15]` `break-keep` · 메타 `text-sm`
-    - **메타 줄을 모노로 두지 않는다.** role 이 한글인데 Geist Mono 에 한글 글자가 없어 폰트가 갈린다
+    - **메타 줄을 모노로 두지 않는다.** role 이 한글인데 Geist Mono 에 한글 글자가 없어 폰트가 달라진다
   - region: body
     - role: MDX 본문. 제약 → 선택 → 버린 것 순서로 읽힌다
     - priority: 2
@@ -36,7 +36,7 @@ exit: 목록으로 돌아가기 → case-index · 다음 케이스 → case-deta
 
 - state:default — 본문이 있는 케이스 하나. nav-next 는 이웃 케이스가 있을 때만 보인다
 - state:loading — 없다. 정적 생성이라 런타임 데이터 요청이 0건이다
-- state:empty — 이 화면에는 빈 상태가 없다. 단건 조회이고, 없는 slug 는 state:error 로 간다
+- state:empty — 이 화면에는 빈 상태가 없다. 단건 조회이고 없는 slug 는 state:error 로 간다
 - state:error — 없는 slug 는 Next 의 notFound() 로 404 를 반환한다. 문구 "찾을 수 없는 케이스입니다." 와 목록으로 가는 링크 1개. 재시도 버튼을 두지 않는다 — 다시 눌러도 결과가 같다
 
 ## responsive
