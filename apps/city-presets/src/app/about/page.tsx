@@ -93,7 +93,9 @@ export default function About() {
         ))}
       </main>
 
-      <footer className="flex justify-center border-t border-border px-5 py-10">
+      {/* `grid` 로 두면 그리드 항목이 트랙 폭까지 늘어난다. `AppLink` 는
+          `className` 을 받지 않아 밖에서 크기를 못 주는데, 부모의 배치로는 준다 */}
+      <footer className="grid border-t border-border px-5 py-10">
         <AppLink href="/" variant="cta">
           내 사진에 적용하기
         </AppLink>
