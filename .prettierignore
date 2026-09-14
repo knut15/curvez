@@ -9,3 +9,6 @@ plugins/curvez/vendor/
 
 # export-tokens.mjs 가 만드는 파일. 스크립트가 낸 그대로여야 --check 가 성립한다.
 packages/scopulus-ui/design/tokens.figma.json
+
+# 힉스필드 작업 기록. 도구가 낸 JSON 이라 서식을 맞추지 않는다
+apps/city-presets/brandkit/

@@ -6,7 +6,7 @@ export function SiteFooter() {
   return (
     <footer className="border-t border-border">
       <div className="mx-auto max-w-5xl px-5 py-8 font-mono text-[0.7rem] tracking-widest text-muted-foreground uppercase md:px-8">
-        © {new Date().getFullYear()} handwork
+        © {new Date().getFullYear()} Golden Aster
       </div>
     </footer>
   );

@@ -13,7 +13,7 @@ export function CaseCard({ item }: { item: CaseSummary }) {
   return (
     <Link
       href={`/cases/${item.slug}`}
-      className="flex flex-col gap-2 rounded-lg border border-border bg-card p-5 transition-colors duration-150 ease-out hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none"
+      className="flex flex-1 flex-col gap-2 rounded-lg border border-border bg-card p-5 transition-colors duration-150 ease-out hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none"
     >
       <span className="line-clamp-2 text-lg font-medium text-card-foreground">
         {item.title}

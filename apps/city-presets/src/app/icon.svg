@@ -1,4 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
-  <circle cx="8" cy="8" r="7.25" fill="none" stroke="#171717" stroke-width="1"/>
-  <path d="M8 0.75a7.25 7.25 0 0 1 0 14.5z" fill="#171717"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200" role="img" aria-label="satinhaze app icon">
+<rect width="200" height="200" rx="48" fill="#EFEAF8"/>
+<g transform="rotate(-13 90 98)">
+<rect x="36" y="32" width="108" height="132" rx="9" fill="#FFFFFF" stroke="#E4DCEF" stroke-width="6.25"/>
+<rect x="45" y="41" width="90" height="88" rx="4" fill="#C9DEF2"/>
+</g>
+<g transform="rotate(9 110 106)">
+<rect x="56" y="40" width="108" height="132" rx="9" fill="#FFFFFF" stroke="#E4DCEF" stroke-width="6.25"/>
+<rect x="65" y="49" width="90" height="88" rx="4" fill="#F5C3D0"/>
+<circle cx="110" cy="88" r="18" fill="#E38FA6"/>
+</g>
 </svg>

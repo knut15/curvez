@@ -1,0 +1,282 @@
+export const meta = {
+  title: "Turborepo 캐시와 Changesets 로 모노레포 릴리즈하기",
+  summary:
+    "안 바뀐 것까지 매번 다시 빌드한다. 무엇을 건너뛸지 누가 판단하고, 다 만든 패키지는 어떤 경로로 밖에 나가나.",
+  date: "2026-07",
+  role: "모노레포",
+  tags: ["monorepo", "turborepo", "changesets", "pnpm", "deployment", "ci-cd"],
+};
+
+![같은 블록 다섯 개가 두 줄로 놓여 있다. 윗줄은 전부 채워져 있고, 아랫줄은 앞의 넷이 옅은 윤곽선으로 비어 있으며 맨 끝 하나만 새로 채워져 있다.](/blog/b3-setup2.jpg)
+
+앞편 [pnpm workspaces 로 빈 폴더에서 모노레포 시작하기](/cases/pnpm-workspaces-start) 에서 빈 폴더에 워크스페이스를 깔고, 앱이 공용 패키지를 `import` 하는 데까지 갔다. 그런데 패키지가 두 개 세 개로 늘어나면 `build` 를 칠 때마다 안 바뀐 것까지 전부 다시 빌드한다. 워크스페이스는 설치를 묶어 줄 뿐이지 무엇을 다시 만들지는 안 정해 준다.
+
+그럼 안 바뀐 걸 건너뛰라고 누가 판단할까? 그리고 다 만든 패키지는 어떤 경로로 밖에 나갈까?
+
+앞의 것이 Turborepo, 뒤의 것이 Changesets 다. 이 글은 `turbo.json` 을 쓰는 자리부터 시작해 GitHub Actions 가 릴리즈 PR 을 자동으로 여는 데까지, 그리고 앱을 Vercel 에 올리는 데까지 이어 만든다. 이 글은 모노레포는 세웠고 이제 버전을 올려 배포해야 하는 개발자를 대상으로 한다. 릴리즈 자동화를 해 본 적이 없어도 읽을 수 있게 정리했다.
+
+---
+
+## turbo 는 왜 루트에 까는가
+
+```bash
+pnpm add -Dw turbo   # -w = 워크스페이스 루트에 설치
+```
+
+`-w` 가 이 명령의 전부다. pnpm 워크스페이스에서는 루트가 그냥 폴더가 아니라 멤버들을 관리하는 자리라, 루트에 뭘 깔려면 그걸 의도했다고 밝혀야 한다. `-w` 없이 치면 pnpm 이 "여기 루트인데 정말 여기다 깔 거냐"고 막는다.
+
+turbo 는 특정 패키지가 아니라 워크스페이스 전체를 지휘하는 도구니까 루트가 맞다.
+
+## turbo.json 에서 제일 많이 틀리는 자리
+
+루트 `turbo.json` — **Turborepo 2.x는 `pipeline`이 아니라 `tasks` 키**(v1에서 이름 바뀜):
+
+```jsonc
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"], // ^ = 상류(의존) 패키지 build 먼저
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"], // 캐시할 산출물
+    },
+    "lint": {},
+    "test": { "dependsOn": ["build"] },
+    "dev": { "cache": false, "persistent": true }, // dev 서버는 캐시X·상주
+  },
+}
+```
+
+여기가 제일 많이 걸리는 자리다. 검색해서 나오는 글의 절반쯤이 아직 `pipeline` 을 쓰고 있는데, v2 부터는 `tasks` 다. 이름만 바뀌고 안에 들어가는 내용은 같아서, 예제를 복사해 오면 구조는 맞는데 최상위 키 하나 때문에 에러가 난다.
+
+`dependsOn` 의 `^` 도 처음 보면 잘 안 읽힌다. `["^build"]` 는 "이 패키지를 빌드하기 전에 **의존하는 패키지들**의 build 를 먼저 돌려라" 는 뜻이다. `^` 가 없는 `["build"]` 는 같은 패키지 안의 build 를 가리킨다. `test` 항목이 그 경우다. 자기 패키지를 빌드한 뒤에 테스트한다.
+
+`dev` 에 붙은 두 줄은 성격이 다르다. dev 서버는 결과물을 남기는 작업이 아니라 계속 떠 있는 프로세스라, 캐시하면 안 되고(`cache: false`) 끝나기를 기다리면 안 된다(`persistent: true`).
+
+## 두 번 돌려 보면 무엇이 다른가
+
+동작 확인:
+
+```bash
+pnpm build          # ui→web 순서로, 병렬·캐시 적용해 빌드
+pnpm build          # 두 번째 실행 → "FULL TURBO" 캐시 히트로 즉시 완료
+pnpm dev            # 모든 앱 dev 서버 병렬 기동
+turbo run build --filter=@repo/web   # 특정 패키지만
+```
+
+두 번째 `pnpm build` 에서 `>>> FULL TURBO` 가 뜨면 제대로 걸린 것이다. 아무것도 안 고쳤는데 두 번째 실행도 첫 번째만큼 오래 걸린다면 `outputs` 설정이 잘못됐거나 빠진 것이다.
+
+Turborepo 가 건너뛸지 말지를 정하는 순서는 이렇다.
+
+1. **태스크 그래프(DAG)** — `"dependsOn": ["^build"]` 로 "ui→web" 순서 계산, 무관한 건 병렬
+2. **입력 해시** — 태스크마다 (소스 내용 + `package.json` 의존성 + 선언한 env + 상류 패키지 해시)를 해시
+3. **캐시 조회** — 해시가 기존과 같으면 빌드 안 하고 저장된 `outputs` 복원 = `>>> FULL TURBO`
+4. **없으면 실행 후 저장** — 산출물 + 로그를 해시 키로 저장
+
+```
+1차:       ui(3s) → web(20s)               23s
+2차(무변경): 둘 다 캐시 히트                 0.2s (FULL TURBO)
+ui만 수정:  ui 재빌드 → web도 재빌드(상류 해시 변경)
+web만 수정: ui 캐시, web만 재빌드
+```
+
+세 번째 줄이 중요하다. ui 를 고치면 web 도 다시 빌드된다. web 파일은 한 글자도 안 건드렸는데도 그렇다. web 의 해시에 상류인 ui 의 해시가 들어가 있어서다. 이게 실수가 아니라 이 도구가 하려는 일이다. 공용 패키지가 바뀌었으면 그걸 쓰는 쪽도 다시 만들어야 맞으니까.
+
+## outputs 를 안 적으면 어떻게 되나
+
+⚠️ `outputs` 미기재 → 캐시할 결과물을 몰라 캐시 무의미. `dependsOn` = 순서, `outputs` = 캐시 대상.
+
+두 키의 역할은 아예 다르다. `dependsOn` 만 적어 두고 `outputs` 를 비워 두면 순서는 맞게 돌지만 캐시는 하나도 안 걸린다. Turborepo 입장에서는 "이 태스크가 만들어 낸 게 뭔지" 를 모르니까 나중에 복원할 것도 없는 것이다. 그래서 매번 전부 다시 빌드한다.
+
+`.next/**` 는 넣고 `!.next/cache/**` 는 뺀 이유도 여기 있다. Next.js 가 `.next/cache` 안에 자기 캐시를 또 만드는데, 그건 결과물이 아니라 중간 산물이라 캐시에 같이 넣으면 용량만 늘어난다.
+
+## 동료가 이미 빌드한 걸 왜 또 빌드하나
+
+여기까지의 캐시는 각자 노트북 안에만 있다. CI 는 매번 새 환경에서 도니까 캐시가 늘 비어 있고, 동료가 이미 똑같이 빌드한 커밋도 처음부터 다시 만든다.
+
+```bash
+npx turbo login     # Vercel 계정 연결 (무료 원격 캐시)
+npx turbo link      # 이 레포를 원격 캐시에 연결
+```
+
+이제 동료·CI 가 이미 빌드한 결과를 로컬에서 **다시 안 빌드**한다. 캐시 키가 소스 내용의 해시라서, 같은 커밋이면 누가 만들었든 같은 키가 나온다. self-hosted 원격 캐시도 가능하다.
+
+## Changesets 는 언제 값어치가 있나
+
+```bash
+pnpm add -Dw @changesets/cli
+pnpm changeset init     # .changeset/config.json 생성
+```
+
+`.changeset/config.json` 핵심:
+
+```jsonc
+{
+  "changelog": "@changesets/cli/changelog",
+  "commit": false,
+  "access": "public", // npm 공개 배포면 public
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": ["@repo/web"], // 앱은 publish 대상에서 제외 (private라 자동 제외되기도)
+}
+```
+
+> 💡 **Changesets는 "npm에 패키지를 배포할 때" 값어치**가 크다. 만약 `packages/*` 가 순수 내부용(앱에서만 쓰고 npm에 안 올림)이라면 Changesets 없이 앱만 배포해도 된다. 라이브러리를 외부/사내 레지스트리에 versioned로 내보낼 때 도입.
+
+이 문단은 도입 전에 먼저 읽고 갈 자리다. 셋을 한 벌로 보고 다 깔아야 하는 것으로 읽기 쉬운데, 패키지를 밖으로 안 내보낼 거면 이 절과 다음 절은 통째로 안 해도 된다.
+
+## 버전업 의도를 커밋이 아니라 파일로 쌓아 둔다
+
+Changesets 의 발상은 하나다. **버전업 "의도"를 커밋 시점이 아니라 별도 md 로 쌓아뒀다 릴리즈 때 소비한다.**
+
+```bash
+# 1) 코드 바꾼 뒤, "무엇을 어떻게 버전업할지" 기록 (대화형)
+pnpm changeset
+#   → 바뀐 패키지 선택 + major/minor/patch 선택 + 요약 작성
+#   → .changeset/xxx.md 파일이 생성됨 → 이 파일도 커밋/PR에 포함
+
+# 2) 릴리즈 시점: changeset들을 소비해 version·changelog 갱신
+pnpm version-packages   # package.json version ↑ + CHANGELOG.md 자동 작성
+
+# 3) 실제 배포
+pnpm release            # packages 빌드 후 changeset publish → npm에 올라감
+```
+
+**① `pnpm changeset`** (PR마다) — 대화형 답변으로 `.changeset/xxx.md` 생성 (코드와 함께 커밋. 아직 버전 안 오름):
+
+```markdown
+---
+"@repo/ui": minor
+"@repo/utils": patch
+---
+
+Button에 loading prop 추가
+```
+
+**② `pnpm version-packages`** (릴리즈 시점) — 쌓인 md를 소비 → `version`↑ + `CHANGELOG.md` 작성 + 내부 의존 연쇄 반영(`updateInternalDependencies`) + md 삭제
+**③ `pnpm release` → `changeset publish`** — 빌드 후 npm publish, 이때 `workspace:*`→실버전 치환, 이미 배포된 버전은 스킵
+
+①에서 만들어진 `.changeset/xxx.md` 를 커밋에 같이 넣는 게 요점이다. 이걸 빠뜨리면 코드는 머지됐는데 버전업 기록만 사라져서, 나중에 릴리즈할 때 그 변경이 changelog 에 안 남는다.
+
+③의 `workspace:*` 치환은 앞편에서 본 그 동작이다. 로컬에서는 심링크를 가리키던 표기가 npm 에 올라갈 때 실제 버전 숫자로 바뀐다.
+
+## Version Packages PR 이 자동으로 생기는 원리
+
+`.github/workflows/release.yml` — **main에 머지되면 자동으로** (a) 배포용 "Version Packages" PR 을 열거나 (b) 그 PR 이 머지되면 npm publish:
+
+```yaml
+name: Release
+on:
+  push:
+    branches: [main]
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - uses: changesets/action@v1
+        with:
+          version: pnpm version-packages # changeset 있으면 버전업 PR 생성
+          publish: pnpm release # 그 PR 머지되면 npm publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+```
+
+같은 워크플로가 두 가지 일을 한다는 대목이 이 설정에서 제일 안 읽히는 자리다. 그림으로 놓으면 이렇다.
+
+```
+main push
+  ├─ .changeset/*.md 있나?
+  │    ├─ 예  → "Version Packages" PR 자동 생성/갱신 (버전업+changelog 담김)
+  │    └─ 그 PR을 사람이 머지 → 이번 push엔 md 없고 버전만 오른 상태 → publish → npm 배포 ✅
+  └─ 배포가 리뷰 가능한 PR로 시각화 (머지 타이밍은 사람이 결정)
+```
+
+분기 조건은 `.changeset/*.md` 가 남아 있느냐 하나다. 있으면 아직 릴리즈 전이니까 PR 을 만들고, 그 PR 이 머지되면 md 는 소비돼 사라지고 버전만 오른 상태가 되니까 그때 publish 가 돈다.
+
+→ 자동이되 **최종 방아쇠는 사람이 PR 머지로** 당기는 구조다. 릴리즈 내용을 PR 로 한 번 눈으로 보고 머지하니까 실수 배포를 막는다.
+
+`--frozen-lockfile` 은 CI 에서만 쓰는 옵션이다. 락파일을 갱신하지 말고 적힌 그대로 설치하라는 뜻이라, 락파일과 `package.json` 이 어긋나 있으면 조용히 고치는 대신 실패한다.
+
+## 앱과 패키지는 배포 경로가 다르다
+
+두 종류를 **다른 트랙**으로 내보낸다.
+
+| 대상                                | 배포처                      | 방법                                   |
+| ----------------------------------- | --------------------------- | -------------------------------------- |
+| **패키지** (`packages/ui`, `utils`) | npm(또는 사내 레지스트리)   | Changesets `publish` (위 7번, CI 자동) |
+| **앱** (`apps/web`)                 | Vercel / Netlify / 컨테이너 | git push 시 플랫폼이 빌드·배포         |
+
+표 1. 패키지와 앱이 나가는 서로 다른 두 트랙
+
+여기서 앞편의 `apps` / `packages` 구분이 그대로 이어진다. 폴더를 그렇게 나눈 이유가 결국 이 표다.
+
+### Vercel에 앱 배포 (모노레포)
+
+1. Vercel 프로젝트 생성 → **Root Directory = `apps/web`** 로 지정 (핵심)
+2. Vercel이 Turborepo를 자동 감지 → **원격 캐시 자동 연동**(빌드 가속)
+3. **Ignored Build Step**에 `npx turbo-ignore` 설정 → `apps/web`나 그 의존 패키지가 안 바뀐 커밋은 **빌드를 건너뜀**(불필요한 재배포 방지)
+4. 앱이 여러 개면 Vercel 프로젝트를 앱마다 하나씩 만들고 각각 Root Directory 지정
+
+1번을 안 하면 Vercel 이 저장소 루트를 앱으로 보고 빌드하려다 실패한다. 루트에는 앱이 없으니까.
+
+3번이 재미있는데, `turbo-ignore` 는 앞에서 본 해시를 그대로 쓴다. 이 앱과 이 앱이 의존하는 패키지의 해시가 안 바뀌었으면 빌드를 아예 시작하지 않는다. 문서만 고친 커밋에 배포가 도는 일이 없어진다.
+
+컨테이너·자체 인프라 배포라면 `turbo prune --docker` 로 해당 앱만 얇게 잘라낸 서브셋을 만들어 Docker 이미지를 최소화한다.
+
+## 전체 흐름 한눈에
+
+```
+빈 폴더
+ └─(1) pnpm init + private:true
+   └─(2) pnpm-workspace.yaml (apps/* packages/* + catalog)
+     └─(3~4) 공용 패키지 작성 + 앱에서 workspace:* 의존 → pnpm install
+       └─(5) turbo.json(tasks) + turbo login/link (원격캐시)
+         └─(6) changeset init → 개발 중 `pnpm changeset`로 변경 기록
+           └─(7) push → GitHub Actions + changesets/action → "Version PR" → 머지 시 npm publish
+             └─(8) 앱은 Vercel(Root Dir=apps/web, turbo-ignore)로 별도 배포
+```
+
+1~4 가 앞편이고 5~8 이 이 편이다.
+
+## 흔한 함정
+
+따라 하다 걸리는 자리를 모아 둔다.
+
+- **`pipeline` vs `tasks`**: 오래된 블로그는 `turbo.json` 에 `pipeline` 을 쓴다. v2 부터는 `tasks` 다. 섞이면 에러.
+- **앱은 반드시 `private: true`**: 안 그러면 Changesets 가 앱을 npm 에 배포하려 함.
+- **`outputs` 누락 시 캐시 무의미**: 산출물 경로를 안 적으면 Turborepo 가 캐시할 게 없어 매번 재빌드.
+- **`--frozen-lockfile`**: CI 에선 락파일 고정 설치로 재현성 확보.
+- **내부 전용이면 Changesets 생략 가능**: 라이브러리를 npm 에 안 올리면 6~7 단계를 건너뛰고 앱 배포만.
+- **버전 스큐 방지가 본질**: 이 조합의 최종 목표는 "공용 라이브러리 바꾸면서 그걸 쓰는 앱까지 한 PR 에서 원자적으로 반영·배포" 다.
+
+## 트레이드오프
+
+이 구성을 쓰면 감수할 것들이 있다.
+
+- **설정 파일이 세 개로 늘어난다.** `pnpm-workspace.yaml`, `turbo.json`, `.changeset/config.json` 을 각각 이해해야 뭐가 안 될 때 어디를 볼지 안다.
+- **캐시가 틀리면 원인 찾기가 어렵다.** 빌드가 실패하는 건 로그가 나오는데, 캐시가 잘못 히트해서 옛 결과물이 나오는 건 아무 에러도 안 난다.
+- **원격 캐시는 남의 인프라에 결과물을 올리는 일이다.** Vercel 무료 원격 캐시를 쓰면 빌드 산출물이 밖으로 나간다. 그게 곤란하면 self-hosted 를 직접 세워야 하고, 그건 또 하나의 운영 대상이다.
+- **릴리즈에 사람이 한 번 개입해야 한다.** "Version Packages" PR 을 누군가 머지해야 배포가 된다. 실수 배포를 막는 장치인데, 바꿔 말하면 아무도 안 보면 릴리즈가 멈춰 있다.
+- **Changesets 를 안 만들면 조용히 넘어간다.** `.changeset/xxx.md` 를 빠뜨린 PR 은 아무 경고 없이 머지된다. 그 변경은 changelog 에 안 남는다.
+
+## 안 바뀐 걸 누가 건너뛰라고 하나
+
+도입에서 물은 게 두 가지였다. 안 바뀐 걸 건너뛰라고 누가 판단하는가, 그리고 다 만든 패키지는 어떤 경로로 밖에 나가는가.
+
+앞의 답은 해시다. Turborepo 는 소스와 의존성과 상류 패키지의 해시를 묶어 키를 만들고, 그 키가 전과 같으면 저장해 둔 `outputs` 를 도로 꺼낸다. 그래서 `outputs` 를 안 적으면 꺼낼 것이 없어 캐시가 통째로 무의미해진다. 뒤의 답은 트랙이 둘이라는 것이다. 패키지는 Changesets 를 타고 npm 으로, 앱은 Vercel 로 각각 나간다.
+
+그래서 이 구성에서는 공용 라이브러리를 고치는 PR 하나에 앱의 반영까지 같이 담긴다. 이 조합을 쓰는 이유가 결국 그거다. 라이브러리와 앱의 버전이 서로 어긋나는 상태를 안 만드는 것.
+
+처음 세우는 거라면 5번(Turborepo)까지만 하고 멈춰도 된다. 패키지를 npm 에 안 올릴 거면 6~7 은 나중에 필요해질 때 붙여도 늦지 않다.
+
+## Related
+
+- [pnpm workspaces 로 빈 폴더에서 모노레포 시작하기](/cases/pnpm-workspaces-start)
+- [모노레포는 전략이고 Turborepo 는 도구다](/cases/monorepo-vs-turborepo)
+- Release-Driven 브랜치 전략

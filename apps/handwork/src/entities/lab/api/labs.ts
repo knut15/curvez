@@ -24,7 +24,11 @@ export async function listLabs(): Promise<LabSummary[]> {
   const labs = await Promise.all(
     slugs.map(async (slug) => ({ slug, ...(await importLab(slug)).meta })),
   );
-  return labs.sort(byDateDesc);
+  // 같은 달에 몰린 연재는 날짜로 갈리지 않는다. 순서가 있으면 그것을 먼저 본다.
+  return labs.sort((a, b) => {
+    if (a.order != null && b.order != null) return a.order - b.order;
+    return byDateDesc(a, b);
+  });
 }
 
 /** 상세용 본문 + 메타. 없는 slug 면 null 을 돌려주고, 404 판정은 호출부가 한다. */

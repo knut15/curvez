@@ -4,7 +4,7 @@ import { SiteFooter } from "@/widgets/site-footer";
 import { SiteHeader } from "@/widgets/site-header";
 
 export const metadata = {
-  title: "Labs — handwork",
+  title: "Labs — Golden Aster",
   description: "스킬과 오케스트레이션을 만든 기록. 성과와 초안과 히스토리.",
 };
 

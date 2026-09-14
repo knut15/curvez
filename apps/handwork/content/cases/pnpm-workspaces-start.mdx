@@ -1,0 +1,307 @@
+export const meta = {
+  title: "pnpm workspaces 로 빈 폴더에서 모노레포 시작하기",
+  summary:
+    "세 도구는 역할이 겹치지 않는다. pnpm workspaces 는 패키지를 연결하고 설치하는 기반이고, Turborepo 는 태스크를 캐싱·병렬로 돌려 빌드를 빠르게 하고, Changesets…",
+  date: "2026-07",
+  role: "모노레포",
+  tags: ["monorepo", "turborepo", "changesets", "pnpm", "deployment", "ci-cd"],
+};
+
+![빈 윤곽선 상자 다섯이 가운데 채워진 상자 하나를 향해 각각 가는 화살표를 뻗고 있다. 어느 상자도 그 내용을 제 안에 복사해 두지 않았다.](/blog/b3-setup.jpg)
+
+앞 편 [모노레포는 전략이고 Turborepo 는 도구다](/cases/monorepo-vs-turborepo) 에서 "요즘 흔한 조합"으로 pnpm workspaces + Turborepo + Changesets 를 꼽았다. 조합은 정했지만 빈 폴더 앞에서 첫 줄에 무엇을 쳐야 하는지는 그대로 남는다. `pnpm dlx create-turbo@latest` 를 돌리면 파일이 한 벌 쏟아지기는 한다. 쏟아진 파일이 왜 그렇게 생겼는지는 여전히 안 보인다.
+
+세 도구는 역할이 겹치지 않는다. pnpm workspaces 는 패키지를 연결하고 설치하는 기반이고, Turborepo 는 태스크를 캐싱·병렬로 돌려 빌드를 빠르게 하고, Changesets 는 버전업·changelog·publish 를 맡는다. 손대는 순서는 기반부터다.
+
+이 글은 빈 폴더에서 시작해 **앱이 공용 패키지를 `import` 해서 쓰는 데까지**를 손으로 만든다. 빌드 캐시와 릴리즈·배포는 뒤편인 [Turborepo 캐시와 Changesets 로 모노레포 릴리즈하기](/cases/monorepo-release-changesets) 로 넘긴다.
+
+읽는 사람으로는 모노레포를 처음 깔아 보는 개발자를 생각하고 썼다. pnpm 을 써 본 적이 없어도 읽을 수 있게 정리했다.
+
+> ⚡ **빠른 길**: `pnpm dlx create-turbo@latest` 하면 아래 대부분이 예제와 함께 스캐폴딩된다([파일 뼈대를 손으로 안 만들고 찍어 내기](/cases/scaffolding-generator)). 아래는 "무엇이 왜 필요한지" 알아보려고 일부러 손으로 까는 과정이다.
+
+---
+
+## pnpm 버전을 왜 못 박는가
+
+첫 명령이 `pnpm init` 이 아니라 `corepack` 이라는 게 낯설 수 있다. 패키지 매니저를 까는 것도 아니고 버전을 고정하는 일이라, 혼자 쓰는 폴더에 왜 필요한지가 잘 안 보인다.
+
+이유는 락파일이다. pnpm 은 버전마다 `pnpm-lock.yaml` 을 쓰는 방식이 조금씩 다르다. 사람마다 다른 pnpm 으로 설치하면 같은 커밋에서 락파일이 서로 다르게 갱신된다. 그래서 처음에 한 번 못 박는다.
+
+```bash
+# corepack으로 pnpm 버전 고정 (Node 22 기준)
+corepack enable
+corepack prepare pnpm@9.15.0 --activate
+node -v   # v22.x
+```
+
+`node -v` 가 `v22.x` 로 나오면 다음으로 간다. 여기서 다른 메이저 버전이 나오면 아래 `engines` 설정에 걸려서 나중에 설치가 막힌다.
+
+## 루트 package.json 에서 한 줄만 틀려도
+
+```bash
+mkdir my-monorepo && cd my-monorepo
+git init
+pnpm init
+```
+
+루트 `package.json` — **`private: true` 필수**(루트는 절대 publish 안 함), `packageManager` 로 pnpm 버전 못박기:
+
+```jsonc
+{
+  "name": "my-monorepo",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "turbo run build --filter=./packages/* && changeset publish",
+  },
+}
+```
+
+`scripts` 에 있는 `turbo` 와 `changeset` 은 아직 깔지도 않았다. 뒤편에서 쓸 것들이라 지금은 그냥 적어만 두고 넘어가면 된다. 지금 이 편에서 값어치가 있는 건 위쪽 네 줄이다.
+
+`private: true` 는 빠뜨리기 쉬운데 빠뜨리면 이슈가 생긴다. 루트는 코드가 없는 껍데기인데, private 가 아니면 나중에 릴리즈 도구가 이걸 npm 에 올릴 대상으로 본다. `packageManager` 는 corepack 이 읽는 줄이다. 이 줄이 있으면 다른 사람이 이 저장소에 들어와 `pnpm` 을 쳤을 때 corepack 이 알아서 9.15.0 을 쓴다.
+
+## 어디까지가 이 워크스페이스인가
+
+루트에 `pnpm-workspace.yaml`:
+
+```yaml
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# (pnpm 9.5+) catalog: 의존성 버전을 한곳에서 통일
+catalog:
+  react: ^19.0.0
+  react-dom: ^19.0.0
+  typescript: ^5.8.0
+```
+
+이 파일이 하는 일은 하나다. **어떤 폴더를 멤버로 인정할지** 정한다. `apps/*` 와 `packages/*` 아래에 `package.json` 이 있는 폴더만 pnpm 이 워크스페이스의 일원으로 본다. 목록에 없는 폴더는 그냥 남의 폴더다.
+
+폴더 골격은 이렇게 잡는다.
+
+```
+my-monorepo/
+├── apps/
+│   └── web/            # Next.js 앱 (배포 대상)
+├── packages/
+│   ├── ui/             # 공용 컴포넌트 (npm publish 대상)
+│   ├── utils/          # 공용 유틸 (publish 대상)
+│   └── tsconfig/       # 공용 설정 (내부 전용)
+├── package.json
+├── pnpm-workspace.yaml
+└── turbo.json
+```
+
+`apps` 와 `packages` 를 가르는 기준은 "배포되는 방식"이다. `apps` 아래 것은 사이트나 서버로 떠서 사람이 접속하는 것이고, `packages` 아래 것은 다른 코드가 불러다 쓰는 것이다. 이 구분이 뒤편의 배포 절에서 그대로 이어진다.
+
+## 설정 자체도 패키지가 된다
+
+`packages/ui/package.json` — 내부 참조용 스코프 이름 `@repo/*` 관례:
+
+```jsonc
+{
+  "name": "@repo/ui",
+  "version": "0.0.0",
+  "main": "./src/index.ts", // 내부는 소스 직접, 배포 시 dist로
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts",
+    "lint": "eslint .",
+    "test": "vitest run",
+  },
+  "peerDependencies": { "react": "catalog:" },
+  "devDependencies": { "tsup": "^8", "typescript": "catalog:" },
+}
+```
+
+`@repo` 는 npm 에 등록된 조직 이름이 아니다. 모노레포 안에서만 통하는 이름표라 아무거나 붙여도 되는데, 다들 `@repo` 를 쓰니까 따라 쓴다.
+
+`react` 가 `dependencies` 가 아니라 `peerDependencies` 에 있는 게 눈에 걸리는 자리다. 공용 컴포넌트 패키지는 React 를 자기가 들고 오면 안 된다. 자기를 쓰는 쪽이 이미 들고 있는 React 를 빌려 쓴다는 뜻으로 peer 에 적는다. 여기서 `dependencies` 로 적으면 React 가 두 벌 설치되는 버그로 이어진다. 이건 아래 심링크 절에서 다시 나온다.
+
+`packages/tsconfig` 는 이 목록에서 제일 낯선 자리다. 설정 파일을 패키지로 만든다는 발상 자체가 잘 떠오르지 않는다. **설정 자체를 패키지로** 만들어 공유하면, 각 패키지 `tsconfig.json` 이 `"extends": "@repo/tsconfig/base.json"` 한 줄로 통일된다. 컴포넌트만 패키지가 되는 게 아니라 규칙도 패키지가 될 수 있다.
+
+## 앱에서 로컬 패키지를 부르려면
+
+`apps/web/package.json` — 로컬 패키지는 **`workspace:*` 프로토콜**로 참조:
+
+```jsonc
+{
+  "name": "@repo/web",
+  "private": true, // ← 앱은 publish 안 하므로 private
+  "dependencies": {
+    "@repo/ui": "workspace:*", // 로컬 심링크로 연결됨
+    "next": "^15",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+  },
+}
+```
+
+```bash
+pnpm install   # 전 패키지 의존성 설치 + 로컬 링크 한 번에
+```
+
+이제 `apps/web` 에서 `import { Button } from '@repo/ui'` 가 **npm publish 없이 즉시** 동작한다.
+
+설치가 끝났으면 확인할 것은 두 개다. 루트에 `pnpm-lock.yaml` 이 **하나만** 생겼는지, 그리고 `apps/web/node_modules/@repo/ui` 가 실제 폴더가 아니라 심링크인지. 두 번째는 `ls -l apps/web/node_modules/@repo/` 로 보면 화살표로 `packages/ui` 를 가리키고 있다. 저게 안 걸렸으면 `pnpm-workspace.yaml` 의 `packages:` 목록에 폴더가 안 잡힌 것이다.
+
+---
+
+여기까지가 "돌아가게 만드는" 부분이다. 다만 이 상태로는 왜 되는지가 설명되지 않는다. 아래는 `pnpm install` 이 안에서 무슨 일을 했는지를 뜯어본다.
+
+## workspace 라는 말이 두 가지를 가리킨다
+
+문서를 읽을 때 제일 헷갈리는 낱말이 이것이다. 어떤 문장에서는 프로젝트 전체를 가리키고, 어떤 문장에서는 그 안의 패키지 하나를 가리킨다. 글쓴이가 말을 섞어 쓰는 게 아니라 원래 두 뜻으로 다 쓴다.
+
+| 의미                          | 가리키는 것                  | 예                                |
+| ----------------------------- | ---------------------------- | --------------------------------- |
+| **the workspace** (단수·전체) | 모노레포 프로젝트 **전체**   | "이 workspace는 pnpm으로 관리해"  |
+| **a workspace** (개별 멤버)   | 그 안의 **개별 패키지** 하나 | "`@repo/ui`는 하나의 workspace야" |
+
+표 1. workspace 라는 낱말이 가리키는 두 가지
+
+**하나의 workspace(전체) 안에 여러 workspace(멤버 패키지)가 든** 구조라고 보면 말이 맞아떨어진다. 그리고 `pnpm-workspace.yaml` 의 `packages:` 목록이 "어떤 폴더를 멤버로 인정할지" 정하는 자리다.
+
+## pnpm install 한 번이 안에서 무슨 일을 하나
+
+루트에서 install 하면 **개별 패키지가 아니라 전체 workspace 를 한꺼번에** 처리한다.
+
+1. **멤버 발견** — `pnpm-workspace.yaml` 을 읽어 멤버 폴더 파악
+2. **그래프 구성** — 모든 멤버 `package.json` 을 읽어 **전체 의존성 그래프를 하나로** 합침 (외부 + 내부 `workspace:*` 모두)
+3. **단일 락파일** — 전체를 해석해 **루트에 `pnpm-lock.yaml` 딱 하나** 생성 → 멤버 간 버전 정합성 보장
+4. **전역 스토어 1회 다운로드** — 실체는 `~/.pnpm-store`(전역)에 한 번만 저장. 여러 프로젝트가 같은 버전 써도 디스크엔 하나
+5. **하드링크 + 심링크 배치** — 각 멤버 `node_modules` 를 심링크로 엮음
+
+3번이 이 구조의 요점이다. 락파일이 하나라서 멤버들이 서로 다른 버전을 붙잡고 있을 수가 없다. 멤버마다 락파일이 따로 있으면 A 패키지는 React 19.0.0, B 패키지는 19.0.2 를 쓰는 상태가 조용히 생긴다.
+
+## node_modules 안에서 실제로 일어나는 일
+
+`packages/ui` 를 고치면 `apps/web` 에 바로 반영된다는 설명을 보면, pnpm 이 파일을 계속 복사해 준다고 읽기 쉽다. 복사가 아니다. 폴더를 열어 보면 이렇게 생겼다.
+
+```
+my-monorepo/
+├── node_modules/
+│   └── .pnpm/                         ← 가상 스토어: 실제 패키지들 (전역 스토어에 하드링크)
+│       ├── react@19.0.0/
+│       └── next@15.1.0/
+├── pnpm-lock.yaml                     ← 락파일 단 하나 (전체 workspace 공유)
+│
+├── apps/web/
+│   └── node_modules/
+│       ├── @repo/ui   ──심링크──▶  ../../../packages/ui   ★ 로컬 소스로 직접 연결
+│       ├── next        ──심링크──▶  ../../../node_modules/.pnpm/next@15.1.0/...
+│       └── react       ──심링크──▶  ../../../node_modules/.pnpm/react@19.0.0/...
+└── packages/ui/
+    └── node_modules/
+        └── react       ──심링크──▶  ../../../node_modules/.pnpm/react@19.0.0/...
+```
+
+**★ 표시가 핵심.** `apps/web/node_modules/@repo/ui` 는 복사본이 아니라 **`packages/ui` 소스 폴더를 가리키는 심링크**다. 폴더를 하나 더 만든 게 아니라 바로가기를 하나 걸어 둔 것이다. 그래서 이렇게 된다.
+
+- `packages/ui/src/Button.tsx` 수정 → `apps/web` 에서 **즉시 반영** (빌드·publish·재설치 불필요)
+- HMR·타입체크·"정의로 이동"이 심링크를 따라 소스 원본으로 감
+- `react` 는 web·ui 가 **같은 `.pnpm/react@19.0.0` 실체**를 가리킴 → React 인스턴스 하나로 통일 (여러 개면 "Invalid hook call")
+
+마지막 줄이 앞에서 `peerDependencies` 를 쓴 이유다. `@repo/ui` 가 React 를 자기 `dependencies` 로 들고 오면 web 이 보는 React 와 ui 가 보는 React 가 다른 실체가 된다. 그 상태에서 훅을 쓰면 `Invalid hook call` 이 뜨는데, 이 에러 메시지만 봐서는 원인이 설치 구조에 있다는 걸 알아채기가 어렵다.
+
+## 배포될 때 workspace:\* 는 어떻게 되나
+
+```jsonc
+"dependencies": { "@repo/ui": "workspace:*" }
+```
+
+뜻은 이렇다. **"npm 레지스트리에서 찾지 말고 모노레포 안의 로컬 `@repo/ui` 를 심링크로 써라."**
+
+| 표기                          | 의미                            |
+| ----------------------------- | ------------------------------- |
+| `workspace:*`                 | 로컬 버전 그대로                |
+| `workspace:^` / `workspace:~` | 로컬 버전 기준 caret/tilde 범위 |
+
+표 2. workspace 프로토콜 표기 두 가지
+
+여기서 한 가지가 걸린다. `workspace:*` 는 pnpm 안에서만 통하는 표기인데, 이 패키지를 npm 에 올리면 밖에 있는 사람은 그걸 해석할 수가 없다. 그래서 **publish 시 pnpm 이 `workspace:*` 를 실제 버전으로 자동 치환**한다.
+
+```
+개발 중:   "@repo/ui": "workspace:*"
+   │  (publish 시 자동 변환)
+   ▼
+npm 배포본: "@repo/ui": "1.4.0"     ← 외부 사용자가 받는 것
+```
+
+→ 로컬 편의(심링크) + 배포 정합성(실버전)을 **둘 다** 얻는 장치.
+
+## 버전이 멤버마다 어긋나면
+
+멤버마다 `"react": "^19"` 를 따로 적으면 하나만 어긋나도 React 가 두 벌 설치된다. 위에서 본 `Invalid hook call` 이 여기서도 나온다. `catalog:` 로 막는다.
+
+```yaml
+# pnpm-workspace.yaml
+catalog:
+  react: ^19.0.0
+```
+
+```jsonc
+// 각 멤버
+"dependencies": { "react": "catalog:" }
+```
+
+버전의 단일 출처다. `catalog:` 한 줄만 고치면 전 멤버에 반영된다. 이것도 publish 할 때 실버전으로 치환된다. 다만 pnpm 9.5 이상이어야 쓸 수 있어서, 그보다 낮은 버전을 쓰고 있으면 이 절은 건너뛰고 멤버마다 버전을 직접 적어야 한다.
+
+## 명령을 특정 패키지에만 걸고 싶을 때
+
+```bash
+pnpm --filter @repo/web build       # web만
+pnpm --filter @repo/web... build    # web + web이 의존하는 것들(하류)
+pnpm --filter ...@repo/ui build     # ui + ui에 의존하는 것들(상류) → ui 고쳤을 때 영향받는 것만
+```
+
+`...`(점 3개) 방향이 헷갈리는데 규칙은 단순하다. `pkg...` = pkg 와 **그 의존성**, `...pkg` = pkg 와 **그것에 의존하는 것들**. 점이 붙은 쪽으로 따라간다고 외우면 된다.
+
+세 번째 줄이 실무에서 제일 자주 쓰인다. 공용 패키지를 고쳤을 때 "그럼 뭘 다시 빌드해야 하지" 를 사람이 세지 않아도 되니까.
+
+## pnpm 이 표준이 된 이유
+
+|              | pnpm                     | npm/yarn classic      | yarn berry(PnP)   |
+| ------------ | ------------------------ | --------------------- | ----------------- |
+| node_modules | 심링크 + `.pnpm`(비평탄) | **호이스팅**(평탄)    | node_modules 없음 |
+| 유령 의존성  | **차단**                 | 허용(호이스팅 부작용) | 차단              |
+| 디스크       | 하드링크로 최소          | 중복                  | zip 캐시          |
+
+표 3. 패키지 매니저 세 가지의 node_modules 구조 비교
+
+**엄격함(유령 의존성 차단) + 디스크 효율** 두 가지다. 유령 의존성은 `package.json` 에 안 적었는데도 `import` 가 되는 상태를 말한다. npm 은 의존성을 평탄하게 펴서 `node_modules` 최상단에 몰아 놓기 때문에, 적어 두지 않은 패키지도 거기 있으면 그냥 불러진다. 되니까 그대로 쓰다가, 나중에 그 패키지가 빠지는 날 갑자기 깨진다.
+
+pnpm 은 각 패키지가 자기가 적은 것만 볼 수 있게 심링크를 건다. 그래서 처음 pnpm 으로 옮기면 잘 되던 `import` 가 안 되는 일이 생긴다. 이건 pnpm 이 새로 만든 문제가 아니라 원래 잘못돼 있던 걸 이제 알려 주는 것이다.
+
+## 트레이드오프
+
+이 구조를 쓰면 감수할 것들이 있다.
+
+- **설치가 통째로 무거워진다.** 루트에서 한 번 돌리면 멤버 전부의 의존성을 해석한다. 한 패키지만 건드리고 싶어도 그래프 전체를 다시 본다.
+- **유령 의존성 차단이 초반에는 방해로 느껴진다.** 옮겨 오는 첫날은 안 되던 `import` 를 하나씩 `package.json` 에 적어 넣는 일을 하게 된다.
+- **설정을 패키지로 빼면 파일을 두 군데 봐야 한다.** 처음 온 사람이 `tsconfig.json` 을 열면 `extends` 한 줄만 있어서 실제 값을 보려면 `packages/tsconfig` 까지 따라가야 한다.
+- **`workspace:*` 와 `catalog:` 는 pnpm 밖에서 안 통한다.** 나중에 다른 패키지 매니저로 옮기려면 이 표기를 전부 되돌려야 한다.
+- **`catalog:` 는 pnpm 9.5 이상 전용이다.** 버전이 낮으면 아예 못 쓴다.
+
+## 여기까지 오면 무엇이 되나
+
+빈 폴더 앞에서 첫 줄에 무엇을 쳐야 하는가가 이 글의 출발이었다. 답은 이렇다. **`pnpm install` 한 번이 멤버를 찾아 그래프를 합치고 락파일 하나를 만들고 심링크를 걸어 준다.** `import` 가 되는 이유는 복사가 아니라 바로가기다.
+
+그래서 지금 이 상태에서는 공용 컴포넌트를 고치면 앱에 즉시 반영된다. 아직 없는 것은 빌드를 빠르게 하는 장치와, 이 패키지들을 밖으로 내보내는 경로다. 그건 뒤편 [Turborepo 캐시와 Changesets 로 모노레포 릴리즈하기](/cases/monorepo-release-changesets) 에서 이어 만든다.
+
+같은 걸 처음 깔아 보는 사람이라면, 위 명령을 다 친 뒤에 `ls -l apps/web/node_modules/@repo/` 를 한 번 쳐 보기를 권한다. 화살표가 `packages/ui` 를 가리키는 것을 눈으로 보면 이 구조가 훨씬 빨리 잡힌다.
+
+## Related
+
+- [모노레포는 전략이고 Turborepo 는 도구다](/cases/monorepo-vs-turborepo)
+- [Turborepo 캐시와 Changesets 로 모노레포 릴리즈하기](/cases/monorepo-release-changesets)
+- [파일 뼈대를 손으로 안 만들고 찍어 내기](/cases/scaffolding-generator)
