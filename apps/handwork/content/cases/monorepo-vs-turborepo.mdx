@@ -1,5 +1,5 @@
 export const meta = {
-  title: "모노레포는 전략이고 Turborepo 는 도구다",
+  title: "turbo.json 을 지우면 모노레포가 안 돌아갈까",
   summary:
     "모노레포 저장소를 clone 하면 최상위에 apps/ 와 packages/, 두 폴더만 보인다.",
   date: "2026-07",
@@ -133,7 +133,7 @@ Vercel 이 만든, 모노레포용 태스크 실행기다. 이름에 `repo` 가 
 
 3절에서 말한 비용 중 둘째(CI 가 전체를 다시 빌드하는 것)를 직접 겨냥한 도구라고 보면 된다. 설정도 `turbo.json` 파일 하나뿐이고, 패키지 매니저를 가리지 않는다. pnpm 이든 yarn 이든 npm 이든 그 위에 얹힌다. 대신 코드 생성이나 스캐폴딩 같은 기능은 없다. 그건 다음 절의 Nx 쪽 일이다.
 
-원격 캐시를 실제로 붙이는 방법은 [Turborepo 빌드 캐시를 팀과 CI 가 함께 쓰게 하기](/cases/turborepo-remote-cache) 에서 따로 다룬다.
+원격 캐시를 실제로 붙이는 방법은 [CI 는 아무것도 안 고친 커밋도 처음부터 다시 빌드했다](/cases/turborepo-remote-cache) 에서 따로 다룬다.
 
 ## 6. 이름이 너무 많아서 헷갈리는 자리
 
@@ -186,12 +186,6 @@ pnpm workspaces, Turborepo, Nx, Lerna, Rush, Changesets, Bazel. 검색하면 전
 
 ---
 
-도입에서 던진 질문의 답은 "돌아간다"다. `turbo.json` 을 지워도 이 구조는 돌아간다. 저장소를 하나로 합치는 것은 `workspaces` 한 줄이 하고, `turbo.json` 은 그렇게 합친 뒤에 느려진 부분을 되돌리는 파일이다.
-
-이 구분을 잡아 두면 도구 이름 목록이 한결 다루기 쉬워진다. 새 이름을 보면 이게 패키지를 연결하는 건지, 태스크를 돌리는 건지, 버전을 올리는 건지부터 확인하면 된다. 셋 중 어디에도 안 들어가면 그건 모노레포 도구가 아니라 다른 이야기다.
-
-지금 저장소 여러 개를 오가며 같은 버전을 세 번 올리고 있다면, 합치는 쪽을 한 번 재 볼 만하다. 다만 합치기 전에 3절을 먼저 읽기를 권한다. 얻는 것만 보고 옮기면 CI 시간이 늘어난 것부터 마주치게 된다.
-
 실제로 `pnpm-workspace.yaml` 과 `turbo.json` 을 처음부터 만들어 보는 순서는 프론트 모노레포 셋업 A→Z — pnpm workspaces + Turborepo + Changesets 로 이어진다.
 
 ## Related
@@ -199,4 +193,4 @@ pnpm workspaces, Turborepo, Nx, Lerna, Rush, Changesets, Bazel. 검색하면 전
 - [번들을 청크로 쪼개면 무엇이 달라지나](/cases/bundle-chunks)
 - FSD → Route-Colocated Modules 리팩토링 장단점 분석
 - 프론트 모노레포 셋업 A→Z — pnpm workspaces + Turborepo + Changesets
-- [Turborepo 빌드 캐시를 팀과 CI 가 함께 쓰게 하기](/cases/turborepo-remote-cache)
+- [CI 는 아무것도 안 고친 커밋도 처음부터 다시 빌드했다](/cases/turborepo-remote-cache)

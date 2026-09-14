@@ -1,5 +1,5 @@
 export const meta = {
-  title: "Turborepo 캐시와 Changesets 로 모노레포 릴리즈하기",
+  title: "안 바뀐 패키지까지 매번 다시 빌드하고 있었다",
   summary:
     "안 바뀐 것까지 매번 다시 빌드한다. 무엇을 건너뛸지 누가 판단하고, 다 만든 패키지는 어떤 경로로 밖에 나가나.",
   date: "2026-07",
@@ -267,16 +267,12 @@ main push
 
 ## 12. 안 바뀐 걸 누가 건너뛰라고 하나
 
-도입에서 물은 게 두 가지였다. 안 바뀐 걸 건너뛰라고 누가 판단하는가, 그리고 다 만든 패키지는 어떤 경로로 밖에 나가는가.
-
-앞의 답은 해시다. Turborepo 는 소스와 의존성과 상류 패키지의 해시를 묶어 키를 만들고, 그 키가 전과 같으면 저장해 둔 `outputs` 를 도로 꺼낸다. 그래서 `outputs` 를 안 적으면 꺼낼 것이 없어 캐시가 통째로 무의미해진다. 뒤의 답은 트랙이 둘이라는 것이다. 패키지는 Changesets 를 타고 npm 으로, 앱은 Vercel 로 각각 나간다.
+건너뛸지 판단하는 것은 해시다. Turborepo 는 소스와 의존성과 상류 패키지의 해시를 묶어 키를 만들고, 그 키가 전과 같으면 저장해 둔 `outputs` 를 도로 꺼낸다. 그래서 `outputs` 를 안 적으면 꺼낼 것이 없어 캐시가 통째로 무의미해진다. 밖으로 나가는 경로는 둘이다. 패키지는 Changesets 를 타고 npm 으로, 앱은 Vercel 로 각각 나간다.
 
 그래서 이 구성에서는 공용 라이브러리를 고치는 PR 하나에 앱의 반영까지 같이 담긴다. 이 조합을 쓰는 이유가 결국 그거다. 라이브러리와 앱의 버전이 서로 어긋나는 상태를 안 만드는 것.
-
-처음 세우는 거라면 5번(Turborepo)까지만 하고 멈춰도 된다. 패키지를 npm 에 안 올릴 거면 6~7 은 나중에 필요해질 때 붙여도 늦지 않다.
 
 ## Related
 
 - [pnpm workspaces 로 빈 폴더에서 모노레포 시작하기](/cases/pnpm-workspaces-start)
-- [모노레포는 전략이고 Turborepo 는 도구다](/cases/monorepo-vs-turborepo)
+- [turbo.json 을 지우면 모노레포가 안 돌아갈까](/cases/monorepo-vs-turborepo)
 - Release-Driven 브랜치 전략

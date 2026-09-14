@@ -1,5 +1,5 @@
 export const meta = {
-  title: "DevTools Network 탭에서 요청과 응답 읽기",
+  title: "로그인 버튼을 눌렀는데 아무 일도 안 일어난다",
   summary:
     "요청이 아예 안 나간 건지, 나갔는데 거절당한 건지. Network 탭의 Headers 와 Payload 를 읽는 순서.",
   date: "2026-07",
@@ -181,14 +181,12 @@ Payload 탭이 안 보인다고 뭔가 잘못된 것은 아니다. GET 에는 �
 
 ## 그래서 로그인은 왜 안 됐나
 
-요청이 안 나간 건지 서버가 거절한 건지는 Network 탭을 열면 5초 만에 알 수 있다. 목록에 줄이 없으면 안 나간 것이고, 줄이 있는데 `401` 이면 나갔는데 거절당한 것이다.
+목록에 줄이 없으면 안 나간 것이고, 줄이 있는데 `401` 이면 나갔는데 거절당한 것이다.
 
 화면이 이상할 때 코드부터 다시 읽는 것은 순서가 뒤다. F12 를 누르고 `Fetch/XHR` 필터를 켠 다음, Status 를 보고, Request Headers 에 인증 정보가 실렸는지를 본다. 코드에 `console.log` 를 심어 가며 찾는 값이 대부분 여기 이미 적혀 있다.
 
-로그인 버튼을 누르고 화면만 보고 있는 상황이라면, 일단 F12 부터 눌러 보면 좋겠다. 코드에 없는 답이 거기 적혀 있을 때가 많다.
-
 ## Related
 
-- [로그인 상태는 세션과 쿠키로 어떻게 유지되나](/cases/session-cookie-login)
+- [로그인은 한 번뿐인데 서버는 계속 같은 사람으로 알아본다](/cases/session-cookie-login)
 - 인증·인가 & Bearer 헤더 방식
-- [CDN 은 어떻게 가까운 데서 파일을 내주나](/cases/cdn-edge-delivery)
+- [새로 올린 이미지가 왜 예전 것으로 나오나](/cases/cdn-edge-delivery)
