@@ -23,7 +23,7 @@ export function SiteHeader({ current = "home" }: { current?: Current }) {
           aria-current={current === "home" ? "page" : undefined}
           className="inline-flex items-center py-2 transition-colors duration-150 ease-out hover:text-brand-accent focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none"
         >
-          golden Aster<sup className="ml-0.5 text-[0.6em]">®</sup>
+          Golden Aster<sup className="ml-0.5 text-[0.6em]">®</sup>
         </Link>
         {/* 375px 에서 로고+태그라인+링크 2개+토글이 한 줄에 들어가지 않는다.
             헤더는 어느 폭에서도 한 줄이어야 하므로 가장 덜 중요한 이것을 먼저 접는다. */}

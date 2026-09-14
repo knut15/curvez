@@ -20,7 +20,7 @@ const pretendard = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "golden Aster",
+  title: "Golden Aster",
   description: "여러 서비스가 가져다 쓰는 프론트엔드 시스템을 만듭니다.",
 };
 
