@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { ThemeToggle } from "@scopulus/ui";
 
-type Current = "home" | "cases" | "case" | "labs";
+type Current = "home" | "works" | "work" | "cases" | "case" | "labs";
 
 /**
  * 모든 화면이 쓰는 단일 헤더. 홈과 서브가 같은 컴포넌트를 써야 좌우 간격이 달라지지 않는다.
@@ -32,6 +32,13 @@ export function SiteHeader({ current = "home" }: { current?: Current }) {
         </span>
       </span>
       <nav className="flex items-center gap-4">
+        <Link
+          href="/works"
+          aria-current={current === "works" ? "page" : undefined}
+          className={LINK}
+        >
+          Works
+        </Link>
         <Link
           href="/cases"
           aria-current={current === "cases" ? "page" : undefined}
