@@ -4,8 +4,8 @@ import { SiteFooter } from "@/widgets/site-footer";
 import { SiteHeader } from "@/widgets/site-header";
 
 export const metadata = {
-  title: "케이스 — Golden Aster",
-  description: "어떤 제약에서 무엇을 고르고 무엇을 버렸는지.",
+  title: "케이스 — aster",
+  description: "자주 쓰면서도 대충 넘어가던 기술을 원리까지 파고든 글.",
 };
 
 export default async function CasesPage() {

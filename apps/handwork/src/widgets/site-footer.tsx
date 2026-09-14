@@ -6,7 +6,9 @@ export function SiteFooter() {
   return (
     <footer className="border-t border-border">
       <div className="mx-auto max-w-5xl px-5 py-8 font-mono text-[0.7rem] tracking-widest text-muted-foreground uppercase md:px-8">
-        © {new Date().getFullYear()} Golden Aster
+        © {new Date().getFullYear()}{" "}
+        {/* 워드마크는 항상 소문자다. 둘레의 uppercase 를 여기서만 되돌린다. */}
+        <span className="normal-case">aster</span>
       </div>
     </footer>
   );

@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { ThemeToggle } from "@scopulus/ui";
 
-type Current = "home" | "cases" | "case" | "labs";
+type Current = "home" | "works" | "work" | "cases" | "case" | "labs";
 
 /**
  * 모든 화면이 쓰는 단일 헤더. 홈과 서브가 같은 컴포넌트를 써야 좌우 간격이 달라지지 않는다.
@@ -21,9 +21,9 @@ export function SiteHeader({ current = "home" }: { current?: Current }) {
         <Link
           href="/"
           aria-current={current === "home" ? "page" : undefined}
-          className="inline-flex items-center py-2 transition-colors duration-150 ease-out hover:text-brand-accent focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none"
+          className="inline-flex items-center py-2 normal-case transition-colors duration-150 ease-out hover:text-brand-accent focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none"
         >
-          Golden Aster<sup className="ml-0.5 text-[0.6em]">®</sup>
+          aster<sup className="ml-0.5 text-[0.6em]">®</sup>
         </Link>
         {/* 375px 에서 로고+태그라인+링크 2개+토글이 한 줄에 들어가지 않는다.
             헤더는 어느 폭에서도 한 줄이어야 하므로 가장 덜 중요한 이것을 먼저 접는다. */}
@@ -32,6 +32,13 @@ export function SiteHeader({ current = "home" }: { current?: Current }) {
         </span>
       </span>
       <nav className="flex items-center gap-4">
+        <Link
+          href="/works"
+          aria-current={current === "works" ? "page" : undefined}
+          className={LINK}
+        >
+          Works
+        </Link>
         <Link
           href="/cases"
           aria-current={current === "cases" ? "page" : undefined}

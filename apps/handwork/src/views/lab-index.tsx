@@ -6,9 +6,8 @@ export function LabIndexView({ labs }: { labs: LabSummary[] }) {
     <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-10 md:px-8 md:py-16">
       <h1 className="text-4xl font-bold tracking-[-0.02em]">Labs</h1>
       <p className="mt-3 max-w-[60ch] leading-relaxed break-keep text-muted-foreground">
-        만든 것의 기록. 스킬과 오케스트레이션을 어떻게 짰고 무엇이 남았는지,
-        성과와 초안과 히스토리를 둡니다. 케이스가 &quot;하나의 판단&quot;이라면
-        여기는 &quot;만드는 과정&quot;입니다.
+        에이전트에게 일을 맡기려고 만든 규약과 도구입니다. 어떤 값으로 정했는지,
+        아직 확인 못 한 건 무엇인지 남깁니다.
       </p>
 
       {labs.length === 0 ? (

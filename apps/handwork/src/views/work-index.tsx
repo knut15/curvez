@@ -1,20 +1,20 @@
 import Link from "next/link";
 
-import { CaseCard } from "@/entities/case/ui/case-card";
-import type { CaseSummary } from "@/entities/case/model/types";
+import { WorkCard } from "@/entities/work/ui/work-card";
+import type { WorkSummary } from "@/entities/work/model/types";
 
-export function CaseIndexView({ cases }: { cases: CaseSummary[] }) {
+export function WorkIndexView({ works }: { works: WorkSummary[] }) {
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-10 md:px-8 md:py-16">
-      <h1 className="text-4xl font-bold tracking-[-0.02em]">케이스</h1>
+      <h1 className="text-4xl font-bold tracking-[-0.02em]">Works</h1>
       <p className="mt-3 max-w-[65ch] leading-relaxed break-keep text-muted-foreground">
-        자주 쓰면서도 대충 넘어가던 기술을 원리까지 파고듭니다. 왜 그렇게
-        동작하는지, 설정은 어떻게 두는지 다룹니다.
+        만든 제품과 도구를 모았습니다. 무엇을 만들었고 지금 어디까지 왔는지
+        적습니다.
       </p>
 
-      {cases.length === 0 ? (
+      {works.length === 0 ? (
         <div className="mt-8 border-t border-border pt-8 text-muted-foreground">
-          아직 공개한 케이스가 없습니다.{" "}
+          아직 공개한 작업이 없습니다.{" "}
           <Link
             href="/"
             className="underline underline-offset-4 transition-colors duration-150 ease-out hover:text-brand-accent focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none"
@@ -24,9 +24,9 @@ export function CaseIndexView({ cases }: { cases: CaseSummary[] }) {
         </div>
       ) : (
         <ul role="list" className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
-          {cases.map((item) => (
+          {works.map((item) => (
             <li key={item.slug} className="flex">
-              <CaseCard item={item} />
+              <WorkCard item={item} />
             </li>
           ))}
         </ul>
