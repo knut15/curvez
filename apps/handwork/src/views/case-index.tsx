@@ -8,8 +8,8 @@ export function CaseIndexView({ cases }: { cases: CaseSummary[] }) {
     <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-10 md:px-8 md:py-16">
       <h1 className="text-4xl font-bold tracking-[-0.02em]">케이스</h1>
       <p className="mt-3 max-w-[65ch] leading-relaxed break-keep text-muted-foreground">
-        일하다 마주친 것을 원리까지 내려가 봅니다. 왜 그렇게 동작하는지와,
-        그래서 설정을 어떻게 두는지까지 적습니다.
+        자주 쓰면서도 대충 넘어가던 기술을 원리까지 파고듭니다. 왜 그렇게
+        동작하는지, 설정은 어떻게 두는지 다룹니다.
       </p>
 
       {cases.length === 0 ? (

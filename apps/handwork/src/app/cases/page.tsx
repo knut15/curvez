@@ -5,7 +5,7 @@ import { SiteHeader } from "@/widgets/site-header";
 
 export const metadata = {
   title: "케이스 — aster",
-  description: "일하다 마주친 것을 원리까지 내려가 본 기록.",
+  description: "자주 쓰면서도 대충 넘어가던 기술을 원리까지 파고든 글.",
 };
 
 export default async function CasesPage() {

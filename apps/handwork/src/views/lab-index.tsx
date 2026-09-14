@@ -6,8 +6,8 @@ export function LabIndexView({ labs }: { labs: LabSummary[] }) {
     <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-10 md:px-8 md:py-16">
       <h1 className="text-4xl font-bold tracking-[-0.02em]">Labs</h1>
       <p className="mt-3 max-w-[60ch] leading-relaxed break-keep text-muted-foreground">
-        에이전트에게 일을 맡기려고 만든 규약과 도구의 기록입니다. 무엇을 값으로
-        굳혔고 무엇이 아직 확인되지 않았는지까지 적습니다.
+        에이전트에게 일을 맡기려고 만든 규약과 도구입니다. 어떤 값으로 정했는지,
+        아직 확인 못 한 건 무엇인지 남깁니다.
       </p>
 
       {labs.length === 0 ? (
