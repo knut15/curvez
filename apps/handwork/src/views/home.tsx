@@ -101,7 +101,7 @@ export async function HomeView() {
 
       <div className="relative flex h-full flex-col items-center justify-center px-6 text-center text-brand-overlay-ink">
         <h1 className="text-[clamp(2.1rem,9vw,6.6rem)] leading-[0.82] font-black tracking-[-0.03em] uppercase">
-          hand<span className="text-brand-mark">w</span>ork
+          Golden <span className="text-brand-mark">A</span>ster
         </h1>
       </div>
     </div>
