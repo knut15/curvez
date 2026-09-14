@@ -5,7 +5,7 @@ import { SiteHeader } from "@/widgets/site-header";
 
 export const metadata = {
   title: "Labs — aster",
-  description: "스킬과 오케스트레이션을 만든 기록. 성과와 초안과 히스토리.",
+  description: "에이전트에게 일을 맡기려고 만든 규약과 도구의 기록.",
 };
 
 export default async function LabsPage() {

@@ -8,7 +8,8 @@ export function WorkIndexView({ works }: { works: WorkSummary[] }) {
     <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-10 md:px-8 md:py-16">
       <h1 className="text-4xl font-bold tracking-[-0.02em]">Works</h1>
       <p className="mt-3 max-w-[65ch] leading-relaxed break-keep text-muted-foreground">
-        만들어서 내보낸 것. 무엇을 만들었고 어떤 제약이 있었는지를 둡니다.
+        직접 만들어 내보낸 것들입니다. 무엇을 만들었고 어떤 제약 안에서 무엇을
+        골랐는지 적습니다.
       </p>
 
       {works.length === 0 ? (

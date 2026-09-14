@@ -5,7 +5,7 @@ import { SiteHeader } from "@/widgets/site-header";
 
 export const metadata = {
   title: "Works — aster",
-  description: "만들어서 내보낸 것.",
+  description: "직접 만들어 내보낸 것들. 무엇을 어떤 제약 안에서 만들었는지.",
 };
 
 export default async function WorksPage() {
