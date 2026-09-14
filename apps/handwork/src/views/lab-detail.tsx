@@ -38,7 +38,9 @@ export function LabDetailView({
         </ul>
       </header>
 
-      <article className={`mt-10 max-w-[68ch] ${PROSE}`}>{children}</article>
+      <article className={`mx-auto mt-10 max-w-[68ch] ${PROSE}`}>
+        {children}
+      </article>
     </main>
   );
 }
