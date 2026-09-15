@@ -37,7 +37,10 @@ export function LabIndexView({ labs }: { labs: LabSummary[] }) {
           아직 공개한 기록이 없습니다.
         </p>
       ) : mode === "card" ? (
-        <ul role="list" className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <ul
+          role="list"
+          className="mt-8 grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4"
+        >
           {labs.map((item) => (
             <li key={item.slug} className="flex">
               <LabCard item={item} />

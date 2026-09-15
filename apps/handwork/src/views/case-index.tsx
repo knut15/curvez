@@ -46,7 +46,10 @@ export function CaseIndexView({ cases }: { cases: CaseSummary[] }) {
           </Link>
         </div>
       ) : mode === "card" ? (
-        <ul role="list" className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <ul
+          role="list"
+          className="mt-8 grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4"
+        >
           {cases.map((item) => (
             <li key={item.slug} className="flex">
               <CaseCard item={item} />
