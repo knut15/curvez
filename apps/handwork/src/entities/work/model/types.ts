@@ -13,6 +13,14 @@ export type WorkMeta = {
   link?: string;
   tags: string[];
   /**
+   * 직접 등록한 썸네일. `public/thumbnails/works/<slug>.<확장자>` 를 가리킨다.
+   *
+   * **없는 것이 기본이다.** 키가 없으면 카드가 slug 로 만든 그림을 그린다
+   * (`WorkGlyph`) — 스무 건 넘는 작업에 이미지를 하나씩 붙이지 않아도 목록이 선다.
+   * CMS 에서 이미지를 올리면 그때 이 키가 생긴다.
+   */
+  thumbnail?: string;
+  /**
    * 목록에서 어느 묶음에 들어가는가.
    *
    * `product` 는 사람이 열어서 쓰는 것이고, `tool` 은 그것을 만들려고 만든 것이다.

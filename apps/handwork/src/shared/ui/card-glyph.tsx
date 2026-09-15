@@ -1,9 +1,16 @@
 /**
- * 작업 카드 위에 얹는 그림. **slug 로 만든다.**
+ * 목록 카드 위에 얹는 그림. **slug 로 만든다.**
  *
- * 프로젝트가 스무 건이라 썸네일을 하나씩 만들 수가 없다. 스크린샷을 찍어 두면 화면이
+ * 글이 백 편 가까이라 썸네일을 하나씩 만들 수가 없다. 스크린샷을 찍어 두면 화면이
  * 바뀔 때마다 낡고, 생성 이미지는 건마다 비용이 든다. 그래서 **이름에서 그림을 만든다** —
  * 같은 slug 는 언제나 같은 그림이 되고, 서로 다른 slug 는 다른 그림이 된다.
+ *
+ * Works·Cases·Labs 가 함께 쓴다. 처음에는 Works 전용(`entities/work`)이었는데 세 목록이
+ * 같은 카드 모양을 갖게 되면서 `shared` 로 옮겼다 — entity 하나가 다른 entity 의 내부를
+ * 꺼내 쓰기 시작하면 경계가 없는 것과 같다.
+ *
+ * **틀은 16:9 다.** 본문에 실리는 도판이 대부분 1600×904 이고, 그 옆에 나란히 서는
+ * 그림이 다른 비율이면 이미지를 가진 카드와 아닌 카드의 그림 크기가 어긋난다.
  *
  * 격자 위에 블록을 세우는 형태다. Flow 절의 도면과 같은 아이소메트릭이라 한 벌로 읽힌다.
  * 블록의 자리와 높이만 해시가 정하고, 색·선 굵기·각도는 전부 고정이다 — 무작위로 두면
@@ -34,11 +41,16 @@ function stream(seed: string) {
 
 const COLS = 4;
 const ROWS = 4;
-/** 마름모 반폭·반높이. 비가 0.577 에 가까우면 도면처럼 읽힌다. */
+/**
+ * 마름모 반폭·반높이. 비가 0.577 에 가까우면 도면처럼 읽힌다.
+ *
+ * 틀이 16:9 라 4:3 이던 때보다 세로가 좁다. `HH` 를 줄여 격자를 눕히고 블록도 낮췄다 —
+ * 값을 그대로 두고 viewBox 만 줄이면 블록 윗면이 위로 잘려 나간다.
+ */
 const HW = 26;
-const HH = 15;
+const HH = 10;
 
-export function WorkGlyph({ seed }: { seed: string }) {
+export function CardGlyph({ seed }: { seed: string }) {
   const next = stream(seed);
 
   // 격자 칸마다 블록을 세울지, 세운다면 얼마나 높일지 정한다.
@@ -47,7 +59,7 @@ export function WorkGlyph({ seed }: { seed: string }) {
     for (let col = 0; col < COLS; col += 1) {
       const r = next();
       if (r < 0.42) continue;
-      cells.push({ col, row, height: 10 + Math.floor(next() * 4) * 11 });
+      cells.push({ col, row, height: 8 + Math.floor(next() * 4) * 8 });
     }
   }
 
@@ -58,7 +70,7 @@ export function WorkGlyph({ seed }: { seed: string }) {
   const accentAt = cells.length ? Math.floor(next() * cells.length) : -1;
 
   const cx = 140;
-  const cy = 58;
+  const cy = 44;
   const pos = (col: number, row: number) => ({
     x: cx + (col - row) * HW,
     y: cy + (col + row) * HH,
@@ -66,7 +78,7 @@ export function WorkGlyph({ seed }: { seed: string }) {
 
   return (
     <svg
-      viewBox="0 0 280 210"
+      viewBox="0 0 280 158"
       role="presentation"
       className="h-full w-full"
       stroke="currentColor"

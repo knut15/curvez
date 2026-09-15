@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { listCases, loadCase } from "@/entities/case/api/cases";
 import { CaseDetailView } from "@/views/case-detail";
 import { SiteFooter } from "@/widgets/site-footer";
+import { listMenus } from "@/shared/lib/menu";
 import { SiteHeader } from "@/widgets/site-header";
 
 export async function generateStaticParams() {
@@ -11,6 +12,7 @@ export async function generateStaticParams() {
 }
 
 export default async function CasePage({ params }: PageProps<"/cases/[slug]">) {
+  const menus = await listMenus();
   const { slug } = await params;
   const loaded = await loadCase(slug);
   if (!loaded) notFound();
@@ -24,7 +26,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[slug]">) {
 
   return (
     <>
-      <SiteHeader current="case" label="Cases" title={meta.title} />
+      <SiteHeader menus={menus} current="case" label="Cases" title={meta.title} />
       <CaseDetailView
         meta={meta}
         prev={prev && { slug: prev.slug, title: prev.title }}

@@ -336,7 +336,7 @@ export function PresetPicker() {
           <>
             <Image
               key={`${preset.stem}-before`}
-              src={`/demo/${preset.stem}-before.webp`}
+              src={preset.before}
               alt={`${preset.mood} 원본 사진`}
               fill
               sizes="430px"

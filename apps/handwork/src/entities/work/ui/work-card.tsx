@@ -1,7 +1,8 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import type { WorkSummary } from "../model/types";
-import { WorkGlyph } from "./work-glyph";
+import { CardGlyph } from "@/shared/ui/card-glyph";
 
 /**
  * 작업 카드. 위에서부터 **날짜 → 그림 → 제목 → 설명 → 태그** 순이다.
@@ -12,6 +13,13 @@ import { WorkGlyph } from "./work-glyph";
  * **면을 두르지 않는다.** Cases·Labs 의 카드는 테두리를 가진 상자인데, 여기서는 그림이
  * 이미 자기 면을 갖고 있어 상자를 한 번 더 두르면 액자 속 액자가 된다. 대신 그림에만
  * 테두리를 주고 글자는 그 아래에 그대로 놓는다.
+ *
+ * 그림 자리에는 **등록된 썸네일이 있으면 그것을, 없으면 slug 로 만든 그림을** 넣는다.
+ * 두 경우의 바깥 틀은 같다 — 자리와 비율이 달라지면 이미지를 올린 카드만 목록에서 튄다.
+ *
+ * 썸네일은 **자르지 않고 전부 보인다** (`object-contain`). 틀은 16:9 인데 올라오는 것은
+ * 화면 갈무리라 세로로 길기도 하다 — 채워서 맞추면 그 그림의 위아래가 잘려 나간다.
+ * 남는 자리는 카드 바탕이 채우고, 틀 크기는 그대로라 목록의 줄이 어긋나지 않는다.
  *
  * **주소는 목록에 두지 않는다.** 대부분 같은 호스트라 가려 주는 것이 거의 없고, 태그 줄
  * 끝에 붙이면 태그가 길 때 혼자 다음 줄로 떨어져 카드마다 높이가 달라진다. 주소는
@@ -30,7 +38,18 @@ export function WorkCard({ item }: { item: WorkSummary }) {
       </span>
 
       <span className="mt-2.5 block overflow-hidden rounded-xl border border-border bg-card text-muted-foreground transition-colors duration-150 ease-out group-hover:bg-accent motion-reduce:transition-none">
-        <WorkGlyph seed={item.slug} />
+        {item.thumbnail ? (
+          <Image
+            src={item.thumbnail}
+            alt=""
+            width={320}
+            height={180}
+            sizes="(min-width: 768px) 320px, 100vw"
+            className="aspect-[16/9] h-full w-full object-contain"
+          />
+        ) : (
+          <CardGlyph seed={item.slug} />
+        )}
       </span>
 
       <span className="mt-4 block text-[1.0625rem] leading-snug font-[510] tracking-[-0.015em] break-keep text-foreground">

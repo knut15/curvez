@@ -1,7 +1,6 @@
 export const meta = {
-  title: "토큰 위에 세운 React 컴포넌트 라이브러리",
-  summary:
-    "세 앱이 함께 쓴다. 컴포넌트마다 스토리가 짝으로 있고 CHANGELOG 는 커밋에서 생성한다.",
+  title: "디자인 토큰을 공유하는 React 컴포넌트 라이브러리",
+  summary: "세 앱이 함께 사용하는 컴포넌트를 만들고 Storybook 예시를 붙였다. CHANGELOG는 커밋에서 생성한다.",
   date: "2026-09",
   role: "라이브러리",
   link: "https://github.com/knut15/curvez/tree/main/packages/scopulus-ui",
@@ -9,16 +8,16 @@ export const meta = {
   tags: ["react", "design-tokens", "storybook", "base-ui"],
 };
 
-## 1. 무엇을 만들었나
+## 1. 작업 소개
 
-`tokens.css` 의 디자인 토큰 위에 컴포넌트를 올려 이 사이트와 city-presets, 문서 사이트가 함께 쓴다. 0.2.0 에서 컴포넌트 18종을 더했다.
+`tokens.css`의 디자인 토큰을 사용하는 컴포넌트를 만들었다. 이 사이트와 city-presets, 문서 사이트에서 함께 쓴다. 0.2.0 에서 컴포넌트 18종을 더했다.
 
-## 2. 어떤 제약이 있었나
+## 2. 구현 과정과 선택 기준
 
 컴포넌트마다 `*.tsx` 와 `*.stories.tsx` 가 짝으로 있다. 스토리가 없으면 다크 모드에서 어떻게 보이는지 확인할 자리가 없다.
 
 CHANGELOG 를 손으로 적지 않는다. `scripts/check-version.mjs` 가 최상단 버전과 `package.json` 을 대조하고, `## [Unreleased]` 절은 커밋에서 생성한다.
 
-## 3. 무엇이 남았나
+## 3. 현재 상태와 남은 작업
 
 0.2.0 까지 발행했다. npm 에는 올리지 않고 워크스페이스 안에서만 쓴다.

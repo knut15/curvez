@@ -5,6 +5,13 @@ export type CaseMeta = {
   /** YYYY-MM. 목록 정렬 기준이다. */
   date: string;
   role: string;
+  /**
+   * 직접 등록한 썸네일. `public/thumbnails/<메뉴>/<slug>-<지문>.<확장자>` 를 가리킨다.
+   *
+   * **없는 것이 기본이다.** 키가 없으면 카드가 slug 로 만든 그림을 그린다(`CardGlyph`).
+   * CMS 에서 이미지를 올리면 그때 이 키가 생긴다.
+   */
+  thumbnail?: string;
   tags: string[];
 };
 

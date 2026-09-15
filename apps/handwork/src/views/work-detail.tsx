@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import type { WorkMeta } from "@/entities/work/model/types";
@@ -56,6 +57,30 @@ export function WorkDetailView({
 
       {/* 제목 바가 걸리는 지점. 헤더가 이 눈금을 찾아 관찰한다. */}
       <div data-title-sentinel aria-hidden className="h-0" />
+
+      {/*
+        등록된 썸네일이 있으면 본문 앞에 한 장 놓는다. **없으면 아무것도 넣지 않는다** —
+        목록 카드와 달리 여기서는 자동 생성 그림을 그리지 않는다. 목록은 칸이 비면
+        줄이 어긋나지만 상세는 제목부터 본문까지 이어 읽는 글이고, 뜻 없는 그림 한 장이
+        그 사이를 가로막는다.
+
+        눈금(sentinel) **뒤에** 둔다. 앞에 끼우면 그만큼 제목 바가 늦게 걸린다.
+
+        **액자를 두르지 않는다.** 목록 카드는 스무 장이 격자로 늘어서 서로 경계가 필요하지만
+        여기서는 한 장뿐이고, 테두리를 두르면 글 사이에 상자가 끼어든 것처럼 읽힌다.
+        비율만 카드와 같은 4:3 으로 두고 **자르지 않는다**(`object-contain`) —
+        세로로 긴 화면 갈무리를 올려도 잘려 나가지 않고 좌우에 여백이 생긴다.
+      */}
+      {meta.thumbnail ? (
+        <Image
+          src={meta.thumbnail}
+          alt=""
+          width={1280}
+          height={720}
+          sizes="(min-width: 768px) 68ch, 100vw"
+          className="mx-auto mt-8 aspect-[16/9] w-full max-w-[68ch] object-contain"
+        />
+      ) : null}
 
       <article className={`mx-auto mt-10 max-w-[68ch] ${PROSE}`}>
         {children}

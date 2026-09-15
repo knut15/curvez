@@ -20,8 +20,8 @@ export function LabIndexView({ labs }: { labs: LabSummary[] }) {
         <div>
           <h1 className="text-4xl font-bold tracking-[-0.02em]">Labs</h1>
           <PageLede className="max-w-[60ch]">
-            에이전트에게 일을 맡기려고 만든 규약과 도구입니다. 어떤 값으로
-            정했는지, 아직 확인 못 한 건 무엇인지 남깁니다.
+            앱을 만드는 동안 시도한 실험과 시행착오를 기록합니다. 무엇을 해봤고
+            어떤 결과를 얻었는지, 아직 확인하지 못한 부분은 무엇인지 남깁니다.
           </PageLede>
         </div>
         {labs.length > 0 ? (
@@ -37,7 +37,10 @@ export function LabIndexView({ labs }: { labs: LabSummary[] }) {
           아직 공개한 기록이 없습니다.
         </p>
       ) : mode === "card" ? (
-        <ul role="list" className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <ul
+          role="list"
+          className="mt-8 grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4"
+        >
           {labs.map((item) => (
             <li key={item.slug} className="flex">
               <LabCard item={item} />

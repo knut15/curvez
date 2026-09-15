@@ -5,7 +5,7 @@ import type { WorkSummary } from "@/entities/work/model/types";
 import { PageLede } from "@/shared/ui/page-lede";
 
 /**
- * 세 묶음으로 나눈다 — 사람이 열어서 쓰는 것, 그것을 만들려고 만든 것, 만들기 전에
+ * 세 묶음으로 나눈다 — 앱과 서비스, 개발과 작업을 돕는 도구, 만들기 전에
  * 한 번 그려 본 것.
  *
  * 마흔 건 가까이를 한 줄로 늘어놓으면 앱과 도구와 스케치가 섞여 무엇이 결과물인지
@@ -58,8 +58,8 @@ export function WorkIndexView({ works }: { works: WorkSummary[] }) {
     <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-10 md:px-8 md:py-16">
       <h1 className="text-4xl font-bold tracking-[-0.02em]">Works</h1>
       <PageLede className="max-w-[62ch]">
-        직접 만든 앱과 도구를 모았습니다. 무엇을 만들었고 어떤 제약이 있었는지
-        적습니다. 지금 어디까지 왔는지도 함께 남깁니다.
+        직접 만든 앱과 도구, 기획과 시안을 소개합니다. 구현 과정에서 내린 선택과
+        현재 완성도, 앞으로 개선할 점을 기록합니다.
       </PageLede>
 
       {works.length === 0 ? (
@@ -76,13 +76,13 @@ export function WorkIndexView({ works }: { works: WorkSummary[] }) {
         <>
           <Group
             label="Products"
-            lead="사람이 열어서 쓰는 것"
+            lead="앱과 서비스"
             items={products}
           />
-          <Group label="Tools" lead="그것을 만들려고 만든 것" items={tools} />
+          <Group label="Tools" lead="개발과 작업을 돕는 도구" items={tools} />
           <Group
             label="Ideas"
-            lead="만들기 전에 한 번 그려 본 것"
+            lead="기획·시안·구조 분석"
             items={ideas}
           />
         </>

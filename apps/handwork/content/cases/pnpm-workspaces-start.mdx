@@ -1,7 +1,6 @@
 export const meta = {
-  title: "pnpm workspaces 로 빈 폴더에서 모노레포 시작하기",
-  summary:
-    "세 도구는 역할이 겹치지 않는다. pnpm workspaces 는 패키지를 연결하고 설치하는 기반이고, Turborepo 는 태스크를 캐싱·병렬로 돌려 빌드를 빠르게 하고, Changesets…",
+  title: "pnpm workspaces로 모노레포 시작하기",
+  summary: "빈 폴더에서 워크스페이스를 설정하고 앱과 공용 패키지를 연결한다. 의존성 설치, 심볼릭 링크, 패키지별 명령 실행을 순서대로 살펴본다.",
   date: "2026-07",
   role: "모노레포",
   tags: ["monorepo", "turborepo", "changesets", "pnpm", "deployment", "ci-cd"],
@@ -9,17 +8,17 @@ export const meta = {
 
 ![빈 윤곽선 상자 다섯이 가운데 채워진 상자 하나를 향해 각각 가는 화살표를 뻗고 있다. 어느 상자도 그 내용을 제 안에 복사해 두지 않았다.](/blog/b3-setup.jpg)
 
-앞 편 [turbo.json 을 지우면 모노레포가 안 돌아갈까](/cases/monorepo-vs-turborepo) 에서 "요즘 흔한 조합"으로 pnpm workspaces + Turborepo + Changesets 를 꼽았다. 조합은 정했지만 빈 폴더 앞에서 첫 줄에 무엇을 쳐야 하는지는 그대로 남는다. `pnpm dlx create-turbo@latest` 를 돌리면 파일이 한 벌 쏟아지기는 한다. 쏟아진 파일이 왜 그렇게 생겼는지는 여전히 안 보인다.
+앞 편 [모노레포에서 pnpm과 Turborepo가 맡는 역할](/cases/monorepo-vs-turborepo) 에서 "요즘 흔한 조합"으로 pnpm workspaces + Turborepo + Changesets 를 꼽았다. 여기서는 빈 폴더에서 설정을 시작한다. `pnpm dlx create-turbo@latest` 를 돌리면 파일이 한 벌 쏟아지기는 한다. 생성된 파일의 역할을 이해하려면 설정을 하나씩 확인해야 한다.
 
-세 도구는 역할이 겹치지 않는다. pnpm workspaces 는 패키지를 연결하고 설치하는 기반이고, Turborepo 는 태스크를 캐싱·병렬로 돌려 빌드를 빠르게 하고, Changesets 는 버전업·changelog·publish 를 맡는다. 손대는 순서는 기반부터다.
+세 도구는 역할이 겹치지 않는다. pnpm workspaces 는 패키지를 연결하고 설치하는 기반이고, Turborepo 는 태스크를 캐싱·병렬로 돌려 빌드를 빠르게 하고, Changesets 는 버전업·changelog·publish 를 맡는다. 먼저 패키지를 연결하는 기반부터 설정한다.
 
-이 글은 빈 폴더에서 시작해 **앱이 공용 패키지를 `import` 해서 쓰는 데까지**를 손으로 만든다. 빌드 캐시와 릴리즈·배포는 뒤편인 [안 바뀐 패키지까지 매번 다시 빌드하고 있었다](/cases/monorepo-release-changesets) 로 넘긴다.
+이 글은 빈 폴더에서 시작해 **앱이 공용 패키지를 `import` 해서 쓰는 데까지**를 손으로 만든다. 빌드 캐시와 릴리즈·배포는 뒤편인 [Turborepo와 Changesets로 빌드·릴리스 자동화하기](/cases/monorepo-release-changesets) 로 넘긴다.
 
 > ⚡ **빠른 길**: `pnpm dlx create-turbo@latest` 하면 아래 대부분이 예제와 함께 스캐폴딩된다([세 번째 Button 폴더를 복사하다 index.ts 를 빠뜨렸다](/cases/scaffolding-generator)). 아래는 "무엇이 왜 필요한지" 알아보려고 일부러 손으로 까는 과정이다.
 
 ---
 
-## 1. pnpm 버전을 왜 못 박는가
+## 1. pnpm 버전 고정하기
 
 첫 명령이 `pnpm init` 이 아니라 `corepack` 이라는 게 낯설 수 있다. 패키지 매니저를 까는 것도 아니고 버전을 고정하는 일이라, 혼자 쓰는 폴더에 왜 필요한지가 잘 안 보인다.
 
@@ -34,7 +33,7 @@ node -v   # v22.x
 
 `node -v` 가 `v22.x` 로 나오면 다음으로 간다. 여기서 다른 메이저 버전이 나오면 아래 `engines` 설정에 걸려서 나중에 설치가 막힌다.
 
-## 2. 루트 package.json 에서 한 줄만 틀려도
+## 2. 루트 package.json 설정
 
 ```bash
 mkdir my-monorepo && cd my-monorepo
@@ -66,7 +65,7 @@ pnpm init
 
 `private: true` 는 빠뜨리기 쉬운데 빠뜨리면 이슈가 생긴다. 루트는 코드가 없는 껍데기인데, private 가 아니면 나중에 릴리즈 도구가 이걸 npm 에 올릴 대상으로 본다. `packageManager` 는 corepack 이 읽는 줄이다. 이 줄이 있으면 다른 사람이 이 저장소에 들어와 `pnpm` 을 쳤을 때 corepack 이 알아서 9.15.0 을 쓴다.
 
-## 3. 어디까지가 이 워크스페이스인가
+## 3. 워크스페이스에 포함할 경로 지정
 
 루트에 `pnpm-workspace.yaml`:
 
@@ -101,7 +100,7 @@ my-monorepo/
 
 `apps` 와 `packages` 를 가르는 기준은 "배포되는 방식"이다. `apps` 아래 것은 사이트나 서버로 떠서 사람이 접속하는 것이고, `packages` 아래 것은 다른 코드가 불러다 쓰는 것이다. 이 구분이 뒤편의 배포 절에서 그대로 이어진다.
 
-## 4. 설정 자체도 패키지가 된다
+## 4. 공용 설정 패키지 만들기
 
 `packages/ui/package.json` — 내부 참조용 스코프 이름 `@repo/*` 관례:
 
@@ -127,7 +126,7 @@ my-monorepo/
 
 `packages/tsconfig` 는 이 목록에서 제일 낯선 자리다. 설정 파일을 패키지로 만든다는 발상 자체가 잘 떠오르지 않는다. **설정 자체를 패키지로** 만들어 공유하면, 각 패키지 `tsconfig.json` 이 `"extends": "@repo/tsconfig/base.json"` 한 줄로 통일된다. 컴포넌트만 패키지가 되는 게 아니라 규칙도 패키지가 될 수 있다.
 
-## 5. 앱에서 로컬 패키지를 부르려면
+## 5. 앱에서 로컬 패키지 가져오기
 
 `apps/web/package.json` — 로컬 패키지는 **`workspace:*` 프로토콜**로 참조:
 
@@ -156,9 +155,9 @@ pnpm install   # 전 패키지 의존성 설치 + 로컬 링크 한 번에
 
 여기까지가 "돌아가게 만드는" 부분이다. 다만 이 상태로는 왜 되는지가 설명되지 않는다. 아래는 `pnpm install` 이 안에서 무슨 일을 했는지를 뜯어본다.
 
-## 6. workspace 라는 말이 두 가지를 가리킨다
+## 6. 워크스페이스와 workspace 프로토콜
 
-문서를 읽을 때 제일 헷갈리는 낱말이 이것이다. 어떤 문장에서는 프로젝트 전체를 가리키고, 어떤 문장에서는 그 안의 패키지 하나를 가리킨다. 글쓴이가 말을 섞어 쓰는 게 아니라 원래 두 뜻으로 다 쓴다.
+workspace는 문맥에 따라 프로젝트 전체를 가리키기도 하고, 그 안의 패키지 하나를 가리키기도 한다.
 
 | 의미                          | 가리키는 것                  | 예                                |
 | ----------------------------- | ---------------------------- | --------------------------------- |
@@ -169,7 +168,7 @@ pnpm install   # 전 패키지 의존성 설치 + 로컬 링크 한 번에
 
 **하나의 workspace(전체) 안에 여러 workspace(멤버 패키지)가 든** 구조라고 보면 말이 맞아떨어진다. 그리고 `pnpm-workspace.yaml` 의 `packages:` 목록이 "어떤 폴더를 멤버로 인정할지" 정하는 자리다.
 
-## 7. pnpm install 한 번이 안에서 하는 일
+## 7. pnpm install의 처리 순서
 
 루트에서 install 하면 **개별 패키지가 아니라 전체 workspace 를 한꺼번에** 처리한다.
 
@@ -181,9 +180,9 @@ pnpm install   # 전 패키지 의존성 설치 + 로컬 링크 한 번에
 
 3번이 이 구조의 요점이다. 락파일이 하나라서 멤버들이 서로 다른 버전을 붙잡고 있을 수가 없다. 멤버마다 락파일이 따로 있으면 A 패키지는 React 19.0.0, B 패키지는 19.0.2 를 쓰는 상태가 조용히 생긴다.
 
-## 8. node_modules 안에서 실제로 일어나는 일
+## 8. node_modules와 심볼릭 링크
 
-`packages/ui` 를 고치면 `apps/web` 에 바로 반영된다는 설명을 보면, pnpm 이 파일을 계속 복사해 준다고 읽기 쉽다. 복사가 아니다. 폴더를 열어 보면 이렇게 생겼다.
+`packages/ui`의 변경이 `apps/web`에 반영되는 것은 pnpm이 파일을 복사해서가 아니라 심볼릭 링크로 연결하기 때문이다. 실제 폴더 구조는 다음과 같다.
 
 ```
 my-monorepo/
@@ -211,7 +210,7 @@ my-monorepo/
 
 마지막 줄이 앞에서 `peerDependencies` 를 쓴 이유다. `@repo/ui` 가 React 를 자기 `dependencies` 로 들고 오면 web 이 보는 React 와 ui 가 보는 React 가 다른 실체가 된다. 그 상태에서 훅을 쓰면 `Invalid hook call` 이 뜨는데, 이 에러 메시지만 봐서는 원인이 설치 구조에 있다는 걸 알아채기가 어렵다.
 
-## 9. 배포될 때 workspace:\* 는 어떻게 되나
+## 9. 배포 시 workspace 의존성 변환
 
 ```jsonc
 "dependencies": { "@repo/ui": "workspace:*" }
@@ -237,7 +236,7 @@ npm 배포본: "@repo/ui": "1.4.0"     ← 외부 사용자가 받는 것
 
 덕분에 개발 중에는 심링크로 편하게 쓰고, 밖으로 나가는 배포본에는 실제 버전이 박혀 나간다.
 
-## 10. 버전이 멤버마다 어긋나면
+## 10. 패키지 간 버전 불일치 처리
 
 멤버마다 `"react": "^19"` 를 따로 적으면 하나만 어긋나도 React 가 두 벌 설치된다. 위에서 본 `Invalid hook call` 이 여기서도 나온다. `catalog:` 로 막는다.
 
@@ -254,7 +253,7 @@ catalog:
 
 버전의 단일 출처다. `catalog:` 한 줄만 고치면 전 멤버에 반영된다. 이것도 publish 할 때 실버전으로 치환된다. 다만 pnpm 9.5 이상이어야 쓸 수 있어서, 그보다 낮은 버전을 쓰고 있으면 이 절은 건너뛰고 멤버마다 버전을 직접 적어야 한다.
 
-## 11. 명령을 특정 패키지에만 걸고 싶을 때
+## 11. 특정 패키지에 명령 실행하기
 
 ```bash
 pnpm --filter @repo/web build       # web만
@@ -266,7 +265,7 @@ pnpm --filter ...@repo/ui build     # ui + ui에 의존하는 것들(상류) →
 
 세 번째 줄이 실무에서 제일 자주 쓰인다. 공용 패키지를 고쳤을 때 "그럼 뭘 다시 빌드해야 하지" 를 사람이 세지 않아도 되니까.
 
-## 12. pnpm 이 표준이 된 이유
+## 12. pnpm을 선택한 이유
 
 |              | pnpm                     | npm/yarn classic      | yarn berry(PnP)   |
 | ------------ | ------------------------ | --------------------- | ----------------- |
@@ -280,7 +279,7 @@ pnpm --filter ...@repo/ui build     # ui + ui에 의존하는 것들(상류) →
 
 pnpm 은 각 패키지가 자기가 적은 것만 볼 수 있게 심링크를 건다. 그래서 처음 pnpm 으로 옮기면 잘 되던 `import` 가 안 되는 일이 생긴다. 이건 pnpm 이 새로 만든 문제가 아니라 원래 잘못돼 있던 걸 이제 알려 주는 것이다.
 
-## 트레이드오프
+## 워크스페이스 운영 시 주의점
 
 이 구조를 쓰면 감수할 것들이 있다.
 
@@ -290,14 +289,14 @@ pnpm 은 각 패키지가 자기가 적은 것만 볼 수 있게 심링크를 �
 - **`workspace:*` 와 `catalog:` 는 pnpm 밖에서 안 통한다.** 나중에 다른 패키지 매니저로 옮기려면 이 표기를 전부 되돌려야 한다.
 - **`catalog:` 는 pnpm 9.5 이상 전용이다.** 버전이 낮으면 아예 못 쓴다.
 
-## 13. 여기까지 오면 무엇이 되나
+## 13. 앱과 공용 패키지 연결 결과
 
 **`pnpm install` 한 번이 멤버를 찾아 그래프를 합치고 락파일 하나를 만들고 심링크를 걸어 준다.** `import` 가 되는 이유는 복사가 아니라 바로가기다.
 
-그래서 지금 이 상태에서는 공용 컴포넌트를 고치면 앱에 즉시 반영된다. 아직 없는 것은 빌드를 빠르게 하는 장치와, 이 패키지들을 밖으로 내보내는 경로다. 그건 뒤편 [안 바뀐 패키지까지 매번 다시 빌드하고 있었다](/cases/monorepo-release-changesets) 에서 이어 만든다.
+그래서 지금 이 상태에서는 공용 컴포넌트를 고치면 앱에 즉시 반영된다. 아직 없는 것은 빌드를 빠르게 하는 장치와, 이 패키지들을 밖으로 내보내는 경로다. 그건 뒤편 [Turborepo와 Changesets로 빌드·릴리스 자동화하기](/cases/monorepo-release-changesets) 에서 이어 만든다.
 
-## Related
+## 관련 글
 
-- [turbo.json 을 지우면 모노레포가 안 돌아갈까](/cases/monorepo-vs-turborepo)
-- [안 바뀐 패키지까지 매번 다시 빌드하고 있었다](/cases/monorepo-release-changesets)
-- [세 번째 Button 폴더를 복사하다 index.ts 를 빠뜨렸다](/cases/scaffolding-generator)
+- [모노레포에서 pnpm과 Turborepo가 맡는 역할](/cases/monorepo-vs-turborepo)
+- [Turborepo와 Changesets로 빌드·릴리스 자동화하기](/cases/monorepo-release-changesets)
+- [컴포넌트 파일 생성을 스캐폴딩으로 자동화하기](/cases/scaffolding-generator)

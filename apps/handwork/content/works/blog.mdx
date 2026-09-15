@@ -1,7 +1,6 @@
 export const meta = {
-  title: "워드프레스 자식 테마와 로컬 환경 스크립트",
-  summary:
-    "코어는 저장소에 두지 않는다. 스크립트가 PHP·MariaDB·WordPress 를 내려받아 환경을 세운다.",
+  title: "워드프레스 자식 테마와 로컬 설치 자동화",
+  summary: "한국어 본문에 맞춘 자식 테마와 설치 스크립트를 만들었다. 스크립트가 PHP·MariaDB·WordPress를 설치하고 초기 환경을 설정한다.",
   date: "2026-09",
   role: "개발 도구",
   link: "https://github.com/knut15/blooooooog",
@@ -9,16 +8,16 @@ export const meta = {
   tags: ["wordpress", "php", "shell", "typography"],
 };
 
-## 1. 무엇을 만들었나
+## 1. 작업 소개
 
-WordPress 자식 테마와 로컬 개발 환경 스크립트다. 코어는 저장소에 두지 않고 `setup-local.sh` 가 PHP 8.3·MariaDB·WordPress 를 내려받아 세운다. 재실행해도 안전하고 최초 실행에서 비밀번호를 무작위로 만든다.
+WordPress 자식 테마와 로컬 개발 환경 스크립트다. 코어는 저장소에 두지 않고 `setup-local.sh` 가 PHP 8.3·MariaDB·WordPress 를 내려받아 설치한다. 재실행해도 안전하고 최초 실행에서 비밀번호를 무작위로 만든다.
 
-## 2. 어떤 제약이 있었나
+## 2. 구현 과정과 선택 기준
 
-한국어 본문을 위해 값을 따로 잡았다. `word-break: keep-all`, 본문 폭 728px, 글자 18px 에 행간 1.8 이다. 영문 기준 그대로 두면 낱말 중간에서 줄이 꺾인다.
+한국어 본문에 맞춰 줄바꿈과 글자 크기, 행간을 설정했다. `word-break: keep-all`, 본문 폭 728px, 글자 18px 에 행간 1.8 이다. 영문 기준 그대로 두면 낱말 중간에서 줄이 꺾인다.
 
 브랜치 전략에서 한 가지를 문서로 남겼다 — `feature→release` 는 rebase 지만 `release→main` 은 merge commit 이다. 여기서 rebase 하면 해시가 복제돼 add/add 충돌이 난다.
 
-## 3. 무엇이 남았나
+## 3. 현재 상태와 남은 작업
 
-커밋 49개. 자식 테마는 디자인 토큰 16개 절을 가진 `style.css` 와 바이라인·sticky 바·댓글 폼을 붙인 `functions.php`, 그리고 댓글용 종이접기 동물 아바타 여덟 종이다.
+커밋은 49개다. 자식 테마는 디자인 토큰 16개 절을 가진 `style.css` 와 바이라인·sticky 바·댓글 폼을 붙인 `functions.php`, 그리고 댓글용 종이접기 동물 아바타 여덟 종이다.
