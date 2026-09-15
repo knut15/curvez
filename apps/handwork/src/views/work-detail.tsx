@@ -54,6 +54,9 @@ export function WorkDetailView({
         </ul>
       </header>
 
+      {/* 제목 바가 걸리는 지점. 헤더가 이 눈금을 찾아 관찰한다. */}
+      <div data-title-sentinel aria-hidden className="h-0" />
+
       <article className={`mx-auto mt-10 max-w-[68ch] ${PROSE}`}>
         {children}
       </article>

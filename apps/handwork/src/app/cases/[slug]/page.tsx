@@ -24,7 +24,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[slug]">) {
 
   return (
     <>
-      <SiteHeader current="case" />
+      <SiteHeader current="case" label="Cases" title={meta.title} />
       <CaseDetailView
         meta={meta}
         prev={prev && { slug: prev.slug, title: prev.title }}

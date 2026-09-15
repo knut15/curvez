@@ -19,7 +19,7 @@ export default async function LabPage({ params }: PageProps<"/labs/[slug]">) {
 
   return (
     <>
-      <SiteHeader current="labs" />
+      <SiteHeader current="labs" label="Labs" title={meta.title} />
       <LabDetailView meta={meta}>
         <Body />
       </LabDetailView>

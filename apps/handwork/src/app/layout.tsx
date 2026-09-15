@@ -21,7 +21,8 @@ const pretendard = localFont({
 
 export const metadata: Metadata = {
   title: "aster",
-  description: "여러 서비스가 가져다 쓰는 프론트엔드 시스템을 만듭니다.",
+  description:
+    "직접 만든 앱과, 만드는 동안 배운 것들을 기록합니다. 질문하고, 실험하고, 반복한다.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
