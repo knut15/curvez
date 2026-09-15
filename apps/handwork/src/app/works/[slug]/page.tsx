@@ -24,7 +24,7 @@ export default async function WorkPage({ params }: PageProps<"/works/[slug]">) {
 
   return (
     <>
-      <SiteHeader current="work" />
+      <SiteHeader current="work" label="Works" title={meta.title} />
       <WorkDetailView
         meta={meta}
         prev={prev && { slug: prev.slug, title: prev.title }}

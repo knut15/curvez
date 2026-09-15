@@ -7,6 +7,9 @@ export const meta = {
   tags: ["architecture", "fsd", "ddd", "frontend", "refactor"],
 };
 
+import { FsdToDddDiagram } from "@/shared/ui/diagrams/fsd-to-ddd-diagram";
+import { FsdLayersDiagram } from "@/shared/ui/diagrams/fsd-layers-diagram";
+
 ![왼쪽에 수평으로 쌓인 다섯 겹의 판, 오른쪽에 같은 부피를 동심원으로 다시 배치한 형태. 가운데 원이 노란색이고 둘 사이를 화살표가 잇는다.](/blog/id91-hero.jpg)
 
 API 호출 코드를 `entities` 에 둘지 `features` 에 둘지를 두고 리뷰가 길어진 적이 있다. 여러 곳에서 쓰니 `entities` 에 두자는 의견과, 한 화면에서만 쓰니 `features` 면 충분하다는 의견이 나왔다. 그날은 결론을 내리지 못했다.
@@ -76,7 +79,7 @@ export function makeListNearbySpots(repo: SpotRepository) {
 
 인터페이스는 Domain 에 있고 그걸 구현하는 코드는 Infrastructure 에 있으니, 실제로 참조하는 방향은 아래에서 위다. 규칙을 어긴 것으로 보기 쉬운 자리인데 아니다. 이것을 의존성 역전이라고 한다. 층 순서를 지키려고 화살표를 일부러 뒤집는 것이다.
 
-![인터페이스를 Domain 에 두면 Infrastructure 쪽 화살표가 위로 올라간다.](/blog/fsd-to-ddd-diagram.svg)
+<FsdToDddDiagram />
 
 ## 3. FSD 안에서는 왜 답이 안 나왔나
 
@@ -96,9 +99,7 @@ src/
 
 층 안은 다시 둘로 쪼갠다. slice 는 도메인 단위 폴더다(`entities/user`, `entities/product`). segment 는 그 안의 성격별 칸이다(`ui`, `model`, `api`, `lib`). 세로로 도메인을 가르고 가로로 성격을 가르는 셈이다.
 
-![FSD 여섯 층과 한 방향 의존, 그리고 슬라이스 안의 세그먼트](/blog/fsd-layers.png)
-
-_위에서 아래로만 가져다 쓸 수 있다. 오른쪽은 `entities/product` 한 슬라이스를 열어 본 모습이다._
+<FsdLayersDiagram />
 
 이 구조가 층을 나눌 때 보는 것은 **얼마나 조립됐는가** 하나다. `entities` 는 날것의 부품이고, `features` 는 그 부품으로 만든 동작이고, `widgets` 는 그 동작을 모은 화면 덩어리다. 버튼보다 카드가 위고 카드보다 화면이 위라는 순서는 누가 봐도 같으니 UI 는 이 하나로 정렬된다.
 

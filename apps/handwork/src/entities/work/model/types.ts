@@ -12,6 +12,16 @@ export type WorkMeta = {
    */
   link?: string;
   tags: string[];
+  /**
+   * 목록에서 어느 묶음에 들어가는가.
+   *
+   * `product` 는 사람이 열어서 쓰는 것이고, `tool` 은 그것을 만들려고 만든 것이다.
+   * `idea` 는 만들기 전에 한 번 그려 본 것 — 구조 분석, 시안, 콘티 같은 것이다.
+   *
+   * 마흔 건 가까이 한 줄로 늘어놓으면 무엇이 결과물이고 무엇이 도구이고
+   * 무엇이 스케치인지 구분이 안 된다.
+   */
+  group: "product" | "tool" | "idea";
 };
 
 export type WorkSummary = WorkMeta & { slug: string };
