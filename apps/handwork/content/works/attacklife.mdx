@@ -1,0 +1,22 @@
+export const meta = {
+  title: "하루에 하나, 오늘 나만이 할 수 있는 일",
+  summary:
+    "할 일 목록을 비우는 앱이 아니다. 문장 하나를 확정하고 완수했다는 기록을 쌓는다.",
+  date: "2026-08",
+  role: "웹앱",
+  link: "https://github.com/knut15/attacklife",
+  group: "product",
+  tags: ["next-js", "anthropic-sdk", "ddd", "react"],
+};
+
+## 1. 무엇을 만들었나
+
+하루에 단 하나, 오늘 나만이 할 수 있는 일을 정하고 끝내고 기록한다. 거친 문장을 넣으면 AI 가 한 번 다듬어 후보를 주고, 수락·재생성·직접수정 중에서 고르면 그 문장과 완료 버튼만 화면에 남는다.
+
+## 2. 어떤 제약이 있었나
+
+AI 를 보조 장치로만 뒀다. 호출 실패·형식 위반·비용 한도 초과 세 경우 모두 같은 경로로 사용자 원문을 `ai_generated=false` 로 확정한다. **에러 화면을 띄우지 않는다** — 오늘 할 일을 정하러 온 사람에게 API 사정을 설명할 이유가 없다.
+
+## 3. 무엇이 남았나
+
+domain·application·infrastructure·app 네 레이어로 서 있고 Today·History·Settings 화면이 구현돼 있다. 커밋 5개로 아직 초기다.

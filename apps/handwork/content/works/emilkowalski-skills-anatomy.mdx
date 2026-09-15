@@ -1,0 +1,45 @@
+export const meta = {
+  title: "emilkowalski/skills 해부",
+  summary:
+    "애니메이션 스킬 저장소를 뜯어본 기록. 모션 값을 어디서 정하고 어떻게 넘기는지 봤다.",
+  date: "2026-09",
+  role: "구조 분석",
+  link: "https://claude.ai/code/artifact/c8e4c30b-9c2e-4b45-94bc-4fcdb846a5e1",
+  group: "idea",
+  tags: ["animation", "analysis", "skills"],
+};
+
+## 1. 무엇을 뜯어봤나
+
+저장소를 얕은 클론으로 받아 마크다운 19개 3,962줄을 전량 읽었다. 코드가 0줄이고 전부 마크다운인
+저장소라, 읽을 것과 분석할 것이 같았다. 메타데이터는 GitHub API 로 확인했다 — 스킬 12개, 별
+35,900, 최종 커밋 2026-08-21.
+
+## 2. 무엇을 알아냈나
+
+기능이 아니라 행위로 나뉜다. 같은 애니메이션이라도 만드는 `animate`(199줄), diff 를 비평하는
+`review-animations`(112줄), 코드베이스를 감사하는 `improve-animations`(101줄), 모션이 없는 곳을
+찾는 `find-animation-opportunities`(132줄)가 각각 다른 스킬이다. `review-animations`·`prototype`·
+`pick-ui-library` 셋은 `disable-model-invocation: true` 라 모델이 스스로 부를 수 없다.
+
+핵심은 취향을 조회 가능한 표로 이산화한 것이다. 커브를 고르기 전에 빈도 관문을 먼저 통과해야
+한다 — 하루 100회 이상 쓰는 것(키보드 단축키, 커맨드 팔레트)은 "애니메이션 없음, 예외 없음"
+으로 여기서 끝난다. 커브는 세 개로 고정돼 있고(`--ease-out` `cubic-bezier(0.23, 1, 0.32, 1)`,
+`--ease-in-out` `cubic-bezier(0.77, 0, 0.175, 1)`, `--ease-drawer` `cubic-bezier(0.32, 0.72, 0, 1)`),
+지속 시간은 버튼 프레스 100–160ms · 드롭다운 150–250ms 에 UI 상한 300ms 다.
+
+문서 구조 자체가 산출물이다. `animate/SKILL.md` 는 7단계 결정 순서만 담고 실제 구현은
+`RECIPES.md`(324줄)의 레시피 14개에 두어, 요청이 그중 하나에 해당할 때만 로드하게 한다. 항상
+켜지는 문서는 얇게, 필요할 때만 켜지는 문서는 두껍게 갈랐다.
+
+## 3. 무엇이 남았나
+
+검증 수단이 없다. eval 도 테스트도 예제 앱도 없어서 규칙이 맞는지는 전적으로 저자 평판에 달려
+있다.
+
+수치의 출처가 문서 안에 없다. 스와이프 해제 임계 `velocity > 0.11`, blur 20px 미만, 스태거
+30–80ms 같은 값에 근거가 적혀 있지 않아 조정도 반박도 어렵다.
+
+`emil-design-eng`(674줄)과 `animate`·`review-animations` 의 규칙표가 상당 부분 겹친다. 셋이 동시에
+로드되면 토큰이 겹으로 나가고, 서술이 미묘하게 다른 곳에서 어느 쪽을 따를지가 문서로 정해져 있지
+않다.

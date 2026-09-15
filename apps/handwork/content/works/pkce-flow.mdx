@@ -1,0 +1,43 @@
+export const meta = {
+  title: "PKCE 인가 코드 플로우",
+  summary:
+    "인가 코드가 오가는 순서를 그림으로 따라갔다. 왜 code_verifier 가 필요한지가 그림에서 보인다.",
+  date: "2026-09",
+  role: "다이어그램",
+  link: "https://claude.ai/code/artifact/0716b8cf-9d97-489c-93fe-3768f80afae9",
+  group: "idea",
+  tags: ["oauth", "security", "diagram"],
+};
+
+## 1. 무엇을 뜯어봤나
+
+Authorization Code + PKCE 를 브라우저 · 내 서버 · 인가 서버 세 레인에 놓고 8단계로 펼쳤다. 각
+단계를 front(브라우저를 거친다) · back(서버끼리 직접) · local(한 쪽 안에서 끝난다) 셋으로 나눠,
+어떤 값이 주소창에 남고 어떤 값이 남지 않는지를 선 모양으로 갈랐다.
+
+## 2. 무엇을 알아냈나
+
+경계는 하나다 — code 는 브라우저로, 토큰은 서버끼리만. 0단계에서 내 서버가
+`verifier = random_urlsafe(64)` 를 만들어 세션에 넣고 `challenge = BASE64URL(SHA256(verifier))`
+만 `/authorize` 로 내보낸다. 5단계 `POST /token` 에서 `code_verifier` 원본을 back 채널로 보내면
+IdP 가 1단계에 받아 둔 `code_challenge` 와 대조하고, code 만 가로챈 쪽은 verifier 를 모르니 여기서
+멈춘다.
+
+code 가 토큰이 아닌 이유도 같은 경계에서 나온다. code 는 주소창 · 브라우저 기록 · referer 헤더 ·
+접근 로그에 그대로 남으므로, 남아도 되도록 일회용이고 보통 60초 안에 만료된다. 4단계 콜백에서
+서버가 가장 먼저 하는 일은 `state` 대조이고, 이걸 빠뜨리면 공격자가 자기 계정의 code 를 피해자
+세션에 밀어 넣는 로그인 CSRF 가 열린다.
+
+받은 토큰은 서버 세션에 둔다. 브라우저 `localStorage` 에 넣으면 XSS 한 번으로 전부 빠져나가므로,
+브라우저에는 HttpOnly · Secure · SameSite 쿠키만 준다.
+
+## 3. 무엇이 남았나
+
+Authorization Code + PKCE 하나만 그렸다. Implicit flow 는 현재 권장되지 않아 뺐고,
+`Client Credentials` 는 사용자가 없는 서버 간 흐름이라 이 순서와 다르다.
+
+엔드포인트 주소는 그림에 고정값으로 적혀 있지만 실제로는 그대로 쓸 수 없다. 붙일 때는 IdP 의
+`/.well-known/openid-configuration` 을 먼저 받아 확인해야 한다.
+
+실패 처리는 7단계의 한 줄까지만 담았다. 401 이면 `refresh_token` 으로 한 번만 갱신하고 재시도하고,
+갱신한 토큰으로도 401 이면 로그인부터 다시 시킨다 — 그 바깥의 오류 흐름은 그림에 없다.

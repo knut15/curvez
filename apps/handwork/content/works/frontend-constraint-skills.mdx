@@ -1,0 +1,24 @@
+export const meta = {
+  title: "AI 가 쓴 프론트엔드 코드를 프로젝트 규칙에 맞추는 스킬",
+  summary:
+    "코드를 만들지 않고 검사한다. 하드코딩된 색을 찾아 시맨틱 토큰으로 바꾸고 대비까지 검증한다.",
+  date: "2026-09",
+  role: "개발 도구",
+  link: "https://github.com/knut15/frontend-constraint-skills",
+  group: "tool",
+  tags: ["claude-code", "design-tokens", "accessibility", "lint"],
+};
+
+## 1. 무엇을 만들었나
+
+대부분의 에이전트 스킬이 코드를 만드는 반면 이건 검사한다. 위반을 찾는 결정론적 스크립트와 모델에게 무엇을 할지 알려주는 문서를 함께 실어서, 결과가 그럴듯한 문단이 아니라 고칠 자리 목록으로 나온다.
+
+## 2. 어떤 제약이 있었나
+
+하드코딩된 색을 찾아 시맨틱 토큰에 매핑하고, 바꾼 뒤 모든 라이트·다크 토큰 쌍을 WCAG 대비로 검증한다.
+
+한계를 README 에 적었다. shadcn 이 아닌 프로젝트에서도 스캐너는 돌지만, 대비 검사기는 `--x-foreground` 명명 규약으로 짝을 짓기 때문에 통과 건수가 0 으로 나온다.
+
+## 3. 무엇이 남았나
+
+**아카이브했다.** curvez 의 `plugins/frontend-constraints` 로 옮겼고 이 저장소는 더 갱신하지 않는다. 예고했던 패키지 경계 검사와 공개 API 표면 검사는 미구현으로 남았다.

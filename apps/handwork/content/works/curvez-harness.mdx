@@ -1,0 +1,31 @@
+export const meta = {
+  title: "curvez 하네스",
+  summary: "에이전트 하네스가 무엇으로 되어 있는지 한 장에 정리했다.",
+  date: "2026-08",
+  role: "구조 분석",
+  link: "https://claude.ai/code/artifact/cde748b6-196e-4a0c-80f8-c926e956073a",
+  group: "idea",
+  tags: ["agents", "architecture"],
+};
+
+## 1. 무엇을 그렸나
+
+curvez `0.4.1` 이 한 바퀴 도는 과정을 아홉 절로 따라간 글이다. 에이전트 13종 · 스킬 15종 · 실행기 8종 · 훅 5종 · 프리셋 4종 · 벤더 스킬 7종으로 되어 있다.
+
+출발점의 물음은 하나다. 서브에이전트 셋은 대화를 공유하지 못하는데 같은 전제를 무엇에 실어서 넘길 것인가. 답은 파일이고, `.curvez/` 아래의 여덟 갈래가 그 전제를 나른다.
+
+## 2. 어떤 제약이 있었나
+
+전제 둘과 승인 하나가 앞을 막는다. `bootstrap` 이 `profile.json` 을 만들고 `architecture-setup` 이 금지 import 를 확정해야 하며, 오케스트레이터는 팀 구성안을 사람에게 보이기 전까지 워커를 하나도 띄우지 않는다. 그다음 라운드 여섯이 표준형이다.
+
+핸드오프는 JSON 한 칸도 비울 수 없다. `from` `to` `status` `summary` `artifacts` `decisions` `blocked_on` `verification` 여덟이 전부 필수고, `status` 는 `done` · `partial` · `blocked` 셋뿐이라 "거의 다 됐다"를 쓸 자리가 없다. `verification` 이 비면 `done` 을 쓸 수 없다.
+
+품질 게이트는 `arch → typecheck → lint → test → build` 를 순서대로 돌리되 명령을 하드코딩하지 않고 `profile.json` 의 `commands` 에서 읽는다. 테스트가 `0`건이면 통과로 치지 않고 `no tests found` 같은 출력을 따로 잡아낸다.
+
+## 3. 무엇이 남았나
+
+벤더링 규칙이 이 글에서 굳었다. `templates/CLAUDE.md` 는 출처만 적고 버전을 안 적어 두었는데, 원본 `1.0.0` 은 절이 넷인 반면 사본은 열둘이라 5~12절은 대응이 아예 없었다. 그래서 사본마다 원본 버전 · 복사 시점 · 라이선스 세 값을 남기고, `vendor/` 아래에 두며, 고치지 않기로 정했다.
+
+대가도 표로 적어 두었다. 전제를 세우는 두 단계를 먼저 해야 시작할 수 있고, 소유 경로가 겹치면 병렬을 포기해 느려지며, 검증할 게 없는 작은 작업도 `verification` 을 채워야 한다. 에이전트가 하나면 이 값을 치를 이유가 없다.
+
+확인되지 않은 것은 둘이다. `/plugin install` 로 실제 설치했을 때 로더가 전부 인식하는지, 그리고 실제 환경에서 멀티에이전트가 end-to-end 로 왕복하는지. 벤더 스킬 7종도 아직 라운드에 투입해 보지 않았다.
