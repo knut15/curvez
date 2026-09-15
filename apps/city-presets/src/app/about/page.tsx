@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { AppLink } from "@scopulus/ui";
 
+import about from "../../../content/about.json";
 import { PRESETS } from "@/shared/presets";
 import { Brand } from "@/widgets/brand";
 
 export const metadata: Metadata = {
-  title: "열두 도시의 색 — satinhaze",
-  description:
-    "도시 이름은 찍을 장소가 아니라 색의 이름이다. 열두 개가 새벽에서 밤으로, 겨울에서 겨울로 이어진다.",
+  title: about.metaTitle,
+  description: about.metaDescription,
 };
 
 /**
@@ -29,20 +29,22 @@ export default function About() {
       </header>
 
       <section className="px-5 pt-8 pb-10">
-        <h1 className="font-serif text-[32px] leading-[1.34] tracking-tight">
-          도시 이름은
-          <br />
-          색의 이름이다
+        {/*
+          제목과 문단은 `content/about.json` 이 정본이다. CMS 가 그 파일을 고친다.
+          제목의 줄바꿈은 데이터에 `\n` 으로 들어 있다 — 어디서 줄을 나눌지가
+          이 화면에서는 뜻의 일부라 코드가 정하지 않는다.
+        */}
+        <h1 className="font-serif text-[32px] leading-[1.34] tracking-tight whitespace-pre-line">
+          {about.title}
         </h1>
-        <p className="mt-5 text-[15px] leading-[1.75] text-muted-foreground">
-          삿포로는 삿포로에서 찍은 사진이 아니다. 어디서 찍었든 겨울 맑은 날의
-          공기로 보이게 만드는 색이다. 열두 개가 새벽에서 밤으로, 겨울에서
-          겨울로 이어진다.
-        </p>
-        <p className="mt-4 text-[15px] leading-[1.75] text-muted-foreground">
-          사진 아래 찍히는 숫자는 실제 적용값이다. 지어낸 것이 아니고, 숨기지도
-          않는다.
-        </p>
+        {about.paragraphs.map((text, i) => (
+          <p
+            key={text}
+            className={`text-[15px] leading-[1.75] text-muted-foreground ${i === 0 ? "mt-5" : "mt-4"}`}
+          >
+            {text}
+          </p>
+        ))}
       </section>
 
       <main>
@@ -62,7 +64,7 @@ export default function About() {
 
             <div className="relative aspect-[860/1152] bg-muted">
               <Image
-                src={`/demo/${preset.stem}-before.webp`}
+                src={preset.before}
                 alt={`${preset.mood} 원본 사진`}
                 fill
                 sizes="430px"
