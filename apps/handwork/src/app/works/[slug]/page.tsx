@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { listWorks, loadWork } from "@/entities/work/api/works";
 import { WorkDetailView } from "@/views/work-detail";
 import { SiteFooter } from "@/widgets/site-footer";
+import { listMenus } from "@/shared/lib/menu";
 import { SiteHeader } from "@/widgets/site-header";
 
 export async function generateStaticParams() {
@@ -11,6 +12,7 @@ export async function generateStaticParams() {
 }
 
 export default async function WorkPage({ params }: PageProps<"/works/[slug]">) {
+  const menus = await listMenus();
   const { slug } = await params;
   const loaded = await loadWork(slug);
   if (!loaded) notFound();
@@ -24,7 +26,7 @@ export default async function WorkPage({ params }: PageProps<"/works/[slug]">) {
 
   return (
     <>
-      <SiteHeader current="work" label="Works" title={meta.title} />
+      <SiteHeader menus={menus} current="work" label="Works" title={meta.title} />
       <WorkDetailView
         meta={meta}
         prev={prev && { slug: prev.slug, title: prev.title }}

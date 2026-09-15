@@ -1,6 +1,7 @@
 import { listLabs } from "@/entities/lab/api/labs";
 import { LabIndexView } from "@/views/lab-index";
 import { SiteFooter } from "@/widgets/site-footer";
+import { listMenus } from "@/shared/lib/menu";
 import { SiteHeader } from "@/widgets/site-header";
 
 export const metadata = {
@@ -9,11 +10,12 @@ export const metadata = {
 };
 
 export default async function LabsPage() {
+  const menus = await listMenus();
   const labs = await listLabs();
 
   return (
     <>
-      <SiteHeader current="labs" />
+      <SiteHeader menus={menus} current="labs" />
       <LabIndexView labs={labs} />
       <SiteFooter />
     </>

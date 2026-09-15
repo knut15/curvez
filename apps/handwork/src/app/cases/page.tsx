@@ -1,6 +1,7 @@
 import { listCases } from "@/entities/case/api/cases";
 import { CaseIndexView } from "@/views/case-index";
 import { SiteFooter } from "@/widgets/site-footer";
+import { listMenus } from "@/shared/lib/menu";
 import { SiteHeader } from "@/widgets/site-header";
 
 export const metadata = {
@@ -9,11 +10,12 @@ export const metadata = {
 };
 
 export default async function CasesPage() {
+  const menus = await listMenus();
   const cases = await listCases();
 
   return (
     <>
-      <SiteHeader current="cases" />
+      <SiteHeader menus={menus} current="cases" />
       <CaseIndexView cases={cases} />
       <SiteFooter />
     </>

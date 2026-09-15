@@ -5,7 +5,14 @@ import { useEffect, useRef, useState } from "react";
 
 import { ThemeToggle } from "@scopulus/ui";
 
-type Current = "home" | "works" | "work" | "cases" | "case" | "labs" | "design";
+/**
+ * 지금 어느 메뉴 안에 있는가. 메뉴 slug 이거나 `"home"` 이다.
+ *
+ * 전에는 리터럴 유니온이었는데, 메뉴가 `content/` 디렉터리에서 오게 되면서
+ * 코드가 이름을 미리 알 수 없게 됐다 — 새 메뉴를 만들 때마다 이 타입을 고쳐야 한다면
+ * 메뉴를 데이터로 옮긴 의미가 없다.
+ */
+type Current = string;
 
 /**
  * 모든 화면이 쓰는 단일 헤더. 홈과 서브가 같은 컴포넌트를 써야 좌우 간격이 달라지지 않는다.
@@ -44,22 +51,31 @@ const LINK =
  * 것이지 아무 데도 아닌 자리에 있는 것이 아니다. 그래서 `case` 와 `cases` 가 같은 메뉴를
  * 가리킨다. 이 표가 없을 때는 목록에서만 켜지고 상세로 들어가면 꺼졌다.
  */
-const NAV: readonly {
-  href: string;
-  label: string;
-  owns: readonly Current[];
-}[] = [
-  { href: "/works", label: "Works", owns: ["works", "work"] },
-  { href: "/cases", label: "Cases", owns: ["cases", "case"] },
-  { href: "/labs", label: "Labs", owns: ["labs"] },
-  { href: "/design", label: "Design", owns: ["design"] },
-];
+export interface HeaderMenu {
+  readonly slug: string;
+  readonly label: string;
+}
+
+/**
+ * 상세 화면이 쓰는 단수형 이름 → 목록 메뉴.
+ *
+ * `/cases/어떤-글` 을 보는 사람은 Cases 안에 있는 것이지 아무 데도 아닌 자리에
+ * 있는 것이 아니다. 전용 화면이 있는 메뉴만 이 표를 탄다 —
+ * 새 메뉴는 목록과 상세가 같은 slug 를 쓴다.
+ */
+const SINGULAR_OF: Readonly<Record<string, string>> = {
+  work: "works",
+  case: "cases",
+};
 
 export function SiteHeader({
+  menus,
   current = "home",
   label,
   title,
 }: {
+  /** 그릴 메뉴. 서버에서 `listMenus()` 로 읽어 넘긴다 */
+  menus: readonly HeaderMenu[];
   current?: Current;
   /** 제목 바 왼쪽의 영역 이름. `title` 과 함께 준다. */
   label?: string;
@@ -117,12 +133,13 @@ export function SiteHeader({
           </span>
         </span>
         <nav className="flex items-center gap-4">
-          {NAV.map((item) => {
-            const active = item.owns.includes(current);
+          {menus.map((item) => {
+            const active =
+              item.slug === current || item.slug === SINGULAR_OF[current];
             return (
               <Link
-                key={item.href}
-                href={item.href}
+                key={item.slug}
+                href={`/${item.slug}`}
                 // 켜진 메뉴를 색으로만 가르지 않는다. `aria-current` 가 같은 것을
                 // 글자로 말하므로 색을 못 보는 사람에게도 전해진다.
                 aria-current={active ? "page" : undefined}

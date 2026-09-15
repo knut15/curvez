@@ -1,12 +1,14 @@
 import Link from "next/link";
 
 import { SiteFooter } from "@/widgets/site-footer";
+import { listMenus } from "@/shared/lib/menu";
 import { SiteHeader } from "@/widgets/site-header";
 
-export default function NotFound() {
+export default async function NotFound() {
+  const menus = await listMenus();
   return (
     <>
-      <SiteHeader />
+      <SiteHeader menus={menus} />
       <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-10 md:px-8 md:py-16">
         <h1 className="text-4xl font-bold tracking-[-0.02em]">
           찾을 수 없는 케이스입니다.

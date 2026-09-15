@@ -1,6 +1,7 @@
 import { listWorks } from "@/entities/work/api/works";
 import { WorkIndexView } from "@/views/work-index";
 import { SiteFooter } from "@/widgets/site-footer";
+import { listMenus } from "@/shared/lib/menu";
 import { SiteHeader } from "@/widgets/site-header";
 
 export const metadata = {
@@ -9,11 +10,12 @@ export const metadata = {
 };
 
 export default async function WorksPage() {
+  const menus = await listMenus();
   const works = await listWorks();
 
   return (
     <>
-      <SiteHeader current="works" />
+      <SiteHeader menus={menus} current="works" />
       <WorkIndexView works={works} />
       <SiteFooter />
     </>
