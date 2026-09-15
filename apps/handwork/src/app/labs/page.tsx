@@ -6,7 +6,7 @@ import { SiteHeader } from "@/widgets/site-header";
 
 export const metadata = {
   title: "Labs — aster",
-  description: "에이전트에게 일을 맡기려고 만든 규약과 도구.",
+  description: "앱을 만드는 동안의 실험과 시행착오, 확인한 결과와 남은 질문을 기록합니다.",
 };
 
 export default async function LabsPage() {

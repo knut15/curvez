@@ -1,6 +1,6 @@
 export const meta = {
-  title: "오케스트레이션 구조 분석",
-  summary: "에이전트를 병렬로 돌릴 때 무엇이 무엇을 기다리는지 따라간 기록.",
+  title: "curvez 에이전트의 실행 순서와 의존 관계 분석",
+  summary: "에이전트의 병렬 실행과 결과 수합 과정을 살펴봤다. 문서에 적힌 절차와 실제 실행기의 차이도 확인했다.",
   date: "2026-08",
   role: "구조 분석",
   link: "https://claude.ai/code/artifact/b5a9c8b9-3bc4-4be5-867b-da28d6baa11c",
@@ -8,15 +8,15 @@ export const meta = {
   tags: ["agents", "architecture", "parallel"],
 };
 
-## 1. 무엇을 뜯어봤나
+## 1. 작업 소개
 
 `curvez/plugins/curvez` 의 제어면·작업면·핸드오프·실행기·훅을 정적 분석하고, `doctor`·
 `bootstrap`·훅을 실제로 돌려 공식 플러그인 규격과 대조했다. 보고서 본문은 외부 도구(codex)가 쓴
 2차 분석을 그대로 옮긴 것이고, 점수와 판정도 작성자의 것이다. 기준일 2026-08-16.
 
-## 2. 무엇을 알아냈나
+## 2. 분석 결과
 
-두 계층이다. Agent 도구는 `curvez-orchestrator` 하나만 갖고, 실행 트리를 오케스트레이터 → 워커 두
+실행 구조를 두 계층으로 나눴다. Agent 도구는 `curvez-orchestrator` 하나만 갖고, 실행 트리를 오케스트레이터 → 워커 두
 층으로 제한해 재귀 위임과 비용 폭증을 막는다. 동시 워커 상한은 5명이고, 에이전트 12종의 `owns`
 선언에 대해 경로 교집합·무소유 경로·읽기전용 모순을 기계가 검사한다.
 
@@ -28,7 +28,7 @@ export const meta = {
 실측 결과는 doctor 정적 규약 7/7, 에이전트 정의 12/12, 스킬 정의 15/15, guard-bash 회귀 15/15,
 `claude plugin validate` 2/2 통과다. 가중 합계 91.6 으로 종합 92점.
 
-## 3. 무엇이 남았나
+## 3. 현재 상태와 남은 작업
 
 실제 팀 실행의 end-to-end 증거가 없다. 설치 → bootstrap → 승인 → 복수 Agent → 핸드오프 → 질문
 중계 → QA·리뷰까지 왕복한 기록이 없어, Agent 동시성·훅 실제 발화·모델 산출 품질은 평가 범위

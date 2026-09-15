@@ -1,6 +1,6 @@
 export const meta = {
-  title: "디자인시스템",
-  summary: "ScopulusUI 디자인시스템",
+  title: "ScopulusUI 설치와 사용 방법",
+  summary: "워크스페이스에 라이브러리를 연결하고 디자인 토큰, Tailwind, 다크 모드와 글꼴을 설정하는 방법을 정리했다.",
   date: "2026-09",
   role: "디자인시스템",
   group: "product",
@@ -8,7 +8,7 @@ export const meta = {
   tags: ["디자인시스템", "ScopulusUI", "tailwindcss"],
 };
 
-## Installation
+## 워크스페이스에 설치하기
 
 이 저장소 안에서 워크스페이스로 씁니다. npm 에 발행하지 않습니다.
 
@@ -20,9 +20,9 @@ export const meta = {
 }
 ```
 
-## Import tokens
+## 디자인 토큰 불러오기
 
-컴포넌트보다 토큰이 먼저입니다. 색과 반경을 전부 CSS 변수에서 읽으므로, 변수가 없으면
+컴포넌트를 사용하기 전에 토큰 CSS를 불러와야 합니다. 색과 반경을 전부 CSS 변수에서 읽으므로, 변수가 없으면
 컴포넌트에 색이 붙지 않습니다.
 
 ```css
@@ -31,7 +31,7 @@ export const meta = {
 @import "@scopulus/ui/tokens.css";
 ```
 
-## Add the library to Tailwind's sources
+## Tailwind에 라이브러리 경로 추가하기
 
 Tailwind v4 의 자동 탐지는 `node_modules` 를 건너뜁니다. 워크스페이스 패키지가 거기 심볼릭
 링크로 있어서, 이 줄이 없으면 **라이브러리에서만 쓰는 클래스가 생성되지 않습니다.** 오류도
@@ -41,7 +41,7 @@ Tailwind v4 의 자동 탐지는 `node_modules` 를 건너뜁니다. 워크스�
 @source "../../../../packages/scopulus-ui/src";
 ```
 
-## Usage
+## 컴포넌트 사용 예시
 
 ```tsx
 import { Button, Card, Badge } from "@scopulus/ui";
@@ -59,7 +59,7 @@ export function Example() {
 `@scopulus/ui` 가 공개 API 의 전부입니다. 내부 경로(`@scopulus/ui/src/ui/button`)를 직접
 가져오면 파일을 옮기는 것이 파괴적 변경이 됩니다.
 
-## Dark mode
+## 다크 모드 설정
 
 `.dark` 클래스 하나로 전환합니다. 전환 장치는 앱이 정합니다.
 
@@ -72,9 +72,9 @@ export function Example() {
 `ThemeToggle` 이 이 프로바이더를 전제합니다. 그래서 `next-themes` 가 이 패키지의
 `peerDependencies` 입니다.
 
-## Typeface
+## 앱 글꼴 설정
 
-라이브러리는 `--font-sans` 를 읽기만 합니다. 값은 앱이 채웁니다.
+라이브러리는 `--font-sans` 를 읽기만 합니다. 글꼴 값은 앱에서 설정합니다.
 
 ```css
 :root {
@@ -82,5 +82,5 @@ export function Example() {
 }
 ```
 
-서체는 브랜드의 값이지 컴포넌트의 값이 아닙니다. 라이브러리가 고정하면 쓰는 쪽이 자기 서체를
+앱마다 브랜드에 맞는 서체를 선택할 수 있도록 했습니다. 라이브러리가 고정하면 쓰는 쪽이 자기 서체를
 쓸 수 없습니다.

@@ -1,7 +1,6 @@
 export const meta = {
-  title: "trycompai/crm 해부",
-  summary:
-    "남의 저장소를 열어 구조를 뜯어본 기록. 무엇을 어디에 두었고 왜 그렇게 나눴는지 따라갔다.",
+  title: "trycompai/crm의 에이전트와 애플리케이션 구조 분석",
+  summary: "release 브랜치의 코드와 문서를 대조했다. 에이전트의 증거 처리, 린트 규칙, 인증 구조와 확인하지 못한 부분을 정리했다.",
   date: "2026-09",
   role: "구조 분석",
   link: "https://claude.ai/code/artifact/f086b8ec-230f-4359-b212-f45508644590",
@@ -9,16 +8,16 @@ export const meta = {
   tags: ["architecture", "analysis"],
 };
 
-## 1. 무엇을 뜯어봤나
+## 1. 작업 소개
 
 `trycompai/crm` 의 release 브랜치를 얕은 클론으로 받아 파일 1,493개를 읽었다. 서브에이전트 3개로
 `apps/agent` / `apps/api`+`packages` / `apps/app`+문서를 나눠 맡기고, 주요 주장은 원본 파일에
 하나씩 대조했다. 수치 기준일 2026-09-07, 버전 1.15.3.
 
-## 2. 무엇을 알아냈나
+## 2. 분석 결과
 
 가장 큰 산출물이 애플리케이션이 아니라 지시문이다. `.agents/` 가 60,300줄로 `apps/api` 36,063줄과
-`apps/app` 34,984줄보다 많다. 지능이 사는 곳도 `apps/agent` 한 곳뿐이라, Nest 는 `AgentTask` 행을
+`apps/app` 34,984줄보다 많다. 에이전트 로직은 `apps/agent`에 모여 있어 Nest 는 `AgentTask` 행을
 쓰고 끝낸다.
 
 에이전트가 추측하지 못하게 만드는 장치가 증거 원장이다. `agent/` 전체에서 `confidence` 문자열이
@@ -26,12 +25,12 @@ export const meta = {
 0.80, `web.cited-claim` 0.40 처럼 가중치는 코드가 고정한다. 합성은 `1 − Π(1 − w)` 이고, 0.85 이상에
 primary 증거가 포함될 때만 레코드에 바로 반영된다.
 
-규칙은 문서가 아니라 lint 로 내려간다. 자체 제작 oxlint 플러그인 `tools/oxlint/anti-slop` 의 룰
+규칙을 lint에서도 검사한다. 자체 제작 oxlint 플러그인 `tools/oxlint/anti-slop` 의 룰
 10개 중 9개가 error 이고, 겨냥하는 것은 모델이 타입을 넓혀 컴파일을 통과시키는 습관이다. 반면
 CRM 모델에는 `organizationId` 가 없고, `SECURITY.md` 가 로그인이 인가 모델의 전부라고 스스로 적어
 뒀다.
 
-## 3. 무엇이 남았나
+## 3. 현재 상태와 남은 작업
 
 README 의 "도구 18개" 는 사실과 달랐다 — `agent/tools/` 의 `defineTool()` 파일이 26개다. 문서를
 규칙의 근거로 삼는 저장소일수록 이 드리프트의 비용이 크다.

@@ -24,8 +24,8 @@ export function CaseIndexView({ cases }: { cases: CaseSummary[] }) {
         <div>
           <h1 className="text-4xl font-bold tracking-[-0.02em]">케이스</h1>
           <PageLede className="max-w-[65ch]">
-            자주 쓰면서도 대충 넘어가던 기술을 원리까지 파고듭니다. 왜 그렇게
-            동작하는지, 설정은 어떻게 두는지 다룹니다.
+            앱을 만들며 해결한 문제와 새로 배운 내용을 정리합니다. 기술의 동작 원리와
+            적용 방법, 그 방식을 선택한 이유를 함께 살펴봅니다.
           </PageLede>
         </div>
         {cases.length > 0 ? (
