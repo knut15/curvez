@@ -2,6 +2,14 @@
 
 포트폴리오 웹사이트. 화면 5개, 컴포넌트 12종이다.
 
+**2026-09-14: 중립 스케일과 형태를 linear.app 의 값으로 바꿨다.** 배경·카드 면·선·muted·반경
+(16px)·굵기(510)·자간(음수)·pill 버튼이 그 값이고, 근거와 실측값은
+[`screens/home.md`](screens/home.md) 의 `## 형태의 출처` 절과 `src/app/globals.css` 의 오버라이드
+블록에 있다. 라이브러리(`@scopulus/ui`)는 고치지 않았다 — handwork 의 `globals.css` 가 덮는다.
+색·반경·타이포·대비의 정본은 [`tokens.md`](tokens.md) 이고, 2026-09-14 에 실측값으로 다시 썼다
+(대비 쌍 10건, 미달 0건). 라이브러리(`@scopulus/ui`)는 고치지 않았다 — handwork 의
+`globals.css` 가 import 뒤에서 덮는다.
+
 **이 디렉터리가 handwork 디자인의 정본이다.** 값을 찾으려고 저장소의 다른 곳으로 나갈 일이 없다.
 색의 실제 출처만 예외로 `apps/handwork/src/app/globals.css` 이고 그 동기는
 `node apps/handwork/scripts/check-contrast.mjs` 가 기계로 검사한다.
@@ -23,13 +31,13 @@
 
 ## 화면
 
-| screen-id                             | route(nextjs)   | 목표                                                  | 상태 |
-| ------------------------------------- | --------------- | ----------------------------------------------------- | ---- |
-| [home](screens/home.md)               | `/`             | 한 문장 포지셔닝을 읽히고 케이스 3건 중 하나로 보낸다 | 확정 |
-| [case-index](screens/case-index.md)   | `/cases`        | 케이스 전체를 훑고 하나를 고른다                      | 확정 |
-| [case-detail](screens/case-detail.md) | `/cases/[slug]` | 제약·선택·버린 것을 끝까지 읽힌다                     | 확정 |
-| [lab-index](screens/lab-index.md)     | `/labs`         | 만든 것의 기록을 훑고 하나를 고른다                   | 확정 |
-| [lab-detail](screens/lab-detail.md)   | `/labs/[slug]`  | 무엇을 만들었고 어디까지 왔는지 끝까지 읽힌다         | 확정 |
+| screen-id                             | route(nextjs)   | 목표                                          | 상태 |
+| ------------------------------------- | --------------- | --------------------------------------------- | ---- |
+| [home](screens/home.md)               | `/`             | 슬로건·비전을 읽히고 세 영역 중 하나로 보낸다 | 확정 |
+| [case-index](screens/case-index.md)   | `/cases`        | 케이스 전체를 훑고 하나를 고른다              | 확정 |
+| [case-detail](screens/case-detail.md) | `/cases/[slug]` | 제약·선택·버린 것을 끝까지 읽힌다             | 확정 |
+| [lab-index](screens/lab-index.md)     | `/labs`         | 만든 것의 기록을 훑고 하나를 고른다           | 확정 |
+| [lab-detail](screens/lab-detail.md)   | `/labs/[slug]`  | 무엇을 만들었고 어디까지 왔는지 끝까지 읽힌다 | 확정 |
 
 ## 컴포넌트 — 12종
 
@@ -55,12 +63,12 @@
 
 ### 화면 컴포넌트 4종 — `apps/handwork/src/entities/` · `widgets/` · `shared/ui/`
 
-| 이름                                     | 쓰이는 화면       | 비고                                                                         |
-| ---------------------------------------- | ----------------- | ---------------------------------------------------------------------------- |
-| [CaseCard](components/CaseCard.md)       | home · case-index | [Card](components/Card.md) 위에 올라간다. 카드 전체가 링크 하나              |
-| [LabCard](components/LabCard.md)         | lab-index         | CaseCard 와 같은 규칙 + [Badge](components/Badge.md) `variant="status"` 하나 |
-| [SiteHeader](components/SiteHeader.md)   | 전 화면           | 로고(홈) + Cases + Labs + 테마 토글. 홈·서브가 같은 컴포넌트                 |
-| [ThemeToggle](components/ThemeToggle.md) | 전 화면(헤더 안)  | 라이트·다크 전환. 화면에 존재하는 유일한 `<button>`                          |
+| 이름                                     | 쓰이는 화면       | 비고                                                                                            |
+| ---------------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------- |
+| [CaseCard](components/CaseCard.md)       | home · case-index | [Card](components/Card.md) 위에 올라간다. 카드 전체가 링크 하나                                 |
+| [LabCard](components/LabCard.md)         | lab-index         | CaseCard 와 같은 규칙 + [Badge](components/Badge.md) `variant="status"` 하나                    |
+| [SiteHeader](components/SiteHeader.md)   | 전 화면           | 로고 + Works + Cases + Labs + 테마 토글. 전 화면 `sticky top-0`. 상세에서는 제목 바가 딸려 온다 |
+| [ThemeToggle](components/ThemeToggle.md) | 전 화면(헤더 안)  | 라이트·다크 전환. 화면에 존재하는 유일한 `<button>`                                             |
 
 **shadcn 전체 세트를 깔지 않는다.** 화면 5개짜리 사이트라 쓰이지 않는 컴포넌트는 스토리까지
 따라와서 유지할 것만 늘리고 검증되지는 않는다. 필요해지면 `shadcn add` 로 받아
