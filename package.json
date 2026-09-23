@@ -4,6 +4,10 @@
   "type": "module",
   "packageManager": "pnpm@11.20.0",
   "scripts": {
+    "dev:handwork": "pnpm --filter handwork dev",
+    "dev:scopulus-ui": "pnpm --filter scopulus-ui-site dev",
+    "dev:city-presets": "pnpm --filter city-presets dev",
+    "dev:storybook": "pnpm --filter @scopulus/ui storybook",
     "lint": "eslint . && pnpm -r --if-present lint",
     "typecheck": "pnpm -r --if-present typecheck",
     "build": "pnpm -r --if-present build",
