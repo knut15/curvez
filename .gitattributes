@@ -1,0 +1,8 @@
+# 줄바꿈을 저장소 안에서 LF 로 통일한다.
+#
+# 에디터가 CRLF 로 저장해도 커밋 시점에 LF 로 바뀌어 들어간다.
+# 없으면 내용이 같은 파일이 12줄 전부 바뀐 것처럼 보인다 — 2026-09 에
+# apps/handwork/content/works/aster.mdx 가 실제로 그랬다.
+#
+# text=auto 라 바이너리(jpg·png·woff 등)는 git 이 알아서 건드리지 않는다.
+* text=auto eol=lf
