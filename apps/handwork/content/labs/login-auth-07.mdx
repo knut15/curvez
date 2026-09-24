@@ -1,0 +1,1434 @@
+export const meta = {
+  title: "[로그인인증] 회전과 재사용 탐지 (07)",
+  summary: "트랜잭션으로 리프레시 토큰을 회전하고, 탈취를 탐지하고, 세션을 관리한다.",
+  date: "2026-09",
+  status: "마무리",
+  order: 108,
+  tags: ["로그인인증", "refresh-token", "postgresql"],
+};
+
+![초록으로 채운 큰 열쇠 하나가 가로로 놓여 있고, 그 뒤에 같은 모양의 열쇠 두 개가 남색 윤곽선만으로 겹쳐 있다. 열쇠들 아래로 가는 선이 하나 지나간다.](/labs/login-auth-key.jpg)
+
+> **이 장을 마치면**
+>
+> - 리프레시 토큰 회전을 한 트랜잭션으로 구현하고, `SELECT … FOR UPDATE` 가 없으면 family 가 두 갈래로 갈라지는 과정을 시간표로 설명할 수 있다.
+> - 재사용 탐지의 폐기를 롤백시키는 흔한 버그를 재현하고, 결과를 값으로 돌려준 뒤 COMMIT 하는 방식으로 고칠 수 있다.
+> - grace 가 왜 필요한지, 왜 짧아야 하는지, 왜 DB 의 시계로 계산하는지 설명할 수 있다.
+> - 로그아웃·전체 로그아웃·세션 목록·세션 하나 끊기를 만들고, 남의 세션을 지우지 못하게 막을 수 있다.
+> - 폐기한 뒤에도 액세스 토큰이 만료까지 살아 있는 시차를 이해하고 그 대안을 말할 수 있다.
+
+## 들어가며
+
+6장에서 로그인하면 리프레시 토큰이 쿠키로 내려오고, DB 에는 그 해시가 family 하나와 함께 기록되었습니다.
+이제 그 토큰을 **쓰는** 쪽을 만듭니다. 액세스 토큰이 만료되면 FE 가 `POST /auth/refresh` 를 부르고,
+서버는 쿠키의 리프레시 토큰을 확인해 새 액세스 토큰을 줍니다.
+
+여기서 한 가지를 더 합니다. 새 액세스 토큰만 주지 않고 **리프레시 토큰도 새것으로 바꿔 줍니다.** 이것을 회전(rotation)이라고 합니다.
+회전을 하면 "이미 한 번 쓰인 리프레시 토큰" 이라는 개념이 생기고, 그런 토큰이 다시 오면 누군가 토큰을 복사해 갔다는 강력한 신호가 됩니다.
+이때 그 세션 전체를 끊는 것이 재사용 탐지입니다.
+
+말로는 간단하지만 이 장은 이 책에서 가장 까다로운 장입니다. 두 개의 탭이 거의 동시에 refresh 를 부르면 어떻게 되는가,
+재사용을 발견하고 에러를 던지는 순간 방금 한 폐기가 사라지지는 않는가, 같은 문제들을 트랜잭션과 행 잠금으로 풀어야 하기 때문입니다.
+머리말에서 ORM 을 쓰지 않고 SQL 을 드러낸 이유가 이 장에 있습니다.
+
+뒤쪽에서는 세션을 관리하는 엔드포인트들(로그아웃, 전체 로그아웃, 세션 목록, 세션 하나 끊기)을 만듭니다.
+모두 6장의 `refresh_tokens` 테이블 위에서 동작합니다.
+
+⚠️ 이 장의 refresh·logout 에는 아직 CSRF 방어가 없습니다. 9장에서 `CsrfGuard` 를 붙이고 나면 curl 로 이 엔드포인트를 부를 때
+`Origin` 과 `X-CSRF-Token` 헤더가 필요해집니다. 이 장의 curl 명령은 9장 이후에는 그대로 동작하지 않는다는 점을 기억해 두세요.
+
+## 7.1 회전이 막는 것
+
+회전이 없다고 해 봅시다. 로그인할 때 받은 리프레시 토큰 하나를 14일 동안 계속 씁니다.
+그 사이에 누군가 이 토큰을 복사해 갔다면(악성 브라우저 확장, 감염된 기기, 로그에 찍힌 헤더 등) 공격자도 14일 동안 새 액세스 토큰을 받을 수 있고,
+서버는 둘을 구별할 방법이 없습니다. 둘 다 같은 토큰을 보내기 때문입니다.
+
+회전을 하면 토큰은 한 번 쓰고 버려집니다. 정상 사용자와 공격자가 같은 토큰을 가지고 있으면 **둘 중 누군가는 반드시 이미 쓰인 토큰을 내밀게 됩니다.**
+
+```
+ 시각   정상 사용자                  공격자                      서버가 보는 것
+ ────  ─────────────────────        ─────────────────────      ────────────────────────────
+ 0분   토큰0 보유
+ 1분                                 토큰0 을 복사해 감
+ 10분  refresh(토큰0) → 토큰1                                    토큰0: rotated, 토큰1: 살아 있음
+ 12분                                refresh(토큰0)             토큰0 은 이미 rotated 인데 또 왔다
+                                                                → 재사용 탐지. family 전체 폐기
+ 20분  refresh(토큰1) → 401                                      토큰1 도 폐기되어 있다
+       다시 로그인
+```
+
+순서가 반대여도 마찬가지입니다. 공격자가 먼저 토큰0 으로 회전해 토큰1 을 가져가면, 정상 사용자가 나중에 토큰0 을 보낼 때 재사용이 탐지되고
+공격자의 토큰1 까지 함께 폐기됩니다. 어느 쪽이 먼저든 **세션이 끊기고, 정상 사용자는 다시 로그인하고, 공격자는 쫓겨납니다.**
+정상 사용자 입장에서는 갑자기 로그아웃되는 불편이 있지만, 그것이 곧 "누군가 내 세션을 썼다" 는 알림이 됩니다(11장에서 안내 문구를 띄웁니다).
+
+이것이 동작하려면 서버가 세 가지를 지켜야 합니다.
+
+1. 회전은 **원자적**이어야 한다. 새 토큰 발급과 옛 토큰 폐기가 따로 일어나면 그 사이에 끼어든 요청이 둘 다 성공할 수 있다.
+2. 재사용을 발견하면 family 를 폐기한 것이 **확실히 저장**되어야 한다.
+3. 정상적인 동시 요청(탭 두 개)을 공격으로 오인하지 않아야 한다.
+
+1은 트랜잭션과 `FOR UPDATE` 로, 2는 결과를 값으로 돌려주는 설계로, 3은 grace 로 해결합니다. 차례로 봅니다.
+
+## 7.2 RotateOutcome — 결과를 값으로
+
+회전 함수가 돌려줄 결과의 종류부터 정합니다. 저장소 파일 위쪽에 타입을 더합니다.
+
+```ts
+// api/src/auth/refresh-token.repository.ts
+import { Inject, Injectable } from '@nestjs/common';
+import type { Pool, PoolClient } from 'pg';
+import { AppConfig } from '../config/app-config';
+import { PG_POOL } from '../database/database.module';
+
+export type ClientMeta = { userAgent: string | null; ip: string | null };
+export type IssuedRefresh = { familyId: string; expiresAt: Date };
+export type RotateOutcome =
+  | { kind: 'ok'; userId: string; familyId: string; expiresAt: Date }
+  | { kind: 'invalid' }
+  | { kind: 'race' }
+  | { kind: 'reused' };
+```
+
+`pg` import 에 `PoolClient` 가 더해졌습니다. 트랜잭션은 풀에서 연결 하나를 빌려서 그 연결로만 쿼리해야 하는데, 그 연결의 타입입니다.
+
+`RotateOutcome` 은 **판별 유니온(discriminated union)** 입니다. 네 가지 모양 중 하나이고, 어느 것인지는 `kind` 속성으로 구별합니다.
+
+| kind | 뜻 | 나중에 바뀔 HTTP 응답 |
+|---|---|---|
+| `ok` | 회전 성공. 새 토큰의 만료와 세션 정보를 담는다 | 200 + 새 쿠키 |
+| `invalid` | 토큰이 없거나, 만료됐거나, 로그아웃 등으로 끝난 세션의 토큰 | 401 `REFRESH_TOKEN_INVALID` |
+| `race` | 방금(grace 안에) 회전된 토큰. 동시 요청으로 본다 | 409 `REFRESH_TOKEN_ROTATED` |
+| `reused` | grace 가 지난 뒤 회전된 토큰이 다시 옴. family 를 폐기했다 | 401 `REFRESH_TOKEN_REUSED` |
+
+`ok` 일 때만 `userId` 같은 데이터가 있고, 나머지는 `kind` 하나뿐입니다. TypeScript 는 `kind` 를 확인한 뒤에야 `userId` 에 접근하게 해 주므로
+실패한 결과에서 실수로 사용자 id 를 꺼내 쓰는 코드는 컴파일되지 않습니다.
+
+이 타입의 핵심은 **에러를 예외로 던지지 않고 값으로 돌려준다**는 점입니다. 왜 그래야 하는지는 7.4절에서 버그를 직접 보며 확인합니다.
+
+## 7.3 rotate — 트랜잭션의 틀
+
+회전 함수는 두 층으로 나눕니다. 바깥의 `rotate` 는 트랜잭션을 열고 닫는 일만 하고, 안쪽의 `rotateInTx` 가 실제 판단을 합니다.
+
+```ts
+// api/src/auth/refresh-token.repository.ts (RefreshTokenRepository 안)
+  /**
+   * refresh: 한 트랜잭션에서 검사·회전·재사용 탐지.
+   * 결과를 throw 하지 않고 돌려준다 — 재사용 탐지의 폐기를 COMMIT 해야 하기 때문이다.
+   */
+  async rotate(oldHash: string, newHash: string, meta: ClientMeta): Promise<RotateOutcome> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const outcome = await this.rotateInTx(client, oldHash, newHash, meta);
+      await client.query('COMMIT');
+      return outcome;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+```
+
+한 줄씩 봅니다.
+
+**`const client = await this.pool.connect()`.** 지금까지는 `this.pool.query(…)` 로 쿼리했습니다. 풀은 쿼리마다 놀고 있는 연결을 아무거나 골라 씁니다.
+그런데 트랜잭션은 **한 연결 안에서** `BEGIN` 부터 `COMMIT` 까지 이어져야 합니다. `pool.query('BEGIN')` 과 `pool.query('COMMIT')` 이
+서로 다른 연결로 가면 트랜잭션이 성립하지 않습니다. 그래서 연결 하나를 빌려(`connect`) 그 연결로만 쿼리합니다.
+
+**`BEGIN` … `COMMIT`.** 이 사이의 쿼리는 전부 성공하거나 전부 없던 일이 됩니다. 새 토큰 INSERT 와 옛 토큰 UPDATE 가 반쪽만 반영되는 일은 없습니다.
+
+**`catch` 에서 `ROLLBACK` 후 다시 던지기.** `rotateInTx` 안에서 **예상하지 못한 에러**(DB 연결 끊김, 제약 위반 등)가 나면 트랜잭션을 되돌리고
+에러를 위로 올립니다. 컨트롤러까지 올라가 500 이 됩니다. "예상하지 못한" 이라는 말이 중요합니다. 토큰이 없다, 재사용이다 같은
+**예상한 결과**는 이 경로로 오지 않고 `outcome` 값으로 돌아와 `COMMIT` 을 거칩니다.
+
+**`finally` 에서 `release`.** 성공하든 실패하든 빌린 연결을 풀에 돌려줍니다. 이것을 빼먹으면 요청마다 연결이 하나씩 새다가
+풀의 최대 연결 수(기본 10개)에 이르면 그다음 요청부터는 연결을 영원히 기다리며 멈춥니다.
+
+## 7.4 먼저 틀려 보기 — 예외가 폐기를 되돌리는 버그
+
+`rotate` 의 모양은 흔히 보는 트랜잭션 헬퍼와 거의 같습니다. 많은 코드베이스에 이런 함수가 있습니다.
+
+```ts
+// ✗ 틀린 예 — 부록 C 의 코드가 아니다
+async function withTransaction<T>(pool: Pool, fn: (client: PoolClient) => Promise<T>): Promise<T> {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await fn(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+```
+
+이 헬퍼 자체에는 문제가 없습니다. 문제는 그 안에서 **평소 습관대로 에러를 던질 때** 생깁니다.
+재사용을 발견하면 family 를 폐기하고, 곧바로 401 예외를 던지는 코드를 생각해 봅시다.
+
+```ts
+// ✗ 틀린 예 — fn 안에서 재사용을 발견한 순간
+await client.query(
+  `UPDATE refresh_tokens SET revoked_at = now(), revoke_reason = 'reuse_detected'
+    WHERE family_id = $1 AND revoked_at IS NULL`,
+  [row.family_id],
+);
+throw new AppError(401, ErrorCode.REFRESH_TOKEN_REUSED, '이미 사용된 리프레시 토큰이다. 이 세션을 끊었다');
+```
+
+읽기에는 자연스럽습니다. "폐기하고, 에러를 알린다." 그런데 실행 순서를 따라가 보면 이렇습니다.
+
+```
+ withTransaction                       fn (회전 로직)                          DB
+ ───────────────                       ──────────────                          ──
+ BEGIN ─────────────────────────────────────────────────────────────────────▶  트랜잭션 시작
+                                       SELECT … 토큰0 (rotated, grace 지남)
+                                       UPDATE family SET reuse_detected ────▶  (아직 커밋 전)
+                                       throw AppError(401 REUSED)
+ catch ◀────────────────────────────── 예외가 올라온다
+ ROLLBACK ──────────────────────────────────────────────────────────────────▶  UPDATE 가 사라진다
+ throw → 컨트롤러 → 401 REFRESH_TOKEN_REUSED
+```
+
+클라이언트는 "재사용이 탐지되어 세션을 끊었다" 는 401 을 받습니다. 그런데 DB 에서는 **아무것도 폐기되지 않았습니다.**
+공격자가 먼저 회전해서 최신 토큰을 들고 있는 경우라면, 공격자의 토큰은 여전히 살아 있고 계속 회전할 수 있습니다.
+재사용 탐지가 로그 메시지만 남기고 실제로는 아무것도 막지 못하는 상태입니다. 더 곤란한 것은 이 버그가 **테스트에서 잘 보이지 않는다**는 점입니다.
+응답 코드는 기대대로 401 이 나오기 때문에, DB 행까지 확인하는 테스트가 없으면 통과해 버립니다(13장의 S9 가 DB 를 확인하는 이유입니다).
+
+고치는 방법은 **나쁜 소식을 예외가 아니라 값으로 전달**하는 것입니다.
+
+```
+ rotate                                rotateInTx                              DB
+ ──────                                ──────────                              ──
+ BEGIN ─────────────────────────────────────────────────────────────────────▶  트랜잭션 시작
+                                       SELECT … 토큰0 (rotated, grace 지남)
+                                       UPDATE family SET reuse_detected ────▶  (아직 커밋 전)
+                                       return { kind: 'reused' }
+ outcome ◀───────────────────────────── 값이 돌아온다
+ COMMIT ────────────────────────────────────────────────────────────────────▶  폐기가 저장된다
+ return outcome → AuthService 가 401 REFRESH_TOKEN_REUSED 로 바꿔 던진다
+```
+
+예외를 던지는 일은 트랜잭션이 **끝난 뒤** 서비스 계층이 합니다. 트랜잭션 안에서는 "무슨 일이 있었나" 를 계산만 하고,
+그 계산 결과가 성공이든 실패든 DB 에 한 일은 모두 커밋합니다. `rotate` 의 `catch` 는 정말로 예상하지 못한 에러를 위한 통로로만 남습니다.
+
+💡 이 원칙은 재사용 탐지에만 해당하지 않습니다. "실패를 기록해야 하는" 모든 트랜잭션(로그인 실패 횟수 누적, 감사 로그)에서 같은 버그가 생깁니다.
+실패를 기록한 뒤 예외를 던지는 코드가 트랜잭션 안에 있다면 의심해 보세요.
+
+## 7.5 rotateInTx — 한 줄씩
+
+이제 판단을 내리는 본체입니다.
+
+```ts
+// api/src/auth/refresh-token.repository.ts (RefreshTokenRepository 안)
+  private async rotateInTx(
+    client: PoolClient,
+    oldHash: string,
+    newHash: string,
+    meta: ClientMeta,
+  ): Promise<RotateOutcome> {
+    // 1) 어느 family 인지 먼저 알아내고, family 단위 잠금으로 같은 세션의 회전·탐지를 한 줄로 세운다.
+    //    행 잠금(FOR UPDATE)만으로는 "탐지 UPDATE" 가 커밋 직전의 새 토큰을 보지 못하고 살려 둘 수 있다 (7장).
+    const { rows: found } = await client.query<{ family_id: string }>(
+      'SELECT family_id FROM refresh_tokens WHERE token_hash = $1',
+      [oldHash],
+    );
+    if (!found[0]) return { kind: 'invalid' };
+    await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))', [found[0].family_id]);
+
+    // 2) 잠금을 잡은 뒤에 상태를 읽는다. 앞선 트랜잭션이 커밋한 결과가 보인다.
+    const { rows } = await client.query<{
+      id: string;
+      user_id: string;
+      family_id: string;
+      session_expires_at: Date;
+      revoke_reason: string | null;
+      within_grace: boolean;
+      expired: boolean;
+      family_alive: boolean;
+    }>(
+      `SELECT t.id, t.user_id, t.family_id, t.session_expires_at, t.revoke_reason,
+              (t.revoked_at > now() - make_interval(secs => $2::float8)) AS within_grace,
+              (t.expires_at <= now()) AS expired,
+              EXISTS (SELECT 1 FROM refresh_tokens f
+                       WHERE f.family_id = t.family_id AND f.revoked_at IS NULL) AS family_alive
+         FROM refresh_tokens t
+        WHERE t.token_hash = $1
+        FOR UPDATE OF t`,
+      [oldHash, this.config.refreshReuseGraceSec],
+    );
+```
+
+### 첫 SELECT 와 family 잠금 — 같은 세션의 일을 한 줄로 세운다
+
+맨 처음 쿼리는 쿠키의 해시로 **어느 family 의 토큰인지만** 알아냅니다. 행이 없으면 더 볼 것 없이 `invalid` 입니다.
+
+그다음 줄의 `pg_advisory_xact_lock` 은 PostgreSQL 의 **advisory lock**(애플리케이션이 정한 숫자에 거는 잠금)입니다.
+테이블의 행이 아니라 "이 family" 라는 개념에 잠금을 거는 것이라고 생각하면 됩니다. `hashtextextended(family_id, 0)` 로
+family id 를 64비트 정수로 바꿔 잠금 번호로 씁니다. 이름에 `xact` 가 들어간 것은 **트랜잭션이 끝나면 저절로 풀린다**는 뜻이라,
+따로 풀어 줄 필요가 없고 에러로 ROLLBACK 돼도 남지 않습니다. 서로 다른 family 가 우연히 같은 번호가 되더라도 잠시 줄을 서는 것뿐이라 정확성에는 영향이 없습니다.
+
+행 잠금(`FOR UPDATE`)이 있는데 왜 이것까지 필요한지는 7.6절 끝에서 실제 재현 결과와 함께 봅니다.
+여기서는 **"같은 family 의 refresh 는 한 번에 하나만 판단한다"** 는 규칙을 이 줄이 만든다는 것만 기억해 두세요.
+잠금의 순서가 항상 "family 잠금 → 행 잠금" 으로 같기 때문에 두 트랜잭션이 서로의 잠금을 기다리는 교착(deadlock)도 생기지 않습니다.
+
+### 두 번째 SELECT — 잠그고, 판단 재료를 DB 가 계산한다
+
+family 잠금을 잡은 **뒤에** 같은 행을 다시 읽습니다. 잠금을 기다리는 동안 앞선 트랜잭션이 커밋했다면 그 결과가 보입니다. `WHERE t.token_hash = $1` 로 쿠키의 해시에 해당하는 행을 찾습니다. `token_hash` 는 UNIQUE 이므로 많아야 한 행입니다.
+
+`FOR UPDATE` 는 찾은 행에 **쓰기 잠금**을 겁니다. 이 트랜잭션이 끝날 때까지 다른 트랜잭션은 이 행을 `FOR UPDATE` 로 읽거나
+UPDATE 할 수 없고, 잠금이 풀릴 때까지 기다립니다. 같은 토큰으로 동시에 들어온 refresh 두 건을 한 줄로 세우는 장치입니다.
+없으면 어떻게 되는지는 7.6절에서 시간표로 봅니다.
+
+`FOR UPDATE OF t` 는 잠글 대상을 바깥 테이블 `t` 로 한정합니다. 안쪽 `EXISTS` 하위 쿼리가 읽는 행까지 잠그지는 않습니다.
+
+선택하는 열 중 세 개는 테이블의 열이 아니라 **DB 가 계산한 불리언**입니다.
+
+- `within_grace` — `revoked_at > now() - grace`. 폐기된 시각이 "지금으로부터 grace 초 이내" 인가. 폐기되지 않은 행(`revoked_at` 이 NULL)이면 결과도 NULL 이 되는데, 그런 행에서는 이 값을 보지 않으므로 상관없습니다.
+- `expired` — `expires_at <= now()`. 이 토큰의 만료 시각이 지났는가.
+- `family_alive` — 같은 family 에 아직 폐기되지 않은 토큰이 하나라도 있는가. 로그아웃 등으로 이미 끝난 세션인지 가려냅니다.
+
+이 계산을 Node 에서 `row.revoked_at.getTime() > Date.now() - grace * 1000` 처럼 할 수도 있습니다. 그러지 않는 이유는 **시계를 하나로 두기 위해서**입니다.
+`revoked_at` 과 `expires_at` 은 모두 DB 의 `now()` 로 기록한 값입니다. 그것을 API 서버의 `Date.now()` 와 비교하면 두 기계의 시계 차이가
+그대로 판단에 섞입니다. API 서버의 시계가 5초 느리면 grace 10초가 사실상 15초가 되고, 만료된 토큰이 5초 더 통과합니다.
+서버가 여러 대면 서버마다 판단이 달라집니다. 기록한 시계와 같은 시계로 비교하면 이런 어긋남이 생기지 않습니다.
+
+💡 PostgreSQL 의 `now()` 는 트랜잭션이 **시작된** 시각입니다. `FOR UPDATE` 에서 잠금을 몇 초 기다렸다면, 기다리고 난 뒤의 `now()` 도 여전히
+트랜잭션 시작 시각입니다. 이 설계에서는 그 차이가 판단을 바꾸지 않지만, "지금 이 순간" 이 꼭 필요한 곳에서는 `clock_timestamp()` 를 씁니다.
+두 함수의 차이는 PostgreSQL 공식 문서의 "Date/Time Functions" 에서 확인하세요.
+
+제네릭 타입 인자에 행의 모양을 적어 두었습니다. `pg` 는 쿼리 결과의 타입을 알 수 없으므로 우리가 알려 주는 것이고,
+DB 가 실제로 그 모양을 돌려주는지는 우리가 SQL 과 맞춰야 합니다.
+
+### 판단 순서
+
+```ts
+    const row = rows[0];
+    if (!row) return { kind: 'invalid' };
+
+    // 탐지로 끊긴 세션의 토큰: 정상 사용자에게도 "다른 곳에서 쓰였다" 는 이유를 그대로 알린다
+    if (row.revoke_reason === 'reuse_detected') return { kind: 'reused' };
+
+    if (row.revoke_reason !== null) {
+      // 로그아웃 등으로 이미 끝난 세션의 옛 토큰은 탈취 신호가 아니다
+      if (row.revoke_reason !== 'rotated' || !row.family_alive) return { kind: 'invalid' };
+      if (row.within_grace) return { kind: 'race' };
+      await client.query(
+        `UPDATE refresh_tokens SET revoked_at = now(), revoke_reason = 'reuse_detected'
+          WHERE family_id = $1 AND revoked_at IS NULL`,
+        [row.family_id],
+      );
+      return { kind: 'reused' };
+    }
+    if (row.expired) return { kind: 'invalid' };
+```
+
+판단을 흐름도로 그리면 다음과 같습니다.
+
+```
+ 행이 있나? ── 없다 ──────────────────────────────▶ invalid (위조·오래전 청소된 토큰)
+    │
+   있다
+    │
+ reuse_detected 인가? ── 그렇다 ─────────────────▶ reused (탐지로 끊긴 세션임을 알린다)
+    │
+   아니다
+    │
+ 폐기됐나? ── 아니다 ─▶ 만료됐나? ── 그렇다 ──────▶ invalid
+    │                      │
+   폐기됨                  아니다 ─────────────────▶ 회전 (아래 INSERT·UPDATE) ─▶ ok
+    │
+ 이유가 rotated 이고 ── 아니다 ───────────────────▶ invalid (logout·session_deleted 등,
+ family 가 살아 있나?                                         또는 이미 끝난 세션의 옛 토큰)
+    │
+   그렇다
+    │
+ grace 안인가? ── 그렇다 ─────────────────────────▶ race (폐기하지 않는다)
+    │
+   아니다 ─▶ family 의 살아 있는 토큰 전부 reuse_detected ─▶ reused
+```
+
+**행이 없으면 `invalid`.** 아무렇게나 만든 문자열이거나, 청소(7.14절)로 이미 지워진 오래된 토큰입니다.
+
+**폐기 여부를 만료보다 먼저 본다.** 순서가 의도입니다. 회전으로 폐기된 토큰이 다시 왔다면 그 토큰이 만료 시각을 지났든 안 지났든
+"누군가 옛 토큰을 들고 있다" 는 사실은 같습니다. 만료를 먼저 보면 오래된 탈취 토큰은 조용히 `invalid` 로 처리되고 재사용 탐지를 건너뜁니다.
+
+**`reuse_detected` 는 `reused` 를 그대로 돌려준다.** 재사용 탐지로 세션이 끊긴 뒤 정상 사용자의 탭이 refresh 를 보내면,
+그 사용자가 들고 있는 토큰은 탐지 때 `reuse_detected` 로 바뀐 바로 그 토큰입니다. 여기서 `invalid` 를 주면 FE 는 "세션이 만료됐다" 고
+안내하게 되는데, 사실은 "누군가 당신의 토큰을 썼다" 가 맞는 설명입니다. 사용자가 비밀번호를 바꾸는 등 행동을 취하려면 진짜 이유를 알아야 합니다.
+그래서 이 경우에도 `REFRESH_TOKEN_REUSED` 로 응답합니다. 이미 폐기된 family 라 추가로 할 일은 없습니다.
+
+**`rotated` 가 아닌 이유로 폐기됐거나, family 가 이미 끝났다면 `invalid`.** `logout`, `logout_all`, `session_deleted` 는 사용자가 스스로 세션을 끝낸 것이라
+그 토큰이 다시 오는 것은 탈취의 신호가 아닙니다. 로그아웃한 탭이 늦게 refresh 를 보냈을 수도 있습니다.
+`rotated` 토큰이라도 family 에 살아 있는 토큰이 하나도 없다면(`family_alive = false`) 같은 이야기입니다. 로그아웃은 **살아 있는** 토큰만
+`logout` 으로 바꾸고 과거의 `rotated` 행들은 그대로 두기 때문에, 이 검사가 없으면 로그아웃한 세션의 옛 토큰 하나가 탈취 경보(`REUSED`)를 울리게 됩니다.
+끝난 세션에서 울리는 경보는 운영자의 주의만 흐립니다.
+
+**grace 안이면 `race`, 폐기하지 않는다.** 7.7절에서 자세히 봅니다. 여기서는 "방금 전에 회전된 토큰은 동시 요청일 가능성이 높으니 봐준다" 는 것만 기억합니다.
+
+**grace 밖이면 family 의 살아 있는 토큰을 전부 폐기.** `WHERE family_id = $1 AND revoked_at IS NULL` 이므로 이미 `rotated` 인 과거 토큰들은
+그대로 두고, 지금 살아 있는 토큰(정상 사용자든 공격자든 최신 토큰을 가진 쪽)만 `reuse_detected` 로 바꿉니다.
+`family_id` 인덱스(6.3절)가 이 UPDATE 를 빠르게 합니다. 그리고 예외를 던지지 않고 `{ kind: 'reused' }` 를 **돌려줍니다.** 7.4절의 교훈입니다.
+
+**폐기되지 않았는데 만료됐으면 `invalid`.** 14일 동안 쓰지 않았거나 세션 상한(6.4절)에 닿은 토큰입니다. 토큰의 `expires_at` 은 항상
+`session_expires_at` 이하이므로 이 검사 하나로 세션 상한도 함께 걸러집니다.
+
+### 회전 — INSERT 한 뒤 UPDATE
+
+여기까지 왔다면 살아 있고 만료되지 않은 토큰입니다. 새 토큰을 넣고 옛 토큰을 폐기합니다.
+
+```ts
+    const { rows: created } = await client.query<{ id: string; expires_at: Date }>(
+      `INSERT INTO refresh_tokens
+         (user_id, family_id, token_hash, expires_at, session_expires_at, user_agent, ip)
+       VALUES ($1, $2, $3, LEAST(now() + make_interval(secs => $4::float8), $5), $5, $6, $7)
+       RETURNING id, expires_at`,
+      [row.user_id, row.family_id, newHash, this.config.refreshTokenTtlSec, row.session_expires_at, meta.userAgent, meta.ip],
+    );
+    await client.query(
+      `UPDATE refresh_tokens SET revoked_at = now(), revoke_reason = 'rotated', replaced_by = $2 WHERE id = $1`,
+      [row.id, created[0].id],
+    );
+    return { kind: 'ok', userId: row.user_id, familyId: row.family_id, expiresAt: created[0].expires_at };
+  }
+```
+
+새 행은 옛 행의 `user_id`, `family_id`, `session_expires_at` 을 **그대로 물려받습니다.** 그래서 회전해도 세션 id(`sid`)가 바뀌지 않고,
+세션의 절대 상한도 늘어나지 않습니다. 6장의 `createFamily` 와 비교해 보면 차이가 선명합니다.
+
+| | 로그인 (`createFamily`) | 회전 (`rotateInTx`) |
+|---|---|---|
+| `family_id` | `gen_random_uuid()` — 새로 | 옛 행의 값 — 유지 |
+| `session_expires_at` | `now() + 30일` — 새로 | 옛 행의 값(`$5`) — 유지 |
+| `expires_at` | `LEAST(now() + 14일, now() + 30일)` | `LEAST(now() + 14일, $5)` |
+| `user_agent`·`ip` | 로그인한 요청 | 회전한 요청 — 기기가 바뀌었는지 볼 수 있다 |
+
+`$5` 는 SELECT 로 읽어 온 `session_expires_at`(JavaScript `Date`)을 다시 넘긴 것입니다. `LEAST` 안과 `session_expires_at` 열 두 곳에 같은 파라미터를 씁니다.
+
+INSERT 를 먼저 하는 이유는 `replaced_by` 에 새 행의 `id` 가 필요하기 때문입니다. `replaced_by` 는 `refresh_tokens(id)` 를 참조하는 외래 키이므로
+존재하지 않는 id 를 넣을 수 없습니다. 두 쿼리는 같은 트랜잭션 안에 있으므로 어느 쪽을 먼저 해도 바깥에서는 동시에 일어난 것으로 보입니다.
+
+마지막으로 `ok` 와 함께 컨트롤러가 쿠키에 쓸 새 만료 시각을 돌려줍니다.
+
+## 7.6 FOR UPDATE 가 없으면 — family 가 갈라진다
+
+`FOR UPDATE` 를 지운 코드로 두 요청이 같은 토큰0 을 들고 거의 동시에 들어오는 경우를 따라가 봅니다.
+PostgreSQL 의 기본 격리 수준(READ COMMITTED)을 가정합니다.
+
+```
+ 시각   요청 A (탭 1)                               요청 B (탭 2)
+ ────  ──────────────────────────────────         ──────────────────────────────────
+ t1    BEGIN
+ t2    SELECT … WHERE token_hash = H0
+       → 토큰0: 폐기 안 됨, 만료 안 됨
+ t3                                               BEGIN
+ t4                                               SELECT … WHERE token_hash = H0
+                                                  → 토큰0: 폐기 안 됨 (A 는 아직 커밋 전이라
+                                                    B 에게는 옛 상태가 보인다)
+ t5    INSERT 토큰A (family F)
+ t6    UPDATE 토큰0 SET rotated, replaced_by = A
+       (토큰0 행에 쓰기 잠금이 걸린다)
+ t7                                               INSERT 토큰B (family F)
+ t8                                               UPDATE 토큰0 …  ← A 의 잠금 때문에 기다린다
+ t9    COMMIT → 200, Set-Cookie: 토큰A
+ t10                                              잠금이 풀리고 UPDATE 실행
+                                                  → replaced_by 를 B 로 덮어쓴다
+ t11                                              COMMIT → 200, Set-Cookie: 토큰B
+```
+
+결과를 DB 에서 보면 이렇습니다.
+
+```
+ family F
+ ├─ 토큰0  rotated, replaced_by = B   (A 로 바뀌었던 기록은 덮어써져 사라짐)
+ ├─ 토큰A  살아 있음                   ← 갈래 1
+ └─ 토큰B  살아 있음                   ← 갈래 2
+```
+
+한 세션 안에 살아 있는 토큰이 둘입니다. family 가 두 갈래로 갈라진 것입니다. 브라우저에는 나중에 도착한 응답의 쿠키 하나만 남으니
+정상 사용자는 한 갈래만 쓰게 되고, 나머지 한 갈래는 14일 동안 살아 있는 채로 떠돌게 됩니다. 만약 A 가 공격자의 요청이었다면
+공격자는 자기 갈래를 계속 회전시킬 수 있고, 정상 사용자의 갈래와 부딪치지 않으므로 **재사용 탐지가 영영 일어나지 않습니다.**
+회전을 한 이유 자체가 무너집니다.
+
+t8 에서 B 가 기다린 것에 주목하세요. UPDATE 는 원래 행 잠금을 걸기 때문에 B 의 UPDATE 도 A 가 끝날 때까지 기다리긴 했습니다.
+하지만 B 는 **이미 t4 에서 "살아 있다" 는 판단을 내린 뒤**였고, 그 판단을 다시 하지 않습니다. 잠금을 거는 시점이 너무 늦었던 것입니다.
+
+`FOR UPDATE` 를 넣으면 잠금을 **판단하기 전에** 겁니다.
+
+```
+ 시각   요청 A (탭 1)                               요청 B (탭 2)
+ ────  ──────────────────────────────────         ──────────────────────────────────
+ t1    BEGIN
+ t2    SELECT … FOR UPDATE → 토큰0 잠금
+       → 폐기 안 됨, 만료 안 됨
+ t3                                               BEGIN
+ t4                                               SELECT … FOR UPDATE
+                                                  ← 토큰0 이 잠겨 있어 기다린다
+ t5    INSERT 토큰A
+ t6    UPDATE 토큰0 SET rotated, replaced_by = A
+ t7    COMMIT → 200, Set-Cookie: 토큰A
+       (잠금 해제)
+ t8                                               깨어나서 토큰0 의 최신 커밋 값을 읽는다
+                                                  → revoke_reason = 'rotated', within_grace = true
+ t9                                               COMMIT → 409 REFRESH_TOKEN_ROTATED
+```
+
+READ COMMITTED 에서 `FOR UPDATE` 로 기다리던 SELECT 는 잠금이 풀리면 **그 행의 최신 커밋 버전을 다시 읽어서** 돌려줍니다.
+그래서 B 는 A 가 커밋한 결과, 즉 "방금 회전됨" 을 보고 판단합니다. family 는 갈라지지 않고, B 는 409 를 받아 한 번 더 시도합니다(12장의 FE 가 이것을 처리합니다).
+잠금 대기 중의 재확인 규칙은 PostgreSQL 공식 문서의 "Transaction Isolation" 장에 설명되어 있습니다.
+
+💡 격리 수준을 SERIALIZABLE 로 올려서 푸는 방법도 있습니다. 그러면 B 의 트랜잭션이 직렬화 실패 에러로 끝나고 애플리케이션이 재시도해야 합니다.
+이 책은 잠글 대상이 행 하나로 분명하므로 `FOR UPDATE` 가 더 단순하다고 보았습니다.
+
+### 행 잠금만으로는 모자란 경우 — 탐지와 회전이 겹칠 때
+
+위 시간표는 **같은 토큰**을 두 요청이 동시에 들고 온 경우였고, 행 잠금이 정확히 그 행을 지켜 주었습니다.
+그런데 재사용 탐지는 **다른 토큰**끼리 겹칩니다. 공격자는 오래전에 회전된 토큰0 을, 정상 사용자는 최신 토큰1 을 들고 거의 동시에 refresh 합니다.
+두 요청이 잠그는 행이 서로 다르므로 행 잠금은 둘을 줄 세우지 못합니다.
+
+```
+ 시각   요청 A (정상 사용자, 토큰1)                  요청 B (공격자, 토큰0 — 오래전에 rotated)
+ ────  ──────────────────────────────────         ──────────────────────────────────
+ t1    BEGIN; SELECT 토큰1 FOR UPDATE
+ t2    INSERT 토큰2 (아직 커밋 전)
+ t3    UPDATE 토큰1 SET rotated
+ t4                                               BEGIN; SELECT 토큰0 FOR UPDATE
+                                                  → rotated, grace 밖 → 탐지!
+ t5                                               UPDATE … SET reuse_detected
+                                                    WHERE family_id = F AND revoked_at IS NULL
+                                                  ← 토큰1 행이 잠겨 있어 기다린다
+ t6    COMMIT → 200, Set-Cookie: 토큰2
+ t7                                               깨어나서 토큰1 을 다시 확인 → 이미 폐기됨, 건너뜀
+                                                  토큰2 는? UPDATE 가 시작될 때 없던 행이라 보지 못한다
+ t8                                               COMMIT → 401 REUSED
+```
+
+탐지는 "성공" 했다고 응답했지만 토큰2 는 살아 있습니다. 그 토큰2 가 공격자 쪽 갈래였다면 탐지가 아무 소용이 없습니다.
+READ COMMITTED 에서 UPDATE 가 잠금을 기다린 뒤 **다시 확인하는 것은 처음에 찾았던 행들뿐**이고, 그사이 새로 커밋된 행은 대상에 들어가지 않기 때문입니다.
+
+이 책을 쓰면서 이 시나리오를 실제 PostgreSQL 에서 재현해 보았습니다. 두 psql 세션으로 위 순서를 그대로 흉내 냈더니 family 잠금이 없을 때는 토큰2 가
+`(살아 있음)` 으로 남았고, family 잠금을 넣은 코드에서는 토큰2 까지 `reuse_detected` 로 바뀌었습니다.
+
+family 잠금을 넣으면 B 는 t4 에서 **판단하기 전에** A 가 끝나기를 기다립니다. A 가 커밋한 뒤 B 가 상태를 읽으므로 토큰2 가 보이고,
+탐지 UPDATE 가 토큰2 까지 폐기합니다. 7.5절 첫 SELECT 와 `pg_advisory_xact_lock` 이 하는 일이 바로 이것입니다.
+
+## 7.7 grace — 동시 요청을 봐주는 짧은 시간
+
+7.6절의 두 번째 시간표에서 B 는 공격자가 아니었습니다. 같은 브라우저의 다른 탭이 같은 쿠키를 들고 조금 늦게 도착했을 뿐입니다.
+그런데 판단 규칙만 보면 B 가 보낸 토큰0 은 "이미 rotated 된 토큰" 이고, 재사용 탐지의 조건과 똑같습니다.
+grace 가 없다면 B 의 요청은 family 전체를 죽이고, 정상 사용자는 탭을 두 개 열어 두었다는 이유로 로그아웃됩니다.
+
+브라우저의 쿠키 저장소는 탭끼리 공유됩니다. 두 탭이 거의 동시에 액세스 토큰 만료를 겪고 동시에 refresh 를 부르면 이 상황은 흔하게 생깁니다.
+
+```
+ 탭 1:  refresh(토큰0) ──────▶ 200, 토큰1 ─ 쿠키 저장소 갱신
+ 탭 2:     refresh(토큰0) ─────────▶ (토큰0 은 방금 rotated)
+                                     grace 안 → 409, family 유지 → 탭 2 는 토큰1 로 재시도 → 200
+                                     grace 가 없다면 → reused → family 폐기 → 둘 다 로그아웃
+```
+
+그래서 "방금 전에(`REFRESH_REUSE_GRACE_SEC`, 기본 10초 안에) 회전된 토큰" 이 오면 공격으로 보지 않고 409 를 돌려줍니다.
+family 는 건드리지 않고, 새 토큰도 주지 않습니다. 새 토큰을 주면 family 가 갈라지니까요. 409 를 받은 클라이언트는 그 사이 쿠키 저장소에 들어온
+최신 쿠키로 한 번 더 시도하면 됩니다.
+
+grace 는 **안전망**입니다. 12장에서 FE 는 `navigator.locks` 로 탭 간 잠금을 걸어 refresh 를 한 번에 하나씩만 보내게 만듭니다.
+그러면 탭 2 는 탭 1 의 refresh 가 끝난 뒤에 최신 쿠키로 요청하므로 409 조차 나지 않습니다. grace 는 잠금을 쓸 수 없는 환경(오래된 브라우저, 다른 클라이언트)에서의
+오탐을 줄이려고 둡니다.
+
+grace 를 길게 잡으면 오탐은 줄지만 **탈취된 토큰이 탐지되지 않고 넘어갈 틈**이 같이 늘어납니다. grace 안에 도착한 옛 토큰은 409 만 받고 끝나서
+탐지가 일어나지 않기 때문입니다. 그래서 10초보다 키우지 않습니다. 동시 요청 사이의 간격은 보통 수백 ms 안이므로 10초면 충분합니다.
+
+⚠️ grace 안의 옛 토큰에 409 를 준다고 해서 공격자가 새 토큰을 얻는 것은 아닙니다. 409 응답에는 토큰이 없습니다. 공격자가 얻는 것은
+"이번에는 탐지되지 않았다" 뿐이고, grace 가 지난 뒤 다시 시도하면 탐지됩니다.
+
+## 7.8 AuthService.refresh — 결과를 에러로 바꾸기
+
+저장소가 돌려준 `RotateOutcome` 을 HTTP 에러로 바꾸는 것은 서비스의 일입니다.
+
+```ts
+// api/src/auth/auth.service.ts (AuthService 안)
+  async refresh(cookie: string | undefined, meta: ClientMeta): Promise<Issued> {
+    if (!cookie) throw invalidRefresh();
+
+    const token = this.tokens.newRefreshToken();
+    const outcome = await this.refreshTokens.rotate(
+      this.tokens.hashRefreshToken(cookie),
+      this.tokens.hashRefreshToken(token),
+      meta,
+    );
+    switch (outcome.kind) {
+      case 'invalid':
+        throw invalidRefresh();
+      case 'reused':
+        throw new AppError(401, ErrorCode.REFRESH_TOKEN_REUSED, '이미 사용된 리프레시 토큰이다. 이 세션을 끊었다');
+      case 'race':
+        throw new AppError(409, ErrorCode.REFRESH_TOKEN_ROTATED, '방금 회전된 토큰이다. 한 번 더 시도하라');
+    }
+
+    const user = await this.users.findById(outcome.userId);
+    if (!user) throw invalidRefresh();
+    return this.issue(user, outcome.familyId, { token, expiresAt: outcome.expiresAt });
+  }
+```
+
+그리고 파일 맨 아래, 클래스 밖에 에러를 만드는 함수를 둡니다.
+
+```ts
+// api/src/auth/auth.service.ts (파일 끝)
+const invalidRefresh = () =>
+  new AppError(401, ErrorCode.REFRESH_TOKEN_INVALID, '리프레시 토큰이 없거나 유효하지 않다');
+```
+
+**쿠키가 없으면 DB 를 보지 않는다.** 처음 방문한 브라우저가 부팅 시 refresh 를 부르는 경우(11장)가 여기에 해당합니다. 가장 흔한 실패이므로 가장 싸게 끝냅니다.
+
+**새 토큰을 먼저 만든다.** `rotate` 는 새 토큰의 해시를 받아 트랜잭션 안에서 INSERT 하므로, 결과를 알기 전에 새 토큰을 미리 만들어야 합니다.
+회전이 실패하면 이 토큰은 어디에도 저장되지 않고 버려집니다. 난수 하나를 버리는 비용은 무시할 만합니다.
+
+**switch 로 에러 코드를 매핑.** 세 가지 실패가 서로 다른 코드가 되는 이유는 FE 의 반응이 다르기 때문입니다.
+
+| kind | 응답 | FE 의 반응 (11·12장) |
+|---|---|---|
+| `invalid` | 401 `REFRESH_TOKEN_INVALID` | 조용히 로그아웃 상태로 |
+| `reused` | 401 `REFRESH_TOKEN_REUSED` | 로그아웃 + "다른 곳에서 세션이 사용됐다" 안내 |
+| `race` | 409 `REFRESH_TOKEN_ROTATED` | 한 번 더 refresh |
+
+**TypeScript 의 좁히기.** `switch` 의 세 `case` 가 모두 `throw` 로 끝나므로, `switch` 를 빠져나온 뒤 도달할 수 있는 경우는 `kind` 가 `'ok'` 인 것뿐입니다.
+TypeScript 는 이 흐름을 추적해서 `switch` 아래의 `outcome` 을 `{ kind: 'ok'; userId: string; … }` 타입으로 **좁힙니다.**
+그래서 `outcome.userId` 를 타입 단언 없이 쓸 수 있습니다. 나중에 누군가 `RotateOutcome` 에 새 `kind` 를 추가하고 `case` 를 빠뜨리면
+`switch` 아래에서 `outcome.userId` 가 존재하지 않을 수 있다는 컴파일 에러가 납니다. 판별 유니온과 `switch` 를 함께 쓰면 경우를 빠뜨리는 실수를 컴파일러가 잡아 줍니다.
+
+**사용자를 다시 읽는다.** 응답 본문에 사용자 정보(닉네임 등)가 들어가므로 최신 값을 읽습니다. 사용자가 그 사이 삭제되었다면
+`ON DELETE CASCADE` 로 토큰도 지워졌을 것이라 여기까지 오기 어렵지만, 만약을 위해 `invalid` 와 같게 처리합니다.
+
+**`invalidRefresh` 를 함수로.** 같은 에러를 세 곳에서 던집니다. 상수 하나를 만들어 두고 던지면 매번 같은 예외 객체가 재사용되어
+스택 트레이스가 처음 만든 위치를 가리키게 됩니다. 함수로 두면 던질 때마다 새 객체가 만들어집니다.
+
+## 7.9 컨트롤러 refresh — 401 이면 쿠키를 지우고, 409 면 둔다
+
+```ts
+// api/src/auth/auth.controller.ts (AuthController 안)
+  @Post('refresh')
+  @HttpCode(200)
+  @ApiCookieAuth('refresh-cookie')
+  @ApiOperation({ summary: '리프레시 토큰 회전', description: '쿠키의 refresh_token 을 새 것으로 바꾸고 새 액세스 토큰을 준다.' })
+  @ApiOkResponse({ type: TokenResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto, description: 'REFRESH_TOKEN_INVALID | REFRESH_TOKEN_REUSED' })
+  @ApiConflictResponse({ type: ErrorResponseDto, description: 'REFRESH_TOKEN_ROTATED — 한 번 더 시도한다' })
+  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<TokenResponseDto> {
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+      const { body, refresh } = await this.auth.refresh(req.cookies?.[REFRESH_COOKIE], clientMeta(req));
+      setRefreshCookie(res, refresh.token, refresh.expiresAt, this.config);
+      return body;
+    } catch (error) {
+      // 401 이면 죽은 쿠키를 지운다. 409 는 앞선 요청이 이미 새 쿠키를 내려보냈으니 건드리지 않는다.
+      if (error instanceof AppError && error.getStatus() === 401) clearRefreshCookie(res, this.config);
+      throw error;
+    }
+  }
+```
+
+9장에서 이 핸들러에 `@UseGuards(CsrfGuard)`, `@ApiSecurity('csrf')`, CSRF 에러를 문서화하는 `@ApiForbiddenResponse` 가 더해집니다.
+refresh 는 브라우저가 자동으로 붙이는 쿠키로 상태를 바꾸는 요청이므로 CSRF 방어 대상입니다. 지금은 방어 없이 동작부터 확인합니다.
+
+**Swagger 데코레이터.** `@ApiCookieAuth('refresh-cookie')` 는 3장의 `openapi.ts` 에서 등록한 쿠키 인증 방식을 이 엔드포인트가 쓴다고 문서에 표시합니다.
+에러 응답 데코레이터의 `description` 에는 그 상태 코드로 올 수 있는 에러 `code` 를 전부 적습니다. FE 개발자가 문서만 보고 분기를 짤 수 있게 하는 규칙(4장)입니다.
+
+**`req.cookies?.[REFRESH_COOKIE]`.** `cookie-parser` 미들웨어(3장의 `main.ts`)가 `Cookie` 헤더를 풀어 `req.cookies` 에 넣어 줍니다.
+미들웨어가 빠져 있으면 `req.cookies` 가 `undefined` 이므로 `?.` 로 안전하게 읽습니다. 그 경우 쿠키가 없는 것으로 처리되어 늘 401 이 나는데,
+이것이 "쿠키를 보냈는데 계속 401" 의 흔한 원인입니다.
+
+**성공하면 새 쿠키.** 6장의 로그인과 같은 방식으로 새 리프레시 토큰을 쿠키로, 본문을 반환 값으로 보냅니다. 새 쿠키는 이름·경로가 같으므로
+브라우저의 옛 쿠키를 덮어씁니다.
+
+**401 이면 쿠키를 지운다.** `invalid` 든 `reused` 든 이 쿠키는 다시는 쓸모가 없습니다. 그대로 두면 브라우저는 다음 refresh 에도,
+다음 로그아웃에도 죽은 쿠키를 보내고 서버는 매번 DB 를 조회해 401 을 돌려줍니다. 지우라는 헤더를 설정한 뒤 예외를 다시 던지면
+Nest 의 예외 필터가 401 에러 응답을 만드는데, `passthrough` 로 받은 응답 객체에 이미 설정해 둔 헤더는 그 응답에 함께 실려 나갑니다.
+
+**409 면 쿠키를 두지 않고 건드리지 않는다.** 이 부분이 미묘합니다. 409 는 "같은 토큰으로 조금 먼저 온 요청이 이미 회전에 성공했다" 는 뜻이고,
+그 먼저 온 요청의 응답이 **새 쿠키를 이미 내려보냈거나 내려보내는 중**입니다. 여기서 쿠키를 지우면 어떻게 되는지 보겠습니다.
+
+```
+ 탭 1 refresh(토큰0) ──▶ 200  Set-Cookie: refresh_token=토큰1        ← 쿠키 저장소: 토큰1
+ 탭 2 refresh(토큰0) ──────▶ 409  (만약 여기서 Set-Cookie: refresh_token=; 을 보낸다면)
+                                                                     ← 쿠키 저장소: 비어 버림
+ 탭 2 재시도 ─────────────▶ 쿠키 없음 → 401 → 로그아웃
+```
+
+같은 이름·경로의 쿠키이므로 409 응답의 삭제 헤더가 탭 1 이 방금 받은 **새 쿠키를 지워 버립니다.** 동시 요청을 봐주려고 만든 grace 가
+오히려 로그아웃을 일으키게 됩니다. 그래서 상태 코드를 확인해 401 일 때만 지웁니다. `error instanceof AppError` 확인은 DB 장애 같은
+예상하지 못한 에러에서 쿠키를 지우지 않기 위해서입니다. 서버 사정으로 실패했다고 사용자의 멀쩡한 쿠키를 지울 이유는 없습니다.
+
+## 7.10 로그아웃 — 한 세션, 그리고 모든 세션
+
+### logout — 몇 번을 불러도 204
+
+```ts
+// api/src/auth/auth.controller.ts (AuthController 안)
+  @Post('logout')
+  @HttpCode(204)
+  @ApiCookieAuth('refresh-cookie')
+  @ApiOperation({ summary: '로그아웃', description: '이 세션(family)을 폐기하고 쿠키를 지운다. 쿠키가 없어도 204.' })
+  @ApiNoContentResponse()
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<void> {
+    await this.auth.logout(req.cookies?.[REFRESH_COOKIE]);
+    clearRefreshCookie(res, this.config);
+  }
+```
+
+refresh 와 마찬가지로 9장에서 `@UseGuards(CsrfGuard)`·`@ApiSecurity('csrf')`·`@ApiForbiddenResponse` 가 붙습니다.
+
+```ts
+// api/src/auth/auth.service.ts (AuthService 안)
+  async logout(cookie: string | undefined): Promise<void> {
+    if (cookie) await this.refreshTokens.revokeFamilyByToken(this.tokens.hashRefreshToken(cookie));
+  }
+```
+
+```ts
+// api/src/auth/refresh-token.repository.ts (RefreshTokenRepository 안)
+  async revokeFamilyByToken(tokenHash: string): Promise<void> {
+    await this.pool.query(
+      `UPDATE refresh_tokens SET revoked_at = now(), revoke_reason = 'logout'
+        WHERE family_id = (SELECT family_id FROM refresh_tokens WHERE token_hash = $1)
+          AND revoked_at IS NULL`,
+      [tokenHash],
+    );
+  }
+```
+
+로그아웃은 **멱등**합니다. 같은 요청을 여러 번 보내도 결과가 같다는 뜻입니다. 쿠키가 없어도, 이미 폐기된 토큰이어도, 아예 없는 토큰이어도
+UPDATE 가 0 행을 바꿀 뿐 에러 없이 204 를 돌려주고, 쿠키 삭제 헤더는 항상 보냅니다.
+
+왜 쿠키가 없을 때 401 을 주지 않을까요. 로그아웃의 목적은 "이 브라우저가 로그인되지 않은 상태가 되는 것" 이고, 쿠키가 없다면 그 목적은 이미 이루어졌습니다.
+에러를 주면 FE 는 로그아웃 버튼에 에러 처리를 따로 달아야 하고, 사용자는 "로그아웃에 실패했다" 는 이상한 메시지를 보게 됩니다.
+또한 "이 토큰은 유효하다/유효하지 않다" 를 응답으로 구별해 주지 않으므로 로그아웃 엔드포인트를 토큰 검사 도구로 쓸 수도 없습니다.
+
+SQL 은 서브쿼리로 토큰이 속한 family 를 찾고, 그 family 의 살아 있는 토큰을 모두 `logout` 으로 폐기합니다.
+쿠키의 토큰이 최신 토큰이 아니라 이미 회전된 옛 토큰이어도 family 는 같으므로 세션 전체가 끝납니다.
+
+`clearRefreshCookie` 는 6장에서 설정 함수와 같은 `refreshOptions` 를 쓰도록 만들어 두었습니다. 응답 헤더에 `Path=/auth` 가 붙은 삭제 쿠키가 나가는 것을
+실습에서 확인합니다.
+
+### logout-all — 액세스 토큰으로
+
+```ts
+// api/src/auth/auth.controller.ts (AuthController 안)
+  @Post('logout-all')
+  @HttpCode(204)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '모든 기기에서 로그아웃' })
+  @ApiNoContentResponse()
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto, description: 'ACCESS_TOKEN_INVALID' })
+  async logoutAll(@CurrentUser() user: AuthUser, @Res({ passthrough: true }) res: Response): Promise<void> {
+    await this.auth.logoutAll(user);
+    clearRefreshCookie(res, this.config);
+  }
+```
+
+```ts
+// api/src/auth/auth.service.ts (AuthService 안)
+  logoutAll(user: AuthUser): Promise<void> {
+    return this.refreshTokens.revokeAllForUser(user.userId);
+  }
+```
+
+```ts
+// api/src/auth/refresh-token.repository.ts (RefreshTokenRepository 안)
+  async revokeAllForUser(userId: string): Promise<void> {
+    await this.revoke('user_id = $1', [userId], 'logout_all');
+  }
+
+  /** where·reason 에는 코드 안의 상수만 넘긴다. 사용자 입력은 언제나 params 로. */
+  private async revoke(where: string, params: unknown[], reason: RevokeReason): Promise<number> {
+    const { rowCount } = await this.pool.query(
+      `UPDATE refresh_tokens SET revoked_at = now(), revoke_reason = '${reason}'
+        WHERE ${where} AND revoked_at IS NULL`,
+      params,
+    );
+    return rowCount ?? 0;
+  }
+```
+
+전체 로그아웃은 "어느 세션" 이 아니라 "어느 사용자" 에 대한 동작이므로 **액세스 토큰으로 사용자를 식별합니다.** `JwtAuthGuard` 가 지키고,
+`@CurrentUser()` 로 5장의 `AuthUser` 를 받습니다. `Authorization` 헤더는 브라우저가 자동으로 붙이지 않으므로 이 엔드포인트는 CSRF 방어 대상이 아닙니다(9장).
+응답에서 이 브라우저의 리프레시 쿠키도 지웁니다. 서버에서 이미 폐기했으니 남겨 둘 이유가 없습니다.
+
+`revoke` 는 폐기 UPDATE 를 여러 메서드가 나눠 쓰기 위한 private 헬퍼입니다. SQL 에 `${reason}` 과 `${where}` 를 **문자열로 끼워 넣는데**,
+보통은 SQL 인젝션 때문에 절대 하지 말아야 하는 일입니다. 여기서 허용되는 이유는 두 인자가 **코드 안의 상수로만** 채워지기 때문입니다.
+`where` 는 `'user_id = $1'` 같은 고정 문자열이고, `reason` 은 아래 타입이 허용하는 세 값뿐입니다.
+
+```ts
+// api/src/auth/refresh-token.repository.ts (타입 선언 부분, RotateOutcome 아래)
+type RevokeReason = 'logout' | 'logout_all' | 'session_deleted';
+```
+
+사용자가 보낸 값(사용자 id, 세션 id)은 전부 `$1`, `$2` 파라미터로 넘깁니다. 주석에 이 규칙을 적어 둔 것은 나중에 이 헬퍼를 쓰는 사람이
+`where` 에 요청 값을 이어 붙이지 않게 하기 위해서입니다. `rowCount` 는 바뀐 행 수이고, 드라이버 타입상 `null` 일 수 있어 `?? 0` 으로 받습니다.
+
+`RevokeReason` 에 `rotated` 와 `reuse_detected` 가 없는 것도 의도입니다. 그 두 이유는 `rotateInTx` 의 트랜잭션 안에서만 쓰고, 이 헬퍼로는 쓸 수 없게 막았습니다.
+
+## 7.11 세션 목록 — family 당 한 줄
+
+"로그인된 기기" 목록을 보여 주는 엔드포인트입니다. 먼저 응답 DTO 를 `auth/dto.ts` 에 더합니다.
+
+```ts
+// api/src/auth/dto.ts (파일 끝에 추가)
+export class SessionDto {
+  @ApiProperty({ format: 'uuid', description: '리프레시 family id = 액세스 토큰의 sid' })
+  sessionId!: string;
+
+  @ApiProperty({ format: 'date-time' })
+  createdAt!: string;
+
+  @ApiProperty({ format: 'date-time' })
+  lastUsedAt!: string;
+
+  @ApiProperty({ type: String, nullable: true })
+  userAgent!: string | null;
+
+  @ApiProperty({ description: '지금 이 요청을 보낸 세션인가' })
+  current!: boolean;
+}
+```
+
+`userAgent` 에 `type: String, nullable: true` 를 명시한 이유는 `string | null` 같은 유니온 타입을 Swagger 플러그인이나 반사 메타데이터가
+정확히 추론하지 못하기 때문입니다. 10장에서 이 문서로 FE 타입을 만들 때 `string | null` 로 나오게 하려면 이렇게 적어 줘야 합니다.
+
+저장소의 쿼리입니다. 행의 타입도 같이 선언합니다.
+
+```ts
+// api/src/auth/refresh-token.repository.ts (타입 선언 부분)
+export type SessionRow = {
+  session_id: string;
+  created_at: Date;
+  last_used_at: Date;
+  user_agent: string | null;
+};
+```
+
+```ts
+// api/src/auth/refresh-token.repository.ts (RefreshTokenRepository 안)
+  async listSessions(userId: string): Promise<SessionRow[]> {
+    const { rows } = await this.pool.query<SessionRow>(
+      `SELECT family_id AS session_id,
+              min(created_at) AS created_at,
+              max(created_at) AS last_used_at,
+              (array_agg(user_agent ORDER BY created_at DESC))[1] AS user_agent
+         FROM refresh_tokens
+        WHERE user_id = $1
+        GROUP BY family_id
+       HAVING bool_or(revoked_at IS NULL AND expires_at > now())
+        ORDER BY last_used_at DESC`,
+      [userId],
+    );
+    return rows;
+  }
+```
+
+테이블은 한 행이 토큰 하나이고, 우리가 보여 주고 싶은 것은 세션(family) 하나당 한 줄입니다. 그래서 `GROUP BY family_id` 로 묶고,
+묶인 행들에서 필요한 값을 **집계 함수**로 뽑습니다. 한 family 의 행들을 예로 들어 보겠습니다.
+
+```
+ family F 의 행들 (created_at 순)
+ ──────────────────────────────────────────────────────────────────────
+ 토큰0  created 09:00  Chrome/macOS   rotated
+ 토큰1  created 09:10  Chrome/macOS   rotated
+ 토큰2  created 13:40  Chrome/Windows 살아 있음, expires 14일 뒤
+ ──────────────────────────────────────────────────────────────────────
+ min(created_at)                         = 09:00          → 처음 로그인한 시각
+ max(created_at)                         = 13:40          → 마지막으로 회전한 시각 = 마지막 사용
+ array_agg(user_agent ORDER BY … DESC)   = {Windows, macOS, macOS}
+   [1]                                   = Chrome/Windows → 가장 최근 기기
+ bool_or(살아 있고 만료 안 됨)             = true           → 목록에 싣는다
+```
+
+**`min(created_at)`.** family 의 첫 행은 로그인 때 만든 토큰이므로 세션이 시작된 시각입니다.
+
+**`max(created_at)` 을 "마지막 사용" 으로.** 토큰은 refresh 할 때만 새로 생기므로 가장 최근 행의 발급 시각이 곧 마지막으로 이 세션을 쓴 시각입니다.
+액세스 토큰이 10분짜리이니 "10분 이내의 오차가 있는 마지막 사용 시각" 으로 이해하면 됩니다.
+
+**`(array_agg(user_agent ORDER BY created_at DESC))[1]`.** `user_agent` 에는 "가장 최근 값" 을 뽑는 집계 함수가 따로 없습니다.
+그래서 `array_agg` 로 그룹 안의 값을 최신순으로 정렬한 **배열**을 만들고, 그 첫 원소를 꺼냅니다. PostgreSQL 배열은 1부터 셉니다.
+`max(user_agent)` 를 쓰면 문자열 사전순으로 가장 큰 값이 나오므로 의미가 없습니다.
+
+**`HAVING bool_or(…)`.** `WHERE` 는 묶기 전의 행을 거르고, `HAVING` 은 묶은 뒤의 그룹을 거릅니다. 여기서 원하는 조건은
+"이 family 에 살아 있는 토큰이 **하나라도** 있는가" 이고, 이것은 그룹 단위의 질문이라 `HAVING` 에 씁니다.
+`bool_or` 는 그룹 안에서 조건이 하나라도 참이면 참인 집계 함수입니다. `WHERE revoked_at IS NULL` 로 거르면 살아 있는 행만 남아서
+`min(created_at)` 이 로그인 시각이 아니라 마지막 회전 시각이 되어 버립니다. 모든 행을 묶은 뒤에 그룹을 걸러야 두 값이 모두 맞습니다.
+
+**`ORDER BY last_used_at DESC`.** 최근에 쓴 세션이 위로 옵니다. `ORDER BY` 에서는 `SELECT` 의 별칭을 쓸 수 있습니다.
+
+서비스는 행을 DTO 로 바꾸면서 `current` 를 채웁니다.
+
+```ts
+// api/src/auth/auth.service.ts (AuthService 안)
+  async listSessions(user: AuthUser): Promise<SessionDto[]> {
+    const rows = await this.refreshTokens.listSessions(user.userId);
+    return rows.map((row) => ({
+      sessionId: row.session_id,
+      createdAt: row.created_at.toISOString(),
+      lastUsedAt: row.last_used_at.toISOString(),
+      userAgent: row.user_agent,
+      current: row.session_id === user.sessionId,
+    }));
+  }
+```
+
+`user.sessionId` 는 액세스 토큰의 `sid` 클레임입니다. 6장에서 `sid` 에 `family_id` 를 넣어 두었기 때문에 이 비교 한 줄로
+"지금 이 요청을 보낸 세션" 을 표시할 수 있습니다. FE 는 이 표시를 보고 현재 기기에는 "끊기" 버튼을 숨깁니다(11장).
+
+컨트롤러는 가드와 문서화만 합니다.
+
+```ts
+// api/src/auth/auth.controller.ts (AuthController 안)
+  @Get('sessions')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '로그인된 세션 목록' })
+  @ApiOkResponse({ type: SessionDto, isArray: true })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto, description: 'ACCESS_TOKEN_INVALID' })
+  listSessions(@CurrentUser() user: AuthUser): Promise<SessionDto[]> {
+    return this.auth.listSessions(user);
+  }
+```
+
+`isArray: true` 로 응답이 `SessionDto` 의 배열이라고 문서에 적습니다.
+
+## 7.12 세션 하나 끊기 — 남의 세션은 없는 세션이다
+
+```ts
+// api/src/auth/refresh-token.repository.ts (RefreshTokenRepository 안)
+  /** user_id 조건이 남의 세션 삭제를 막는다. 지운 것이 있으면 true. */
+  async revokeSession(userId: string, familyId: string): Promise<boolean> {
+    return (await this.revoke('user_id = $1 AND family_id = $2', [userId, familyId], 'session_deleted')) > 0;
+  }
+```
+
+```ts
+// api/src/auth/auth.service.ts (AuthService 안)
+  async deleteSession(user: AuthUser, sessionId: string): Promise<void> {
+    if (!(await this.refreshTokens.revokeSession(user.userId, sessionId))) throw sessionNotFound();
+  }
+```
+
+```ts
+// api/src/auth/auth.service.ts (파일 끝, invalidRefresh 아래)
+export const sessionNotFound = () => new AppError(404, ErrorCode.SESSION_NOT_FOUND, '세션이 없다');
+```
+
+`WHERE user_id = $1 AND family_id = $2` 의 **`user_id` 조건이 이 기능의 보안 전부**입니다.
+`family_id` 만으로 UPDATE 하면 요청을 보낸 사람이 누구든, 세션 id 만 알면 남의 세션을 끊을 수 있습니다. 세션 id 는 액세스 토큰의 `sid` 에 들어 있고
+JWT 본문은 누구나 풀어 볼 수 있으므로 비밀이 아닙니다. 이런 종류의 취약점을 IDOR(Insecure Direct Object Reference, 안전하지 않은 직접 객체 참조)라고 부릅니다.
+요청에 담긴 id 로 객체를 찾을 때 "이 사용자가 그 객체의 주인인가" 를 확인하지 않는 실수입니다.
+
+조건이 맞는 행이 없으면 404 `SESSION_NOT_FOUND` 를 돌려줍니다. 여기에는 세 가지 경우가 섞여 있습니다.
+
+- 그런 세션이 아예 없다
+- 세션은 있지만 **남의 것**이다
+- 내 세션이지만 이미 끊겼다 (살아 있는 행이 없어 0 행이 바뀜)
+
+셋을 구별하지 않고 모두 같은 404 로 답합니다. "남의 세션이라 403" 처럼 구별해 주면 공격자는 응답만으로 어떤 세션 id 가 실제로 존재하는지 알아낼 수 있습니다.
+요청한 사람 입장에서 남의 세션은 **없는 세션**과 같습니다.
+
+`sessionNotFound` 를 `export` 한 이유는 컨트롤러의 파이프에서도 쓰기 때문입니다.
+
+```ts
+// api/src/auth/auth.controller.ts (AuthController 안)
+  @Delete('sessions/:sessionId')
+  @HttpCode(204)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '세션 하나 끊기' })
+  @ApiNoContentResponse()
+  @ApiNotFoundResponse({ type: ErrorResponseDto, description: 'SESSION_NOT_FOUND — 없거나 남의 세션' })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto, description: 'ACCESS_TOKEN_INVALID' })
+  deleteSession(
+    @CurrentUser() user: AuthUser,
+    @Param('sessionId', new ParseUUIDPipe({ exceptionFactory: sessionNotFound })) sessionId: string,
+  ): Promise<void> {
+    return this.auth.deleteSession(user, sessionId);
+  }
+```
+
+**`ParseUUIDPipe`.** 경로의 `sessionId` 가 UUID 형식인지 검사합니다. 검사가 없으면 `DELETE /auth/sessions/abc` 가 그대로 SQL 까지 내려가서
+PostgreSQL 이 `invalid input syntax for type uuid: "abc"` 에러를 내고, 사용자에게는 500 이 갑니다. 입력이 잘못된 것인데 서버 장애처럼 보이게 됩니다.
+
+**`exceptionFactory: sessionNotFound`.** `ParseUUIDPipe` 는 기본적으로 400 에러를 던지는데, 그 응답은 Nest 의 기본 형식이라
+4장에서 정한 `{ statusCode, code, message }` 모양이 아닙니다. `exceptionFactory` 는 검사가 실패했을 때 던질 예외를 만드는 함수를 받습니다.
+여기에 `sessionNotFound` 를 넘기면 UUID 가 아닌 값도 404 `SESSION_NOT_FOUND` 가 됩니다. 형식이 틀린 id 는 당연히 존재하지 않는 세션이므로
+의미상으로도 맞고, FE 는 이 엔드포인트의 실패를 404 하나로만 처리하면 됩니다.
+`exceptionFactory` 는 에러 메시지 문자열을 인자로 받는데 `sessionNotFound` 는 인자를 쓰지 않습니다. TypeScript 는 인자를 덜 받는 함수를 넘기는 것을 허용합니다.
+
+이것으로 `AuthController` 의 7장 모습이 완성됩니다. import 줄은 다음과 같습니다. 9장에서 CSRF 관련 항목이 더해져 부록 C 의 모습이 됩니다.
+
+```ts
+// api/src/auth/auth.controller.ts (import 부분)
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiConflictResponse,
+  ApiCookieAuth,
+  ApiCreatedResponse,
+  ApiNoContentResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+  ApiTooManyRequestsResponse,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
+import type { Request, Response } from 'express';
+import { ErrorResponseDto } from '../common/error-response.dto';
+import { AppError } from '../common/errors';
+import { AppConfig } from '../config/app-config';
+import { UserDto } from '../users/dto';
+import { AuthService, sessionNotFound } from './auth.service';
+import { clientMeta } from './client-meta';
+import { REFRESH_COOKIE, clearRefreshCookie, setRefreshCookie } from './cookies';
+import { LoginDto, SessionDto, SignupDto, TokenResponseDto } from './dto';
+import { CurrentUser, JwtAuthGuard } from './jwt-auth.guard';
+import { LoginThrottlerGuard } from './login-throttler.guard';
+import type { AuthUser } from './token.service';
+```
+
+`AuthService` 의 import 에도 `SessionDto` 와 `AuthUser` 가 더해집니다.
+
+```ts
+// api/src/auth/auth.service.ts (import 부분 중 바뀌는 두 줄)
+import { LoginDto, SessionDto, SignupDto, TokenResponseDto } from './dto';
+import { AuthUser, TokenService } from './token.service';
+```
+
+## 7.13 폐기해도 액세스 토큰은 살아 있다
+
+로그아웃이든 전체 로그아웃이든 재사용 탐지든, 이 장에서 한 폐기는 모두 **리프레시 토큰**에 대한 것입니다.
+이미 발급된 액세스 토큰은 JWT 라서 서버가 거둬들일 수 없고, `exp` 가 될 때까지 `JwtAuthGuard` 를 통과합니다.
+
+```
+ 시각   노트북 (공격자가 쓰는 중)                    휴대폰 (정상 사용자)
+ ────  ──────────────────────────────              ──────────────────────────────
+ 0분   액세스 토큰 발급 (exp = 10분)
+ 3분                                               "모든 기기에서 로그아웃"
+                                                   → 모든 리프레시 토큰 폐기
+ 4분   GET /users/me → 200   ← 아직 exp 전
+ 9분   PATCH /users/me → 200 ← 아직 exp 전
+ 10분  GET /users/me → 401 ACCESS_TOKEN_INVALID
+       POST /auth/refresh → 401 (폐기됨)          ← 여기서 비로소 끊긴다
+```
+
+폐기가 액세스 토큰에 반영되기까지 최대 10분(`ACCESS_TOKEN_TTL_SEC`)의 시차가 있습니다. 액세스 토큰을 짧게 두는 이유가 이 시차를 작게 하기 위해서였습니다(2장).
+
+대부분의 서비스에는 이 정도 시차가 받아들일 만합니다. 하지만 계정 정지처럼 **즉시** 끊어야 하는 요구가 있다면 대안이 있습니다.
+`JwtAuthGuard` 에서 서명 검증이 끝난 뒤 토큰의 `sid` 로 세션이 살아 있는지 DB 에 물어보는 것입니다.
+
+```sql
+-- 가드에서 요청마다 실행한다고 할 때의 조회 (이 책의 코드에는 넣지 않는다)
+SELECT 1 FROM refresh_tokens
+ WHERE family_id = $1 AND revoked_at IS NULL AND expires_at > now()
+ LIMIT 1;
+```
+
+행이 없으면 세션이 끝난 것이므로 401 을 던집니다. 이렇게 하면 폐기가 즉시 반영되지만, **모든 API 요청마다 쿼리가 하나 늘어납니다.**
+JWT 를 쓴 이유였던 "DB 를 보지 않는 검증" 을 스스로 포기하는 셈입니다. 요청이 많다면 세션 상태를 짧게 캐시하는 방법도 있지만 그러면 다시 캐시 시간만큼의 시차가 생깁니다.
+
+이 책은 즉시 끊기 요구가 없다고 보고 이 조회를 넣지 않았습니다. 요구가 생기면 가드 한 곳만 바꾸면 되도록 `sid` 가 이미 토큰에 들어 있습니다.
+
+## 7.14 폐기된 행 청소
+
+회전할 때마다 행이 하나씩 늘어나므로 테이블은 계속 커집니다. 그렇다고 폐기된 행을 바로 지우면 안 됩니다.
+**`rotated` 로 폐기된 행이 남아 있어야 그 토큰이 다시 왔을 때 재사용을 알아챌 수 있기 때문입니다.** 지워 버리면 옛 토큰은 "없는 토큰" 이 되어
+`invalid` 로 조용히 처리되고, family 는 살아남습니다.
+
+그러면 언제 지워도 될까요. family 의 `session_expires_at` 이 지나면 그 family 에는 살아 있는 토큰이 있을 수 없습니다(토큰의 `expires_at` 은 항상 그 이하).
+탐지해서 폐기할 대상이 더 이상 없으니 행을 남겨 둘 이유도 없습니다. 여기에 조사를 위한 여유를 며칠 둡니다.
+
+```sql
+-- 주기적으로 실행한다 (예: 하루 한 번). 실행 방식은 14장에서 다룬다.
+DELETE FROM refresh_tokens WHERE session_expires_at < now() - interval '7 days';
+```
+
+같은 family 의 행들은 모두 같은 `session_expires_at` 을 가지므로 한 family 가 통째로 함께 지워집니다.
+`replaced_by` 외래 키가 같은 family 안의 행을 가리키고 있지만, 가리키는 행과 가리켜지는 행이 한 문장에서 함께 지워지므로 외래 키 검사에 걸리지 않습니다.
+
+⚠️ `WHERE revoked_at IS NOT NULL` 처럼 "폐기된 행" 을 기준으로 지우면 안 됩니다. 이 절의 첫 문단에서 본 것처럼 재사용 탐지의 근거가 사라집니다.
+
+## 7.15 실습 — curl 로 회전과 탐지를 눈으로 보기
+
+API 를 다시 띄웁니다. 아직 CSRF 방어가 없으므로 헤더 없이 부를 수 있습니다.
+
+```bash
+$ API=http://localhost:4000
+$ JAR=$(mktemp)
+$ rt() { awk '$6 == "refresh_token" { print $7 }' "$JAR"; }   # 저장소의 리프레시 쿠키 값
+$ curl -s -c "$JAR" -X POST $API/auth/login -H 'Content-Type: application/json' \
+    -d '{"email":"kim@example.com","password":"correct horse battery"}' > /dev/null
+$ OLD=$(rt); echo "${OLD:0:8}…"
+q3N1xk2P…
+```
+
+### 회전 → 옛 쿠키로 10초 안(409) → 10초 뒤(401 REUSED)
+
+grace 가 10초이므로 1번과 2번은 이어서 빠르게 실행합니다. 한 줄로 붙여 써도 됩니다.
+
+```bash
+$ curl -s -i -b "$JAR" -c "$JAR" -X POST $API/auth/refresh | grep -E '^HTTP|^Set-Cookie'   # 1. 회전
+HTTP/1.1 200 OK
+Set-Cookie: refresh_token=Zp9w…7aQ; Path=/auth; Expires=Thu, 08 Oct 2026 03:40:12 GMT; HttpOnly; Secure; SameSite=Strict
+
+$ curl -s -i -X POST $API/auth/refresh -H "Cookie: refresh_token=$OLD" | grep -E '^HTTP|^Set-Cookie|code'   # 2. 옛 쿠키, 10초 안
+HTTP/1.1 409 Conflict
+{"statusCode":409,"code":"REFRESH_TOKEN_ROTATED","message":"방금 회전된 토큰이다. 한 번 더 시도하라"}
+```
+
+(예시 출력) 1번에서 `-b` 로 저장소의 쿠키를 보내고 `-c` 로 새 쿠키를 저장했습니다. 저장소에는 이제 새 토큰이 있습니다.
+2번에서는 저장소를 쓰지 않고 `-H "Cookie: …"` 로 옛 토큰을 직접 보냈습니다. 409 이고, `Set-Cookie` 줄이 없습니다. 쿠키를 건드리지 않았다는 뜻입니다.
+
+이제 10초를 넘겨 기다린 뒤 같은 옛 쿠키를 다시 보냅니다.
+
+```bash
+$ sleep 11
+$ curl -s -i -X POST $API/auth/refresh -H "Cookie: refresh_token=$OLD" | grep -E '^HTTP|^Set-Cookie|code'   # 3. 10초 뒤
+HTTP/1.1 401 Unauthorized
+Set-Cookie: refresh_token=; Path=/auth; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; Secure; SameSite=Strict
+{"statusCode":401,"code":"REFRESH_TOKEN_REUSED","message":"이미 사용된 리프레시 토큰이다. 이 세션을 끊었다"}
+```
+
+(예시 출력) 재사용이 탐지되었습니다. 쿠키를 지우라는 헤더도 왔습니다. 값이 비어 있고 만료가 1970년이며, `Path=/auth` 를 포함한 속성이 설정할 때와 같습니다.
+
+이제 **정상 쿠키**(저장소에 있는 최신 토큰)도 죽었는지 봅니다.
+
+```bash
+$ curl -s -i -b "$JAR" -c "$JAR" -X POST $API/auth/refresh | grep -E '^HTTP|code'   # 4. 정상 쿠키
+HTTP/1.1 401 Unauthorized
+{"statusCode":401,"code":"REFRESH_TOKEN_REUSED","message":"이미 사용된 리프레시 토큰이다. 이 세션을 끊었다"}
+```
+
+(예시 출력) 최신 토큰의 `revoke_reason` 은 탐지 때 `reuse_detected` 로 바뀌었으므로 `reused` 로 판단됩니다. 정상 사용자도 "세션이 만료됐다" 가 아니라 "다른 곳에서 토큰이 쓰였다" 는 진짜 이유를 받습니다. 세션은 끝났습니다.
+
+DB 에서 이 family 의 행을 봅니다.
+
+```bash
+$ pnpm db:psql
+```
+
+```sql
+auth_lab=# SELECT left(token_hash, 8) AS hash, revoke_reason, replaced_by IS NOT NULL AS replaced,
+                  revoked_at IS NOT NULL AS revoked
+             FROM refresh_tokens
+            WHERE family_id = (SELECT family_id FROM refresh_tokens
+                                WHERE token_hash = encode(sha256(convert_to('<OLD 값>', 'UTF8')), 'hex'))
+            ORDER BY created_at;
+```
+
+```
+   hash   | revoke_reason  | replaced | revoked
+----------+----------------+----------+---------
+ 5d2b9e0c | rotated        | t        | t
+ a81f03d2 | reuse_detected | f        | t
+(2 rows)
+```
+
+(예시 출력) `<OLD 값>` 자리에는 `echo "$OLD"` 로 출력한 쿠키 값을 붙여 넣습니다. `sha256(bytea)` 는 PostgreSQL 에 내장된 함수이고,
+`convert_to` 로 문자열을 바이트로 바꿔 넘깁니다. 첫 행이 로그인 때의 토큰(회전됨, 대체 토큰 있음), 둘째 행이 회전으로 받은 토큰(재사용 탐지로 폐기)입니다.
+**살아 있는 행이 하나도 없습니다.**
+
+### REFRESH_REUSE_GRACE_SEC 를 바꿔 보기
+
+`api/.env` 의 `REFRESH_REUSE_GRACE_SEC` 를 `3` 으로 바꾸고 API 를 다시 띄운 뒤, 로그인부터 다시 합니다. 이번에는 회전 직후 `sleep 4` 를 하고
+옛 쿠키를 보내 봅니다. 10초를 기다리지 않아도 401 `REFRESH_TOKEN_REUSED` 가 나옵니다. 반대로 회전 직후 바로 보내면 409 입니다.
+
+값을 `0` 으로 두면 grace 가 없어져 회전 직후의 옛 쿠키도 곧바로 재사용으로 판정됩니다. 12장의 탭 간 잠금이 없는 상태에서 탭 두 개를 쓰면
+어떤 일이 벌어질지 상상해 보세요. 실습이 끝나면 `10` 으로 되돌립니다.
+
+### 동시 refresh 두 건 — 하나는 200, 하나는 409
+
+두 터미널에서 손으로 동시에 누르기는 어려우니 셸의 백그라운드 실행(`&`)으로 두 요청을 거의 동시에 보냅니다.
+다시 로그인해 새 쿠키를 받은 뒤 실행합니다.
+
+```bash
+$ curl -s -c "$JAR" -X POST $API/auth/login -H 'Content-Type: application/json' \
+    -d '{"email":"kim@example.com","password":"correct horse battery"}' > /dev/null
+$ for i in 1 2; do
+    curl -s -o /dev/null -w "요청 $i → %{http_code}\n" -b "$JAR" -X POST $API/auth/refresh &
+  done; wait
+요청 2 → 200
+요청 1 → 409
+```
+
+(예시 출력) 어느 쪽이 먼저 잠금을 잡느냐에 따라 번호는 바뀌지만, **항상 하나는 200, 하나는 409** 입니다. 둘 다 200 이 나오는 일은 없습니다.
+DB 를 보면 이 family 에 살아 있는 행은 정확히 하나입니다. 두 요청 모두 `-c` 를 주지 않았으므로 저장소에는 옛 쿠키가 남아 있습니다.
+이어서 실습하려면 다시 로그인합니다.
+
+### psql 두 세션으로 잠금 대기 보기
+
+`FOR UPDATE` 의 대기를 눈으로 보려면 트랜잭션을 손으로 열어 두면 됩니다. 터미널 세 개를 씁니다.
+
+먼저 로그인해서 쿠키 값을 확인합니다.
+
+```bash
+$ curl -s -c "$JAR" -X POST $API/auth/login -H 'Content-Type: application/json' \
+    -d '{"email":"kim@example.com","password":"correct horse battery"}' > /dev/null
+$ rt
+Qm7c…w1E
+```
+
+**터미널 1** — psql 을 열고 트랜잭션 안에서 그 토큰 행을 잠급니다. 아직 `COMMIT` 하지 않습니다.
+
+```sql
+auth_lab=# BEGIN;
+auth_lab=*# SELECT id, revoke_reason FROM refresh_tokens
+             WHERE token_hash = encode(sha256(convert_to('Qm7c…w1E', 'UTF8')), 'hex') FOR UPDATE;
+                  id                  | revoke_reason
+--------------------------------------+---------------
+ 0b6f…                                |
+(1 row)
+```
+
+**터미널 2** — 다른 psql 에서 같은 행을 `FOR UPDATE` 로 읽으려 하면 커서가 멈춥니다.
+
+```sql
+auth_lab=# BEGIN;
+auth_lab=*# SELECT id FROM refresh_tokens
+             WHERE token_hash = encode(sha256(convert_to('Qm7c…w1E', 'UTF8')), 'hex') FOR UPDATE;
+-- 응답이 오지 않고 기다린다
+```
+
+**터미널 3** — 같은 쿠키로 refresh 를 보내도 멈춥니다.
+
+```bash
+$ curl -s -i -b "$JAR" -c "$JAR" -X POST $API/auth/refresh
+# 응답이 오지 않고 기다린다
+```
+
+터미널 1 에서 누가 기다리고 있는지 확인해 볼 수 있습니다.
+
+```sql
+auth_lab=*# SELECT pid, state, wait_event_type, left(query, 50) AS query
+              FROM pg_stat_activity WHERE datname = 'auth_lab' AND pid <> pg_backend_pid();
+  pid  |        state        | wait_event_type |                       query
+-------+---------------------+-----------------+----------------------------------------------------
+ 18233 | active              | Lock            | SELECT id FROM refresh_tokens              +
+ 18240 | active              | Lock            | SELECT id, user_id, family_id, session_expi…
+```
+
+(예시 출력) 두 세션이 `Lock` 을 기다리고 있습니다. 두 번째 줄이 API 의 `rotateInTx` 입니다.
+
+이제 터미널 1 에서 `ROLLBACK;` 을 입력합니다. 잠금이 풀리면 **먼저 기다리던** 쪽이 잠금을 잡습니다. 터미널 2 가 먼저 기다렸다면 터미널 2 의 SELECT 가 결과를 돌려주고,
+curl 은 여전히 기다립니다. 터미널 2 에서도 `ROLLBACK;` 을 입력하면 그제서야 curl 이 200 을 받습니다.
+API 의 요청 하나가 DB 에서 잠금을 기다리며 멈출 수 있다는 것, 그래서 트랜잭션을 짧게 유지해야 한다는 것을 확인했습니다.
+
+⚠️ 실습이 끝나면 열어 둔 psql 트랜잭션을 반드시 `ROLLBACK` 이나 `COMMIT` 으로 닫습니다. 열어 둔 채로 두면 그 토큰의 refresh 가 계속 멈춥니다.
+
+### SESSION_MAX_AGE_SEC=20 으로 절대 상한 보기
+
+`api/.env` 의 `SESSION_MAX_AGE_SEC` 를 `20` 으로 바꾸고 API 를 다시 띄운 뒤 로그인합니다. 그리고 5초마다 refresh 를 해 봅니다.
+
+```bash
+$ curl -s -c "$JAR" -X POST $API/auth/login -H 'Content-Type: application/json' \
+    -d '{"email":"kim@example.com","password":"correct horse battery"}' > /dev/null; date -u +%T
+03:50:00
+$ for i in 1 2 3 4 5; do
+    sleep 5
+    echo "--- $(date -u +%T)"
+    curl -s -i -b "$JAR" -c "$JAR" -X POST $API/auth/refresh | grep -E '^HTTP|^Set-Cookie' | cut -c1-110
+  done
+--- 03:50:05
+HTTP/1.1 200 OK
+Set-Cookie: refresh_token=Hk2…; Path=/auth; Expires=Thu, 24 Sep 2026 03:50:20 GMT; HttpOnly; Secure; Sam
+--- 03:50:10
+HTTP/1.1 200 OK
+Set-Cookie: refresh_token=Tq8…; Path=/auth; Expires=Thu, 24 Sep 2026 03:50:20 GMT; HttpOnly; Secure; Sam
+--- 03:50:15
+HTTP/1.1 200 OK
+Set-Cookie: refresh_token=Lw0…; Path=/auth; Expires=Thu, 24 Sep 2026 03:50:20 GMT; HttpOnly; Secure; Sam
+--- 03:50:20
+HTTP/1.1 401 Unauthorized
+--- 03:50:25
+HTTP/1.1 401 Unauthorized
+```
+
+(예시 출력) 볼 것은 두 가지입니다.
+
+- 회전할 때마다 토큰은 바뀌지만 **`Expires` 는 03:50:20 으로 고정**되어 있습니다. `LEAST(now() + 14일, session_expires_at)` 에서 뒤쪽이 골라졌습니다. 회전이 세션을 늘리지 않습니다.
+- 20초가 지나면 401 입니다. 네 번째 요청에서는 curl 이 쿠키의 `Expires` 가 지났다고 보고 쿠키를 아예 보내지 않았을 가능성이 높습니다. 그래도 결과는 같습니다. 쿠키가 없으면 `invalid`, 있어도 DB 에서 만료이므로 `invalid` 입니다. 브라우저와 서버가 같은 시각을 기준으로 끊습니다.
+
+실습이 끝나면 `SESSION_MAX_AGE_SEC=2592000` 으로 되돌립니다.
+
+### 세션 목록과 세션 끊기
+
+서로 다른 기기인 것처럼 `User-Agent` 를 바꿔 두 번 로그인합니다.
+
+```bash
+$ LAPTOP=$(mktemp); PHONE=$(mktemp)
+$ login() { curl -s -c "$1" -A "$2" -X POST $API/auth/login -H 'Content-Type: application/json' \
+    -d '{"email":"kim@example.com","password":"correct horse battery"}' | jq -r .accessToken; }
+$ A_LAPTOP=$(login "$LAPTOP" 'Laptop/1.0')
+$ A_PHONE=$(login "$PHONE" 'Phone/1.0')
+$ curl -s $API/auth/sessions -H "Authorization: Bearer $A_LAPTOP" | jq
+[
+  { "sessionId": "c3a1…", "createdAt": "…", "lastUsedAt": "…", "userAgent": "Phone/1.0",  "current": false },
+  { "sessionId": "9e02…", "createdAt": "…", "lastUsedAt": "…", "userAgent": "Laptop/1.0", "current": true }
+]
+```
+
+(예시 출력) 앞선 실습에서 만든 세션이 살아 있다면 목록이 더 길 수 있습니다. `current: true` 는 요청에 쓴 노트북 토큰의 세션 하나뿐입니다.
+
+노트북에서 휴대폰 세션을 끊고, 휴대폰의 쿠키로 refresh 해 봅니다.
+
+```bash
+$ curl -s -o /dev/null -w '%{http_code}\n' -X DELETE $API/auth/sessions/c3a1… -H "Authorization: Bearer $A_LAPTOP"
+204
+$ curl -s -o /dev/null -w '%{http_code}\n' -b "$PHONE" -X POST $API/auth/refresh
+401
+$ curl -s -X DELETE $API/auth/sessions/not-a-uuid -H "Authorization: Bearer $A_LAPTOP" | jq -c
+{"statusCode":404,"code":"SESSION_NOT_FOUND","message":"세션이 없다"}
+```
+
+그런데 휴대폰의 **액세스 토큰**은 아직 살아 있습니다(7.13절).
+
+```bash
+$ curl -s -o /dev/null -w '%{http_code}\n' $API/users/me -H "Authorization: Bearer $A_PHONE"
+200
+```
+
+10분이 지나면 이 요청도 401 이 됩니다.
+
+⚠️ 로그인 제한(1분 5회)에 걸리기 쉬운 실습입니다. 429 가 나오면 1분 쉬고 다시 합니다.
+
+## 확인하기
+
+| # | 무엇 | 하는 법 | 기대 결과 |
+|---|---|---|---|
+| 1 | 회전 | 로그인 후 `curl -b "$JAR" -c "$JAR" -X POST /auth/refresh` | 200, 새 `Set-Cookie`, 쿠키 값이 이전과 다르다 |
+| 2 | race | 10초 안에 옛 쿠키로 refresh | 409 `REFRESH_TOKEN_ROTATED`, `Set-Cookie` 없음 |
+| 3 | 재사용 탐지 | 10초 뒤 옛 쿠키로 refresh | 401 `REFRESH_TOKEN_REUSED`, 쿠키 삭제 헤더 |
+| 4 | 탐지 후 정상 쿠키 | 저장소의 최신 쿠키로 refresh | 401 `REFRESH_TOKEN_REUSED` |
+| 5 | DB | family 의 행 조회 | 살아 있는 행 0, `rotated` 와 `reuse_detected` 가 보인다 |
+| 6 | 동시 refresh | `&` 로 두 건 | 200 하나, 409 하나 |
+| 7 | 로그아웃 | `POST /auth/logout` 두 번 | 둘 다 204, 삭제 헤더에 `Path=/auth`, 이후 그 쿠키로 refresh 401 |
+| 8 | 전체 로그아웃 | 세션 둘을 만든 뒤 `logout-all` | 204, 두 쿠키 모두 refresh 401 |
+| 9 | 세션 목록 | `GET /auth/sessions` | `current: true` 가 정확히 하나 |
+| 10 | 세션 끊기 | UUID 아닌 id / 남의 세션 id 로 DELETE | 둘 다 404 `SESSION_NOT_FOUND`, 남의 세션은 살아 있다 |
+| 11 | 세션 상한 | `SESSION_MAX_AGE_SEC=20` | 회전해도 `Expires` 가 고정, 20초 뒤 401 |
+
+10번의 "남의 세션" 은 다른 이메일로 가입한 계정의 액세스 토큰으로 내 세션 id 를 DELETE 해서 확인합니다.
+
+## 자주 하는 실수
+
+**트랜잭션 쿼리를 `this.pool.query` 로 보냈다.** `client.query('BEGIN')` 뒤에 실수로 `this.pool.query(…)` 를 쓰면 그 쿼리는 다른 연결로 가서
+트랜잭션 밖에서 실행됩니다. 잠금도 원자성도 없어집니다. 트랜잭션 안에서는 `client` 만 씁니다. `rotateInTx` 가 `client` 를 인자로 받게 만든 것은
+이 실수를 줄이기 위해서입니다.
+
+**`client.release()` 를 빠뜨렸다.** 처음 몇 번은 잘 되다가 refresh 가 10번쯤 쌓이면 API 전체가 멈춥니다. 풀의 연결이 모두 빌려진 채 돌아오지 않은 것입니다.
+`finally` 에서 반납합니다.
+
+**재사용을 발견하고 트랜잭션 안에서 예외를 던졌다.** 응답은 401 `REFRESH_TOKEN_REUSED` 인데 DB 의 family 가 살아 있습니다. 7.4절의 버그입니다.
+DB 까지 확인하지 않으면 발견되지 않습니다.
+
+**409 에서도 쿠키를 지웠다.** 탭을 두 개 열어 두면 가끔 로그아웃됩니다. 재현이 어렵고 "가끔" 이라서 오래 헤매게 되는 증상입니다. 7.9절을 다시 봅니다.
+
+**grace 를 Node 의 시계로 계산했다.** 개발 환경에서는 API 와 DB 가 같은 기계라 문제가 없다가, 운영에서 서버 시계가 어긋나면 탐지 결과가 서버마다 달라집니다.
+
+**세션 삭제에 `user_id` 조건을 빠뜨렸다.** 기능 테스트는 모두 통과합니다. 자기 세션만 지워 보기 때문입니다. 다른 계정의 토큰으로 지워 보는 테스트(13장의 S16)가 있어야 드러납니다.
+
+**`HAVING` 대신 `WHERE revoked_at IS NULL` 로 걸렀다.** 세션 목록의 "처음 로그인" 시각이 마지막 회전 시각으로 나옵니다.
+
+**`cookie-parser` 가 없다.** 쿠키를 분명히 보냈는데 refresh 가 항상 401 `REFRESH_TOKEN_INVALID` 입니다. `main.ts` 의 `app.use(cookieParser())` 를 확인합니다.
+
+**psql 에서 연 트랜잭션을 닫지 않았다.** 실습 뒤에 특정 계정의 refresh 만 계속 멈춥니다. `pg_stat_activity` 에서 `idle in transaction` 상태인 세션을 찾아 닫습니다.
+
+## 정리
+
+- 회전은 refresh 할 때마다 리프레시 토큰을 새것으로 바꾸고 옛것을 `rotated` 로 남긴다. 같은 토큰을 가진 두 사람 중 한쪽은 반드시 옛 토큰을 내밀게 된다.
+- 회전은 한 트랜잭션에서 `SELECT … FOR UPDATE` → 판단 → INSERT → UPDATE 순서로 한다. `FOR UPDATE` 가 없으면 동시 요청 둘이 모두 성공해 family 가 갈라진다.
+- 결과는 `RotateOutcome` 으로 돌려준다. 트랜잭션 안에서 예외를 던지면 재사용 탐지의 폐기가 롤백된다.
+- 판단 순서는 행 존재 → 폐기 여부(rotated 인가, grace 안인가) → 만료. grace 안이면 409, 밖이면 family 폐기 후 401 REUSED.
+- grace 는 탭 간 동시 요청을 봐주는 안전망이다. 늘리면 탐지 틈도 늘어나므로 10초를 넘기지 않는다. 시간 비교는 DB 시계로 한다.
+- refresh 가 401 이면 쿠키를 지우고, 409 면 먼저 온 요청의 새 쿠키를 지우지 않도록 건드리지 않는다.
+- 로그아웃은 멱등하다. 전체 로그아웃과 세션 관리는 액세스 토큰으로 사용자를 식별한다.
+- 세션 목록은 `GROUP BY family_id` 와 `min`·`max`·`array_agg`·`HAVING bool_or` 로 만든다.
+- 세션 삭제의 `user_id` 조건이 IDOR 를 막는다. 없는 세션과 남의 세션은 같은 404 로 답한다.
+- 폐기는 리프레시 토큰에만 즉시 반영된다. 액세스 토큰은 `exp` 까지 산다. 즉시 끊어야 하면 가드에서 `sid` 를 조회한다.
+- 폐기된 행은 탐지의 근거이므로 `session_expires_at` 기준으로, 여유를 두고 지운다.
+
+## 연습문제
+
+**1.** 7.6절의 첫 번째 시간표(`FOR UPDATE` 없음)에서 요청 A 가 공격자, 요청 B 가 정상 사용자였다고 합시다.
+이후 공격자와 정상 사용자가 각자 자기 토큰으로 계속 refresh 하면 재사용 탐지가 일어납니까? 이유를 설명하세요.
+
+<details>
+<summary>해답</summary>
+
+일어나지 않습니다. family 가 토큰A 갈래와 토큰B 갈래로 갈라져 둘 다 살아 있으므로, 공격자는 토큰A→A'→A''… 로, 정상 사용자는 토큰B→B'→B''… 로
+각자 자기 갈래의 **살아 있는** 토큰만 내밉니다. 재사용 탐지는 `rotated` 토큰이 다시 올 때만 일어나는데, 두 사람 모두 옛 토큰을 내밀 일이 없습니다.
+세션 상한(30일)에 닿을 때까지 공격자의 갈래가 살아 있게 됩니다. `FOR UPDATE` 가 단순한 성능·정합성 장치가 아니라 보안 장치인 이유입니다.
+
+</details>
+
+**2.** 동료가 `rotateInTx` 를 다음처럼 "더 깔끔하게" 바꾸자고 제안했습니다. 무엇이 문제입니까?
+
+```ts
+if (row.expired) return { kind: 'invalid' };
+if (row.revoke_reason !== null) { /* 기존과 같음 */ }
+```
+
+<details>
+<summary>해답</summary>
+
+만료 검사를 폐기 검사보다 앞에 두면, 회전된 뒤 만료 시각까지 지난 옛 토큰이 다시 왔을 때 재사용 탐지를 거치지 않고 `invalid` 로 끝납니다.
+옛 토큰이 오래되었더라도 "회전된 토큰을 누군가 들고 있다" 는 사실은 탈취의 신호이므로 family 를 폐기해야 합니다.
+현재 순서(폐기 여부를 먼저)는 이 신호를 놓치지 않기 위한 것입니다.
+
+</details>
+
+**3.** 7.9절의 컨트롤러에서 `catch` 블록을 없애고, 대신 `AuthService.refresh` 의 `'invalid'`·`'reused'` 분기에서 응답 객체를 받아 쿠키를 지우게 바꾸려고 합니다.
+이 설계가 좋지 않은 이유를 6장의 `Issued` 설계와 연결해 설명하세요.
+
+<details>
+<summary>해답</summary>
+
+6장에서 서비스는 "무엇을 발급했나" 만 결정하고 HTTP 전송(쿠키, 헤더)은 컨트롤러가 맡도록 역할을 나눴습니다. 서비스가 Express `Response` 를 받게 되면
+서비스 테스트에도 가짜 응답 객체가 필요해지고, 쿠키가 아닌 다른 전송 방식을 쓰는 엔드포인트를 추가할 때 서비스까지 고쳐야 합니다.
+또 쿠키를 지울지 말지는 HTTP 상태 코드(401 이냐 409 냐)와 직결된 판단이라, 상태 코드를 아는 컨트롤러에 두는 것이 자연스럽습니다.
+
+</details>
+
+**4.** 세션 목록 SQL 의 `max(created_at) AS last_used_at` 은 "마지막으로 API 를 부른 시각" 과 얼마나 차이 날 수 있습니까?
+더 정확하게 만들려면 무엇이 필요하고, 그 비용은 무엇입니까?
+
+<details>
+<summary>해답</summary>
+
+토큰은 refresh 할 때만 생기고 refresh 는 액세스 토큰이 만료될 때(최대 10분마다) 일어나므로, 마지막 refresh 뒤 최대 10분 동안 API 를 불렀어도 반영되지 않습니다.
+즉 최대 액세스 토큰 수명만큼 차이가 납니다. 더 정확히 하려면 액세스 토큰으로 API 를 부를 때마다 세션의 사용 시각을 DB 에 기록해야 하는데,
+그러면 모든 요청에 쓰기 쿼리가 하나씩 늘어납니다. 7.13절의 `sid` 조회와 같은 종류의 비용입니다.
+
+</details>
+
+**5.** 청소 쿼리를 `DELETE FROM refresh_tokens WHERE revoked_at < now() - interval '1 day'` 로 바꾸면 어떤 공격이 탐지되지 않게 됩니까? 시간표로 설명하세요.
+
+<details>
+<summary>해답</summary>
+
+```
+ 0일    정상 사용자 로그인 (토큰0). 공격자가 토큰0 을 복사
+ 0일    정상 사용자 refresh → 토큰1 (토큰0 은 rotated)
+ 1일+   청소가 토큰0 행을 지운다 (폐기된 지 하루가 지남)
+ 2일    공격자가 토큰0 으로 refresh
+        → 행이 없음 → invalid → 401 REFRESH_TOKEN_INVALID
+        → family 는 폐기되지 않는다
+```
+
+재사용 탐지는 `rotated` 행이 남아 있어야 동작하는데, 폐기 시각 기준으로 지우면 그 근거가 사라집니다. 공격자는 토큰을 쓰지 못하니 직접 피해는 없지만,
+"토큰이 복사되었다" 는 신호를 놓쳐 정상 사용자의 세션(토큰1 계열)을 끊지 못하고 경보도 울리지 않습니다. 공격자가 토큰0 과 함께 다른 정보를 가져갔다면
+이 신호가 유일한 단서였을 수 있습니다. 그래서 세션 전체가 끝난 뒤(`session_expires_at` 기준)에 지웁니다.
+
+</details>

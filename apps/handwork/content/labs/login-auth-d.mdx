@@ -1,0 +1,415 @@
+export const meta = {
+  title: "[로그인인증] 네트워크 탭 확인 (D)",
+  summary: "개발자 도구 Network 탭에서 인증 흐름을 읽는 확인표와, 같은 내용을 화면 하단에 찍는 교육용 네트워크 콘솔.",
+  date: "2026-09",
+  status: "마무리",
+  order: 119,
+  tags: ["로그인인증", "devtools", "network"],
+};
+
+![초록으로 채운 큰 열쇠 하나가 가로로 놓여 있고, 그 뒤에 같은 모양의 열쇠 두 개가 남색 윤곽선만으로 겹쳐 있다. 열쇠들 아래로 가는 선이 하나 지나간다.](/labs/login-auth-key.jpg)
+
+인증 흐름은 대부분 화면 뒤에서 일어납니다. 로그인 버튼 하나를 누르면 요청이 두세 개 오가고, 쿠키가 심어지고, 새로고침 한 번에 토큰이 회전합니다.
+이 부록은 개발자 도구의 **Network 탭**에서 그 흐름을 읽는 확인표입니다. 앞부분(D.1~D.5)은 브라우저 개발자 도구로 무엇을 볼지,
+마지막 절(D.6)은 같은 내용을 화면 하단에 콘솔처럼 보여 주는 교육용 도구를 붙이는 방법입니다.
+
+주소는 책 기준(API `http://localhost:4000`, FE `http://localhost:5173`)입니다. 포트를 바꿔 띄웠다면 그 포트로 읽으세요.
+
+## D.1 준비
+
+| 설정 | 이유 |
+|---|---|
+| **Preserve log** 켜기 | 로그인 뒤 화면이 이동해도 요청 기록이 지워지지 않습니다 |
+| 필터 칸에 `localhost:4000` | 화면 파일(JS, CSS) 요청을 빼고 API 요청만 봅니다 |
+| 요청 종류는 **All** | Fetch/XHR 만 고르면 사전 확인 요청(`OPTIONS`)이 목록에서 빠집니다 |
+| 열 추가: Method, Status, Initiator | 누가, 어떤 순서로 요청을 보냈는지 봅니다 |
+| 요청을 클릭해 **Cookies** 하위 탭 | 쿠키가 실렸는지, 브라우저가 쿠키 저장을 거부했는지 봅니다 |
+
+## D.2 요청별로 볼 것
+
+### `GET /auth/csrf`
+
+- 상태 200, 응답 본문 `{ csrfToken }`.
+- Response Headers 의 `Set-Cookie: csrf_token=…` 에 `HttpOnly; Secure; SameSite=Strict; Path=/` 가 붙어 있는지.
+- `Cache-Control: no-store`.
+- 쿠키가 살아 있을 때 다시 부르면 **같은 값**이 와야 합니다(9장). 탭마다 값이 다르면 발급 코드의 재사용 처리가 빠진 것입니다.
+
+### `OPTIONS` (사전 확인 요청, preflight)
+
+- 커스텀 헤더(`X-CSRF-Token`, `Authorization`)를 싣는 요청 앞에 붙어서 나갑니다. 204 가 정상입니다.
+- 응답의 `Access-Control-Allow-Origin` 이 `*` 가 아니라 `http://localhost:5173` 처럼 정확한 출처여야 합니다.
+- 응답에 `Access-Control-Allow-Credentials: true` 가 있어야 합니다.
+- 응답의 `Access-Control-Allow-Headers` 에 `x-csrf-token`, `authorization` 이 들어 있어야 합니다.
+
+### `POST /auth/login`
+
+- **요청 헤더**: `Origin: http://localhost:5173`, `X-CSRF-Token: <csrf 응답의 값>`, 그리고 `Cookie` 에 `csrf_token`.
+- **응답 200**: 본문에 `accessToken`, `user` 가 있고 `refreshToken` 은 **없어야** 합니다.
+- **`Set-Cookie: refresh_token=…`**: 속성이 `Path=/auth; Expires=…; HttpOnly; Secure; SameSite=Strict` 이고, `Expires` 는 약 14일 뒤입니다.
+- **`Cache-Control: no-store`**.
+- **실패**: 응답 본문의 `code` 를 봅니다. `INVALID_CREDENTIALS` 는 401, `CSRF_*` 는 403, `TOO_MANY_REQUESTS` 는 429 입니다.
+
+### `POST /auth/refresh`
+
+- **요청**: `Cookie` 에 `refresh_token` 과 `csrf_token` 이 **둘 다** 실려야 합니다. `Authorization` 헤더는 없는 것이 정상입니다.
+- **200**: 응답의 `Set-Cookie` 가 **요청에 실린 쿠키와 다른 값**이어야 합니다(회전).
+- **401 `REFRESH_TOKEN_INVALID`**: 처음 방문했거나 만료·로그아웃된 경우입니다. 응답에 쿠키 삭제 헤더(`Expires=Thu, 01 Jan 1970…`)가 같이 옵니다.
+- **401 `REFRESH_TOKEN_REUSED`**: 재사용 탐지입니다. 정상 사용 중에는 나오면 안 됩니다.
+- **409 `REFRESH_TOKEN_ROTATED`**: 바로 뒤에 refresh 가 한 번 더 나가야 하고, 이 409 응답에는 `Set-Cookie` 가 **없어야** 합니다.
+
+### `POST /auth/logout`
+
+- 204. 응답에 `Set-Cookie: refresh_token=; Path=/auth; Expires=Thu, 01 Jan 1970…` 이 있어야 합니다.
+- 삭제 헤더의 `Path` 가 설정할 때(`/auth`)와 같아야 실제로 지워집니다.
+
+### Bearer 로 부르는 API (`/users/me`, `/auth/sessions`, `/auth/logout-all` 등)
+
+- 요청 헤더에 `Authorization: Bearer eyJ…` 가 있어야 합니다.
+- `X-CSRF-Token` 은 필요 없습니다.
+- 요청 `Cookie` 에 `refresh_token` 이 실리는지는 경로로 정해집니다. `Path=/auth` 라서 `/users/me` 에는 실리지 않고, `/auth/sessions` 에는 실립니다. 실려도 서버는 이 요청들에서 쿠키를 읽지 않습니다.
+
+## D.3 시나리오별 기대 순서
+
+| 시나리오 | Network 탭에 보여야 하는 순서 |
+|---|---|
+| 처음 방문 | `csrf` 200 → `OPTIONS refresh` 204 → `refresh` 401 **한 번** |
+| 로그인 | `OPTIONS login` → `login` 200 → 화면 이동 뒤 `sessions` 200 |
+| 새로고침 (S20) | `csrf` 200 → `refresh` 200 **한 번**, 새 `Set-Cookie` |
+| 액세스 토큰 만료 뒤 API 호출 | `users/me` 401 → `refresh` 200 → `users/me` 200 (재시도는 한 번) |
+| 동시에 401 여러 개 | 401 이 여러 개여도 `refresh` 는 **한 번**, 이어서 원래 요청들이 재시도됨 |
+| 탭 두 개 동시 만료 (S21) | 두 탭 모두 `refresh` 200. 두 요청이 시간상 겹치지 않고 차례로 나감(Timing 확인). 409 나 `REUSED` 가 없음 |
+| 로그아웃 (S22) | 누른 탭: `logout` 204 와 쿠키 삭제 헤더. 다른 탭: 요청 없이 화면만 바뀜(`BroadcastChannel` 메시지는 네트워크에 보이지 않음) |
+| 로그아웃 뒤 새로고침 | `csrf` 200 → `refresh` 401 |
+| 세션 끊기 | `DELETE /auth/sessions/{id}` 204 → `sessions` 200, 목록이 한 줄 줄어듦 |
+
+개발 모드에서는 React StrictMode 가 화면의 effect 를 두 번 실행하므로 `GET /auth/sessions` 같은 조회가 두 번 보일 수 있습니다.
+읽기 요청이라 해가 없고, 운영 빌드에서는 한 번만 나갑니다. `refresh` 가 두 번 보이는 것은 이와 다릅니다. 그것은 아래 표의 이상 징후입니다.
+
+## D.4 이상 징후 → 의심할 곳
+
+| 보이는 것 | 원인 |
+|---|---|
+| 부팅 때 `refresh` 가 두 번 나감 | single-flight 누락 (11장) |
+| `refresh` 요청에 `Cookie` 가 없음 | `credentials: 'include'` 누락, FE 를 `127.0.0.1` 로 열었음, 쿠키 `Path` 불일치 |
+| Cookies 하위 탭에 노란 경고 "This Set-Cookie was blocked" | `Secure` 쿠키인데 localhost 가 아닌 http 주소로 열었음, `SameSite=None` 인데 `Secure` 없음 |
+| 콘솔에 CORS 에러, `OPTIONS` 가 실패하거나 없음 | `WEB_ORIGINS` 불일치, `allowedHeaders` 누락 |
+| `login`·`logout` 이 403 `CSRF_TOKEN_INVALID` 로 두 번 연속 | `cookie-parser` 누락, `CSRF_SECRET` 변경 (부록 B) |
+| 403 `CSRF_ORIGIN_REJECTED` | 요청 헤더의 `Origin` 과 `.env` 의 `WEB_ORIGINS` 를 글자 단위로 비교 |
+| 409 뒤에 재시도가 없음, 또는 409 가 계속 반복됨 | FE 재시도 로직, 탭 간 잠금 누락 (12장) |
+| 정상 사용 중에 `REUSED` | 잠금 밖에서 refresh 를 부르는 경로가 있음 (12장) |
+| 401 → `refresh` → 401 이 끝없이 반복 | 재시도 한 번 제한이 빠짐 |
+| `logout` 뒤 새로고침했더니 다시 로그인 상태 | `logout` 응답이 204 가 아니었음. 상태 코드와 삭제 헤더 확인 |
+
+## D.5 Network 탭만으로는 안 보이는 것
+
+- **HttpOnly 쿠키의 현재 값**: Application → Cookies → `http://localhost:4000` 에서 봅니다. `refresh_token` 의 Path(`/auth`), Expires, HttpOnly·Secure·SameSite 표시를 확인합니다.
+- **메모리의 액세스 토큰**: Network 에는 요청의 `Authorization` 헤더로만 보입니다. Application 탭의 localStorage·sessionStorage 는 **비어 있어야** 정상입니다.
+- **탭 간 잠금과 `BroadcastChannel`**: 네트워크 요청이 아니라서 보이지 않습니다. 요청들의 Timing 이 겹치지 않는 것으로 간접 확인합니다.
+- **서버의 판단**: 회전·폐기가 DB 에 실제로 남았는지는 `pnpm db:psql` 로 `refresh_tokens` 를 조회해 봅니다.
+
+```sql
+SELECT family_id, left(token_hash, 8) AS hash, revoke_reason, replaced_by IS NOT NULL AS replaced, expires_at
+  FROM refresh_tokens ORDER BY created_at;
+```
+
+💡 이 책을 쓰며 브라우저 자동화 도구로 확인할 때 `logout` 이 503 으로 표시된 적이 있습니다. 같은 요청을 페이지에서 `fetch` 로 다시 보내 보니 상태는 204 였습니다.
+본문 없는 응답을 도구가 잘못 표시한 것이었습니다. 숫자가 이상하면 개발자 도구나 `fetch` 의 `response.status` 로 한 번 더 확인하세요.
+
+## D.6 화면 하단의 네트워크 콘솔
+
+개발자 도구를 열지 않고도 흐름을 볼 수 있도록, 모든 화면의 하단에 **콘솔처럼 생긴 텍스트 패널**을 고정합니다.
+앱이 API 로 보낸 요청마다 한 줄씩, 시각·메서드·경로·상태·걸린 시간을 찍고, 그 아래에 보낸 헤더와 "이 결과가 무슨 뜻인가" 를 적습니다.
+
+```
+Console — http://localhost:4000 로 간 요청 3건
+14:03:07 GET   /auth/csrf 200 4ms
+    보낸 헤더 X-CSRF-Token ·  Authorization ·  |  응답 Cache-Control: no-store
+    ↳ CSRF 토큰 받음 — 쿠키가 살아 있으면 매번 같은 값
+14:03:07 POST  /auth/refresh 401 REFRESH_TOKEN_INVALID 6ms
+    보낸 헤더 X-CSRF-Token ✓  Authorization ·  |  응답 Cache-Control: no-store
+    ↳ 리프레시 쿠키 없음·만료·폐기 — 처음 방문이거나 로그아웃 뒤라면 정상
+14:03:12 POST  /auth/login 200 88ms
+    보낸 헤더 X-CSRF-Token ✓  Authorization ·  |  응답 Cache-Control: no-store
+    ↳ 로그인 성공 — 액세스 토큰은 본문(메모리), 리프레시 토큰은 HttpOnly 쿠키
+ⓘ Set-Cookie·쿠키 값·OPTIONS 사전 요청은 브라우저가 JS 에 보여 주지 않습니다. …
+```
+
+(예시 출력) `✓` 는 그 헤더를 보냈다는 뜻, `·` 는 보내지 않았다는 뜻입니다. 화면에서는 상태가 색으로 구분됩니다. 2xx 는 초록, 409 는 노랑, 4xx·5xx 는 빨강입니다.
+
+### 무엇을 보여 줄 수 없는가
+
+브라우저는 보안상 일부 정보를 JS 에 주지 않습니다. 그래서 이 콘솔은 D.2 의 확인 항목 중 일부만 보여 줍니다.
+
+| 항목 | 콘솔 | 이유 |
+|---|---|---|
+| 메서드·경로·상태·시간 | ✅ | |
+| 우리가 보낸 `X-CSRF-Token`·`Authorization` | ✅ | 요청을 만든 쪽이 우리 코드라 읽을 수 있다 |
+| 에러 응답의 `code` | ✅ | 응답 본문을 복제해 읽는다 |
+| 응답 `Cache-Control` | ✅ | CORS 가 JS 에 허용하는 응답 헤더다 |
+| `Set-Cookie`, 쿠키 값 | ❌ | `Set-Cookie` 는 JS 에 절대 노출되지 않고, 두 쿠키는 HttpOnly 다 |
+| `OPTIONS` 사전 요청 | ❌ | 브라우저가 알아서 보내는 요청이라 `fetch` 를 거치지 않는다 |
+| 브라우저가 붙인 `Origin`·`Cookie` 요청 헤더 | ❌ | 요청을 보낸 뒤 브라우저가 붙인다 |
+
+못 보여 주는 것은 패널 아래에 "개발자 도구에서 확인" 으로 안내합니다. 이 한계 자체가 1장·2장에서 본 설계의 결과라는 점도 눈여겨보세요.
+JS 가 리프레시 토큰을 읽을 수 없다는 것은, XSS 가 일어나도 공격 코드가 그 토큰을 읽어 갈 수 없다는 뜻입니다.
+
+### 어떻게 요청을 가로채는가
+
+`window.fetch` 를 한 번 감쌉니다. 인증 코드(`session.ts`, `client.ts`)는 한 줄도 바꾸지 않습니다.
+
+주의할 점은 **불러오는 순서**입니다. openapi-fetch 는 `createClient` 를 호출하는 순간 그때의 `fetch` 를 잡아 둡니다. 그래서 감싸는 코드가
+`api/client.ts` 보다 먼저 실행돼야 합니다. `main.tsx` 의 **첫 import** 로 둡니다. ES 모듈은 import 순서대로 평가되므로 이것으로 충분합니다.
+
+```tsx
+// web/src/main.tsx (맨 위 두 줄을 더한다)
+// 가장 먼저 불러온다. API 클라이언트가 만들어지며 fetch 를 잡아 두기 전에 감싸야 네트워크 콘솔에 요청이 찍힌다 (부록 D)
+import './network-console/log';
+import { StrictMode } from 'react';
+// …
+```
+
+요청 정보는 원래 `Request` 객체에서 **값만 읽습니다.** `new Request(input, init)` 로 새로 만들면 원래 요청의 본문이 소비되어 실제 요청이 실패합니다.
+에러 응답의 `code` 는 `response.clone()` 으로 읽습니다. 원본을 읽어 버리면 앱의 `session.ts` 가 같은 응답을 읽지 못합니다.
+
+```ts
+// web/src/network-console/log.ts
+/**
+ * 교육용 네트워크 기록. window.fetch 를 한 번 감싸 API 로 가는 요청만 적어 둔다.
+ * main.tsx 에서 가장 먼저 import 해야 한다 — openapi-fetch 클라이언트가 만들어질 때 fetch 를 잡아 두기 때문이다.
+ * 화면은 App.tsx 의 <NetworkConsole /> 가 그린다.
+ */
+
+export type NetworkEntry = {
+  id: number;
+  time: string;
+  method: string;
+  path: string;
+  status: number | null; // null = 네트워크 오류(서버에 닿지 못함)
+  ms: number;
+  sentCsrf: boolean;
+  sentBearer: boolean;
+  code?: string;
+  cacheControl?: string | null;
+  note: string;
+};
+
+const API = import.meta.env.VITE_API_URL;
+const MAX = 50;
+
+let entries: NetworkEntry[] = [];
+let nextId = 1;
+const listeners = new Set<() => void>();
+
+export const getEntries = () => entries;
+export function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+function push(entry: NetworkEntry) {
+  entries = [...entries.slice(-(MAX - 1)), entry];
+  listeners.forEach((listener) => listener());
+}
+
+/** 요청과 결과를 보고 이 줄이 무슨 뜻인지 한 줄로 적는다. 브라우저 Network 탭 확인표(부록 D)와 같은 내용이다. */
+function explain(method: string, path: string, status: number | null, code?: string): string {
+  if (status === null) return 'API 에 닿지 못함 — 서버가 떠 있는지, VITE_API_URL 이 맞는지 확인';
+  if (code === 'REFRESH_TOKEN_INVALID') return '리프레시 쿠키 없음·만료·폐기 — 처음 방문이거나 로그아웃 뒤라면 정상';
+  if (code === 'REFRESH_TOKEN_REUSED') return '재사용 탐지로 세션이 끊김 — 정상 사용 중이면 잠금 밖 refresh 를 의심';
+  if (code === 'REFRESH_TOKEN_ROTATED') return '동시 refresh (grace 안) — 바로 뒤에 refresh 가 한 번 더 나가야 한다';
+  if (code === 'ACCESS_TOKEN_INVALID') return '액세스 토큰 없음·만료 — 뒤에 refresh 200 과 이 요청의 재시도가 따라와야 한다';
+  if (code === 'INVALID_CREDENTIALS') return '이메일 또는 비밀번호가 맞지 않음';
+  if (code === 'CSRF_ORIGIN_REJECTED') return 'Origin 이 허용 목록 밖 — WEB_ORIGINS 와 주소창 출처를 비교';
+  if (code === 'CSRF_TOKEN_INVALID') return 'CSRF 토큰이 쿠키와 안 맞음 — 곧바로 csrf 를 다시 받아 한 번 재시도해야 한다';
+  if (code === 'TOO_MANY_REQUESTS') return '로그인 시도 제한 (1분 5회)';
+  if (path === '/auth/csrf' && status === 200) return 'CSRF 토큰 받음 — 쿠키가 살아 있으면 매번 같은 값';
+  if (path === '/auth/login' && status === 200) return '로그인 성공 — 액세스 토큰은 본문(메모리), 리프레시 토큰은 HttpOnly 쿠키';
+  if (path === '/auth/refresh' && status === 200) return '회전 성공 — 새 액세스 토큰, 리프레시 쿠키도 새 값으로 바뀜';
+  if (path === '/auth/logout' && status === 204) return '세션 폐기 + 리프레시 쿠키 삭제';
+  if (path === '/auth/logout-all' && status === 204) return '이 사용자의 모든 세션 폐기';
+  if (method === 'GET' && status === 200) return '조회 성공';
+  return '';
+}
+
+function readRequest(input: RequestInfo | URL, init?: RequestInit) {
+  // Request 를 새로 만들면 본문이 소비되므로 원래 객체에서 값만 읽는다
+  if (input instanceof Request) return { url: input.url, method: input.method, headers: input.headers };
+  return {
+    url: String(input),
+    method: (init?.method ?? 'GET').toUpperCase(),
+    headers: new Headers(init?.headers),
+  };
+}
+
+const originalFetch = window.fetch.bind(window);
+
+window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+  const { url, method, headers } = readRequest(input, init);
+  if (!API || !url.startsWith(API)) return originalFetch(input, init);
+
+  const path = url.slice(API.length).split('?')[0];
+  const started = performance.now();
+  const base = {
+    id: nextId++,
+    time: new Date().toTimeString().slice(0, 8), // HH:MM:SS
+    method,
+    path,
+    sentCsrf: headers.has('X-CSRF-Token'),
+    sentBearer: (headers.get('Authorization') ?? '').startsWith('Bearer '),
+  };
+
+  let response: Response;
+  try {
+    response = await originalFetch(input, init);
+  } catch (error) {
+    push({ ...base, status: null, ms: Math.round(performance.now() - started), note: explain(method, path, null) });
+    throw error;
+  }
+
+  const ms = Math.round(performance.now() - started);
+  let code: string | undefined;
+  if (!response.ok && response.headers.get('content-type')?.includes('application/json')) {
+    // 에러 응답의 code 만 읽는다. 원본 응답은 앱이 읽어야 하므로 복제본을 쓴다
+    code = await response
+      .clone()
+      .json()
+      .then((body: { code?: string }) => body.code)
+      .catch(() => undefined);
+  }
+  push({
+    ...base,
+    status: response.status,
+    ms,
+    code,
+    cacheControl: response.headers.get('cache-control'),
+    note: explain(method, path, response.status, code),
+  });
+  return response;
+};
+```
+
+화면은 `useSyncExternalStore` 로 기록을 구독합니다. 11장에서 세션 상태를 구독한 방법과 같습니다.
+
+```tsx
+// web/src/network-console/NetworkConsole.tsx
+import { useEffect, useRef, useSyncExternalStore } from 'react';
+import { getEntries, subscribe, type NetworkEntry } from './log';
+
+const C = {
+  bg: '#1e1e1e',
+  bar: '#2d2d2d',
+  border: '#3c3c3c',
+  text: '#d4d4d4',
+  dim: '#8a8a8a',
+  ok: '#4ec9b0',
+  warn: '#dcdcaa',
+  error: '#f48771',
+  method: '#569cd6',
+  note: '#9cdcfe',
+};
+
+function statusColor(status: number | null) {
+  if (status === null || status >= 500) return C.error;
+  if (status === 409) return C.warn;
+  if (status >= 400) return C.error;
+  return C.ok;
+}
+
+function Line({ entry }: { entry: NetworkEntry }) {
+  const mark = (on: boolean) => (on ? '✓' : '·');
+  return (
+    <div style={{ padding: '6px 10px', borderBottom: `1px solid ${C.border}` }}>
+      <div>
+        <span style={{ color: C.dim }}>{entry.time} </span>
+        <span style={{ color: C.method }}>{entry.method.padEnd(6)}</span>
+        <span>{entry.path} </span>
+        <span style={{ color: statusColor(entry.status) }}>{entry.status ?? 'ERR'}</span>
+        {entry.code && <span style={{ color: statusColor(entry.status) }}> {entry.code}</span>}
+        <span style={{ color: C.dim }}> {entry.ms}ms</span>
+      </div>
+      <div style={{ color: C.dim, paddingLeft: 16 }}>
+        보낸 헤더 X-CSRF-Token {mark(entry.sentCsrf)}  Authorization {mark(entry.sentBearer)}
+        {entry.cacheControl && `  |  응답 Cache-Control: ${entry.cacheControl}`}
+      </div>
+      {entry.note && <div style={{ color: C.note, paddingLeft: 16 }}>↳ {entry.note}</div>}
+    </div>
+  );
+}
+
+/** 모든 화면 하단에 고정되는 교육용 네트워크 콘솔. API 로 간 요청을 시간순으로 보여 준다. */
+export function NetworkConsole() {
+  const entries = useSyncExternalStore(subscribe, getEntries);
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  // 콘솔처럼 새 줄이 생기면 맨 아래로 스크롤한다
+  useEffect(() => {
+    bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight });
+  }, [entries]);
+
+  return (
+    <section
+      aria-label="네트워크 콘솔"
+      style={{
+        position: 'fixed',
+        left: 0,
+        bottom: 0,
+        width: '100%',
+        zIndex: 1000,
+        boxSizing: 'border-box',
+        background: C.bg,
+        color: C.text,
+        borderTop: `1px solid ${C.border}`,
+        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+        fontSize: 12,
+        lineHeight: 1.6,
+        whiteSpace: 'pre-wrap',
+        wordBreak: 'break-all',
+      }}
+    >
+      <div style={{ background: C.bar, padding: '6px 10px', borderBottom: `1px solid ${C.border}`, color: C.dim }}>
+        Console — {import.meta.env.VITE_API_URL} 로 간 요청 {entries.length}건
+      </div>
+      <div ref={bodyRef} style={{ height: '30vh', overflowY: 'auto' }}>
+        {entries.length === 0 && <div style={{ padding: '6px 10px', color: C.dim }}>&gt; 아직 요청이 없습니다</div>}
+        {entries.map((entry) => (
+          <Line key={entry.id} entry={entry} />
+        ))}
+      </div>
+      <div style={{ padding: '6px 10px', borderTop: `1px solid ${C.border}`, color: C.dim }}>
+        ⓘ Set-Cookie·쿠키 값·OPTIONS 사전 요청은 브라우저가 JS 에 보여 주지 않습니다. 개발자 도구 Network·Application 탭에서
+        확인하세요 (부록 D).
+      </div>
+    </section>
+  );
+}
+```
+
+콘솔은 `App.tsx` 에서 라우트 **밖**에 둡니다. 그래서 로그인 화면뿐 아니라 로그인한 뒤의 "내 정보" 화면, 가입 화면, 실습실에서도 계속 보입니다.
+로그인 직후의 `sessions` 조회나 액세스 토큰이 만료된 뒤의 `401 → refresh → 재시도` 처럼 **로그인 뒤에 일어나는 흐름**도 끊기지 않고 이어서 볼 수 있습니다.
+
+```tsx
+// web/src/App.tsx (바뀌는 부분)
+import { NetworkConsole } from './network-console/NetworkConsole';
+// …
+  return (
+    // 아래쪽 여백: 화면 하단에 고정된 네트워크 콘솔(부록 D)이 본문을 가리지 않게 한다
+    <main style={{ maxWidth: 640, margin: '40px auto', fontFamily: 'system-ui', padding: '0 16px 45vh' }}>
+      {/* … nav, Routes 는 11·12장 그대로 … */}
+      <NetworkConsole />
+    </main>
+  );
+```
+
+콘솔은 `position: fixed` 로 화면 하단에 전체 폭으로 붙고, 요청 목록은 화면 높이의 30% 안에서 스크롤됩니다. 고정된 요소는 본문 위에 겹쳐 그려지므로
+`<main>` 아래쪽에 `45vh` 여백을 두어 본문 끝이 콘솔 뒤에 숨지 않게 했습니다.
+
+기록은 모듈 변수에 남으므로 화면을 옮겨 다녀도 그동안의 요청(최근 50건)이 그대로 보입니다. 새로고침하면 비워집니다.
+
+### 써 보기
+
+1. 로그인 화면을 새로고침합니다. `csrf` 200 → `refresh` 401 두 줄이 찍히고, 401 줄 아래에 "처음 방문이면 정상" 이 보입니다.
+2. 틀린 비밀번호로 로그인합니다. `login` 401 `INVALID_CREDENTIALS` 가 빨갛게 찍힙니다. 여섯 번째에는 429 가 찍힙니다(1분 5회 제한).
+3. 제대로 로그인하면 "내 정보" 화면으로 넘어가도 콘솔은 그대로이고, `login` 200 뒤에 `sessions` 200 이 이어서 찍힙니다. 로그아웃하면 `logout` 204 가 더해집니다.
+4. 같은 흐름을 개발자 도구 Network 탭과 나란히 놓고, 콘솔에 없는 `OPTIONS` 와 `Set-Cookie` 를 D.2 표대로 확인합니다.
+
+⚠️ 이 콘솔은 교육용입니다. 운영 화면에 두면 사용자에게 내부 요청 구조를 보여 주게 되니, 운영 빌드에서는 `main.tsx` 의 import 와 `App.tsx` 의 `<NetworkConsole />`·아래쪽 여백을 빼세요.

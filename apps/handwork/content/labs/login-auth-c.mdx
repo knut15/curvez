@@ -1,0 +1,2151 @@
+export const meta = {
+  title: "[로그인인증] 완성 코드 (C)",
+  summary: "시리즈를 끝까지 따라왔을 때의 NestJS 백엔드·React 프론트엔드·공격 페이지 코드 전체.",
+  date: "2026-09",
+  status: "마무리",
+  order: 118,
+  tags: ["로그인인증", "nestjs", "react"],
+};
+
+![초록으로 채운 큰 열쇠 하나가 가로로 놓여 있고, 그 뒤에 같은 모양의 열쇠 두 개가 남색 윤곽선만으로 겹쳐 있다. 열쇠들 아래로 가는 선이 하나 지나간다.](/labs/login-auth-key.jpg)
+
+이 부록은 책을 끝까지 따라왔을 때의 **최종 코드 전체**입니다. 각 장은 이 코드를 조금씩 쌓아 올립니다.
+장을 따라가다 막히면 여기서 해당 파일을 찾아 비교하세요.
+
+- 백엔드: `api/` (NestJS 12, 포트 4000)
+- 프론트엔드: `web/` (React + Vite, 포트 5173)
+- 공격 실습 페이지: `evil/` (정적 HTML, 포트 5174)
+- DB: PostgreSQL 17 (Docker, 포트 55432)
+
+```
+auth-lab/
+├── docker-compose.yml
+├── contract/
+│   └── openapi.json              ← 10장. BE 가 내보내고 FE 가 읽는 계약 파일
+├── api/
+│   ├── .env
+│   ├── db/migrations/001_init.sql
+│   └── src/
+│       ├── main.ts
+│       ├── app.module.ts
+│       ├── openapi.ts
+│       ├── config/app-config.ts
+│       ├── database/database.module.ts
+│       ├── common/
+│       │   ├── errors.ts
+│       │   ├── error-response.dto.ts
+│       │   └── validation.ts
+│       ├── users/
+│       │   ├── users.module.ts
+│       │   ├── users.repository.ts
+│       │   ├── users.controller.ts
+│       │   └── dto.ts
+│       ├── auth/
+│       │   ├── token.module.ts
+│       │   ├── token.service.ts
+│       │   ├── jwt-auth.guard.ts
+│       │   ├── auth.module.ts
+│       │   ├── auth.controller.ts
+│       │   ├── auth.service.ts
+│       │   ├── password.service.ts
+│       │   ├── refresh-token.repository.ts
+│       │   ├── csrf.ts
+│       │   ├── cookies.ts
+│       │   ├── client-meta.ts
+│       │   ├── login-throttler.guard.ts
+│       │   └── dto.ts
+│       └── lab/
+│           ├── lab.module.ts
+│           └── lab.controller.ts
+├── web/
+│   ├── .env
+│   ├── vite.config.ts
+│   └── src/
+│       ├── main.tsx
+│       ├── App.tsx
+│       ├── api/client.ts
+│       ├── api/schema.d.ts        ← 자동 생성. 손대지 않는다
+│       ├── auth/session.ts
+│       ├── auth/hooks.ts
+│       ├── auth/RequireAuth.tsx
+│       ├── auth/jwt.ts
+│       ├── network-console/       ← 부록 D. 화면 하단의 교육용 네트워크 콘솔
+│       │   ├── log.ts
+│       │   └── NetworkConsole.tsx
+│       └── pages/
+│           ├── LoginPage.tsx
+│           ├── SignupPage.tsx
+│           ├── MePage.tsx
+│           └── LabPage.tsx
+└── evil/
+    └── index.html
+```
+
+---
+
+## C.1 인프라
+
+### docker-compose.yml
+
+```yaml
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: auth
+      POSTGRES_PASSWORD: auth
+      POSTGRES_DB: auth_lab
+    ports:
+      - "55432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:
+```
+
+### api/db/migrations/001_init.sql
+
+```sql
+CREATE TABLE IF NOT EXISTS users (
+  id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  email          text NOT NULL UNIQUE,
+  nickname       text NOT NULL,
+  password_hash  text NOT NULL,
+  created_at     timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+  id                 uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id            uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  family_id          uuid NOT NULL,
+  token_hash         text NOT NULL UNIQUE,
+  expires_at         timestamptz NOT NULL,
+  session_expires_at timestamptz NOT NULL,
+  created_at         timestamptz NOT NULL DEFAULT now(),
+  revoked_at         timestamptz,
+  revoke_reason      text CHECK (revoke_reason IN
+                       ('rotated','logout','logout_all','session_deleted','reuse_detected')),
+  replaced_by        uuid REFERENCES refresh_tokens(id),
+  user_agent         text,
+  ip                 inet
+);
+CREATE INDEX IF NOT EXISTS refresh_tokens_family_idx ON refresh_tokens (family_id);
+CREATE INDEX IF NOT EXISTS refresh_tokens_user_idx   ON refresh_tokens (user_id);
+```
+
+### api/package.json 에 더하는 스크립트
+
+```json
+{
+  "scripts": {
+    "db:migrate": "cat db/migrations/*.sql | docker compose -f ../docker-compose.yml exec -T db psql -v ON_ERROR_STOP=1 -U auth -d auth_lab",
+    "db:psql": "docker compose -f ../docker-compose.yml exec db psql -U auth -d auth_lab",
+    "openapi:export": "nest build && node dist/main.js --export-openapi ../contract/openapi.json"
+  }
+}
+```
+
+### api/.env
+
+```dotenv
+PORT=4000
+DATABASE_URL=postgres://auth:auth@localhost:55432/auth_lab
+
+# openssl rand -base64 48 로 만든 값을 넣는다. 둘은 서로 달라야 한다.
+JWT_ACCESS_SECRET=change-me-change-me-change-me-change-me-0001
+CSRF_SECRET=change-me-change-me-change-me-change-me-0002
+
+JWT_ISSUER=auth-lab-api
+JWT_AUDIENCE=auth-lab-web
+ACCESS_TOKEN_TTL_SEC=600
+REFRESH_TOKEN_TTL_SEC=1209600
+SESSION_MAX_AGE_SEC=2592000
+REFRESH_REUSE_GRACE_SEC=10
+
+WEB_ORIGINS=http://localhost:5173
+API_ORIGIN=http://localhost:4000
+COOKIE_SECURE=true
+SWAGGER_ENABLED=true
+
+# 8·9장 CSRF 실습실
+LAB_MODE=true
+LAB_COOKIE_SAMESITE=none
+LAB_CHECK_ORIGIN=false
+LAB_CHECK_TOKEN=false
+```
+
+---
+
+## C.2 백엔드 — 뼈대
+
+### src/main.ts
+
+```ts
+import { ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+import { writeFileSync } from 'node:fs';
+import { AppModule } from './app.module';
+import { validationExceptionFactory } from './common/validation';
+import { AppConfig } from './config/app-config';
+import { buildOpenApi } from './openapi';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  const config = app.get(AppConfig);
+
+  app.use(helmet());
+  app.use(cookieParser());
+  app.enableCors({
+    origin: config.webOrigins, // 명시적인 배열. true(요청 출처 반사)나 '*' 를 쓰지 않는다
+    credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
+  });
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      exceptionFactory: validationExceptionFactory,
+    }),
+  );
+  app.enableShutdownHooks();
+
+  const document = buildOpenApi(app);
+
+  // pnpm openapi:export — 계약 파일만 쓰고 끝낸다 (10장)
+  const exportAt = process.argv.indexOf('--export-openapi');
+  if (exportAt !== -1) {
+    writeFileSync(process.argv[exportAt + 1] ?? 'openapi.json', JSON.stringify(document, null, 2) + '\n');
+    await app.close();
+    return;
+  }
+
+  if (config.swaggerEnabled) {
+    SwaggerModule.setup('docs', app, document, {
+      swaggerOptions: { persistAuthorization: true, withCredentials: true },
+    });
+  }
+  await app.listen(config.port);
+}
+
+void bootstrap();
+```
+
+### src/app.module.ts
+
+```ts
+import { Module } from '@nestjs/common';
+import { AuthModule } from './auth/auth.module';
+import { AppConfigModule } from './config/app-config';
+import { DatabaseModule } from './database/database.module';
+import { LabModule } from './lab/lab.module';
+import { UsersModule } from './users/users.module';
+
+@Module({
+  imports: [AppConfigModule, DatabaseModule, UsersModule, AuthModule, LabModule],
+})
+export class AppModule {}
+```
+
+### src/openapi.ts
+
+```ts
+import type { INestApplication } from '@nestjs/common';
+import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
+
+export function buildOpenApi(app: INestApplication): OpenAPIObject {
+  const config = new DocumentBuilder()
+    .setTitle('Auth Lab API')
+    .setDescription(
+      [
+        '로그인 인증 실습 API.',
+        '',
+        '**쿠키를 쓰는 요청(login·refresh·logout)은 CSRF 토큰이 필요하다.**',
+        '1. `GET /auth/csrf` 를 실행해 `csrfToken` 을 복사한다.',
+        '2. 오른쪽 위 Authorize → `csrf` 에 붙여 넣는다.',
+        '3. 로그인 응답의 `accessToken` 을 Authorize → `access-token` 에 붙여 넣는다.',
+      ].join('\n'),
+    )
+    .setVersion('1.0')
+    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'access-token')
+    .addApiKey({ type: 'apiKey', in: 'header', name: 'X-CSRF-Token' }, 'csrf')
+    .addCookieAuth('refresh_token', { type: 'apiKey', in: 'cookie' }, 'refresh-cookie')
+    .build();
+  return SwaggerModule.createDocument(app, config);
+}
+```
+
+### src/config/app-config.ts
+
+```ts
+import { Global, Injectable, Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+
+export type SameSite = 'strict' | 'lax' | 'none';
+
+@Injectable()
+export class AppConfig {
+  readonly port: number;
+  readonly databaseUrl: string;
+  readonly jwtAccessSecret: string;
+  readonly jwtIssuer: string;
+  readonly jwtAudience: string;
+  readonly accessTokenTtlSec: number;
+  readonly refreshTokenTtlSec: number;
+  readonly sessionMaxAgeSec: number;
+  readonly refreshReuseGraceSec: number;
+  readonly csrfSecret: string;
+  readonly webOrigins: string[];
+  readonly apiOrigin: string;
+  readonly cookieSecure: boolean;
+  readonly swaggerEnabled: boolean;
+  readonly lab: { enabled: boolean; sameSite: SameSite; checkOrigin: boolean; checkToken: boolean };
+
+  constructor(config: ConfigService) {
+    const str = (key: string) => config.getOrThrow<string>(key);
+    const num = (key: string) => {
+      const value = Number(str(key));
+      if (!Number.isFinite(value)) throw new Error(`${key} 는 숫자여야 한다`);
+      return value;
+    };
+    const secret = (key: string) => {
+      const value = str(key);
+      if (value.length < 32) throw new Error(`${key} 는 32자 이상이어야 한다`);
+      return value;
+    };
+    const flag = (key: string) => config.get<string>(key) === 'true';
+
+    this.port = num('PORT');
+    this.databaseUrl = str('DATABASE_URL');
+    this.jwtAccessSecret = secret('JWT_ACCESS_SECRET');
+    this.jwtIssuer = str('JWT_ISSUER');
+    this.jwtAudience = str('JWT_AUDIENCE');
+    this.accessTokenTtlSec = num('ACCESS_TOKEN_TTL_SEC');
+    this.refreshTokenTtlSec = num('REFRESH_TOKEN_TTL_SEC');
+    this.sessionMaxAgeSec = num('SESSION_MAX_AGE_SEC');
+    this.refreshReuseGraceSec = num('REFRESH_REUSE_GRACE_SEC');
+    this.csrfSecret = secret('CSRF_SECRET');
+    this.webOrigins = str('WEB_ORIGINS').split(',').map((o) => o.trim());
+    this.apiOrigin = str('API_ORIGIN');
+    this.cookieSecure = flag('COOKIE_SECURE');
+    this.swaggerEnabled = flag('SWAGGER_ENABLED');
+
+    const sameSite = (config.get<string>('LAB_COOKIE_SAMESITE') ?? 'none').toLowerCase();
+    if (!['strict', 'lax', 'none'].includes(sameSite)) {
+      throw new Error('LAB_COOKIE_SAMESITE 는 strict | lax | none 중 하나여야 한다');
+    }
+    this.lab = {
+      enabled: flag('LAB_MODE'),
+      sameSite: sameSite as SameSite,
+      checkOrigin: flag('LAB_CHECK_ORIGIN'),
+      checkToken: flag('LAB_CHECK_TOKEN'),
+    };
+  }
+
+  /** CSRF Origin 검사 허용 목록. Swagger UI 는 API 자신의 출처에서 요청한다. */
+  get csrfAllowedOrigins(): string[] {
+    return this.swaggerEnabled ? [...this.webOrigins, this.apiOrigin] : this.webOrigins;
+  }
+}
+
+@Global()
+@Module({
+  imports: [ConfigModule.forRoot()],
+  providers: [AppConfig],
+  exports: [AppConfig],
+})
+export class AppConfigModule {}
+```
+
+### src/database/database.module.ts
+
+```ts
+import { Global, Inject, Module, OnApplicationShutdown } from '@nestjs/common';
+import { Pool } from 'pg';
+import { AppConfig } from '../config/app-config';
+
+export const PG_POOL = Symbol('PG_POOL');
+
+@Global()
+@Module({
+  providers: [
+    {
+      provide: PG_POOL,
+      inject: [AppConfig],
+      useFactory: (config: AppConfig) => new Pool({ connectionString: config.databaseUrl }),
+    },
+  ],
+  exports: [PG_POOL],
+})
+export class DatabaseModule implements OnApplicationShutdown {
+  constructor(@Inject(PG_POOL) private readonly pool: Pool) {}
+
+  async onApplicationShutdown() {
+    await this.pool.end();
+  }
+}
+```
+
+### src/common/errors.ts
+
+```ts
+import { HttpException, HttpStatus } from '@nestjs/common';
+
+export const ErrorCode = {
+  VALIDATION_FAILED: 'VALIDATION_FAILED',
+  INVALID_CREDENTIALS: 'INVALID_CREDENTIALS',
+  ACCESS_TOKEN_INVALID: 'ACCESS_TOKEN_INVALID',
+  REFRESH_TOKEN_INVALID: 'REFRESH_TOKEN_INVALID',
+  REFRESH_TOKEN_REUSED: 'REFRESH_TOKEN_REUSED',
+  REFRESH_TOKEN_ROTATED: 'REFRESH_TOKEN_ROTATED',
+  CSRF_ORIGIN_REJECTED: 'CSRF_ORIGIN_REJECTED',
+  CSRF_TOKEN_INVALID: 'CSRF_TOKEN_INVALID',
+  EMAIL_TAKEN: 'EMAIL_TAKEN',
+  SESSION_NOT_FOUND: 'SESSION_NOT_FOUND',
+  TOO_MANY_REQUESTS: 'TOO_MANY_REQUESTS',
+  LAB_DISABLED: 'LAB_DISABLED',
+} as const;
+export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
+
+/** 모든 에러 응답을 { statusCode, code, message } 한 모양으로 만든다. */
+export class AppError extends HttpException {
+  constructor(status: HttpStatus, readonly code: ErrorCode, message: string) {
+    super({ statusCode: status, code, message }, status);
+  }
+}
+```
+
+### src/common/error-response.dto.ts
+
+```ts
+import { ApiProperty } from '@nestjs/swagger';
+import { ErrorCode } from './errors';
+
+export class ErrorResponseDto {
+  @ApiProperty({ example: 401 })
+  statusCode!: number;
+
+  @ApiProperty({ enum: ErrorCode, enumName: 'ErrorCode', example: ErrorCode.ACCESS_TOKEN_INVALID })
+  code!: ErrorCode;
+
+  @ApiProperty({ example: '액세스 토큰이 유효하지 않다' })
+  message!: string;
+}
+```
+
+### src/common/validation.ts
+
+```ts
+import { HttpStatus, ValidationError } from '@nestjs/common';
+import { AppError, ErrorCode } from './errors';
+
+export function validationExceptionFactory(errors: ValidationError[]) {
+  const message = errors.flatMap((e) => Object.values(e.constraints ?? {})).join('; ');
+  return new AppError(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_FAILED, message || '입력값이 올바르지 않다');
+}
+```
+
+---
+
+## C.3 백엔드 — 사용자
+
+### src/users/dto.ts
+
+```ts
+import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { IsString, Length } from 'class-validator';
+import type { UserRow } from './users.repository';
+
+export const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
+
+export class UserDto {
+  @ApiProperty({ format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({ example: 'kim@example.com' })
+  email!: string;
+
+  @ApiProperty({ example: '김개발' })
+  nickname!: string;
+
+  @ApiProperty({ format: 'date-time' })
+  createdAt!: string;
+}
+
+export function toUserDto(row: UserRow): UserDto {
+  return { id: row.id, email: row.email, nickname: row.nickname, createdAt: row.created_at.toISOString() };
+}
+
+export class UpdateNicknameDto {
+  @ApiProperty({ example: '김개발', minLength: 2, maxLength: 20 })
+  @Transform(trim)
+  @IsString()
+  @Length(2, 20)
+  nickname!: string;
+}
+```
+
+### src/users/users.repository.ts
+
+```ts
+import { Inject, Injectable } from '@nestjs/common';
+import type { Pool } from 'pg';
+import { PG_POOL } from '../database/database.module';
+
+export type UserRow = {
+  id: string;
+  email: string;
+  nickname: string;
+  password_hash: string;
+  created_at: Date;
+};
+
+@Injectable()
+export class UsersRepository {
+  constructor(@Inject(PG_POOL) private readonly pool: Pool) {}
+
+  /** 이메일이 이미 있으면 null. UNIQUE 제약으로 판단한다 — 먼저 조회하고 넣으면 그 사이에 경합이 생긴다. */
+  async create(input: { email: string; nickname: string; passwordHash: string }): Promise<UserRow | null> {
+    const { rows } = await this.pool.query<UserRow>(
+      `INSERT INTO users (email, nickname, password_hash) VALUES ($1, $2, $3)
+       ON CONFLICT (email) DO NOTHING
+       RETURNING *`,
+      [input.email, input.nickname, input.passwordHash],
+    );
+    return rows[0] ?? null;
+  }
+
+  async findByEmail(email: string): Promise<UserRow | null> {
+    const { rows } = await this.pool.query<UserRow>('SELECT * FROM users WHERE email = $1', [email]);
+    return rows[0] ?? null;
+  }
+
+  async findById(id: string): Promise<UserRow | null> {
+    const { rows } = await this.pool.query<UserRow>('SELECT * FROM users WHERE id = $1', [id]);
+    return rows[0] ?? null;
+  }
+
+  async updateNickname(id: string, nickname: string): Promise<UserRow | null> {
+    const { rows } = await this.pool.query<UserRow>(
+      'UPDATE users SET nickname = $2 WHERE id = $1 RETURNING *',
+      [id, nickname],
+    );
+    return rows[0] ?? null;
+  }
+}
+```
+
+### src/users/users.controller.ts
+
+```ts
+import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import { ApiBadRequestResponse, ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { CurrentUser, JwtAuthGuard } from '../auth/jwt-auth.guard';
+import type { AuthUser } from '../auth/token.service';
+import { ErrorResponseDto } from '../common/error-response.dto';
+import { AppError, ErrorCode } from '../common/errors';
+import { UpdateNicknameDto, UserDto, toUserDto } from './dto';
+import { UsersRepository } from './users.repository';
+
+@ApiTags('users')
+@ApiBearerAuth('access-token')
+@ApiUnauthorizedResponse({ type: ErrorResponseDto, description: 'ACCESS_TOKEN_INVALID' })
+@UseGuards(JwtAuthGuard)
+@Controller('users')
+export class UsersController {
+  constructor(private readonly users: UsersRepository) {}
+
+  @Get('me')
+  @ApiOperation({ summary: '내 정보' })
+  @ApiOkResponse({ type: UserDto })
+  async me(@CurrentUser() user: AuthUser): Promise<UserDto> {
+    const row = await this.users.findById(user.userId);
+    if (!row) throw new AppError(401, ErrorCode.ACCESS_TOKEN_INVALID, '사용자가 없다');
+    return toUserDto(row);
+  }
+
+  @Patch('me')
+  @ApiOperation({ summary: '닉네임 변경' })
+  @ApiBadRequestResponse({ type: ErrorResponseDto, description: 'VALIDATION_FAILED' })
+  @ApiOkResponse({ type: UserDto })
+  async updateMe(@CurrentUser() user: AuthUser, @Body() dto: UpdateNicknameDto): Promise<UserDto> {
+    const row = await this.users.updateNickname(user.userId, dto.nickname);
+    if (!row) throw new AppError(401, ErrorCode.ACCESS_TOKEN_INVALID, '사용자가 없다');
+    return toUserDto(row);
+  }
+}
+```
+
+### src/users/users.module.ts
+
+```ts
+import { Module } from '@nestjs/common';
+import { TokenModule } from '../auth/token.module';
+import { UsersController } from './users.controller';
+import { UsersRepository } from './users.repository';
+
+@Module({
+  imports: [TokenModule],
+  controllers: [UsersController],
+  providers: [UsersRepository],
+  exports: [UsersRepository],
+})
+export class UsersModule {}
+```
+
+---
+
+## C.4 백엔드 — 토큰
+
+### src/auth/token.service.ts
+
+```ts
+import { Injectable } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { AppConfig } from '../config/app-config';
+
+export type AuthUser = { userId: string; sessionId: string };
+
+@Injectable()
+export class TokenService {
+  constructor(
+    private readonly jwt: JwtService,
+    private readonly config: AppConfig,
+  ) {}
+
+  signAccessToken(userId: string, sessionId: string): Promise<string> {
+    return this.jwt.signAsync(
+      { sid: sessionId },
+      {
+        secret: this.config.jwtAccessSecret,
+        algorithm: 'HS256',
+        subject: userId,
+        issuer: this.config.jwtIssuer,
+        audience: this.config.jwtAudience,
+        expiresIn: this.config.accessTokenTtlSec,
+        jwtid: randomUUID(),
+      },
+    );
+  }
+
+  async verifyAccessToken(token: string): Promise<AuthUser> {
+    const payload = await this.jwt.verifyAsync<{ sub: string; sid: string }>(token, {
+      secret: this.config.jwtAccessSecret,
+      algorithms: ['HS256'], // 토큰 헤더의 alg 를 믿지 않는다
+      issuer: this.config.jwtIssuer,
+      audience: this.config.jwtAudience,
+    });
+    return { userId: payload.sub, sessionId: payload.sid };
+  }
+
+  newRefreshToken(): string {
+    return randomBytes(32).toString('base64url');
+  }
+
+  hashRefreshToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
+  }
+}
+```
+
+### src/auth/jwt-auth.guard.ts
+
+```ts
+import { CanActivate, ExecutionContext, Injectable, createParamDecorator } from '@nestjs/common';
+import type { Request } from 'express';
+import { AppError, ErrorCode } from '../common/errors';
+import { AuthUser, TokenService } from './token.service';
+
+type AuthedRequest = Request & { user?: AuthUser };
+
+@Injectable()
+export class JwtAuthGuard implements CanActivate {
+  constructor(private readonly tokens: TokenService) {}
+
+  async canActivate(ctx: ExecutionContext): Promise<boolean> {
+    const req = ctx.switchToHttp().getRequest<AuthedRequest>();
+    const [scheme, token] = (req.get('authorization') ?? '').split(' ');
+    if (scheme !== 'Bearer' || !token) {
+      throw new AppError(401, ErrorCode.ACCESS_TOKEN_INVALID, 'Bearer 토큰이 없다');
+    }
+    try {
+      req.user = await this.tokens.verifyAccessToken(token);
+    } catch {
+      throw new AppError(401, ErrorCode.ACCESS_TOKEN_INVALID, '액세스 토큰이 유효하지 않다');
+    }
+    return true;
+  }
+}
+
+export const CurrentUser = createParamDecorator(
+  (_: unknown, ctx: ExecutionContext): AuthUser => ctx.switchToHttp().getRequest<AuthedRequest>().user!,
+);
+```
+
+### src/auth/token.module.ts
+
+```ts
+import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
+import { JwtAuthGuard } from './jwt-auth.guard';
+import { TokenService } from './token.service';
+
+@Module({
+  imports: [JwtModule.register({})], // 비밀·옵션은 호출마다 AppConfig 에서 넘긴다
+  providers: [TokenService, JwtAuthGuard],
+  exports: [TokenService, JwtAuthGuard],
+})
+export class TokenModule {}
+```
+
+---
+
+## C.5 백엔드 — 인증
+
+### src/auth/password.service.ts
+
+```ts
+import { Injectable } from '@nestjs/common';
+import * as argon2 from 'argon2';
+
+// OWASP Password Storage Cheat Sheet 의 argon2id 최소 권장값 (19 MiB, 2회, 병렬 1)
+const OPTIONS = { type: argon2.argon2id, memoryCost: 19456, timeCost: 2, parallelism: 1 } as const;
+
+@Injectable()
+export class PasswordService {
+  private dummyHash?: Promise<string>;
+
+  hash(password: string): Promise<string> {
+    return argon2.hash(password, OPTIONS);
+  }
+
+  verify(hash: string, password: string): Promise<boolean> {
+    return argon2.verify(hash, password);
+  }
+
+  /** 없는 사용자일 때도 검증 한 번 분량의 시간을 쓴다. 응답 시간으로 가입 여부가 드러나지 않게. */
+  async burn(password: string): Promise<false> {
+    this.dummyHash ??= argon2.hash('timing-equalizer-dummy-password', OPTIONS);
+    await argon2.verify(await this.dummyHash, password);
+    return false;
+  }
+}
+```
+
+### src/auth/refresh-token.repository.ts
+
+```ts
+import { Inject, Injectable } from '@nestjs/common';
+import type { Pool, PoolClient } from 'pg';
+import { AppConfig } from '../config/app-config';
+import { PG_POOL } from '../database/database.module';
+
+export type ClientMeta = { userAgent: string | null; ip: string | null };
+export type IssuedRefresh = { familyId: string; expiresAt: Date };
+export type RotateOutcome =
+  | { kind: 'ok'; userId: string; familyId: string; expiresAt: Date }
+  | { kind: 'invalid' }
+  | { kind: 'race' }
+  | { kind: 'reused' };
+export type SessionRow = {
+  session_id: string;
+  created_at: Date;
+  last_used_at: Date;
+  user_agent: string | null;
+};
+
+type RevokeReason = 'logout' | 'logout_all' | 'session_deleted';
+
+@Injectable()
+export class RefreshTokenRepository {
+  constructor(
+    @Inject(PG_POOL) private readonly pool: Pool,
+    private readonly config: AppConfig,
+  ) {}
+
+  /** 로그인: 새 family(= 세션)를 연다. */
+  async createFamily(userId: string, tokenHash: string, meta: ClientMeta): Promise<IssuedRefresh> {
+    const { rows } = await this.pool.query<{ family_id: string; expires_at: Date }>(
+      `INSERT INTO refresh_tokens
+         (user_id, family_id, token_hash, expires_at, session_expires_at, user_agent, ip)
+       VALUES ($1, gen_random_uuid(), $2,
+               LEAST(now() + make_interval(secs => $3::float8), now() + make_interval(secs => $4::float8)),
+               now() + make_interval(secs => $4::float8), $5, $6)
+       RETURNING family_id, expires_at`,
+      [userId, tokenHash, this.config.refreshTokenTtlSec, this.config.sessionMaxAgeSec, meta.userAgent, meta.ip],
+    );
+    return { familyId: rows[0].family_id, expiresAt: rows[0].expires_at };
+  }
+
+  /**
+   * refresh: 한 트랜잭션에서 검사·회전·재사용 탐지.
+   * 결과를 throw 하지 않고 돌려준다 — 재사용 탐지의 폐기를 COMMIT 해야 하기 때문이다.
+   */
+  async rotate(oldHash: string, newHash: string, meta: ClientMeta): Promise<RotateOutcome> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const outcome = await this.rotateInTx(client, oldHash, newHash, meta);
+      await client.query('COMMIT');
+      return outcome;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  private async rotateInTx(
+    client: PoolClient,
+    oldHash: string,
+    newHash: string,
+    meta: ClientMeta,
+  ): Promise<RotateOutcome> {
+    // 1) 어느 family 인지 먼저 알아내고, family 단위 잠금으로 같은 세션의 회전·탐지를 한 줄로 세운다.
+    //    행 잠금(FOR UPDATE)만으로는 "탐지 UPDATE" 가 커밋 직전의 새 토큰을 보지 못하고 살려 둘 수 있다 (7장).
+    const { rows: found } = await client.query<{ family_id: string }>(
+      'SELECT family_id FROM refresh_tokens WHERE token_hash = $1',
+      [oldHash],
+    );
+    if (!found[0]) return { kind: 'invalid' };
+    await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))', [found[0].family_id]);
+
+    // 2) 잠금을 잡은 뒤에 상태를 읽는다. 앞선 트랜잭션이 커밋한 결과가 보인다.
+    const { rows } = await client.query<{
+      id: string;
+      user_id: string;
+      family_id: string;
+      session_expires_at: Date;
+      revoke_reason: string | null;
+      within_grace: boolean;
+      expired: boolean;
+      family_alive: boolean;
+    }>(
+      `SELECT t.id, t.user_id, t.family_id, t.session_expires_at, t.revoke_reason,
+              (t.revoked_at > now() - make_interval(secs => $2::float8)) AS within_grace,
+              (t.expires_at <= now()) AS expired,
+              EXISTS (SELECT 1 FROM refresh_tokens f
+                       WHERE f.family_id = t.family_id AND f.revoked_at IS NULL) AS family_alive
+         FROM refresh_tokens t
+        WHERE t.token_hash = $1
+        FOR UPDATE OF t`,
+      [oldHash, this.config.refreshReuseGraceSec],
+    );
+    const row = rows[0];
+    if (!row) return { kind: 'invalid' };
+
+    // 탐지로 끊긴 세션의 토큰: 정상 사용자에게도 "다른 곳에서 쓰였다" 는 이유를 그대로 알린다
+    if (row.revoke_reason === 'reuse_detected') return { kind: 'reused' };
+
+    if (row.revoke_reason !== null) {
+      // 로그아웃 등으로 이미 끝난 세션의 옛 토큰은 탈취 신호가 아니다
+      if (row.revoke_reason !== 'rotated' || !row.family_alive) return { kind: 'invalid' };
+      if (row.within_grace) return { kind: 'race' };
+      await client.query(
+        `UPDATE refresh_tokens SET revoked_at = now(), revoke_reason = 'reuse_detected'
+          WHERE family_id = $1 AND revoked_at IS NULL`,
+        [row.family_id],
+      );
+      return { kind: 'reused' };
+    }
+    if (row.expired) return { kind: 'invalid' };
+
+    const { rows: created } = await client.query<{ id: string; expires_at: Date }>(
+      `INSERT INTO refresh_tokens
+         (user_id, family_id, token_hash, expires_at, session_expires_at, user_agent, ip)
+       VALUES ($1, $2, $3, LEAST(now() + make_interval(secs => $4::float8), $5), $5, $6, $7)
+       RETURNING id, expires_at`,
+      [row.user_id, row.family_id, newHash, this.config.refreshTokenTtlSec, row.session_expires_at, meta.userAgent, meta.ip],
+    );
+    await client.query(
+      `UPDATE refresh_tokens SET revoked_at = now(), revoke_reason = 'rotated', replaced_by = $2 WHERE id = $1`,
+      [row.id, created[0].id],
+    );
+    return { kind: 'ok', userId: row.user_id, familyId: row.family_id, expiresAt: created[0].expires_at };
+  }
+
+  async revokeFamilyByToken(tokenHash: string): Promise<void> {
+    await this.pool.query(
+      `UPDATE refresh_tokens SET revoked_at = now(), revoke_reason = 'logout'
+        WHERE family_id = (SELECT family_id FROM refresh_tokens WHERE token_hash = $1)
+          AND revoked_at IS NULL`,
+      [tokenHash],
+    );
+  }
+
+  async revokeAllForUser(userId: string): Promise<void> {
+    await this.revoke('user_id = $1', [userId], 'logout_all');
+  }
+
+  /** user_id 조건이 남의 세션 삭제를 막는다. 지운 것이 있으면 true. */
+  async revokeSession(userId: string, familyId: string): Promise<boolean> {
+    return (await this.revoke('user_id = $1 AND family_id = $2', [userId, familyId], 'session_deleted')) > 0;
+  }
+
+  async listSessions(userId: string): Promise<SessionRow[]> {
+    const { rows } = await this.pool.query<SessionRow>(
+      `SELECT family_id AS session_id,
+              min(created_at) AS created_at,
+              max(created_at) AS last_used_at,
+              (array_agg(user_agent ORDER BY created_at DESC))[1] AS user_agent
+         FROM refresh_tokens
+        WHERE user_id = $1
+        GROUP BY family_id
+       HAVING bool_or(revoked_at IS NULL AND expires_at > now())
+        ORDER BY last_used_at DESC`,
+      [userId],
+    );
+    return rows;
+  }
+
+  /** where·reason 에는 코드 안의 상수만 넘긴다. 사용자 입력은 언제나 params 로. */
+  private async revoke(where: string, params: unknown[], reason: RevokeReason): Promise<number> {
+    const { rowCount } = await this.pool.query(
+      `UPDATE refresh_tokens SET revoked_at = now(), revoke_reason = '${reason}'
+        WHERE ${where} AND revoked_at IS NULL`,
+      params,
+    );
+    return rowCount ?? 0;
+  }
+}
+```
+
+### src/auth/cookies.ts
+
+```ts
+import type { CookieOptions, Response } from 'express';
+import type { AppConfig } from '../config/app-config';
+
+export const REFRESH_COOKIE = 'refresh_token';
+export const CSRF_COOKIE = 'csrf_token';
+
+const refreshOptions = (config: AppConfig): CookieOptions => ({
+  httpOnly: true,
+  secure: config.cookieSecure,
+  sameSite: 'strict',
+  path: '/auth',
+});
+
+export function setRefreshCookie(res: Response, token: string, expiresAt: Date, config: AppConfig) {
+  res.cookie(REFRESH_COOKIE, token, { ...refreshOptions(config), expires: expiresAt });
+}
+
+/** 설정할 때와 같은 path·sameSite·secure 여야 브라우저가 같은 쿠키로 보고 지운다. */
+export function clearRefreshCookie(res: Response, config: AppConfig) {
+  res.clearCookie(REFRESH_COOKIE, refreshOptions(config));
+}
+
+export function setCsrfCookie(res: Response, token: string, config: AppConfig) {
+  res.cookie(CSRF_COOKIE, token, {
+    httpOnly: true,
+    secure: config.cookieSecure,
+    sameSite: 'strict',
+    path: '/',
+    maxAge: 2 * 60 * 60 * 1000,
+  });
+}
+```
+
+### src/auth/csrf.ts
+
+```ts
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import type { Request } from 'express';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { AppError, ErrorCode } from '../common/errors';
+import { AppConfig } from '../config/app-config';
+import { CSRF_COOKIE } from './cookies';
+
+@Injectable()
+export class CsrfService {
+  constructor(private readonly config: AppConfig) {}
+
+  /** <nonce>.<HMAC(nonce)> */
+  issue(): string {
+    const nonce = randomBytes(32).toString('base64url');
+    return `${nonce}.${this.sign(nonce)}`;
+  }
+
+  isValidPair(header: unknown, cookie: unknown): boolean {
+    if (typeof header !== 'string' || typeof cookie !== 'string') return false;
+    if (!safeEqual(header, cookie)) return false;
+    const [nonce, signature, ...rest] = header.split('.');
+    if (!nonce || !signature || rest.length > 0) return false;
+    return safeEqual(signature, this.sign(nonce));
+  }
+
+  isAllowedOrigin(req: Request): boolean {
+    const origin = req.get('origin') ?? originOf(req.get('referer'));
+    return origin !== undefined && this.config.csrfAllowedOrigins.includes(origin);
+  }
+
+  private sign(nonce: string): string {
+    return createHmac('sha256', this.config.csrfSecret).update(nonce).digest('base64url');
+  }
+}
+
+function safeEqual(a: string, b: string): boolean {
+  const left = Buffer.from(a);
+  const right = Buffer.from(b);
+  return left.length === right.length && timingSafeEqual(left, right);
+}
+
+function originOf(url: string | undefined): string | undefined {
+  if (!url) return undefined;
+  try {
+    return new URL(url).origin;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Origin 검사 → double-submit 토큰 검사 순서로 막는다. */
+@Injectable()
+export class CsrfGuard implements CanActivate {
+  constructor(private readonly csrf: CsrfService) {}
+
+  canActivate(ctx: ExecutionContext): boolean {
+    const req = ctx.switchToHttp().getRequest<Request>();
+    if (!this.csrf.isAllowedOrigin(req)) {
+      throw new AppError(403, ErrorCode.CSRF_ORIGIN_REJECTED, '허용되지 않은 출처의 요청이다');
+    }
+    if (!this.csrf.isValidPair(req.get('x-csrf-token'), req.cookies?.[CSRF_COOKIE])) {
+      throw new AppError(403, ErrorCode.CSRF_TOKEN_INVALID, 'CSRF 토큰이 없거나 맞지 않는다');
+    }
+    return true;
+  }
+}
+```
+
+### src/auth/client-meta.ts
+
+```ts
+import type { Request } from 'express';
+import type { ClientMeta } from './refresh-token.repository';
+
+export function clientMeta(req: Request): ClientMeta {
+  return { userAgent: req.get('user-agent')?.slice(0, 512) ?? null, ip: req.ip ?? null };
+}
+```
+
+### src/auth/login-throttler.guard.ts
+
+```ts
+import { Injectable } from '@nestjs/common';
+import { ThrottlerGuard } from '@nestjs/throttler';
+import { AppError, ErrorCode } from '../common/errors';
+
+/** 제한에 걸렸을 때도 { statusCode, code, message } 모양으로 응답한다. */
+@Injectable()
+export class LoginThrottlerGuard extends ThrottlerGuard {
+  protected override async throwThrottlingException(): Promise<void> {
+    throw new AppError(429, ErrorCode.TOO_MANY_REQUESTS, '로그인 시도가 너무 많다. 잠시 뒤 다시 시도하라');
+  }
+}
+```
+
+### src/auth/dto.ts
+
+```ts
+import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { IsEmail, IsNotEmpty, IsString, Length, MaxLength } from 'class-validator';
+import { UserDto, trim } from '../users/dto';
+
+const normalizeEmail = ({ value }: { value: unknown }) =>
+  typeof value === 'string' ? value.trim().toLowerCase() : value;
+
+export class SignupDto {
+  @ApiProperty({ example: 'kim@example.com', maxLength: 254 })
+  @Transform(normalizeEmail)
+  @IsEmail()
+  @MaxLength(254)
+  email!: string;
+
+  @ApiProperty({ example: 'correct horse battery', minLength: 8, maxLength: 128 })
+  @IsString()
+  @Length(8, 128)
+  password!: string;
+
+  @ApiProperty({ example: '김개발', minLength: 2, maxLength: 20 })
+  @Transform(trim)
+  @IsString()
+  @Length(2, 20)
+  nickname!: string;
+}
+
+export class LoginDto {
+  @ApiProperty({ example: 'kim@example.com' })
+  @Transform(normalizeEmail)
+  @IsEmail()
+  email!: string;
+
+  @ApiProperty({ example: 'correct horse battery' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(128)
+  password!: string;
+}
+
+export class TokenResponseDto {
+  @ApiProperty({ description: 'JWT. 메모리에만 보관한다' })
+  accessToken!: string;
+
+  @ApiProperty({ enum: ['Bearer'] })
+  tokenType!: 'Bearer';
+
+  @ApiProperty({ example: 600, description: '액세스 토큰 유효 시간(초)' })
+  expiresIn!: number;
+
+  @ApiProperty({ type: UserDto })
+  user!: UserDto;
+}
+
+export class CsrfResponseDto {
+  @ApiProperty({ description: 'X-CSRF-Token 헤더에 그대로 싣는다' })
+  csrfToken!: string;
+}
+
+export class SessionDto {
+  @ApiProperty({ format: 'uuid', description: '리프레시 family id = 액세스 토큰의 sid' })
+  sessionId!: string;
+
+  @ApiProperty({ format: 'date-time' })
+  createdAt!: string;
+
+  @ApiProperty({ format: 'date-time' })
+  lastUsedAt!: string;
+
+  @ApiProperty({ type: String, nullable: true })
+  userAgent!: string | null;
+
+  @ApiProperty({ description: '지금 이 요청을 보낸 세션인가' })
+  current!: boolean;
+}
+```
+
+### src/auth/auth.service.ts
+
+```ts
+import { Injectable } from '@nestjs/common';
+import { AppError, ErrorCode } from '../common/errors';
+import { AppConfig } from '../config/app-config';
+import { UserDto, toUserDto } from '../users/dto';
+import { UserRow, UsersRepository } from '../users/users.repository';
+import { LoginDto, SessionDto, SignupDto, TokenResponseDto } from './dto';
+import { PasswordService } from './password.service';
+import { ClientMeta, RefreshTokenRepository } from './refresh-token.repository';
+import { AuthUser, TokenService } from './token.service';
+
+export type Issued = {
+  body: TokenResponseDto;
+  refresh: { token: string; expiresAt: Date };
+};
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private readonly users: UsersRepository,
+    private readonly passwords: PasswordService,
+    private readonly tokens: TokenService,
+    private readonly refreshTokens: RefreshTokenRepository,
+    private readonly config: AppConfig,
+  ) {}
+
+  async signup(dto: SignupDto): Promise<UserDto> {
+    const passwordHash = await this.passwords.hash(dto.password);
+    const row = await this.users.create({ email: dto.email, nickname: dto.nickname, passwordHash });
+    if (!row) throw new AppError(409, ErrorCode.EMAIL_TAKEN, '이미 가입된 이메일이다');
+    return toUserDto(row);
+  }
+
+  async login(dto: LoginDto, meta: ClientMeta): Promise<Issued> {
+    const user = await this.users.findByEmail(dto.email);
+    const ok = user
+      ? await this.passwords.verify(user.password_hash, dto.password)
+      : await this.passwords.burn(dto.password);
+    if (!user || !ok) {
+      throw new AppError(401, ErrorCode.INVALID_CREDENTIALS, '이메일 또는 비밀번호가 맞지 않다');
+    }
+
+    const token = this.tokens.newRefreshToken();
+    const { familyId, expiresAt } = await this.refreshTokens.createFamily(
+      user.id,
+      this.tokens.hashRefreshToken(token),
+      meta,
+    );
+    return this.issue(user, familyId, { token, expiresAt });
+  }
+
+  async refresh(cookie: string | undefined, meta: ClientMeta): Promise<Issued> {
+    if (!cookie) throw invalidRefresh();
+
+    const token = this.tokens.newRefreshToken();
+    const outcome = await this.refreshTokens.rotate(
+      this.tokens.hashRefreshToken(cookie),
+      this.tokens.hashRefreshToken(token),
+      meta,
+    );
+    switch (outcome.kind) {
+      case 'invalid':
+        throw invalidRefresh();
+      case 'reused':
+        throw new AppError(401, ErrorCode.REFRESH_TOKEN_REUSED, '이미 사용된 리프레시 토큰이다. 이 세션을 끊었다');
+      case 'race':
+        throw new AppError(409, ErrorCode.REFRESH_TOKEN_ROTATED, '방금 회전된 토큰이다. 한 번 더 시도하라');
+    }
+
+    const user = await this.users.findById(outcome.userId);
+    if (!user) throw invalidRefresh();
+    return this.issue(user, outcome.familyId, { token, expiresAt: outcome.expiresAt });
+  }
+
+  async logout(cookie: string | undefined): Promise<void> {
+    if (cookie) await this.refreshTokens.revokeFamilyByToken(this.tokens.hashRefreshToken(cookie));
+  }
+
+  logoutAll(user: AuthUser): Promise<void> {
+    return this.refreshTokens.revokeAllForUser(user.userId);
+  }
+
+  async listSessions(user: AuthUser): Promise<SessionDto[]> {
+    const rows = await this.refreshTokens.listSessions(user.userId);
+    return rows.map((row) => ({
+      sessionId: row.session_id,
+      createdAt: row.created_at.toISOString(),
+      lastUsedAt: row.last_used_at.toISOString(),
+      userAgent: row.user_agent,
+      current: row.session_id === user.sessionId,
+    }));
+  }
+
+  async deleteSession(user: AuthUser, sessionId: string): Promise<void> {
+    if (!(await this.refreshTokens.revokeSession(user.userId, sessionId))) throw sessionNotFound();
+  }
+
+  private async issue(user: UserRow, familyId: string, refresh: Issued['refresh']): Promise<Issued> {
+    const accessToken = await this.tokens.signAccessToken(user.id, familyId);
+    return {
+      body: { accessToken, tokenType: 'Bearer', expiresIn: this.config.accessTokenTtlSec, user: toUserDto(user) },
+      refresh,
+    };
+  }
+}
+
+const invalidRefresh = () =>
+  new AppError(401, ErrorCode.REFRESH_TOKEN_INVALID, '리프레시 토큰이 없거나 유효하지 않다');
+
+export const sessionNotFound = () => new AppError(404, ErrorCode.SESSION_NOT_FOUND, '세션이 없다');
+```
+
+### src/auth/auth.controller.ts
+
+```ts
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiConflictResponse,
+  ApiCookieAuth,
+  ApiCreatedResponse,
+  ApiForbiddenResponse,
+  ApiNoContentResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiSecurity,
+  ApiTags,
+  ApiTooManyRequestsResponse,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
+import type { Request, Response } from 'express';
+import { ErrorResponseDto } from '../common/error-response.dto';
+import { AppError } from '../common/errors';
+import { AppConfig } from '../config/app-config';
+import { UserDto } from '../users/dto';
+import { AuthService, sessionNotFound } from './auth.service';
+import { clientMeta } from './client-meta';
+import { CSRF_COOKIE, REFRESH_COOKIE, clearRefreshCookie, setCsrfCookie, setRefreshCookie } from './cookies';
+import { CsrfGuard, CsrfService } from './csrf';
+import { CsrfResponseDto, LoginDto, SessionDto, SignupDto, TokenResponseDto } from './dto';
+import { CurrentUser, JwtAuthGuard } from './jwt-auth.guard';
+import { LoginThrottlerGuard } from './login-throttler.guard';
+import type { AuthUser } from './token.service';
+
+const CSRF_ERRORS = 'CSRF_ORIGIN_REJECTED | CSRF_TOKEN_INVALID';
+
+@ApiTags('auth')
+@Controller('auth')
+export class AuthController {
+  constructor(
+    private readonly auth: AuthService,
+    private readonly csrf: CsrfService,
+    private readonly config: AppConfig,
+  ) {}
+
+  @Get('csrf')
+  @ApiOperation({
+    summary: 'CSRF 토큰 발급',
+    description: '본문의 csrfToken 을 login·refresh·logout 요청의 X-CSRF-Token 헤더에 싣는다. 같은 값이 쿠키로도 내려간다.',
+  })
+  @ApiOkResponse({ type: CsrfResponseDto })
+  issueCsrf(@Req() req: Request, @Res({ passthrough: true }) res: Response): CsrfResponseDto {
+    // 이미 유효한 쿠키가 있으면 그 값을 돌려준다. 탭마다 새로 만들면 먼저 받은 탭의 토큰이 쿠키와 어긋난다.
+    const current: unknown = req.cookies?.[CSRF_COOKIE];
+    const csrfToken = this.csrf.isValidPair(current, current) ? (current as string) : this.csrf.issue();
+    setCsrfCookie(res, csrfToken, this.config);
+    res.setHeader('Cache-Control', 'no-store');
+    return { csrfToken };
+  }
+
+  @Post('signup')
+  @ApiOperation({ summary: '회원가입' })
+  @ApiCreatedResponse({ type: UserDto })
+  @ApiConflictResponse({ type: ErrorResponseDto, description: 'EMAIL_TAKEN' })
+  @ApiBadRequestResponse({ type: ErrorResponseDto, description: 'VALIDATION_FAILED' })
+  signup(@Body() dto: SignupDto): Promise<UserDto> {
+    return this.auth.signup(dto);
+  }
+
+  @Post('login')
+  @HttpCode(200)
+  @UseGuards(LoginThrottlerGuard, CsrfGuard)
+  @ApiSecurity('csrf')
+  @ApiOperation({ summary: '로그인', description: '액세스 토큰은 본문으로, 리프레시 토큰은 HttpOnly 쿠키로 준다.' })
+  @ApiOkResponse({ type: TokenResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto, description: 'INVALID_CREDENTIALS' })
+  @ApiBadRequestResponse({ type: ErrorResponseDto, description: 'VALIDATION_FAILED' })
+  @ApiForbiddenResponse({ type: ErrorResponseDto, description: CSRF_ERRORS })
+  @ApiTooManyRequestsResponse({ type: ErrorResponseDto, description: 'TOO_MANY_REQUESTS' })
+  async login(
+    @Body() dto: LoginDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<TokenResponseDto> {
+    res.setHeader('Cache-Control', 'no-store');
+    const { body, refresh } = await this.auth.login(dto, clientMeta(req));
+    setRefreshCookie(res, refresh.token, refresh.expiresAt, this.config);
+    return body;
+  }
+
+  @Post('refresh')
+  @HttpCode(200)
+  @UseGuards(CsrfGuard)
+  @ApiSecurity('csrf')
+  @ApiCookieAuth('refresh-cookie')
+  @ApiOperation({ summary: '리프레시 토큰 회전', description: '쿠키의 refresh_token 을 새 것으로 바꾸고 새 액세스 토큰을 준다.' })
+  @ApiOkResponse({ type: TokenResponseDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto, description: 'REFRESH_TOKEN_INVALID | REFRESH_TOKEN_REUSED' })
+  @ApiConflictResponse({ type: ErrorResponseDto, description: 'REFRESH_TOKEN_ROTATED — 한 번 더 시도한다' })
+  @ApiForbiddenResponse({ type: ErrorResponseDto, description: CSRF_ERRORS })
+  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<TokenResponseDto> {
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+      const { body, refresh } = await this.auth.refresh(req.cookies?.[REFRESH_COOKIE], clientMeta(req));
+      setRefreshCookie(res, refresh.token, refresh.expiresAt, this.config);
+      return body;
+    } catch (error) {
+      // 401 이면 죽은 쿠키를 지운다. 409 는 앞선 요청이 이미 새 쿠키를 내려보냈으니 건드리지 않는다.
+      if (error instanceof AppError && error.getStatus() === 401) clearRefreshCookie(res, this.config);
+      throw error;
+    }
+  }
+
+  @Post('logout')
+  @HttpCode(204)
+  @UseGuards(CsrfGuard)
+  @ApiSecurity('csrf')
+  @ApiCookieAuth('refresh-cookie')
+  @ApiOperation({ summary: '로그아웃', description: '이 세션(family)을 폐기하고 쿠키를 지운다. 쿠키가 없어도 204.' })
+  @ApiNoContentResponse()
+  @ApiForbiddenResponse({ type: ErrorResponseDto, description: CSRF_ERRORS })
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<void> {
+    await this.auth.logout(req.cookies?.[REFRESH_COOKIE]);
+    clearRefreshCookie(res, this.config);
+  }
+
+  @Post('logout-all')
+  @HttpCode(204)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '모든 기기에서 로그아웃' })
+  @ApiNoContentResponse()
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto, description: 'ACCESS_TOKEN_INVALID' })
+  async logoutAll(@CurrentUser() user: AuthUser, @Res({ passthrough: true }) res: Response): Promise<void> {
+    await this.auth.logoutAll(user);
+    clearRefreshCookie(res, this.config);
+  }
+
+  @Get('sessions')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '로그인된 세션 목록' })
+  @ApiOkResponse({ type: SessionDto, isArray: true })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto, description: 'ACCESS_TOKEN_INVALID' })
+  listSessions(@CurrentUser() user: AuthUser): Promise<SessionDto[]> {
+    return this.auth.listSessions(user);
+  }
+
+  @Delete('sessions/:sessionId')
+  @HttpCode(204)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: '세션 하나 끊기' })
+  @ApiNoContentResponse()
+  @ApiNotFoundResponse({ type: ErrorResponseDto, description: 'SESSION_NOT_FOUND — 없거나 남의 세션' })
+  @ApiUnauthorizedResponse({ type: ErrorResponseDto, description: 'ACCESS_TOKEN_INVALID' })
+  deleteSession(
+    @CurrentUser() user: AuthUser,
+    @Param('sessionId', new ParseUUIDPipe({ exceptionFactory: sessionNotFound })) sessionId: string,
+  ): Promise<void> {
+    return this.auth.deleteSession(user, sessionId);
+  }
+}
+```
+
+### src/auth/auth.module.ts
+
+```ts
+import { Module } from '@nestjs/common';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { UsersModule } from '../users/users.module';
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
+import { CsrfGuard, CsrfService } from './csrf';
+import { LoginThrottlerGuard } from './login-throttler.guard';
+import { PasswordService } from './password.service';
+import { RefreshTokenRepository } from './refresh-token.repository';
+import { TokenModule } from './token.module';
+
+@Module({
+  imports: [TokenModule, UsersModule, ThrottlerModule.forRoot([{ ttl: 60_000, limit: 5 }])],
+  controllers: [AuthController],
+  providers: [AuthService, PasswordService, RefreshTokenRepository, CsrfService, CsrfGuard, LoginThrottlerGuard],
+  exports: [CsrfService, PasswordService],
+})
+export class AuthModule {}
+```
+
+---
+
+## C.6 백엔드 — CSRF 실습실 (8·9장)
+
+**실습 전용이다.** 액세스 토큰을 쿠키에 담는 "취약한 구성"을 따로 만들어 공격과 방어를 눈으로 본다.
+본 API(`/auth/*`, `/users/*`)는 건드리지 않는다. 운영에서는 `LAB_MODE=false` 로 404 가 된다.
+
+### src/lab/lab.controller.ts
+
+```ts
+import { Body, CanActivate, Controller, Get, HttpCode, Injectable, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import type { Request, Response } from 'express';
+import { CSRF_COOKIE } from '../auth/cookies';
+import { CsrfService } from '../auth/csrf';
+import { LoginDto } from '../auth/dto';
+import { PasswordService } from '../auth/password.service';
+import { AuthUser, TokenService } from '../auth/token.service';
+import { AppError, ErrorCode } from '../common/errors';
+import { AppConfig } from '../config/app-config';
+import { UpdateNicknameDto, UserDto, toUserDto } from '../users/dto';
+import { UsersRepository } from '../users/users.repository';
+
+const LAB_COOKIE = 'lab_session';
+
+@Injectable()
+class LabEnabledGuard implements CanActivate {
+  constructor(private readonly config: AppConfig) {}
+  canActivate(): boolean {
+    if (!this.config.lab.enabled) throw new AppError(404, ErrorCode.LAB_DISABLED, '실습 모드가 꺼져 있다');
+    return true;
+  }
+}
+
+@ApiTags('lab')
+@UseGuards(LabEnabledGuard)
+@Controller('lab')
+export class LabController {
+  constructor(
+    private readonly users: UsersRepository,
+    private readonly passwords: PasswordService,
+    private readonly tokens: TokenService,
+    private readonly csrf: CsrfService,
+    private readonly config: AppConfig,
+  ) {}
+
+  @Get('settings')
+  @ApiOperation({ summary: '[실습] 현재 방어 설정' })
+  settings() {
+    const { sameSite, checkOrigin, checkToken } = this.config.lab;
+    return { sameSite, checkOrigin, checkToken };
+  }
+
+  @Post('login')
+  @HttpCode(204)
+  @ApiOperation({ summary: '[실습] 액세스 토큰을 쿠키로 받는 로그인 (취약한 구성)' })
+  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response): Promise<void> {
+    const user = await this.users.findByEmail(dto.email);
+    if (!user || !(await this.passwords.verify(user.password_hash, dto.password))) {
+      throw new AppError(401, ErrorCode.INVALID_CREDENTIALS, '이메일 또는 비밀번호가 맞지 않다');
+    }
+    const token = await this.tokens.signAccessToken(user.id, 'lab');
+    res.cookie(LAB_COOKIE, token, {
+      httpOnly: true,
+      secure: true, // SameSite=None 은 Secure 가 있어야 받아들여진다
+      sameSite: this.config.lab.sameSite,
+      path: '/',
+      maxAge: 30 * 60 * 1000,
+    });
+  }
+
+  @Get('me')
+  @ApiOperation({ summary: '[실습] 쿠키로 내 정보' })
+  async me(@Req() req: Request): Promise<UserDto> {
+    const user = await this.userFromCookie(req);
+    const row = await this.users.findById(user.userId);
+    return toUserDto(row!);
+  }
+
+  @Post('nickname')
+  @HttpCode(200)
+  @ApiConsumes('application/x-www-form-urlencoded', 'application/json')
+  @ApiOperation({ summary: '[실습] 쿠키만으로 닉네임 변경 — CSRF 공격 대상' })
+  async changeNickname(@Req() req: Request, @Body() dto: UpdateNicknameDto): Promise<UserDto> {
+    const user = await this.userFromCookie(req);
+    if (this.config.lab.checkOrigin && !this.csrf.isAllowedOrigin(req)) {
+      throw new AppError(403, ErrorCode.CSRF_ORIGIN_REJECTED, '허용되지 않은 출처의 요청이다');
+    }
+    if (this.config.lab.checkToken && !this.csrf.isValidPair(req.get('x-csrf-token'), req.cookies?.[CSRF_COOKIE])) {
+      throw new AppError(403, ErrorCode.CSRF_TOKEN_INVALID, 'CSRF 토큰이 없거나 맞지 않는다');
+    }
+    const row = await this.users.updateNickname(user.userId, dto.nickname);
+    return toUserDto(row!);
+  }
+
+  private async userFromCookie(req: Request): Promise<AuthUser> {
+    const token = req.cookies?.[LAB_COOKIE];
+    if (!token) throw new AppError(401, ErrorCode.ACCESS_TOKEN_INVALID, '실습 쿠키가 없다');
+    try {
+      return await this.tokens.verifyAccessToken(token);
+    } catch {
+      throw new AppError(401, ErrorCode.ACCESS_TOKEN_INVALID, '실습 쿠키가 유효하지 않다');
+    }
+  }
+}
+```
+
+### src/lab/lab.module.ts
+
+```ts
+import { Module } from '@nestjs/common';
+import { AuthModule } from '../auth/auth.module';
+import { TokenModule } from '../auth/token.module';
+import { UsersModule } from '../users/users.module';
+import { LabController } from './lab.controller';
+
+@Module({
+  imports: [AuthModule, TokenModule, UsersModule],
+  controllers: [LabController],
+})
+export class LabModule {}
+```
+
+### evil/index.html
+
+```html
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>무료 쿠폰 받기</title>
+  </head>
+  <body>
+    <h1>🎁 쿠폰이 도착했습니다</h1>
+    <p>(실습용 공격 페이지 — 열리는 순간 아래 폼이 auth-lab API 로 전송됩니다)</p>
+
+    <!-- 응답을 숨기려고 보이지 않는 iframe 으로 보낸다. 응답을 못 봐도 요청은 이미 서버에 닿았다. -->
+    <iframe name="sink" style="display: none"></iframe>
+    <form id="attack" action="http://localhost:4000/lab/nickname" method="POST" target="sink">
+      <input type="hidden" name="nickname" value="털렸음" />
+    </form>
+
+    <p id="log"></p>
+    <script>
+      document.getElementById('attack').submit();
+      document.getElementById('log').textContent = location.origin + ' 에서 요청을 보냈습니다.';
+    </script>
+  </body>
+</html>
+```
+
+같은 파일을 두 출처로 엽니다. 어느 것이 같은 사이트이고 어느 것이 다른 사이트인지가 9장의 핵심입니다.
+
+```bash
+cd evil && python3 -m http.server 5174
+# http://localhost:5174   ← FE(localhost:5173)와 같은 사이트
+# http://127.0.0.1:5174   ← 다른 사이트
+```
+
+---
+
+## C.7 프론트엔드
+
+### web/.env
+
+```dotenv
+VITE_API_URL=http://localhost:4000
+```
+
+### web/vite.config.ts
+
+```ts
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  plugins: [react()],
+  // API 와 같은 호스트명(localhost)으로 연다. 127.0.0.1 로 열면 다른 사이트가 되어 SameSite=Strict 쿠키가 안 실린다.
+  server: { host: 'localhost', port: 5173, strictPort: true },
+});
+```
+
+### web/package.json 에 더하는 스크립트
+
+```json
+{
+  "scripts": {
+    "gen:api": "openapi-typescript ../contract/openapi.json -o src/api/schema.d.ts",
+    "gen:api:live": "openapi-typescript http://localhost:4000/docs-json -o src/api/schema.d.ts"
+  }
+}
+```
+
+### src/api/client.ts
+
+```ts
+import createClient from 'openapi-fetch';
+import { authFetch } from '../auth/session';
+import type { components, paths } from './schema';
+
+const baseUrl = import.meta.env.VITE_API_URL;
+
+/** 앱 API 용. 401 이면 refresh 후 한 번 재시도한다. */
+export const api = createClient<paths>({ baseUrl, credentials: 'include', fetch: authFetch });
+
+/** /auth/* 용. 재시도 없음 — refresh 가 자기 자신을 부르는 순환을 막으려고 나눈다. */
+export const authApi = createClient<paths>({ baseUrl, credentials: 'include' });
+
+export type Schemas = components['schemas'];
+export type TokenResponse = Schemas['TokenResponseDto'];
+export type User = Schemas['UserDto'];
+export type Session = Schemas['SessionDto'];
+export type ErrorResponse = Schemas['ErrorResponseDto'];
+```
+
+### src/auth/session.ts
+
+```ts
+import { api, authApi, type ErrorResponse, type TokenResponse, type User } from '../api/client';
+
+export type AnonymousReason = 'logout' | 'expired' | 'reused';
+export type SessionState =
+  | { status: 'unknown' }
+  | { status: 'authenticated'; user: User }
+  | { status: 'anonymous'; reason?: AnonymousReason };
+
+let state: SessionState = { status: 'unknown' };
+let accessToken: string | null = null;
+let csrfToken: string | null = null;
+let refreshing: Promise<boolean> | null = null;
+const listeners = new Set<() => void>();
+const channel = new BroadcastChannel('auth');
+
+export const getSession = () => state;
+export const getAccessToken = () => accessToken;
+export function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+function setState(next: SessionState) {
+  state = next;
+  listeners.forEach((listener) => listener());
+}
+
+function acceptTokens(body: TokenResponse) {
+  accessToken = body.accessToken;
+  setState({ status: 'authenticated', user: body.user });
+}
+
+function dropSession(reason?: AnonymousReason) {
+  accessToken = null;
+  setState({ status: 'anonymous', reason });
+}
+
+/** 닉네임 변경처럼 사용자 정보가 바뀌었을 때 화면 상태를 맞춘다. */
+export function updateUser(user: User) {
+  if (state.status === 'authenticated') setState({ status: 'authenticated', user });
+}
+
+export async function ensureCsrf(): Promise<string> {
+  if (csrfToken) return csrfToken;
+  const { data } = await authApi.GET('/auth/csrf');
+  csrfToken = data!.csrfToken;
+  return csrfToken;
+}
+
+/** single-flight + 탭 간 잠금. 성공하면 true. */
+export function refreshSession(): Promise<boolean> {
+  refreshing ??= navigator.locks
+    .request('auth-refresh', () => runRefresh(false))
+    .catch(() => {
+      // API 에 닿지 못했다(서버 꺼짐·네트워크). 부팅 중이면 "세션 확인 중" 에 멈추지 않게 익명으로 둔다
+      if (state.status === 'unknown') dropSession();
+      return false;
+    })
+    .finally(() => {
+      refreshing = null;
+    });
+  return refreshing;
+}
+
+/** CSRF 토큰이 쿠키와 어긋나면(쿠키 만료·서버 비밀 교체) 새로 받아 한 번만 다시 보낸다. */
+async function withCsrf<T extends { error?: unknown }>(send: (csrf: string) => Promise<T>): Promise<T> {
+  const first = await send(await ensureCsrf());
+  if ((first.error as ErrorResponse | undefined)?.code !== 'CSRF_TOKEN_INVALID') return first;
+  csrfToken = null;
+  return send(await ensureCsrf());
+}
+
+async function runRefresh(retried: boolean): Promise<boolean> {
+  const { data, error, response } = await withCsrf((csrf) =>
+    authApi.POST('/auth/refresh', { headers: { 'X-CSRF-Token': csrf } }),
+  );
+  if (data) {
+    acceptTokens(data);
+    return true;
+  }
+  const code = (error as ErrorResponse | undefined)?.code;
+  if (!retried && response.status === 409) return runRefresh(true);
+  // 부팅 때 쿠키가 없던 것(처음 방문)과 로그인 중에 만료된 것을 구분한다
+  const wasIn = state.status === 'authenticated';
+  dropSession(code === 'REFRESH_TOKEN_REUSED' ? 'reused' : wasIn ? 'expired' : undefined);
+  return false;
+}
+
+export async function login(email: string, password: string): Promise<ErrorResponse | null> {
+  const { data, error } = await withCsrf((csrf) =>
+    authApi.POST('/auth/login', { body: { email, password }, headers: { 'X-CSRF-Token': csrf } }),
+  );
+  if (!data) return error as ErrorResponse;
+  acceptTokens(data);
+  channel.postMessage({ type: 'login' });
+  return null;
+}
+
+export async function logout(): Promise<void> {
+  await withCsrf((csrf) => authApi.POST('/auth/logout', { headers: { 'X-CSRF-Token': csrf } }));
+  dropSession('logout');
+  channel.postMessage({ type: 'logout' });
+}
+
+export async function logoutAll(): Promise<void> {
+  await api.POST('/auth/logout-all');
+  dropSession('logout');
+  channel.postMessage({ type: 'logout' });
+}
+
+channel.onmessage = (event: MessageEvent<{ type: 'login' | 'logout' }>) => {
+  if (event.data.type === 'logout') dropSession('logout');
+  if (event.data.type === 'login') void refreshSession();
+};
+
+function withAuth(request: Request): Request {
+  if (accessToken) request.headers.set('Authorization', `Bearer ${accessToken}`);
+  return request;
+}
+
+/** openapi-fetch 의 fetch 자리에 끼운다. 401 이면 refresh 후 한 번만 재시도. */
+export async function authFetch(request: Request): Promise<Response> {
+  const retry = request.clone(); // 본문은 한 번만 읽힌다 — 보내기 전에 복제해 둔다
+  const response = await fetch(withAuth(request));
+  if (response.status !== 401) return response;
+  if (!(await refreshSession())) return response;
+  return fetch(withAuth(retry));
+}
+```
+
+### src/auth/hooks.ts
+
+```ts
+import { useEffect, useSyncExternalStore } from 'react';
+import { getSession, refreshSession, subscribe } from './session';
+
+export function useSession() {
+  return useSyncExternalStore(subscribe, getSession);
+}
+
+/** 앱 최상단에서 한 번. 새로고침 뒤 로그인 상태를 쿠키로 되살린다. */
+export function useBootSession() {
+  useEffect(() => {
+    void refreshSession(); // StrictMode 의 두 번째 호출은 같은 promise 를 받는다
+  }, []);
+}
+```
+
+### src/auth/RequireAuth.tsx
+
+```tsx
+import { Navigate, Outlet, useLocation } from 'react-router';
+import { useSession } from './hooks';
+
+export function RequireAuth() {
+  const session = useSession();
+  const location = useLocation();
+
+  if (session.status === 'unknown') return <p>세션 확인 중…</p>;
+  if (session.status === 'anonymous') {
+    return <Navigate to="/login" replace state={{ from: location.pathname, reason: session.reason }} />;
+  }
+  return <Outlet />;
+}
+```
+
+### src/auth/jwt.ts
+
+```ts
+/** 화면 표시용으로 JWT 본문만 읽는다. 검증은 하지 않는다 — 검증은 서버의 일이다. */
+export function readJwtPayload(token: string): { sub: string; sid: string; exp: number; iat: number } {
+  const payload = token.split('.')[1];
+  const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+  return JSON.parse(json);
+}
+```
+
+### src/main.tsx
+
+```tsx
+// 가장 먼저 불러온다. API 클라이언트가 만들어지며 fetch 를 잡아 두기 전에 감싸야 네트워크 콘솔에 요청이 찍힌다 (부록 D)
+import './network-console/log';
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router';
+import { App } from './App';
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </StrictMode>,
+);
+```
+
+### src/App.tsx
+
+```tsx
+import { Link, Route, Routes } from 'react-router';
+import { useBootSession } from './auth/hooks';
+import { RequireAuth } from './auth/RequireAuth';
+import { LabPage } from './pages/LabPage';
+import { LoginPage } from './pages/LoginPage';
+import { MePage } from './pages/MePage';
+import { NetworkConsole } from './network-console/NetworkConsole';
+import { SignupPage } from './pages/SignupPage';
+
+export function App() {
+  useBootSession();
+  return (
+    // 아래쪽 여백: 화면 하단에 고정된 네트워크 콘솔(부록 D)이 본문을 가리지 않게 한다
+    <main style={{ maxWidth: 640, margin: '40px auto', fontFamily: 'system-ui', padding: '0 16px 45vh' }}>
+      <nav style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
+        <Link to="/">내 정보</Link>
+        <Link to="/login">로그인</Link>
+        <Link to="/signup">가입</Link>
+        <Link to="/lab">CSRF 실습실</Link>
+      </nav>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/lab" element={<LabPage />} />
+        <Route element={<RequireAuth />}>
+          <Route path="/" element={<MePage />} />
+        </Route>
+      </Routes>
+      <NetworkConsole />
+    </main>
+  );
+}
+```
+
+### src/pages/LoginPage.tsx
+
+```tsx
+import { useState, type FormEvent } from 'react';
+import { Navigate, useLocation, useNavigate } from 'react-router';
+import { useSession } from '../auth/hooks';
+import { login, type AnonymousReason } from '../auth/session';
+
+const REASON_TEXT: Record<AnonymousReason, string> = {
+  logout: '로그아웃했습니다.',
+  expired: '세션이 만료됐습니다. 다시 로그인하세요.',
+  reused: '다른 곳에서 이 세션의 토큰이 다시 쓰였습니다. 안전을 위해 세션을 끊었습니다.',
+};
+
+export function LoginPage() {
+  const session = useSession();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: string } | null)?.from ?? '/';
+  const reason = (location.state as { reason?: AnonymousReason } | null)?.reason;
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  if (session.status === 'authenticated') return <Navigate to={from} replace />;
+
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    setPending(true);
+    const failure = await login(String(form.get('email')), String(form.get('password')));
+    setPending(false);
+    if (failure) {
+      setError(
+        failure.code === 'INVALID_CREDENTIALS'
+          ? '이메일 또는 비밀번호가 맞지 않습니다.'
+          : failure.code === 'TOO_MANY_REQUESTS'
+            ? '시도가 너무 많습니다. 1분 뒤 다시 시도하세요.'
+            : '로그인하지 못했습니다. 잠시 뒤 다시 시도하세요.',
+      );
+      return;
+    }
+    navigate(from, { replace: true });
+  }
+
+  return (
+    <form onSubmit={onSubmit} style={{ display: 'grid', gap: 8 }}>
+      <h1>로그인</h1>
+      {reason && <p>{REASON_TEXT[reason]}</p>}
+      <input name="email" type="email" placeholder="이메일" required autoComplete="username" />
+      <input name="password" type="password" placeholder="비밀번호" required autoComplete="current-password" />
+      <button disabled={pending}>{pending ? '확인 중…' : '로그인'}</button>
+      {error && <p role="alert">{error}</p>}
+    </form>
+  );
+}
+```
+
+### src/network-console/log.ts · NetworkConsole.tsx
+
+부록 D.6 에 전체 코드가 있습니다. 11·12장의 `main.tsx`·`App.tsx` 에 부록 D 의 import·`<NetworkConsole />`·아래쪽 여백을 더한 것이 위 두 파일입니다.
+
+### src/pages/SignupPage.tsx
+
+```tsx
+import { useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router';
+import { authApi } from '../api/client';
+
+export function SignupPage() {
+  const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
+
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const { error } = await authApi.POST('/auth/signup', {
+      body: {
+        email: String(form.get('email')),
+        password: String(form.get('password')),
+        nickname: String(form.get('nickname')),
+      },
+    });
+    if (error) {
+      setError(error.code === 'EMAIL_TAKEN' ? '이미 가입된 이메일입니다.' : error.message);
+      return;
+    }
+    navigate('/login');
+  }
+
+  return (
+    <form onSubmit={onSubmit} style={{ display: 'grid', gap: 8 }}>
+      <h1>가입</h1>
+      <input name="email" type="email" placeholder="이메일" required autoComplete="username" />
+      <input name="password" type="password" placeholder="비밀번호 (8자 이상)" minLength={8} required autoComplete="new-password" />
+      <input name="nickname" placeholder="닉네임 (2~20자)" minLength={2} maxLength={20} required />
+      <button>가입</button>
+      {error && <p role="alert">{error}</p>}
+    </form>
+  );
+}
+```
+
+### src/pages/MePage.tsx
+
+```tsx
+import { useEffect, useState, type FormEvent } from 'react';
+import { api, type Session } from '../api/client';
+import { useSession } from '../auth/hooks';
+import { readJwtPayload } from '../auth/jwt';
+import { getAccessToken, logout, logoutAll, updateUser } from '../auth/session';
+
+export function MePage() {
+  const session = useSession();
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+
+  async function loadSessions() {
+    const { data } = await api.GET('/auth/sessions');
+    if (data) setSessions(data);
+  }
+
+  useEffect(() => {
+    void loadSessions();
+  }, []);
+
+  // 교육용: 액세스 토큰이 몇 초 남았는지 보여 준다
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const token = getAccessToken();
+      setSecondsLeft(token ? readJwtPayload(token).exp - Math.floor(Date.now() / 1000) : null);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  if (session.status !== 'authenticated') return null;
+
+  async function onRename(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const nickname = String(new FormData(event.currentTarget).get('nickname'));
+    const { data } = await api.PATCH('/users/me', { body: { nickname } });
+    if (data) updateUser(data);
+  }
+
+  async function onDelete(sessionId: string) {
+    await api.DELETE('/auth/sessions/{sessionId}', { params: { path: { sessionId } } });
+    await loadSessions();
+  }
+
+  return (
+    <section style={{ display: 'grid', gap: 16 }}>
+      <h1>{session.user.nickname} 님</h1>
+      <p>
+        {session.user.email} · 액세스 토큰 남은 시간: {secondsLeft ?? '-'}초
+        <br />
+        <small>0 이 된 뒤에 아무 API 나 부르면 refresh 가 한 번 일어나는 것을 네트워크 탭에서 볼 수 있습니다.</small>
+      </p>
+
+      <form onSubmit={onRename} style={{ display: 'flex', gap: 8 }}>
+        <input name="nickname" defaultValue={session.user.nickname} minLength={2} maxLength={20} />
+        <button>닉네임 변경</button>
+      </form>
+
+      <div>
+        <h2>로그인된 세션</h2>
+        <ul>
+          {sessions.map((s) => (
+            <li key={s.sessionId}>
+              {s.current ? '👉 이 기기 · ' : ''}
+              {s.userAgent ?? '알 수 없음'} · 마지막 사용 {new Date(s.lastUsedAt).toLocaleString()}
+              {!s.current && <button onClick={() => onDelete(s.sessionId)}>끊기</button>}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button onClick={() => void logout()}>로그아웃</button>
+        <button onClick={() => void logoutAll()}>모든 기기에서 로그아웃</button>
+      </div>
+    </section>
+  );
+}
+```
+
+### src/pages/LabPage.tsx
+
+실습 엔드포인트(`/lab/*`)는 Swagger 계약에 들어 있지만 교육용이라 타입 없이 `fetch` 로 부릅니다.
+
+```tsx
+import { useEffect, useState, type FormEvent } from 'react';
+import { ensureCsrf } from '../auth/session';
+
+const API = import.meta.env.VITE_API_URL;
+type LabSettings = { sameSite: string; checkOrigin: boolean; checkToken: boolean };
+
+export function LabPage() {
+  const [settings, setSettings] = useState<LabSettings | null>(null);
+  const [nickname, setNickname] = useState<string>('(로그인 전)');
+  const [log, setLog] = useState<string[]>([]);
+  const write = (line: string) => setLog((prev) => [`${new Date().toLocaleTimeString()} ${line}`, ...prev]);
+
+  async function loadMe() {
+    const res = await fetch(`${API}/lab/me`, { credentials: 'include' });
+    setNickname(res.ok ? (await res.json()).nickname : `(쿠키 없음 — ${res.status})`);
+  }
+
+  useEffect(() => {
+    void fetch(`${API}/lab/settings`).then(async (res) => setSettings(await res.json()));
+    void loadMe();
+  }, []);
+
+  async function onLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const res = await fetch(`${API}/lab/login`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: form.get('email'), password: form.get('password') }),
+    });
+    write(`실습 로그인 → ${res.status}`);
+    await loadMe();
+  }
+
+  async function onLegitRename() {
+    const res = await fetch(`${API}/lab/nickname`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': await ensureCsrf() },
+      body: JSON.stringify({ nickname: '정상변경' }),
+    });
+    write(`정상 요청(이 페이지에서) → ${res.status}`);
+    await loadMe();
+  }
+
+  return (
+    <section style={{ display: 'grid', gap: 16 }}>
+      <h1>CSRF 실습실</h1>
+      <p>
+        현재 설정: SameSite=<b>{settings?.sameSite}</b> · Origin 검사 <b>{String(settings?.checkOrigin)}</b> ·
+        토큰 검사 <b>{String(settings?.checkToken)}</b>
+        <br />
+        <small>설정은 api/.env 의 LAB_* 값을 바꾸고 API 를 다시 띄워 바꿉니다.</small>
+      </p>
+      <form onSubmit={onLogin} style={{ display: 'flex', gap: 8 }}>
+        <input name="email" type="email" placeholder="이메일" required />
+        <input name="password" type="password" placeholder="비밀번호" required />
+        <button>실습 쿠키로 로그인</button>
+      </form>
+      <p>
+        지금 닉네임: <b>{nickname}</b> <button onClick={() => void loadMe()}>다시 읽기</button>
+      </p>
+      <button onClick={() => void onLegitRename()}>이 페이지에서 정상적으로 닉네임 바꾸기</button>
+      <ol>
+        <li>위에서 실습 쿠키로 로그인합니다.</li>
+        <li>
+          같은 브라우저 새 탭에서 <code>http://localhost:5174</code> 와 <code>http://127.0.0.1:5174</code> 를 차례로 엽니다.
+        </li>
+        <li>이 탭으로 돌아와 "다시 읽기" 를 눌러 닉네임이 "털렸음" 으로 바뀌었는지 봅니다.</li>
+      </ol>
+      <pre>{log.join('\n')}</pre>
+    </section>
+  );
+}
+```

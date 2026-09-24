@@ -1,0 +1,910 @@
+export const meta = {
+  title: "[로그인인증] 로그인 화면과 세션 상태 (11)",
+  summary: "액세스 토큰을 메모리에 두고, 새로고침 뒤에도 로그인을 되살린다.",
+  date: "2026-09",
+  status: "마무리",
+  order: 112,
+  tags: ["로그인인증", "react", "auth"],
+};
+
+![초록으로 채운 큰 열쇠 하나가 가로로 놓여 있고, 그 뒤에 같은 모양의 열쇠 두 개가 남색 윤곽선만으로 겹쳐 있다. 열쇠들 아래로 가는 선이 하나 지나간다.](/labs/login-auth-key.jpg)
+
+> **이 장을 마치면**
+>
+> - 액세스 토큰을 `localStorage` 가 아니라 모듈 변수(메모리)에 두는 이유와 그 대가를 설명할 수 있다.
+> - 세션 상태를 `unknown`·`authenticated`·`anonymous` 셋으로 나누고, React 가 `useSyncExternalStore` 로 그 상태를 구독하게 만든다.
+> - 새로고침 뒤에 쿠키만으로 로그인을 되살리는 "조용한 갱신" 을 만든다.
+> - React StrictMode 에서 refresh 가 두 번 나가 409 가 나는 문제를 직접 재현하고, single-flight 로 고친다.
+> - 브라우저 개발자 도구에서 요청 순서와 쿠키 속성을 확인한다.
+
+## 들어가며
+
+10장에서 `web/` 프로젝트를 만들고 타입이 붙은 API 클라이언트 두 개(`api`, `authApi`)를 세웠습니다. 이 장에서는 그 위에 **로그인 화면**과 **세션 상태**를 만듭니다.
+
+로그인 화면 자체는 어렵지 않습니다. 이메일과 비밀번호를 받아 `POST /auth/login` 을 부르면 됩니다. 어려운 것은 그 다음입니다. 응답으로 받은 액세스 토큰을 어디에 두고, 화면은 "지금 로그인돼 있는가" 를 어떻게 알며, 사용자가 F5 를 누르면 무슨 일이 일어나야 할까요?
+
+2장에서 이 책의 설계 표를 정할 때 이미 답을 적어 두었습니다. **액세스 토큰은 메모리에, 리프레시 토큰은 `HttpOnly` 쿠키에.** 이 장은 그 결정을 브라우저 코드로 옮기는 장입니다. 그리고 옮기는 과정에서 설계 표에는 없던 문제 하나를 만납니다. React 개발 모드의 StrictMode 가 부팅 코드를 두 번 돌려서, refresh 요청이 두 번 나가는 문제입니다. 7장에서 만든 회전과 재사용 탐지는 바로 이런 "같은 리프레시 토큰이 두 번 오는" 상황을 공격 신호로 읽도록 만들어져 있습니다. 우리 앱이 스스로 공격처럼 보이는 요청을 보내는 셈입니다. 이것을 먼저 재현해 보고, single-flight 라는 방법으로 고칩니다.
+
+이 장에서 만드는 `auth/session.ts` 는 **1단계 버전**입니다. 탭 여러 개를 다루는 잠금(`navigator.locks`), 탭 사이 알림(`BroadcastChannel`), 401 자동 재시도(`authFetch`)는 12장에서 더합니다. 이 장이 끝나면 로그인·가입·로그아웃이 되고, 새로고침해도 로그인이 유지됩니다.
+
+## 11.1 액세스 토큰을 어디에 둘까
+
+브라우저에서 값을 기억해 둘 곳은 크게 셋입니다.
+
+| 보관 장소 | 새로고침 뒤 | 다른 탭 | 페이지의 스크립트가 읽을 수 있나 |
+|---|---|---|---|
+| `localStorage` | 남는다 | 공유된다 | 읽을 수 있다 |
+| 쿠키 (`HttpOnly`) | 남는다 | 공유된다 | **읽을 수 없다** |
+| 모듈 변수 (메모리) | **사라진다** | 공유되지 않는다 | 그 모듈을 import 한 코드만 |
+
+2장에서 다룬 것을 다시 짚으면, `localStorage` 의 문제는 **XSS 한 번이면 그대로 읽힌다**는 것입니다. 우리 페이지에서 공격자의 스크립트가 한 번이라도 돌면 `localStorage.getItem('token')` 한 줄로 토큰이 밖으로 나갑니다. 그 토큰은 만료될 때까지 공격자의 서버에서 얼마든지 쓰입니다.
+
+모듈 변수는 이보다 한 단계 낫습니다. XSS 가 일어나면 공격자의 스크립트가 우리 앱의 함수를 불러 API 요청을 보낼 수는 있습니다. 하지만 토큰 문자열 자체를 꺼내 가기는 훨씬 어렵고, 무엇보다 **탭을 닫으면 사라집니다.** XSS 앞에서 완전히 안전한 보관 장소는 없다는 것을 9장에서 이미 이야기했습니다. 메모리 보관은 "피해의 범위와 시간을 줄이는" 선택입니다.
+
+대가는 표의 첫 번째 열에 있습니다. **새로고침하면 사라집니다.** F5 를 누를 때마다 로그아웃되는 앱은 쓸 수 없습니다. 그래서 이 설계는 두 번째 줄의 쿠키를 함께 씁니다. 리프레시 토큰은 `HttpOnly` 쿠키에 있어서 새로고침 뒤에도 남아 있고, 스크립트는 읽을 수 없지만 브라우저가 `/auth/*` 요청에 자동으로 실어 줍니다. 그래서 앱이 뜨자마자 `POST /auth/refresh` 를 한 번 부르면 새 액세스 토큰이 응답 본문으로 오고, 로그인이 되살아납니다. 이것을 이 책에서는 **조용한 갱신**이라고 부릅니다. 사용자에게 아무것도 묻지 않고 뒤에서 조용히 일어나는 refresh 라는 뜻입니다.
+
+정리하면 역할이 이렇게 나뉩니다.
+
+- **액세스 토큰** — 메모리. API 를 부를 때 `Authorization` 헤더로 싣는다(12장). 새로고침하면 사라진다.
+- **리프레시 토큰** — `HttpOnly` 쿠키. 스크립트는 만지지 않는다. `credentials: 'include'` 만 주면 브라우저가 알아서 싣는다.
+- **CSRF 토큰** — 메모리. `GET /auth/csrf` 응답 본문에서 받아 `X-CSRF-Token` 헤더로 싣는다. 짝이 되는 쿠키는 서버가 심는다.
+
+## 11.2 세션 상태는 셋이다
+
+"로그인돼 있는가" 는 참·거짓 두 값처럼 보입니다. 그런데 앱이 막 떴을 때를 생각해 보면 세 번째 값이 필요합니다. 부팅 직후에는 메모리에 액세스 토큰이 없습니다. 쿠키에 리프레시 토큰이 있는지는 스크립트가 알 수 없습니다(`HttpOnly` 니까요). refresh 를 불러 응답이 올 때까지는 **"아직 모른다"** 가 정직한 답입니다.
+
+```
+           앱 시작
+              │
+              ▼
+        ┌──────────┐   refresh 200    ┌───────────────┐
+        │ unknown  │ ───────────────▶ │ authenticated │ ◀── login 성공
+        └──────────┘                  └───────────────┘
+              │ refresh 401                  │ logout / refresh 실패
+              ▼                              ▼
+        ┌──────────────────────────────────────────┐
+        │ anonymous (reason: 없음 | logout | expired | reused) │
+        └──────────────────────────────────────────┘
+```
+
+`anonymous` 에는 이유(`reason`)를 붙입니다. 같은 "로그인 안 됨" 이라도 사용자에게 보여 줄 말이 다르기 때문입니다.
+
+| reason | 언제 | 로그인 화면에 보일 말 |
+|---|---|---|
+| 없음 | 처음 방문해서 쿠키가 없었다 | (아무 말도 하지 않는다) |
+| `logout` | 사용자가 로그아웃했다 | 로그아웃했습니다. |
+| `expired` | 로그인돼 있다가 refresh 가 실패했다 | 세션이 만료됐습니다. 다시 로그인하세요. |
+| `reused` | 서버가 `REFRESH_TOKEN_REUSED` 를 돌려줬다 | 다른 곳에서 이 세션의 토큰이 다시 쓰였습니다… |
+
+마지막 줄이 7장의 재사용 탐지와 이어지는 곳입니다. 서버가 탈취 신호를 감지해 세션을 끊었다면, 사용자에게 "그냥 만료" 가 아니라 **무슨 일이 있었는지** 알려 주는 것이 옳습니다.
+
+## 11.3 `session.ts` — 상태 저장소 부분
+
+`auth/session.ts` 는 이 장과 다음 장의 중심 파일입니다. React 컴포넌트가 아니라 **평범한 TypeScript 모듈**입니다. 세션 상태는 화면 하나가 아니라 앱 전체가 공유하는 것이고, 12장에서 만들 `authFetch` 처럼 React 밖의 코드도 읽어야 하기 때문입니다. 먼저 상태를 담는 부분입니다.
+
+```ts
+// web/src/auth/session.ts (앞부분)
+import { authApi, type ErrorResponse, type TokenResponse, type User } from '../api/client';
+
+export type AnonymousReason = 'logout' | 'expired' | 'reused';
+export type SessionState =
+  | { status: 'unknown' }
+  | { status: 'authenticated'; user: User }
+  | { status: 'anonymous'; reason?: AnonymousReason };
+
+let state: SessionState = { status: 'unknown' };
+let accessToken: string | null = null;
+let csrfToken: string | null = null;
+const listeners = new Set<() => void>();
+
+export const getSession = () => state;
+export const getAccessToken = () => accessToken;
+export function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+function setState(next: SessionState) {
+  state = next;
+  listeners.forEach((listener) => listener());
+}
+
+function acceptTokens(body: TokenResponse) {
+  accessToken = body.accessToken;
+  setState({ status: 'authenticated', user: body.user });
+}
+
+function dropSession(reason?: AnonymousReason) {
+  accessToken = null;
+  setState({ status: 'anonymous', reason });
+}
+
+/** 닉네임 변경처럼 사용자 정보가 바뀌었을 때 화면 상태를 맞춘다. */
+export function updateUser(user: User) {
+  if (state.status === 'authenticated') setState({ status: 'authenticated', user });
+}
+```
+
+한 부분씩 봅시다.
+
+**`SessionState` 는 판별 합집합(discriminated union)입니다.** `status` 값에 따라 다른 필드가 붙습니다. `authenticated` 일 때만 `user` 가 있으므로, 컴포넌트에서 `if (session.status === 'authenticated')` 로 가른 뒤에야 `session.user` 를 쓸 수 있습니다. 로그인 안 된 상태에서 사용자 이름을 그리려는 실수가 컴파일 단계에서 막힙니다. `User` 타입은 10장에서 계약으로부터 만든 그 타입입니다.
+
+**모듈 변수 네 개.** `state` 는 화면이 보는 상태, `accessToken` 과 `csrfToken` 은 11.1절에서 말한 메모리 보관입니다. `accessToken` 은 `state` 안에 넣지 않고 따로 둡니다. 화면은 토큰 문자열을 알 필요가 없고, 알 필요가 없는 값은 React 로 흘려보내지 않는 편이 안전합니다. 토큰을 꺼낼 수 있는 길은 `getAccessToken` 하나뿐입니다. 이 장에서는 아직 토큰을 요청에 싣는 코드가 없으므로 들고만 있습니다. 12장에서 `withAuth` 가 이 변수를 읽습니다.
+
+**`listeners` 와 `subscribe`.** 상태가 바뀌면 알려 달라고 등록한 함수들입니다. `subscribe` 는 등록을 풀 함수를 돌려줍니다. 이 모양(등록 함수가 해제 함수를 돌려준다)은 11.7절의 `useSyncExternalStore` 가 요구하는 모양 그대로입니다.
+
+**`setState` 는 언제나 새 객체를 만듭니다.** `state.user = user` 처럼 기존 객체를 고치지 않습니다. React 는 `getSession()` 이 돌려준 값이 **이전과 같은 객체인지**로 다시 그릴지를 정합니다. 같은 객체의 속성만 바꾸면 React 는 바뀐 줄 모릅니다. `updateUser` 도 그래서 새 객체로 `setState` 를 부릅니다.
+
+**`acceptTokens` 와 `dropSession`** 은 토큰과 상태를 **항상 같이** 바꾸는 한 쌍입니다. 토큰은 있는데 상태가 `anonymous` 이거나, 상태는 `authenticated` 인데 토큰이 없는 어긋난 조합이 생기지 않게, 둘을 바꾸는 곳을 이 두 함수로만 모았습니다.
+
+## 11.4 CSRF 토큰 받아 두기 — `ensureCsrf`
+
+9장에서 `login`·`refresh`·`logout` 에 CSRF 방어를 걸었습니다. 이 요청들은 `X-CSRF-Token` 헤더에 `GET /auth/csrf` 로 받은 값을 실어야 합니다.
+
+```ts
+// web/src/auth/session.ts (이어서)
+export async function ensureCsrf(): Promise<string> {
+  if (csrfToken) return csrfToken;
+  const { data } = await authApi.GET('/auth/csrf');
+  csrfToken = data!.csrfToken;
+  return csrfToken;
+}
+```
+
+이름의 `ensure` 는 "있으면 그대로, 없으면 받아 온다" 는 뜻입니다. 페이지가 뜬 뒤 첫 호출에서만 `GET /auth/csrf` 가 나가고, 그 뒤로는 메모리 값을 다시 씁니다. 서버는 이 응답에서 같은 값을 `csrf_token` 쿠키로도 심습니다. 이 쿠키는 `HttpOnly` 라서 스크립트가 읽을 수 없고, 읽을 필요도 없습니다. 헤더에 실을 값은 응답 **본문**에서 받았으니까요. 9장에서 본 대로 FE 와 API 가 다른 출처여도 이 방식이 동작하는 이유가 이것입니다.
+
+`export` 를 붙인 것은 12장의 CSRF 실습 화면(`LabPage`)도 이 함수를 쓰기 때문입니다. `data!` 단언은 10장 연습문제 1에서 이야기한 대로, 이 엔드포인트는 정상 상황에서 실패하지 않는다고 보는 것입니다.
+
+## 11.5 refresh 한 번 — `runRefresh`
+
+조용한 갱신의 몸통입니다.
+
+```ts
+// web/src/auth/session.ts (이어서)
+/** CSRF 토큰이 쿠키와 어긋나면(쿠키 만료·서버 비밀 교체) 새로 받아 한 번만 다시 보낸다. */
+async function withCsrf<T extends { error?: unknown }>(send: (csrf: string) => Promise<T>): Promise<T> {
+  const first = await send(await ensureCsrf());
+  if ((first.error as ErrorResponse | undefined)?.code !== 'CSRF_TOKEN_INVALID') return first;
+  csrfToken = null;
+  return send(await ensureCsrf());
+}
+
+async function runRefresh(retried: boolean): Promise<boolean> {
+  const { data, error, response } = await withCsrf((csrf) =>
+    authApi.POST('/auth/refresh', { headers: { 'X-CSRF-Token': csrf } }),
+  );
+  if (data) {
+    acceptTokens(data);
+    return true;
+  }
+  const code = (error as ErrorResponse | undefined)?.code;
+  if (!retried && response.status === 409) return runRefresh(true);
+  // 부팅 때 쿠키가 없던 것(처음 방문)과 로그인 중에 만료된 것을 구분한다
+  const wasIn = state.status === 'authenticated';
+  dropSession(code === 'REFRESH_TOKEN_REUSED' ? 'reused' : wasIn ? 'expired' : undefined);
+  return false;
+}
+```
+
+**요청.** `authApi` 로 부릅니다. 10장에서 말했듯 `/auth/*` 의 쿠키 기반 요청은 재시도 장치가 없는 쪽으로만 부릅니다. 본문은 없습니다. 리프레시 토큰은 쿠키로 가니까요. `credentials: 'include'` 는 클라이언트를 만들 때 넣어 두었습니다.
+
+**성공이면** 새 액세스 토큰과 사용자 정보를 받아 `acceptTokens` 로 넘깁니다. 서버는 같은 응답에서 회전된 새 `refresh_token` 쿠키를 심었고, 브라우저가 이미 쿠키 저장소를 바꿨습니다. FE 코드는 쿠키를 신경 쓰지 않습니다.
+
+**409 면 한 번 더.** 7장에서 grace 를 만들었습니다. 방금 회전된 옛 토큰이 10초 안에 다시 오면, 서버는 재사용으로 보지 않고 `409 REFRESH_TOKEN_ROTATED` 를 돌려줍니다. "다른 요청이 한발 앞서 회전시켰으니, 새 쿠키로 다시 해 보라" 는 뜻입니다. 그래서 FE 는 한 번 더 부릅니다. 이때 브라우저는 앞선 요청이 받은 새 쿠키를 싣게 됩니다. 11.8절에서 이 상황을 직접 만들어 봅니다.
+
+**CSRF 토큰이 어긋나면 `withCsrf` 가 한 번 더.** 메모리의 CSRF 토큰과 쿠키가 어긋나는 일이 생길 수 있습니다. 예를 들어 `csrf_token` 쿠키는 2시간 뒤 만료되는데, 탭을 그보다 오래 열어 두면 메모리에는 옛 값이 남아 있고 쿠키는 사라집니다. `withCsrf` 는 요청을 한 번 보내 보고, 응답 코드가 `CSRF_TOKEN_INVALID` 면 `csrfToken = null` 로 비운 뒤 `ensureCsrf` 로 새 짝을 받아 **한 번만** 다시 보냅니다. 이 처리는 refresh 만의 일이 아니라 CSRF 토큰을 싣는 모든 요청(`login`·`logout` 포함)에 필요하므로 작은 함수로 떼어 냈습니다. 제네릭 `T` 는 openapi-fetch 의 응답 모양을 그대로 돌려주기 위한 것이라, 부르는 쪽에서 `data`·`error`·`response` 의 타입이 그대로 살아 있습니다.
+
+**재시도는 한 번뿐입니다.** 409 쪽은 `retried` 인자가 그 장치입니다. 첫 호출은 `false` 로 시작하고, 재시도할 때는 `true` 를 넘깁니다. `true` 로 들어온 호출은 409 가 와도 더 이상 재시도하지 않고 아래로 내려갑니다. CSRF 쪽은 `withCsrf` 가 스스로 한 번만 재시도합니다. 서버나 설정에 진짜 문제가 있을 때 요청이 끝없이 반복되는 것을 막습니다.
+
+**그 밖의 실패는 로그아웃 상태로.** `REFRESH_TOKEN_INVALID`(쿠키 없음·만료·폐기)나 `REFRESH_TOKEN_REUSED`(재사용 탐지) 등입니다. 여기서 `wasIn` 이 중요합니다. 같은 401 이라도 **언제** 일어났는지에 따라 뜻이 다릅니다.
+
+- 앱이 막 떴을 때(`state` 가 `unknown`) refresh 가 실패했다면, 처음 방문했거나 오래전에 로그아웃한 사용자입니다. 이유를 붙이지 않습니다. 로그인 화면에 "세션이 만료됐습니다" 라고 띄우면 처음 온 사람은 어리둥절해합니다.
+- 로그인된 상태(`authenticated`)에서 실패했다면 쓰던 세션이 끝난 것입니다. `expired` 로 알려 줍니다.
+- 서버가 `REFRESH_TOKEN_REUSED` 라고 했다면 언제든 `reused` 입니다.
+
+`dropSession` 을 부르기 **전에** `wasIn` 을 계산해야 합니다. `dropSession` 이 `state` 를 바꿔 버리기 때문입니다.
+
+## 11.6 로그인과 로그아웃
+
+```ts
+// web/src/auth/session.ts (이어서)
+export async function login(email: string, password: string): Promise<ErrorResponse | null> {
+  const { data, error } = await withCsrf((csrf) =>
+    authApi.POST('/auth/login', { body: { email, password }, headers: { 'X-CSRF-Token': csrf } }),
+  );
+  if (!data) return error as ErrorResponse;
+  acceptTokens(data);
+  return null;
+}
+
+export async function logout(): Promise<void> {
+  await withCsrf((csrf) => authApi.POST('/auth/logout', { headers: { 'X-CSRF-Token': csrf } }));
+  dropSession('logout');
+}
+```
+
+`login` 은 실패하면 에러 응답을 **돌려주고**, 성공하면 `null` 을 돌려줍니다. 예외를 던지지 않는 이유는 로그인 실패가 예외적인 일이 아니기 때문입니다. 비밀번호를 틀리는 것은 흔한 일이고, 화면은 그 에러의 `code` 를 보고 문구를 고릅니다(11.10절). `body: { email, password }` 는 10장에서 생성한 타입으로 검사됩니다. 필드 이름을 틀리거나 빠뜨리면 컴파일되지 않습니다.
+
+로그인 CSRF 에 대해서는 9장에서 다뤘습니다. `login` 은 쿠키를 읽지 않는데도 CSRF 방어 대상입니다. 공격자가 피해자를 **공격자의 계정으로** 로그인시키는 공격이 있기 때문입니다. 그래서 `login` 도 CSRF 토큰을 싣고, `refresh` 와 마찬가지로 `withCsrf` 로 감싸 짝이 어긋나면 한 번 더 시도합니다. `logout` 도 같습니다.
+
+`logout` 은 서버의 응답을 기다린 뒤 `dropSession('logout')` 을 부릅니다. 서버는 이 세션(family)을 폐기하고 `refresh_token` 쿠키를 지우는 헤더를 보냅니다(7장). 순서를 이렇게 둔 이유는, 화면이 로그인 화면으로 넘어간 뒤에 사용자가 곧바로 다시 로그인할 때 쿠키 정리가 끝나 있게 하려는 것입니다.
+
+## 11.7 React 에 연결하기 — `useSyncExternalStore`
+
+`session.ts` 는 React 밖의 모듈입니다. React 컴포넌트가 이 상태를 읽고, 상태가 바뀌면 다시 그려지게 하려면 연결 고리가 필요합니다.
+
+```ts
+// web/src/auth/hooks.ts
+import { useEffect, useSyncExternalStore } from 'react';
+import { getSession, refreshSession, subscribe } from './session';
+
+export function useSession() {
+  return useSyncExternalStore(subscribe, getSession);
+}
+
+/** 앱 최상단에서 한 번. 새로고침 뒤 로그인 상태를 쿠키로 되살린다. */
+export function useBootSession() {
+  useEffect(() => {
+    void refreshSession(); // StrictMode 의 두 번째 호출은 같은 promise 를 받는다
+  }, []);
+}
+```
+
+`useSyncExternalStore` 는 React 18 에서 들어온 훅으로, 이름 그대로 **React 바깥의 저장소(external store)를 구독**하는 공식 방법입니다. 인자 두 개를 받습니다.
+
+- `subscribe` — "바뀌면 이 함수를 불러 달라" 고 등록하고, 해제 함수를 돌려주는 함수
+- `getSnapshot` — 지금 값을 돌려주는 함수. 여기서는 `getSession`
+
+11.3절에서 만든 `subscribe` 와 `getSession` 이 바로 이 모양입니다. 같은 일을 `useState` + `useEffect` 로 흉내 낼 수도 있습니다. effect 안에서 구독하고, 알림이 오면 `setState` 로 복사해 두는 방식입니다. 이 방식에는 두 가지 흠이 있습니다. 첫째, 컴포넌트가 처음 그려진 뒤 effect 가 돌기 전의 짧은 틈에 상태가 바뀌면 그 변화를 놓칩니다. 둘째, React 가 한 화면을 여러 조각으로 나눠 그리는 동시성 렌더링에서, 한 컴포넌트는 옛 값을, 다른 컴포넌트는 새 값을 보는 **어긋남**이 생길 수 있습니다. `useSyncExternalStore` 는 이 두 문제를 React 가 직접 막아 줍니다. 조건은 하나입니다. `getSnapshot` 은 값이 바뀌지 않았으면 **같은 객체**를 돌려줘야 합니다. `getSession` 은 모듈 변수 `state` 를 그대로 돌려주고, `state` 는 `setState` 에서만 새 객체로 바뀌니 조건을 만족합니다. 매번 `{ ...state }` 처럼 새 객체를 만들어 돌려주면 React 는 매번 바뀌었다고 보고 끝없이 다시 그립니다.
+
+`useBootSession` 은 앱이 뜰 때 한 번 refresh 를 부르는 훅입니다. 의존성 배열이 비어 있으니 **처음 마운트될 때 한 번** 돕니다. 적어도 그렇게 의도한 코드입니다. 그런데 주석에 "StrictMode 의 두 번째 호출" 이라는 말이 있습니다. 이 이야기를 하려면 `refreshSession` 을 먼저 봐야 합니다.
+
+## 11.8 StrictMode 와 두 번 나가는 refresh
+
+### 첫 번째 시도 — 그냥 부른다
+
+`refreshSession` 은 `runRefresh` 를 여는 입구입니다. 가장 단순하게는 이렇게 쓸 수 있습니다.
+
+```ts
+// web/src/auth/session.ts (잠깐 쓰는 첫 버전 — 뒤에서 고친다)
+export function refreshSession(): Promise<boolean> {
+  return runRefresh(false);
+}
+```
+
+11.10절의 화면들을 다 만든 뒤 이 버전으로 앱을 띄우고, 로그인한 다음 개발자 도구의 Network 탭을 열어 둔 채 F5 를 눌러 보세요. `Fetch/XHR` 필터를 켜면 보기 쉽습니다. 예상대로라면 `csrf` 한 번, `refresh` 한 번이 보여야 합니다. 실제로는 이렇게 보입니다(예시).
+
+```
+이름        메서드  상태
+csrf        GET     200
+csrf        GET     200
+refresh     POST    403     ← CSRF_TOKEN_INVALID
+refresh     POST    200
+csrf        GET     200
+refresh     POST    200
+```
+
+`csrf` 와 `refresh` 가 여러 번 나갔습니다. 순서와 개수, 중간의 상태 코드는 실행할 때마다 조금씩 다를 수 있습니다. 공통점은 **요청이 한 번이 아니라는 것**입니다.
+
+원인은 `main.tsx` 의 `<StrictMode>` 입니다(11.10절). React 는 개발 모드의 StrictMode 에서 **컴포넌트를 마운트한 직후 effect 를 일부러 한 번 정리하고 다시 실행**합니다. effect 가 정리 함수를 제대로 갖췄는지, 두 번 돌아도 안전한지를 개발 중에 드러내려는 장치입니다. 운영 빌드에서는 이렇게 하지 않습니다. 우리 `useBootSession` 의 effect 는 정리 함수가 없고, 두 번 돌면 refresh 를 두 번 보냅니다.
+
+위 예시가 어지러운 것은 CSRF 토큰도 두 번 받아 왔기 때문입니다. 두 호출이 거의 같은 순간에 `ensureCsrf` 를 부르니 둘 다 메모리가 비어 있는 것을 보고 각자 `GET /auth/csrf` 를 보냅니다. 서버는 두 번 다 `csrf_token` 쿠키를 새로 심고, 쿠키에는 **나중에 도착한 값만** 남습니다. 먼저 받은 값을 헤더에 실은 쪽은 쿠키와 짝이 맞지 않아 403 을 받고, 11.5절의 재시도로 CSRF 토큰을 새로 받아 다시 refresh 합니다.
+
+### 문제의 핵심만 떼어 보기 — 리프레시 쿠키가 두 번 쓰일 때
+
+CSRF 토큰의 어긋남을 걷어 내고 리프레시 토큰 쪽만 보면 무엇이 위험한지 더 잘 보입니다. CSRF 토큰이 이미 메모리에 있는 상태에서 refresh 두 번을 동시에 부르는 실험을 해 봅시다. 11.10절의 `MePage` 에 **실험용 버튼을 잠깐** 넣습니다(끝나면 지웁니다).
+
+```tsx
+// web/src/pages/MePage.tsx (실험용 — 확인 뒤 지운다)
+import { refreshSession } from '../auth/session';
+// …
+      <button onClick={() => { void refreshSession(); void refreshSession(); }}>refresh 두 번</button>
+```
+
+로그인한 뒤 이 버튼을 누르면 Network 탭에 이런 줄이 보일 수 있습니다(예시).
+
+```
+이름        메서드  상태
+refresh     POST    409     ← REFRESH_TOKEN_ROTATED
+refresh     POST    200
+refresh     POST    200     ← 409 뒤의 재시도
+```
+
+같은 순간에 나간 두 요청이 서버와 DB 에서 어떻게 처리됐는지 시간순으로 그리면 이렇습니다.
+
+```
+ 브라우저 (탭 하나)                  API                                        DB (refresh_tokens)
+ ──────────────────                  ───                                        ───────────────────
+ ① POST /auth/refresh  쿠키 R1 ────▶ BEGIN
+                                      SELECT … WHERE hash(R1) FOR UPDATE ──────▶ R1 행 잠금
+ ② POST /auth/refresh  쿠키 R1 ────▶ BEGIN
+                                      SELECT … WHERE hash(R1) FOR UPDATE ──────▶ (R1 잠금 대기…)
+                                      ① R2 INSERT, R1 → rotated, COMMIT ───────▶ R1 잠금 풀림
+                                      ② 잠금 획득: R1 은 rotated, 10초 안
+                                         → 409 REFRESH_TOKEN_ROTATED, COMMIT
+                                      ① 사용자 조회, JWT 서명
+   ◀─────────── ② 409 ──────────────
+   ◀─────────── ① 200 + Set-Cookie: refresh_token=R2
+ ② runRefresh(true)    쿠키 R2 ────▶ R2 → R3 회전 → 200 + Set-Cookie: R3
+```
+
+두 요청 모두 **같은 쿠키 R1** 을 들고 갔습니다. 브라우저는 요청을 보내는 순간의 쿠키를 싣는데, 그 순간에는 아직 어느 쪽도 응답을 받지 못했으니까요. 서버에서는 7장의 `SELECT … FOR UPDATE` 가 두 요청을 줄 세웁니다. 먼저 잠금을 잡은 ①이 R1 을 R2 로 회전시키고, 기다리던 ②는 이미 회전된 R1 을 봅니다. 회전된 지 10초가 안 됐으니 grace 에 걸려 409 가 나갑니다. FE 는 11.5절의 규칙대로 한 번 더 부르고, 그때는 ①이 받아 온 R2 가 쿠키에 있으니 성공합니다.
+
+이 그림에서 두 가지를 짚어 둡니다.
+
+**첫째, grace 가 없었다면 이것은 재사용 탐지입니다.** 7장에서 grace 를 만든 이유가 바로 이런 "악의 없는 동시 요청" 이었습니다. ②가 10초보다 늦게 도착했다면(예를 들어 노트북이 잠들었다 깨어났다면) 서버는 `REFRESH_TOKEN_REUSED` 로 판단하고 **세션 전체를 끊습니다.** 사용자는 F5 한 번에 "다른 곳에서 이 세션의 토큰이 다시 쓰였습니다" 라는 경고를 보게 됩니다. 우리 앱이 스스로 탈취 신호를 만든 것입니다.
+
+**둘째, 409 재시도도 운에 기댑니다.** 그림에서 ②의 409 는 ①의 200 보다 먼저 도착했습니다. 서버가 ②를 곧바로 거절하는 동안 ①은 COMMIT 뒤에도 사용자를 조회하고 JWT 를 서명하는 일이 남아 있기 때문에, 이런 순서가 드물지 않습니다. 그러면 ②의 재시도가 **①의 Set-Cookie 가 반영되기 전에** 나갈 수 있고, 그 재시도는 다시 R1 을 들고 가 409 를 받습니다. 재시도는 한 번뿐이니 ②는 실패로 끝나고 `dropSession('expired')` 를 부릅니다. ①이 방금 로그인 상태를 되살렸는데 ②가 그것을 지워 버리는 것입니다. 실험을 여러 번 해 보면 가끔 로그인 화면으로 튕기는 것을 볼 수 있습니다.
+
+grace 와 409 재시도는 안전망일 뿐입니다. **애초에 한 탭 안에서 refresh 를 두 번 보내지 않는 것**이 올바른 답입니다.
+
+### 고치기 — single-flight
+
+머리말 용어표의 **single-flight** 가 이것입니다. 동시에 여러 곳에서 refresh 를 요청해도 실제 요청은 하나만 보내고, 모두 그 결과를 나눠 갖게 합니다. 모듈 변수 하나로 됩니다.
+
+```ts
+// web/src/auth/session.ts (변수 선언부에 한 줄 더한다)
+let refreshing: Promise<boolean> | null = null;
+```
+
+```ts
+// web/src/auth/session.ts (refreshSession 을 바꾼다)
+/** single-flight. 성공하면 true. */
+export function refreshSession(): Promise<boolean> {
+  refreshing ??= runRefresh(false)
+    .catch(() => {
+      // API 에 닿지 못했다(서버 꺼짐·네트워크). 부팅 중이면 "세션 확인 중" 에 멈추지 않게 익명으로 둔다
+      if (state.status === 'unknown') dropSession();
+      return false;
+    })
+    .finally(() => {
+      refreshing = null;
+    });
+  return refreshing;
+}
+```
+
+`??=` 는 "왼쪽이 `null` 이나 `undefined` 일 때만 오른쪽을 계산해 대입한다" 는 연산자입니다. 동작을 풀어 쓰면 이렇습니다.
+
+1. 첫 호출: `refreshing` 이 `null` 이므로 `runRefresh(false)` 를 시작하고, 그 promise(에 `finally` 를 붙인 것)를 `refreshing` 에 넣습니다.
+2. 첫 요청이 끝나기 전의 두 번째 호출: `refreshing` 이 이미 있으므로 오른쪽을 **계산하지 않습니다.** 새 요청은 나가지 않고, 같은 promise 를 돌려받습니다.
+3. 요청이 끝나면 `finally` 가 `refreshing` 을 `null` 로 비웁니다. 다음 refresh 는 다시 새 요청으로 시작합니다.
+
+`finally` 에서 비우는 것이 중요합니다. 비우지 않으면 첫 refresh 의 결과가 영원히 재사용되어, 10분 뒤 토큰이 만료돼도 새 refresh 가 나가지 않습니다. 성공과 실패 모두에서 비워야 하니 `then` 이 아니라 `finally` 입니다.
+
+StrictMode 에서 이것이 어떻게 동작하는지 그려 보면 이렇습니다.
+
+```
+ React (개발 모드, StrictMode)          refreshSession()                         네트워크
+ ─────────────────────────────          ────────────────                         ────────
+ effect 1회차 ─────────────────────────▶ refreshing = null → runRefresh 시작 ───▶ GET /auth/csrf
+                                         refreshing = P                           POST /auth/refresh
+ (정리 — 정리 함수 없음)
+ effect 2회차 ─────────────────────────▶ refreshing = P → 그대로 P 반환
+                                         (새 요청 없음)
+                                                                    ◀──────────── 200
+                                         P 완료 → finally: refreshing = null
+```
+
+`useBootSession` 주석의 "StrictMode 의 두 번째 호출은 같은 promise 를 받는다" 가 이 그림입니다. 두 effect 는 같은 동기 흐름 안에서 연달아 돌기 때문에, 두 번째가 불릴 때 첫 번째 요청은 아직 끝나지 않았고 `refreshing` 은 채워져 있습니다.
+
+💡 single-flight 는 StrictMode 만을 위한 장치가 아닙니다. 운영 빌드에서도 "화면 세 곳이 동시에 API 를 불렀는데 셋 다 401 을 받은" 상황이 생깁니다. 12장에서 `authFetch` 를 붙이면 이 세 곳이 모두 `refreshSession()` 을 부르고, single-flight 덕분에 refresh 는 한 번만 나갑니다. StrictMode 는 이 문제를 개발 중에 미리 드러내 준 것입니다.
+
+이제 다시 F5 를 눌러 Network 탭을 보세요. `csrf` 한 번, `refresh` 한 번입니다. 실험용 버튼을 눌러도 `refresh` 는 한 번만 나갑니다. 확인했으면 **실험용 버튼과 import 를 지웁니다.**
+
+⚠️ single-flight 는 **한 탭 안**에서만 동작합니다. `refreshing` 은 모듈 변수라 탭마다 따로 있기 때문입니다. 탭 두 개가 동시에 refresh 하면 위의 그림이 탭 사이에서 똑같이 벌어집니다. 12장에서 `navigator.locks` 로 이것을 막습니다.
+
+### `session.ts` 1단계 전체
+
+여기까지의 조각을 모은 파일입니다.
+
+```ts
+// web/src/auth/session.ts
+import { authApi, type ErrorResponse, type TokenResponse, type User } from '../api/client';
+
+export type AnonymousReason = 'logout' | 'expired' | 'reused';
+export type SessionState =
+  | { status: 'unknown' }
+  | { status: 'authenticated'; user: User }
+  | { status: 'anonymous'; reason?: AnonymousReason };
+
+let state: SessionState = { status: 'unknown' };
+let accessToken: string | null = null;
+let csrfToken: string | null = null;
+let refreshing: Promise<boolean> | null = null;
+const listeners = new Set<() => void>();
+
+export const getSession = () => state;
+export const getAccessToken = () => accessToken;
+export function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+function setState(next: SessionState) {
+  state = next;
+  listeners.forEach((listener) => listener());
+}
+
+function acceptTokens(body: TokenResponse) {
+  accessToken = body.accessToken;
+  setState({ status: 'authenticated', user: body.user });
+}
+
+function dropSession(reason?: AnonymousReason) {
+  accessToken = null;
+  setState({ status: 'anonymous', reason });
+}
+
+/** 닉네임 변경처럼 사용자 정보가 바뀌었을 때 화면 상태를 맞춘다. */
+export function updateUser(user: User) {
+  if (state.status === 'authenticated') setState({ status: 'authenticated', user });
+}
+
+export async function ensureCsrf(): Promise<string> {
+  if (csrfToken) return csrfToken;
+  const { data } = await authApi.GET('/auth/csrf');
+  csrfToken = data!.csrfToken;
+  return csrfToken;
+}
+
+/** single-flight. 성공하면 true. */
+export function refreshSession(): Promise<boolean> {
+  refreshing ??= runRefresh(false)
+    .catch(() => {
+      // API 에 닿지 못했다(서버 꺼짐·네트워크). 부팅 중이면 "세션 확인 중" 에 멈추지 않게 익명으로 둔다
+      if (state.status === 'unknown') dropSession();
+      return false;
+    })
+    .finally(() => {
+      refreshing = null;
+    });
+  return refreshing;
+}
+
+/** CSRF 토큰이 쿠키와 어긋나면(쿠키 만료·서버 비밀 교체) 새로 받아 한 번만 다시 보낸다. */
+async function withCsrf<T extends { error?: unknown }>(send: (csrf: string) => Promise<T>): Promise<T> {
+  const first = await send(await ensureCsrf());
+  if ((first.error as ErrorResponse | undefined)?.code !== 'CSRF_TOKEN_INVALID') return first;
+  csrfToken = null;
+  return send(await ensureCsrf());
+}
+
+async function runRefresh(retried: boolean): Promise<boolean> {
+  const { data, error, response } = await withCsrf((csrf) =>
+    authApi.POST('/auth/refresh', { headers: { 'X-CSRF-Token': csrf } }),
+  );
+  if (data) {
+    acceptTokens(data);
+    return true;
+  }
+  const code = (error as ErrorResponse | undefined)?.code;
+  if (!retried && response.status === 409) return runRefresh(true);
+  // 부팅 때 쿠키가 없던 것(처음 방문)과 로그인 중에 만료된 것을 구분한다
+  const wasIn = state.status === 'authenticated';
+  dropSession(code === 'REFRESH_TOKEN_REUSED' ? 'reused' : wasIn ? 'expired' : undefined);
+  return false;
+}
+
+export async function login(email: string, password: string): Promise<ErrorResponse | null> {
+  const { data, error } = await withCsrf((csrf) =>
+    authApi.POST('/auth/login', { body: { email, password }, headers: { 'X-CSRF-Token': csrf } }),
+  );
+  if (!data) return error as ErrorResponse;
+  acceptTokens(data);
+  return null;
+}
+
+export async function logout(): Promise<void> {
+  await withCsrf((csrf) => authApi.POST('/auth/logout', { headers: { 'X-CSRF-Token': csrf } }));
+  dropSession('logout');
+}
+```
+
+12장에서 이 파일에 `BroadcastChannel`, `navigator.locks`, `logoutAll`, `withAuth`, `authFetch` 를 더하면 부록 C 의 모습이 됩니다.
+
+## 11.9 보호 라우트 — `RequireAuth`
+
+로그인해야만 볼 수 있는 화면을 감싸는 컴포넌트입니다.
+
+```tsx
+// web/src/auth/RequireAuth.tsx
+import { Navigate, Outlet, useLocation } from 'react-router';
+import { useSession } from './hooks';
+
+export function RequireAuth() {
+  const session = useSession();
+  const location = useLocation();
+
+  if (session.status === 'unknown') return <p>세션 확인 중…</p>;
+  if (session.status === 'anonymous') {
+    return <Navigate to="/login" replace state={{ from: location.pathname, reason: session.reason }} />;
+  }
+  return <Outlet />;
+}
+```
+
+세 갈래가 11.2절의 세 상태와 정확히 대응합니다.
+
+**`unknown` 동안에는 리다이렉트하지 않습니다.** 이것이 이 컴포넌트에서 가장 중요한 줄입니다. `unknown` 을 `anonymous` 처럼 다뤄 곧장 `/login` 으로 보내면 어떻게 될까요? F5 를 누를 때마다, 조용한 갱신의 응답이 오기 전 수십 밀리초 동안 로그인 화면이 그려집니다. 그리고 refresh 가 성공하면 다시 원래 화면으로 돌아옵니다. 사용자 눈에는 로그인 화면이 **번쩍 깜빡였다 사라지는** 것으로 보입니다. 더 나쁜 것은 주소입니다. 리다이렉트가 일어나면 원래 보던 경로를 잃기 쉽습니다. 그래서 모를 때는 모른다고 그립니다. 여기서는 "세션 확인 중…" 이라는 글자를 보여 주지만 스피너든 빈 화면이든 괜찮습니다.
+
+**`anonymous` 면 `/login` 으로 보내면서 두 가지를 들려 보냅니다.** `from` 은 원래 가려던 경로입니다. 로그인이 끝나면 그리로 돌려보냅니다. `reason` 은 11.2절의 이유입니다. 로그인 화면이 "세션이 만료됐습니다" 같은 안내를 띄우는 데 씁니다. `replace` 는 브라우저 기록에서 현재 항목을 바꿔치기하라는 뜻입니다. 이것이 없으면 로그인 화면에서 뒤로 가기를 누를 때 보호된 화면으로 갔다가 다시 로그인 화면으로 튕기는 일이 반복됩니다.
+
+**`authenticated` 면 `<Outlet />`.** 이 컴포넌트를 라우트의 부모로 두면, 그 아래 자식 라우트가 `Outlet` 자리에 그려집니다(11.10절의 `App.tsx`).
+
+`Navigate`, `Outlet`, `useLocation` 은 모두 `react-router` 에서 가져옵니다. 이 책은 `react-router` 8 의 선언형 방식(`BrowserRouter`·`Routes`·`Route`)을 씁니다. 버전에 따라 import 경로나 권장 방식이 달라질 수 있으니, 코드가 그대로 되지 않으면 사용하는 버전의 공식 문서에서 이 이름들을 확인하세요.
+
+## 11.10 화면 만들기
+
+### 로그인 화면
+
+```tsx
+// web/src/pages/LoginPage.tsx
+import { useState, type FormEvent } from 'react';
+import { Navigate, useLocation, useNavigate } from 'react-router';
+import { useSession } from '../auth/hooks';
+import { login, type AnonymousReason } from '../auth/session';
+
+const REASON_TEXT: Record<AnonymousReason, string> = {
+  logout: '로그아웃했습니다.',
+  expired: '세션이 만료됐습니다. 다시 로그인하세요.',
+  reused: '다른 곳에서 이 세션의 토큰이 다시 쓰였습니다. 안전을 위해 세션을 끊었습니다.',
+};
+
+export function LoginPage() {
+  const session = useSession();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: string } | null)?.from ?? '/';
+  const reason = (location.state as { reason?: AnonymousReason } | null)?.reason;
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  if (session.status === 'authenticated') return <Navigate to={from} replace />;
+
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    setPending(true);
+    const failure = await login(String(form.get('email')), String(form.get('password')));
+    setPending(false);
+    if (failure) {
+      setError(
+        failure.code === 'INVALID_CREDENTIALS'
+          ? '이메일 또는 비밀번호가 맞지 않습니다.'
+          : failure.code === 'TOO_MANY_REQUESTS'
+            ? '시도가 너무 많습니다. 1분 뒤 다시 시도하세요.'
+            : '로그인하지 못했습니다. 잠시 뒤 다시 시도하세요.',
+      );
+      return;
+    }
+    navigate(from, { replace: true });
+  }
+
+  return (
+    <form onSubmit={onSubmit} style={{ display: 'grid', gap: 8 }}>
+      <h1>로그인</h1>
+      {reason && <p>{REASON_TEXT[reason]}</p>}
+      <input name="email" type="email" placeholder="이메일" required autoComplete="username" />
+      <input name="password" type="password" placeholder="비밀번호" required autoComplete="current-password" />
+      <button disabled={pending}>{pending ? '확인 중…' : '로그인'}</button>
+      {error && <p role="alert">{error}</p>}
+    </form>
+  );
+}
+```
+
+**`REASON_TEXT` 의 타입은 `Record<AnonymousReason, string>`** 입니다. `AnonymousReason` 의 세 값 모두에 문구가 있어야 컴파일됩니다. 나중에 이유가 하나 늘면 여기서 빠진 문구를 컴파일러가 알려 줍니다.
+
+**`location.state` 에서 `from` 과 `reason` 을 꺼냅니다.** `RequireAuth` 가 `Navigate` 에 실어 보낸 값입니다. 사용자가 주소창에 `/login` 을 직접 쳐서 왔다면 `state` 가 없으니 `from` 은 `'/'`, `reason` 은 없음이 됩니다. `location.state` 의 타입은 라우터가 알 수 없으므로 `as` 로 모양을 알려 줍니다.
+
+**이미 로그인돼 있으면 곧장 돌려보냅니다.** 로그인된 사용자가 `/login` 에 들어오거나, 부팅 때의 조용한 갱신이 로그인 화면을 보는 도중에 성공하면 이 줄이 원래 가려던 곳으로 보냅니다. 이 `return` 이 모든 훅 호출 **뒤에** 있다는 점을 보세요. React 의 훅은 조건문이나 이른 `return` 보다 앞에서, 매번 같은 순서로 불려야 합니다.
+
+**폼 값은 `FormData` 로 읽습니다.** 입력마다 `useState` 를 두는 제어 컴포넌트 방식도 되지만, 제출할 때 한 번 읽으면 되는 폼에는 이쪽이 짧습니다.
+
+**에러 문구는 `code` 로 고릅니다.** `INVALID_CREDENTIALS` 면 "이메일 또는 비밀번호가 맞지 않습니다" 를, `TOO_MANY_REQUESTS`(5장의 로그인 제한)면 기다리라는 문구를 띄웁니다. 서버가 "이메일이 없음" 과 "비밀번호 틀림" 을 구분하지 않는 것(5장)과 같은 이유로 화면도 둘을 구분하지 않습니다. 그 밖의 코드(CSRF 거부 등)는 사용자 잘못이 아니므로 비밀번호 탓을 하지 않고 "로그인하지 못했습니다" 로 뭉칩니다. 비밀번호가 맞는데 비밀번호가 틀렸다고 하면 사용자는 엉뚱한 곳을 고칩니다. `failure.code` 는 10장에서 본 `ErrorCode` 합집합 타입이라 오타가 컴파일 단계에서 잡힙니다.
+
+**`autoComplete`** 는 비밀번호 관리자가 이 폼을 로그인 폼으로 알아보게 하는 힌트입니다. `username`·`current-password` 는 표준 값입니다.
+
+### 가입 화면
+
+```tsx
+// web/src/pages/SignupPage.tsx
+import { useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router';
+import { authApi } from '../api/client';
+
+export function SignupPage() {
+  const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
+
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const { error } = await authApi.POST('/auth/signup', {
+      body: {
+        email: String(form.get('email')),
+        password: String(form.get('password')),
+        nickname: String(form.get('nickname')),
+      },
+    });
+    if (error) {
+      setError(error.code === 'EMAIL_TAKEN' ? '이미 가입된 이메일입니다.' : error.message);
+      return;
+    }
+    navigate('/login');
+  }
+
+  return (
+    <form onSubmit={onSubmit} style={{ display: 'grid', gap: 8 }}>
+      <h1>가입</h1>
+      <input name="email" type="email" placeholder="이메일" required autoComplete="username" />
+      <input name="password" type="password" placeholder="비밀번호 (8자 이상)" minLength={8} required autoComplete="new-password" />
+      <input name="nickname" placeholder="닉네임 (2~20자)" minLength={2} maxLength={20} required />
+      <button>가입</button>
+      {error && <p role="alert">{error}</p>}
+    </form>
+  );
+}
+```
+
+가입은 세션 상태를 바꾸지 않으므로 `session.ts` 를 거치지 않고 `authApi` 를 바로 부릅니다. 가입은 쿠키를 만들거나 읽지 않으니 9장의 기준으로 CSRF 대상이 아니고, `X-CSRF-Token` 헤더도 없습니다. 가입이 끝나면 자동으로 로그인시키지 않고 로그인 화면으로 보냅니다. 가입과 로그인을 한 요청으로 합치면 편하지만, 이 책은 두 흐름을 따로 두어 각각을 명확히 보이는 쪽을 택했습니다.
+
+`minLength`·`maxLength` 는 4장 `SignupDto` 의 검증 규칙(`@Length(8, 128)`, `@Length(2, 20)`)과 맞춘 것입니다. 브라우저의 검사는 사용자 편의일 뿐이고, 진짜 검사는 서버의 `ValidationPipe` 가 합니다. 서버 검사에 걸리면 `VALIDATION_FAILED` 가 오고, 그때는 `error.message` 에 담긴 서버의 설명을 그대로 보여 줍니다.
+
+### 내 정보 화면 — 최소 버전
+
+```tsx
+// web/src/pages/MePage.tsx (11장 최소 버전 — 12장에서 완성한다)
+import { useSession } from '../auth/hooks';
+import { logout } from '../auth/session';
+
+export function MePage() {
+  const session = useSession();
+
+  if (session.status !== 'authenticated') return null;
+
+  return (
+    <section style={{ display: 'grid', gap: 16 }}>
+      <h1>{session.user.nickname} 님</h1>
+      <p>{session.user.email}</p>
+
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button onClick={() => void logout()}>로그아웃</button>
+      </div>
+    </section>
+  );
+}
+```
+
+이 화면은 일부러 작게 만들었습니다. 사용자 정보는 로그인이나 refresh 응답에 이미 담겨 왔으니(`TokenResponseDto.user`), `/users/me` 를 따로 부르지 않고 세션 상태에서 꺼내 그립니다.
+
+닉네임 변경, 세션 목록, 액세스 토큰 카운트다운은 12장에서 더합니다. 이유가 있습니다. 그 기능들은 `PATCH /users/me`, `GET /auth/sessions` 처럼 **액세스 토큰이 필요한 API** 를 부르는데, 지금의 `api` 클라이언트는 아직 요청에 토큰을 싣지 않습니다(10장에서 `fetch` 옵션 없이 만들었습니다). 12장에서 `authFetch` 를 끼우면 그때 붙입니다.
+
+`session.status !== 'authenticated'` 검사는 `RequireAuth` 안에서만 그려지는 화면이니 사실상 늘 통과합니다. 그래도 이 줄이 있어야 아래에서 `session.user` 를 쓸 수 있습니다. 판별 합집합을 좁히는 줄입니다.
+
+### 앱의 뼈대 — `App.tsx` 와 `main.tsx`
+
+```tsx
+// web/src/App.tsx (11장 — 12장에서 LabPage 라우트를 더한다)
+import { Link, Route, Routes } from 'react-router';
+import { useBootSession } from './auth/hooks';
+import { RequireAuth } from './auth/RequireAuth';
+import { LoginPage } from './pages/LoginPage';
+import { MePage } from './pages/MePage';
+import { SignupPage } from './pages/SignupPage';
+
+export function App() {
+  useBootSession();
+  return (
+    <main style={{ maxWidth: 640, margin: '40px auto', fontFamily: 'system-ui', padding: '0 16px' }}>
+      <nav style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
+        <Link to="/">내 정보</Link>
+        <Link to="/login">로그인</Link>
+        <Link to="/signup">가입</Link>
+      </nav>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route element={<RequireAuth />}>
+          <Route path="/" element={<MePage />} />
+        </Route>
+      </Routes>
+    </main>
+  );
+}
+```
+
+**`useBootSession()` 은 여기, 앱 최상단에서 한 번** 부릅니다. 어느 경로로 들어오든(`/`, `/login`, `/signup`) 조용한 갱신이 한 번 일어납니다. `RequireAuth` 안에서 부르면 `/login` 으로 바로 들어온 사용자는 refresh 를 거치지 않아, 쿠키가 살아 있는데도 로그인 화면을 보게 됩니다.
+
+**`<Route element={<RequireAuth />}>`** 에는 `path` 가 없습니다. 경로를 만들지 않고 자식 라우트들을 감싸기만 하는 "레이아웃 라우트" 입니다. 로그인이 필요한 화면이 늘면 이 안에 `Route` 를 더하기만 하면 됩니다.
+
+```tsx
+// web/src/main.tsx
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router';
+import { App } from './App';
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </StrictMode>,
+);
+```
+
+템플릿의 `main.tsx` 를 통째로 이것으로 바꿉니다. 템플릿과 달라진 점은 세 가지입니다. `index.css` import 가 없고, `App` 을 이름 있는 내보내기로 가져오고, `BrowserRouter` 로 감쌌습니다. `StrictMode` 는 **지우지 않습니다.** 11.8절에서 보았듯 이것이 우리 코드의 약점을 개발 중에 드러내 주었습니다. 문제를 숨기려고 StrictMode 를 끄는 것은 답이 아닙니다.
+
+템플릿의 `App.tsx` 도 위의 파일로 바꿉니다. 템플릿의 `App` 은 기본 내보내기(`export default`)였지만 이 책은 이름 있는 내보내기(`export function App`)를 씁니다.
+
+## 11.11 브라우저에서 확인하기
+
+두 터미널에서 API 와 FE 를 띄웁니다.
+
+```bash
+# 터미널 1
+$ cd ~/Workspace/auth-lab/api
+$ pnpm start:dev
+
+# 터미널 2
+$ cd ~/Workspace/auth-lab/web
+$ pnpm dev
+```
+
+Chrome 에서 `http://localhost:5173` 을 엽니다. `127.0.0.1` 이 아니라 **`localhost`** 입니다(10장).
+
+### 1. 처음 방문 — 조용한 갱신이 조용히 실패한다
+
+개발자 도구의 Network 탭을 연 채로 페이지를 엽니다. "세션 확인 중…" 이 아주 잠깐 보였다가 로그인 화면으로 넘어갑니다. 로그인 화면에는 안내 문구가 **없어야** 합니다. 처음 방문이니 `reason` 이 없습니다.
+
+Network 탭에는 이런 순서로 요청이 보입니다(예시).
+
+```
+이름        메서드   상태   유형
+csrf        GET      200    fetch
+refresh     OPTIONS  204    preflight
+refresh     POST     401    fetch
+```
+
+- **`csrf` 가 먼저**입니다. `runRefresh` 가 `await ensureCsrf()` 로 헤더 값을 먼저 구하기 때문입니다.
+- **`refresh` 의 `OPTIONS`** 는 CORS 사전 요청(preflight)입니다. `X-CSRF-Token` 이라는 커스텀 헤더가 붙은 다른 출처 요청이라, 브라우저가 먼저 "이 헤더를 보내도 되느냐" 고 묻습니다. 1장과 9장에서 본 그 절차입니다. Chrome 버전에 따라 preflight 가 별도 줄로 보이지 않고 본 요청의 상세에 묶여 보일 수도 있습니다.
+- **`refresh` 가 401** 입니다. 쿠키가 없으니 `REFRESH_TOKEN_INVALID` 입니다. 이 401 이 콘솔에 빨간 줄로 찍히는데, 처음 방문에서는 **정상**입니다. 오류가 아니라 "로그인 안 됨" 이라는 답입니다.
+
+### 2. 가입과 로그인
+
+`/signup` 에서 가입하고, 로그인 화면에서 로그인합니다. `내 정보` 화면에 닉네임과 이메일이 보이면 성공입니다. Network 탭에서 `login` 요청을 눌러 응답을 봅니다.
+
+- **응답 본문**에 `accessToken`, `tokenType: "Bearer"`, `expiresIn: 600`, `user` 가 있습니다.
+- **응답 헤더**에 `Set-Cookie: refresh_token=…; Path=/auth; Expires=…; HttpOnly; Secure; SameSite=Strict` 와 `Cache-Control: no-store` 가 있습니다.
+- `login` 앞에 `csrf` 요청이 **없습니다.** 부팅 때 받아 둔 CSRF 토큰을 메모리에서 다시 썼기 때문입니다.
+
+### 3. F5 — 로그인이 유지된다
+
+`내 정보` 화면에서 F5 를 누릅니다. 메모리가 비워졌으니 액세스 토큰도, CSRF 토큰도 사라졌습니다. 그런데도 잠깐의 "세션 확인 중…" 뒤에 **같은 화면이 그대로** 나와야 합니다. 로그인 화면이 한 번이라도 깜빡이면 `RequireAuth` 가 `unknown` 을 잘못 다루고 있는 것입니다.
+
+Network 탭의 순서는 이렇습니다(예시).
+
+```
+이름        메서드   상태
+csrf        GET      200
+refresh     OPTIONS  204
+refresh     POST     200
+```
+
+`refresh` 가 **한 번만** 나갔는지 반드시 확인하세요. 두 번이면 single-flight 가 빠진 것입니다(11.8절). `refresh` 요청의 상세에서 "Cookies" 탭을 열면 요청에 실린 `refresh_token` 과 응답이 새로 심은 `refresh_token` 이 서로 **다른 값**입니다. 7장의 회전이 브라우저에서 일어나는 것을 보고 있는 것입니다.
+
+### 4. Application 탭 — 쿠키 속성과 저장소
+
+Application 탭 → Storage → Cookies → `http://localhost:5173` 을 엽니다. 쿠키는 API(`localhost:4000`)가 심었는데 FE 출처 아래에 보이는 것이 이상할 수 있습니다. 쿠키는 출처가 아니라 **호스트** 단위로 저장되고 포트를 가리지 않습니다. 그래서 `localhost` 의 쿠키로 함께 보입니다(보이지 않으면 Network 탭의 `refresh` 요청 → Cookies 에서 확인하세요). 두 쿠키의 속성을 표와 대조합니다.
+
+| 이름 | Path | HttpOnly | Secure | SameSite | 만료 |
+|---|---|---|---|---|---|
+| `refresh_token` | `/auth` | ✓ | ✓ | Strict | 약 14일 뒤 |
+| `csrf_token` | `/` | ✓ | ✓ | Strict | 약 2시간 뒤 |
+
+그리고 두 가지를 더 확인합니다.
+
+- Application 탭 → Local Storage → `http://localhost:5173` 이 **비어 있습니다.** 액세스 토큰은 어디에도 저장되지 않았습니다.
+- Console 탭에서 `document.cookie` 를 실행하면 **빈 문자열**이 나옵니다. 두 쿠키 모두 `HttpOnly` 라 스크립트가 읽을 수 없습니다.
+
+### 5. 로그아웃
+
+`로그아웃` 버튼을 누르면 로그인 화면으로 가고 "로그아웃했습니다." 가 보입니다. Network 탭의 `logout` 은 `204` 이고, 응답 헤더에 `refresh_token` 을 지우는 `Set-Cookie`(만료 시각이 과거이고 `Path=/auth` 가 붙은 것)가 있습니다. 그 뒤 F5 를 눌러 보세요. `refresh` 가 401 이고 로그인 화면에 안내 문구가 없습니다. 쿠키가 지워졌으니 처음 방문과 같은 상태입니다.
+
+## 확인하기
+
+1. **타입 검사** — `web/` 에서 `pnpm exec tsc -b` 가 오류 없이 끝납니다.
+2. **처음 방문** — 쿠키를 지운 뒤(Application → Cookies → 우클릭 Clear) `http://localhost:5173` 을 열면 로그인 화면이 안내 문구 없이 뜨고, Network 에 `csrf 200` → `refresh 401` 이 한 번씩 보입니다.
+3. **로그인** — 로그인하면 `내 정보` 화면에 닉네임이 보이고, `login` 응답에 `Set-Cookie: refresh_token=…; Path=/auth; …HttpOnly; Secure; SameSite=Strict` 가 있습니다.
+4. **새로고침** — `내 정보` 화면에서 F5 를 누르면 로그인 화면을 거치지 않고 같은 화면이 뜨며, Network 에 `refresh` 가 **정확히 한 번** 보입니다.
+5. **저장소** — Local Storage 가 비어 있고, Console 의 `document.cookie` 가 `""` 입니다.
+6. **로그아웃** — 로그아웃하면 "로그아웃했습니다." 가 보이고, 그 뒤 F5 에서 `refresh` 가 401 입니다.
+7. **보호 라우트** — 로그아웃 상태에서 주소창에 `http://localhost:5173/` 을 치면 로그인 화면으로 가고, 로그인하면 `/` 로 돌아옵니다.
+
+## 자주 하는 실수
+
+**F5 할 때마다 로그인 화면이 한 번 깜빡인다**
+`RequireAuth` 가 `unknown` 을 `anonymous` 처럼 다뤄 곧장 리다이렉트하고 있습니다. `unknown` 동안에는 리다이렉트하지 말고 대기 화면을 그립니다.
+
+**로그인은 되는데 F5 하면 로그아웃된다 — `refresh` 가 늘 401**
+세 가지를 차례로 의심합니다. (1) 클라이언트에 `credentials: 'include'` 가 없어 쿠키가 오가지 않는다. (2) FE 를 `127.0.0.1:5173` 으로 열어 다른 사이트가 되었다. (3) 브라우저가 `Secure` 쿠키를 `http://localhost` 에서 받지 않는다(Chrome 은 `localhost` 를 신뢰할 수 있는 출처로 보고 받지만, 브라우저마다 다를 수 있습니다). `login` 응답의 Set-Cookie 옆에 경고 아이콘이 있는지 Network 탭에서 확인하세요.
+
+**Network 에 `refresh` 가 두 번 보이고 가끔 409 나 403 이 섞인다**
+`refreshSession` 에 single-flight 가 없습니다. StrictMode 가 부팅 effect 를 두 번 돌리고 있습니다. `refreshing ??=` 를 넣습니다. StrictMode 를 끄는 것으로 해결하지 않습니다.
+
+**`useSession` 을 쓰는 컴포넌트가 끝없이 다시 그려진다 / "getSnapshot should be cached" 경고**
+`getSession` 이 매번 새 객체를 돌려주고 있습니다. 모듈 변수 `state` 를 그대로 돌려주고, 바꿀 때만 `setState` 로 새 객체를 넣습니다.
+
+**닉네임 변경 버튼을 만들었더니 401 이 난다**
+이 장의 `api` 는 아직 액세스 토큰을 싣지 않습니다. 12장에서 `authFetch` 를 끼운 뒤에 액세스 토큰이 필요한 API 를 부릅니다.
+
+**API 를 띄우지 않았는데 로그인 화면이 뜨고, 로그인하면 "로그인하지 못했습니다" 가 뜬다**
+API 에 닿지 못하면 `fetch` 가 reject 되고, `refreshSession` 의 `.catch` 가 부팅 중(`unknown`)인 상태를 익명으로 바꿔 줍니다. 그래서 "세션 확인 중…" 에 멈추지 않고 로그인 화면이 뜹니다. Console 에 `Failed to fetch` 가 보이면 API 가 떠 있는지 확인하세요. `.catch` 가 **로그인된 상태에서는** 세션을 버리지 않는 이유는, 잠깐의 네트워크 끊김으로 사용자를 로그아웃시키지 않기 위해서입니다.
+
+**로그인 실패 문구가 "로그인하지 못했습니다" 인데 이유를 모르겠다**
+에러 `code` 를 확인하세요. Network 탭의 `login` 응답 본문에 `code` 가 있습니다. `CSRF_ORIGIN_REJECTED` 라면 `WEB_ORIGINS` 가 FE 출처와 다르고, `VALIDATION_FAILED` 라면 요청 본문 모양이 틀렸습니다.
+
+## 정리
+
+- 액세스 토큰은 모듈 변수에, 리프레시 토큰은 `HttpOnly` 쿠키에 둡니다. 새로고침으로 사라진 액세스 토큰은 부팅 때의 **조용한 갱신**으로 되살립니다.
+- 세션 상태는 `unknown`·`authenticated`·`anonymous` 셋입니다. `unknown` 동안에는 리다이렉트하지 않아야 로그인 화면이 깜빡이지 않습니다. `anonymous` 에는 이유를 붙여 사용자에게 무슨 일이 있었는지 알립니다.
+- `session.ts` 는 React 밖의 모듈이고, React 는 `useSyncExternalStore(subscribe, getSession)` 로 구독합니다. `getSession` 은 바뀌지 않았으면 같은 객체를 돌려줘야 합니다.
+- `runRefresh` 는 409 와 `CSRF_TOKEN_INVALID` 에서 **한 번만** 재시도하고, 실패하면 `wasIn` 으로 "처음 방문" 과 "만료" 를 가릅니다.
+- StrictMode 가 effect 를 두 번 돌리면 refresh 가 두 번 나가 409(늦으면 재사용 탐지)를 부릅니다. `refreshing ??=` 한 줄의 **single-flight** 로 한 탭 안의 refresh 를 하나로 모읍니다.
+- 탭 사이의 refresh 충돌, 401 자동 재시도, 로그아웃 동기화는 12장에서 다룹니다.
+
+## 연습문제
+
+**1.** `runRefresh` 에서 `const wasIn = state.status === 'authenticated';` 를 `dropSession(...)` 호출 **아래로** 옮기면 어떤 문제가 생길까요?
+
+<details>
+<summary>해답</summary>
+
+`dropSession` 이 먼저 `state` 를 `{ status: 'anonymous', … }` 로 바꾸므로, 그 뒤에 계산한 `wasIn` 은 언제나 `false` 입니다. 사실 옮긴 뒤에는 `wasIn` 을 `dropSession` 의 인자로 쓸 수조차 없으니 코드가 성립하지 않습니다. 핵심은 "상태를 바꾸기 전에, 바꾸기 전의 상태를 읽어야 한다" 는 것입니다. 이 순서가 틀리면 로그인된 채 쓰던 세션이 만료돼도 사용자는 "세션이 만료됐습니다" 라는 안내를 받지 못하고, 처음 방문한 것처럼 아무 말 없는 로그인 화면을 보게 됩니다.
+
+</details>
+
+**2.** 동료가 "refresh 가 두 번 나가는 건 StrictMode 때문이니, `main.tsx` 에서 `<StrictMode>` 를 지우면 끝" 이라고 합니다. 이 판단에 반대하는 이유를 두 가지 적어 보세요.
+
+<details>
+<summary>해답</summary>
+
+첫째, StrictMode 는 원인이 아니라 원인을 **드러낸 것**입니다. 운영 빌드에서도 여러 곳이 동시에 `refreshSession()` 을 부르는 일은 생깁니다. 12장에서 `authFetch` 를 붙이면 동시에 401 을 받은 요청들이 모두 refresh 를 부릅니다. single-flight 없이 StrictMode 만 지우면 문제가 개발 중에는 숨고 운영에서 드물게 터지는, 가장 찾기 어려운 형태가 됩니다. 둘째, 두 번째 refresh 가 grace(10초)보다 늦게 도착하면 서버는 재사용으로 판단해 **세션을 끊습니다.** 사용자는 공격을 받은 것처럼 안내를 받고 로그아웃됩니다. 안전망(grace, 409 재시도)에 기대는 설계는 그 안전망이 닿지 않는 순간에 사고가 됩니다.
+
+</details>
+
+**3.** `refreshSession` 을 아래처럼 쓰면 무엇이 잘못될까요?
+
+```ts
+export function refreshSession(): Promise<boolean> {
+  refreshing ??= runRefresh(false);
+  return refreshing;
+}
+```
+
+<details>
+<summary>해답</summary>
+
+`refreshing` 을 비우는 코드가 없습니다. 첫 refresh 가 끝난 뒤에도 `refreshing` 에는 이미 완료된 promise 가 남아 있으므로, 이후의 모든 `refreshSession()` 호출은 새 요청을 보내지 않고 **첫 번째 결과를 계속 돌려받습니다.** 10분 뒤 액세스 토큰이 만료돼 refresh 가 필요해도 요청이 나가지 않고, 첫 결과가 `false` 였다면 로그인 뒤에도 영원히 `false` 입니다. 성공이든 실패든 끝나면 비워야 하므로 `.finally(() => { refreshing = null; })` 가 필요합니다.
+
+</details>
+
+**4.** `useBootSession()` 을 `App` 이 아니라 `RequireAuth` 안에서 부르도록 옮겼습니다. 쿠키가 살아 있는 사용자가 즐겨찾기해 둔 `http://localhost:5173/login` 으로 들어오면 어떤 일이 생길까요?
+
+<details>
+<summary>해답</summary>
+
+`/login` 은 `RequireAuth` 밖의 라우트라 `RequireAuth` 가 그려지지 않고, 조용한 갱신이 일어나지 않습니다. 상태는 `unknown` 으로 남고, `LoginPage` 는 `authenticated` 일 때만 돌려보내므로 로그인 폼이 그대로 보입니다. 사용자는 이미 로그인돼 있는데도 다시 로그인해야 합니다. 로그인하면 새 family 가 하나 더 생겨 세션 목록에 같은 브라우저가 두 줄로 보이게 됩니다. 조용한 갱신은 어느 경로로 들어오든 한 번 일어나야 하므로 앱 최상단에 둡니다.
+
+</details>
+
+**5.** Network 탭에서 부팅 때 `GET /auth/csrf` 가 `POST /auth/refresh` 보다 **먼저** 나가는 이유를 코드의 어느 줄로 설명할 수 있을까요? 그리고 `POST /auth/login` 앞에는 왜 `csrf` 요청이 없을까요?
+
+<details>
+<summary>해답</summary>
+
+`runRefresh` 의 `headers: { 'X-CSRF-Token': await ensureCsrf() }` 때문입니다. 요청 옵션 객체를 만드는 도중에 `await ensureCsrf()` 가 먼저 끝나야 `authApi.POST` 가 불리므로, CSRF 토큰을 받아 오는 요청이 반드시 앞섭니다. `login` 앞에 `csrf` 가 없는 것은 부팅 때의 조용한 갱신이 이미 `ensureCsrf` 를 불러 `csrfToken` 을 메모리에 채워 두었기 때문입니다. `ensureCsrf` 는 메모리에 값이 있으면 네트워크를 쓰지 않습니다.
+
+</details>

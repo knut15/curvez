@@ -1,0 +1,1412 @@
+export const meta = {
+  title: "[로그인인증] 시나리오로 증명하기 (13)",
+  summary: "22개 시나리오를 e2e 테스트와 curl 스크립트로 돌려 설계를 증명한다. 실제 실행 결과를 싣는다.",
+  date: "2026-09",
+  status: "마무리",
+  order: 114,
+  tags: ["로그인인증", "e2e", "vitest"],
+};
+
+![초록으로 채운 큰 열쇠 하나가 가로로 놓여 있고, 그 뒤에 같은 모양의 열쇠 두 개가 남색 윤곽선만으로 겹쳐 있다. 열쇠들 아래로 가는 선이 하나 지나간다.](/labs/login-auth-key.jpg)
+
+> **이 장을 마치면**
+>
+> - 이 책의 설계가 지켜야 할 22개 시나리오(S1~S22)를 알고, 각각을 어떤 도구로 확인할지 고를 수 있다.
+> - 실제 DB 에 붙는 e2e 테스트로 S1~S19 를 자동으로 돌리고, 쿠키 헤더와 DB 행까지 확인할 수 있다.
+> - grace·세션 상한·로그인 제한 같은 시간과 횟수에 걸린 동작을 테스트끼리 간섭하지 않게 격리할 수 있다.
+> - curl 스모크 스크립트로 떠 있는 서버를 빠르게 점검하고, 브라우저 시나리오 S20~S22 를 개발자 도구로 확인할 수 있다.
+> - 결과를 기대값과 실제값이 나란히 놓인 표로 남길 수 있다.
+
+## 들어가며
+
+12장까지 오면서 우리는 기능을 하나 만들 때마다 curl 이나 브라우저로 그 기능을 확인했습니다. 그런데 그 확인들은 흩어져 있습니다.
+7장에서 재사용 탐지를 확인한 뒤 9장에서 CSRF 가드를 붙였을 때, 재사용 탐지가 여전히 동작하는지 다시 확인하지는 않았습니다.
+12장에서 FE 의 refresh 흐름을 바꿨을 때 7장의 grace 동작과 여전히 맞물리는지도 마찬가지입니다.
+
+이 장에서는 흩어진 확인을 **한 벌의 시나리오**로 모으고, 가능한 것은 전부 자동으로 돌립니다. 시나리오 목록은 22개이고,
+각 시나리오에는 "무엇을 하면 무엇이 나와야 한다" 가 상태 코드, 에러 코드, 쿠키 헤더, DB 행 수준까지 정해져 있습니다.
+하나라도 기대와 다르면 설계가 어딘가에서 깨진 것입니다.
+
+도구는 세 가지를 씁니다.
+
+| 도구 | 대상 | 언제 쓰나 |
+|---|---|---|
+| e2e 테스트 (`api/test/*.e2e-spec.ts`) | S1~S19 | 코드를 고칠 때마다. 회귀를 막는다 |
+| curl 스모크 스크립트 (`scripts/smoke.sh`) | S1~S14, S18 의 핵심 | 서버를 새로 띄웠을 때, 배포 직후. 설정까지 포함해 점검한다 |
+| 브라우저 수동 절차 | S20~S22 | FE 를 고쳤을 때. 탭·새로고침·잠금은 브라우저에서만 재현된다 |
+
+e2e 테스트는 앱을 테스트 프로세스 안에서 띄우고 **실제 PostgreSQL** 에 붙습니다. 가짜 DB 를 쓰지 않는 이유는 이 책의 핵심 로직이
+트랜잭션과 `FOR UPDATE`, `now()` 같은 DB 의 동작에 기대고 있기 때문입니다. 그 부분을 가짜로 바꾸면 테스트가 증명하는 것이 없어집니다.
+
+## 13.1 22개 시나리오 한눈에
+
+먼저 전체 지도를 봅니다. "어디서" 열은 그 시나리오를 이 장의 어느 도구가 확인하는지입니다.
+
+| # | 무엇 | 기대 | 어디서 |
+|---|---|---|---|
+| S1 | 가입 | 201, 응답에 비밀번호 해시 없음 | e2e, smoke |
+| S2 | 중복 가입(대소문자만 다름) | 409 `EMAIL_TAKEN` | e2e, smoke |
+| S3 | 로그인 | 200, 리프레시 쿠키 `Path=/auth; HttpOnly; Secure; SameSite=Strict`, `Cache-Control: no-store` | e2e, smoke |
+| S4 | 틀린 비밀번호·없는 이메일 | 둘 다 401 `INVALID_CREDENTIALS`, 응답 시간이 비슷 | e2e, smoke(시간 기록만) |
+| S5 | 보호 API | Bearer 로 200. 없음·변조·다른 `aud` 는 401 `ACCESS_TOKEN_INVALID` | e2e, smoke |
+| S6 | `alg` 바꿔치기 | `alg: none` 토큰 401 | e2e, smoke |
+| S7 | 회전 | 200, 새 쿠키, 옛 행 `rotated`·`replaced_by` | e2e, smoke |
+| S8 | race | grace 안의 옛 쿠키 409 `REFRESH_TOKEN_ROTATED`, family 유지 | e2e, smoke |
+| S9 | 재사용 탐지 | grace 뒤의 옛 쿠키 401 `REFRESH_TOKEN_REUSED`, 쿠키 삭제, family 전체 폐기, 정상 쿠키도 401 | e2e, smoke |
+| S10 | CSRF 헤더 없음 | 403 `CSRF_TOKEN_INVALID` | e2e, smoke |
+| S11 | CSRF 위조 짝 | 403 `CSRF_TOKEN_INVALID` | e2e, smoke |
+| S12 | Origin 위조 | 403 `CSRF_ORIGIN_REJECTED` | e2e, smoke |
+| S13 | Origin 없음 | 403 `CSRF_ORIGIN_REJECTED` | e2e, smoke |
+| S14 | 로그아웃 | 204, 삭제 헤더에 `Path=/auth`, family 폐기, 두 번째도 204 | e2e, smoke |
+| S15 | 전체 로그아웃 | 204, 모든 세션 refresh 401 | e2e |
+| S16 | 세션 목록·삭제 | `current` 하나, 남의 세션 DELETE 404 | e2e |
+| S17 | 세션 절대 상한 | 상한이 지나면 회전해도 401 | e2e (별도 파일) |
+| S18 | CORS | 허용 목록 밖 Origin 에 `Access-Control-Allow-Origin` 없음 | e2e, smoke |
+| S19 | 로그인 제한 | 6번째 429 `TOO_MANY_REQUESTS` | e2e (별도 파일) |
+| S20 | 브라우저 새로고침 | 로그인 유지, refresh 1회 | 브라우저 |
+| S21 | 브라우저 동시 만료 | 두 탭 모두 성공, `REUSED` 없음 | 브라우저 |
+| S22 | 브라우저 로그아웃 동기화 | 다른 탭이 즉시 로그인 화면으로 | 브라우저 |
+
+S17 과 S19 만 별도 파일로 뺀 이유는 13.8절에서 설명합니다. 둘 다 다른 테스트와 **같은 앱 인스턴스를 쓰면 서로 간섭하는** 시나리오입니다.
+
+## 13.2 테스트를 돌릴 준비
+
+### DB 와 마이그레이션
+
+e2e 테스트는 3장에서 띄운 DB 를 그대로 씁니다. 테스트 전에 DB 가 떠 있고 마이그레이션이 적용되어 있어야 합니다.
+
+```bash
+$ cd ~/Workspace/auth-lab
+$ docker compose up -d
+$ cd api && pnpm db:migrate
+```
+
+마이그레이션은 `CREATE TABLE IF NOT EXISTS` 로 되어 있으므로 여러 번 실행해도 됩니다.
+
+테스트는 개발용 DB 에 행을 남깁니다. 테스트마다 **고유한 이메일**(`e2e-<UUID>@example.com`)로 가입하기 때문에 이미 있는 데이터나
+다른 테스트의 데이터와 부딪치지 않습니다. 쌓인 테스트 데이터를 지우고 싶으면 이렇게 합니다. `ON DELETE CASCADE` 로 토큰 행도 함께 지워집니다.
+
+```sql
+auth_lab=# DELETE FROM users WHERE email LIKE 'e2e-%@example.com';
+```
+
+### 러너
+
+테스트 러너는 3장에서 Nest 스캐폴드가 만들어 준 **Vitest** 를 그대로 씁니다. 스캐폴드는 `api/vitest.config.e2e.ts` 에 이름이 `.e2e-spec.ts` 로 끝나는 파일을
+테스트로 모으는 설정을, `package.json` 에 그 설정으로 돌리는 `test:e2e` 스크립트를 만들어 둡니다. 설정에 `globals: true` 가 있어서 `describe`·`it`·`expect` 를
+`import` 없이 쓸 수 있습니다.
+
+테스트 코드는 `describe`·`it`·`beforeAll`·`afterAll`·`expect` 와 흔한 매처(`toBe`, `toEqual`, `toMatch`, `toHaveLength`,
+`toHaveProperty`, `toBeUndefined`, `toBeNull`, `toBeLessThan`, `.not`, `expect.any`)만 씁니다. Jest 와 Vitest 가 같은 이름으로 제공하는 것들이라 러너를 바꿔도 그대로 돌아갑니다.
+기다림이 들어간 테스트는 기본 제한시간(Vitest 는 5초)을 넘을 수 있어 `it(이름, 함수, 제한시간)` 의 세 번째 인자로 밀리초 단위의 제한시간을 넘깁니다.
+
+스캐폴드가 만든 예제 테스트(`test/app.e2e-spec.ts`)가 남아 있다면 지웁니다. `GET /` 에 "Hello World!" 를 기대하는 테스트인데,
+이 책의 앱에는 그 경로가 없어서 항상 실패합니다.
+
+테스트는 HTTP 요청을 보내는 데 `supertest` 를, 테스트용 앱을 만드는 데 `@nestjs/testing` 을 씁니다. 둘 다 Nest 스캐폴드가 개발 의존성으로 설치해 둡니다.
+`package.json` 의 `devDependencies` 에 없다면 이 장을 진행하기 전에 설치해야 합니다.
+
+### 파일 구성
+
+이 장에서 새로 만드는 파일은 테스트와 스크립트뿐입니다. 부록 C 의 앱 코드는 한 줄도 고치지 않습니다.
+
+```
+api/
+├── test/
+│   ├── helpers.ts                    ← 테스트용 앱, 브라우저 흉내 (13.3·13.4)
+│   ├── auth.e2e-spec.ts              ← S1~S16, S18 (13.5~13.7)
+│   ├── session-max-age.e2e-spec.ts   ← S17 (13.8)
+│   └── login-throttle.e2e-spec.ts    ← S19 (13.8)
+└── scripts/
+    └── smoke.sh                      ← curl 스모크 (13.9). api 폴더에서 bash 로 실행
+```
+
+`helpers.ts` 는 이름이 `.e2e-spec.ts` 로 끝나지 않으므로 러너가 테스트로 실행하지 않습니다.
+
+## 13.3 테스트용 앱 띄우기
+
+### main.ts 를 따라 하는 createTestApp
+
+Nest 의 e2e 테스트는 보통 `Test.createTestingModule({ imports: [AppModule] })` 로 앱을 **테스트 프로세스 안에서** 만듭니다.
+포트를 열지 않고, `supertest` 가 앱의 HTTP 서버에 직접 요청을 넣습니다. 서버를 따로 띄울 필요가 없고 테스트가 끝나면 앱도 닫힙니다.
+
+그런데 이렇게 만든 앱은 `AppModule` 만 불러온 **맨 앱**입니다. `main.ts` 의 `bootstrap()` 에서 하던 일, 즉 `cookieParser`·CORS·`ValidationPipe`
+설정은 되어 있지 않습니다. 부록 C 의 `main.ts` 는 `bootstrap()` 을 바깥으로 내보내지 않으므로 테스트에서 불러 쓸 수도 없습니다.
+앱 코드를 고치지 않기로 했으니, 테스트 헬퍼에서 **같은 설정을 같은 순서로** 다시 적습니다.
+
+```ts
+// api/test/helpers.ts
+import { ValidationPipe, type INestApplication } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+import { createHash, randomUUID } from 'node:crypto';
+import request from 'supertest';
+import { AppModule } from '../src/app.module';
+import { LoginThrottlerGuard } from '../src/auth/login-throttler.guard';
+import { validationExceptionFactory } from '../src/common/validation';
+import { AppConfig } from '../src/config/app-config';
+
+export const PASSWORD = 'correct horse battery';
+
+type TestAppOptions = {
+  /** 이 앱에만 줄 환경변수. AppConfig 가 만들어지는 동안에만 적용하고 곧바로 되돌린다. */
+  env?: Record<string, string>;
+  /** 로그인 제한을 켤지. 기본은 끈다 — 테스트마다 로그인하므로 1분 5회를 금방 넘는다. */
+  throttle?: boolean;
+};
+
+export async function createTestApp({ env = {}, throttle = false }: TestAppOptions = {}): Promise<INestApplication> {
+  const saved = Object.fromEntries(Object.keys(env).map((key) => [key, process.env[key]]));
+  Object.assign(process.env, env);
+  try {
+    let builder = Test.createTestingModule({ imports: [AppModule] });
+    if (!throttle) {
+      builder = builder.overrideGuard(LoginThrottlerGuard).useValue({ canActivate: () => true });
+    }
+    const moduleRef = await builder.compile();
+    const app = moduleRef.createNestApplication();
+    const config = app.get(AppConfig);
+
+    // ↓ main.ts 의 bootstrap 과 같은 설정. main.ts 를 고치면 여기도 고친다.
+    app.use(helmet());
+    app.use(cookieParser());
+    app.enableCors({
+      origin: config.webOrigins,
+      credentials: true,
+      methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
+    });
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+        exceptionFactory: validationExceptionFactory,
+      }),
+    );
+    await app.init();
+    return app;
+  } finally {
+    for (const [key, value] of Object.entries(saved)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+}
+```
+
+⚠️ `main.ts` 와 이 헬퍼가 어긋나면 테스트는 운영과 다른 앱을 검사하게 됩니다. 예를 들어 `main.ts` 의 CORS 허용 헤더에 무언가를 더하고
+여기에 더하지 않으면 S18 은 옛 설정으로 통과합니다. 설정을 한 함수로 빼서 `main.ts` 와 테스트가 같이 부르게 하면 이 위험이 사라지지만,
+그것은 앱 코드를 고치는 일이라 이 책에서는 하지 않았습니다. 대신 이 헬퍼 위에 주석을 달아 두 곳을 함께 고치도록 했습니다.
+Swagger 설정과 `--export-openapi` 처리는 시나리오와 관계가 없어 옮기지 않았습니다.
+
+### 환경변수를 짧게 주기 — grace 를 기다리지 않으려면
+
+S9 는 "grace 가 지난 뒤" 옛 쿠키를 보내야 합니다. `.env` 의 `REFRESH_REUSE_GRACE_SEC=10` 그대로 두면 이 테스트 하나가 10초 넘게 걸립니다.
+S17 은 세션 상한을 넘겨야 하는데 기본값은 30일입니다. 테스트에서는 이 값들을 짧게 줘야 합니다.
+
+`createTestApp` 의 `env` 옵션이 그 일을 합니다. 순서는 이렇습니다.
+
+1. 원래 값을 `saved` 에 기억한다.
+2. `process.env` 에 테스트용 값을 덮어쓴다.
+3. `builder.compile()` — 이때 `AppConfig` 가 만들어지면서 `ConfigService` 로 환경변수를 **한 번** 읽는다.
+4. `finally` 에서 원래 값으로 되돌린다.
+
+3번이 핵심입니다. 3장의 `AppConfig` 는 생성자에서 모든 값을 읽어 `readonly` 필드에 담고, 그 뒤로는 환경변수를 다시 보지 않습니다.
+그래서 앱을 만드는 동안만 값을 바꿔 두면 그 앱은 끝까지 그 값으로 동작하고, 되돌린 뒤에 만든 다른 앱은 원래 값을 씁니다.
+같은 프로세스 안에서 여러 테스트 파일이 차례로 돌아도 서로의 설정이 새지 않습니다.
+
+이 방법은 `ConfigService` 가 값을 읽을 때 **이미 `process.env` 에 있는 값을 `.env` 파일의 값보다 먼저 본다**는 동작에 기대고 있습니다.
+Nest 설정 문서는 실행 환경의 변수와 `.env` 파일의 변수가 겹치면 실행 환경의 값이 우선한다고 설명합니다. `@nestjs/config` 버전이 다르다면
+공식 문서의 Configuration 장에서 이 우선순위를 확인하세요. 확인하는 방법은 간단합니다. 13.7절의 S8·S9 가 통과하면 grace 가 1초로 적용된 것이고,
+10초가 적용되었다면 S9 는 1.5초 뒤에도 409 를 받아 실패합니다.
+
+### 로그인 제한 끄기 — overrideGuard
+
+`LoginThrottlerGuard` 는 IP 당 1분에 5번까지 로그인을 허용합니다(5장). 테스트 프로세스 안에서 보내는 요청은 모두 같은 주소(루프백)에서 오므로,
+한 파일 안에서 로그인을 여섯 번 하는 순간 429 가 납니다. 이 장의 주 테스트 파일은 로그인을 스무 번 넘게 합니다.
+
+`X-Forwarded-For` 헤더로 요청마다 IP 를 다르게 보이게 하는 방법을 떠올릴 수 있지만 통하지 않습니다. 이 앱은 Express 의 `trust proxy` 를 켜지 않았으므로
+`req.ip` 는 헤더를 무시하고 실제 연결 주소를 씁니다(6장). 그리고 그것이 옳습니다. 헤더 하나로 제한을 우회할 수 있다면 공격자도 그렇게 할 것입니다.
+
+그래서 주 테스트 파일에서는 가드 자체를 바꿔 끼웁니다. `@nestjs/testing` 의 `overrideGuard(가드).useValue(대체 객체)` 는 테스트 모듈 안에서
+그 가드 대신 우리가 준 객체를 쓰게 합니다. `canActivate` 가 항상 `true` 인 객체를 주면 제한이 꺼집니다. 가드를 바꿔 끼우는 방법은
+Nest 공식 문서의 Testing 장에 설명되어 있습니다.
+
+로그인 제한 자체는 S19 에서 확인해야 하므로, S19 는 `throttle: true` 로 만든 **별도의 앱**에서 돌립니다. 로그인 제한의 횟수 기록은
+`@nestjs/throttler` 가 기본으로 쓰는 메모리 저장소에 있고, 이 저장소는 앱 인스턴스마다 따로 생깁니다. 그래서 S19 의 앱은
+다른 테스트의 로그인 횟수를 물려받지 않고 0 에서 시작합니다.
+
+## 13.4 브라우저 흉내 — Browser 헬퍼
+
+테스트는 실제 브라우저가 하는 일을 흉내 내야 합니다. 이 앱에서 브라우저가 하는 일은 세 가지입니다.
+
+1. 쿠키를 저장해 두었다가 다음 요청에 싣는다.
+2. FE 의 코드가 `GET /auth/csrf` 로 받은 토큰을 `X-CSRF-Token` 헤더에 싣는다(9·11장).
+3. 다른 출처로 요청할 때 `Origin` 헤더를 붙인다.
+
+`supertest` 에도 쿠키를 기억하는 agent 기능이 있지만 여기서는 쓰지 않습니다. 쿠키 저장소가 `Secure` 쿠키를 HTTP 요청에 싣지 않는 규칙을 따르면
+`COOKIE_SECURE=true` 인 이 앱의 리프레시 쿠키가 실리지 않을 수 있고, 무엇보다 테스트에서 **쿠키를 일부러 바꿔치기**(훔친 옛 토큰을 싣기)해야 하기 때문입니다.
+그래서 작은 쿠키 저장소를 직접 만듭니다.
+
+```ts
+// api/test/helpers.ts (이어서)
+type Res = request.Response;
+
+/** 요청 출처로 쓸 FE 주소. api/.env 의 WEB_ORIGINS 첫 값 */
+export const webOrigin = (app: INestApplication) => app.get(AppConfig).webOrigins[0];
+
+export function setCookies(res: Res): string[] {
+  const raw = res.headers['set-cookie'] as string | string[] | undefined;
+  return raw === undefined ? [] : Array.isArray(raw) ? raw : [raw];
+}
+
+/** 응답에서 name 쿠키의 Set-Cookie 한 줄. 없으면 undefined */
+export const findSetCookie = (res: Res, name: string) => setCookies(res).find((line) => line.startsWith(`${name}=`));
+
+/**
+ * 쿠키 저장소 하나 = 브라우저 하나.
+ * 이 앱의 쿠키는 전부 /auth 아래에서 쓰이므로 Path·Domain·만료는 따지지 않는 단순한 저장소다.
+ */
+export class Browser {
+  readonly cookies = new Map<string, string>();
+  csrfToken = '';
+
+  constructor(private readonly app: INestApplication) {}
+
+  get refreshToken(): string | undefined {
+    return this.cookies.get('refresh_token');
+  }
+
+  /** FE 의 ensureCsrf 와 같다 — 본문의 토큰은 헤더용으로 들고, 쿠키는 저장소에 */
+  async fetchCsrf(): Promise<void> {
+    const res = await request(this.app.getHttpServer()).get('/auth/csrf');
+    this.remember(res);
+    this.csrfToken = res.body.csrfToken;
+  }
+
+  /** CSRF 가 필요한 POST. FE 가 보내는 것과 같은 헤더를 붙이고, 응답의 쿠키를 저장한다. */
+  async post(path: string, body?: object): Promise<Res> {
+    if (!this.csrfToken) await this.fetchCsrf();
+    let req = request(this.app.getHttpServer())
+      .post(path)
+      .set('Origin', webOrigin(this.app))
+      .set('X-CSRF-Token', this.csrfToken);
+    if (this.cookies.size > 0) req = req.set('Cookie', this.cookieHeader());
+    const res = await (body ? req.send(body) : req);
+    this.remember(res);
+    return res;
+  }
+
+  /** 로그인하고 액세스 토큰을 돌려준다. */
+  async login(email: string, password = PASSWORD): Promise<string> {
+    const res = await this.post('/auth/login', { email, password });
+    if (res.status !== 200) throw new Error(`로그인 실패: ${res.status} ${res.body.code}`);
+    return res.body.accessToken;
+  }
+
+  private cookieHeader(): string {
+    return [...this.cookies].map(([name, value]) => `${name}=${value}`).join('; ');
+  }
+
+  /** Set-Cookie 를 저장소에 반영한다. 값이 빈 쿠키는 삭제 지시로 본다(res.clearCookie 의 모양). */
+  private remember(res: Res): void {
+    for (const line of setCookies(res)) {
+      const pair = line.split(';')[0];
+      const at = pair.indexOf('=');
+      const name = pair.slice(0, at);
+      const value = pair.slice(at + 1);
+      if (value === '') this.cookies.delete(name);
+      else this.cookies.set(name, value);
+    }
+  }
+}
+```
+
+설계에서 짚을 점이 몇 가지 있습니다.
+
+**`Browser` 하나가 쿠키 저장소 하나.** 노트북과 휴대폰, 정상 사용자와 공격자처럼 쿠키를 따로 가진 주체를 `new Browser(app)` 로 여럿 만들어 씁니다.
+같은 브라우저의 두 탭은 쿠키를 공유하므로 이 모델에서는 같은 `Browser` 입니다.
+
+**`post` 는 FE 의 요청과 같은 헤더를 싣는다.** `Origin` 은 `.env` 의 `WEB_ORIGINS` 첫 값, `X-CSRF-Token` 은 처음 한 번 `GET /auth/csrf` 로 받은 값입니다.
+CSRF 토큰이 없으면 먼저 받아 옵니다. 11장의 `ensureCsrf` 와 같은 동작입니다. 그래서 테스트 본문에는 CSRF 를 신경 쓰는 코드가 나오지 않고,
+CSRF 를 **일부러 망가뜨리는** 테스트(S10~S13)에서만 헤더를 손으로 조립합니다.
+
+**`cookies` 를 공개한다.** 훔친 토큰을 다른 `Browser` 에 심을 때 `thief.cookies.set('refresh_token', stolen)` 처럼 씁니다.
+
+**삭제 지시의 해석.** Express 의 `res.clearCookie` 는 값이 빈 `Set-Cookie` 를 보냅니다(7장 실습의 `refresh_token=; Path=/auth; Expires=Thu, 01 Jan 1970 …`).
+진짜 브라우저는 만료 시각이 과거라서 지우지만, 이 저장소는 만료를 따지지 않으므로 "값이 비었으면 지운다" 로 단순하게 처리합니다.
+
+**`throw` 를 쓰고 `expect` 를 쓰지 않는다.** 헬퍼 안에서 로그인이 실패하면 그것은 검사 대상이 아니라 **준비가 실패한 것**입니다.
+그런 실패는 에러 메시지로 원인을 바로 보여 주는 편이 낫습니다.
+
+나머지 작은 헬퍼들입니다.
+
+```ts
+// api/test/helpers.ts (이어서)
+/** 고유한 이메일로 가입한다. 테스트끼리 데이터가 섞이지 않게 하는 유일한 장치다. */
+export async function signup(app: INestApplication): Promise<{ email: string; userId: string }> {
+  const email = `e2e-${randomUUID()}@example.com`;
+  const res = await request(app.getHttpServer())
+    .post('/auth/signup')
+    .send({ email, password: PASSWORD, nickname: '테스터' });
+  if (res.status !== 201) throw new Error(`가입 실패: ${res.status} ${res.body.code}`);
+  return { email, userId: res.body.id };
+}
+
+/** 서버의 hashRefreshToken 과 같은 계산. DB 행을 찾을 때 쓴다. */
+export const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
+
+export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** JWT 본문을 읽기만 한다(검증하지 않는다). sid 를 꺼낼 때 쓴다. */
+export const jwtPayload = (token: string): { sub: string; sid: string } =>
+  JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
+```
+
+## 13.5 주 테스트 파일 — 준비
+
+주 테스트 파일은 하나의 앱을 모든 테스트가 나눠 씁니다. 앱을 만드는 데 드는 시간(모듈 컴파일, DB 연결)을 한 번만 쓰기 위해서입니다.
+대신 모든 테스트가 자기 사용자를 새로 가입시키므로 데이터는 섞이지 않습니다.
+
+```ts
+// api/test/auth.e2e-spec.ts
+import type { INestApplication } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { randomUUID } from 'node:crypto';
+import type { Pool } from 'pg';
+import request from 'supertest';
+import { AppConfig } from '../src/config/app-config';
+import { PG_POOL } from '../src/database/database.module';
+import {
+  Browser,
+  PASSWORD,
+  createTestApp,
+  findSetCookie,
+  jwtPayload,
+  sha256,
+  signup,
+  sleep,
+  webOrigin,
+} from './helpers';
+
+describe('auth (e2e)', () => {
+  let app: INestApplication;
+  let pool: Pool;
+  const http = () => request(app.getHttpServer());
+
+  beforeAll(async () => {
+    // grace 를 1초로 줄여 S9 가 10초를 기다리지 않게 한다
+    app = await createTestApp({ env: { REFRESH_REUSE_GRACE_SEC: '1' } });
+    pool = app.get(PG_POOL);
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  /** 이 토큰이 속한 family 에서 아직 살아 있는 행의 수 */
+  async function liveTokens(token: string): Promise<number> {
+    const { rows } = await pool.query<{ n: number }>(
+      `SELECT count(*)::int AS n FROM refresh_tokens
+        WHERE family_id = (SELECT family_id FROM refresh_tokens WHERE token_hash = $1)
+          AND revoked_at IS NULL`,
+      [sha256(token)],
+    );
+    return rows[0].n;
+  }
+
+  /** 이 토큰이 속한 family 의 revoke_reason 을 발급 순서대로 */
+  async function familyReasons(token: string): Promise<(string | null)[]> {
+    const { rows } = await pool.query<{ revoke_reason: string | null }>(
+      `SELECT revoke_reason FROM refresh_tokens
+        WHERE family_id = (SELECT family_id FROM refresh_tokens WHERE token_hash = $1)
+        ORDER BY created_at`,
+      [sha256(token)],
+    );
+    return rows.map((row) => row.revoke_reason);
+  }
+```
+
+**`app.get(PG_POOL)`.** DB 를 확인할 때 새 연결 풀을 만들지 않고 앱이 쓰는 풀을 빌려 씁니다. 연결 정보를 테스트에 다시 적을 필요가 없고,
+`app.close()` 때 3장의 `DatabaseModule.onApplicationShutdown` 이 풀을 닫아 주므로 테스트가 끝난 뒤 연결이 남아 프로세스가 종료되지 않는 문제도 없습니다.
+
+**DB 확인 함수 둘.** 7장에서 psql 로 손으로 하던 확인을 함수로 옮겼습니다. 쿠키의 평문 토큰을 SHA-256 해서 행을 찾고, 그 family 전체를 봅니다.
+
+## 13.6 e2e — 가입부터 액세스 토큰까지 (S1~S6)
+
+```ts
+// api/test/auth.e2e-spec.ts (이어서)
+  describe('가입과 로그인', () => {
+    it('S1 가입하면 201 이고 비밀번호 해시를 돌려주지 않는다', async () => {
+      const email = `e2e-${randomUUID()}@example.com`;
+      const res = await http().post('/auth/signup').send({ email, password: PASSWORD, nickname: '테스터' });
+      expect(res.status).toBe(201);
+      expect(Object.keys(res.body).sort()).toEqual(['createdAt', 'email', 'id', 'nickname']);
+    });
+
+    it('S2 대소문자만 다른 이메일은 409 EMAIL_TAKEN', async () => {
+      const { email } = await signup(app);
+      const res = await http()
+        .post('/auth/signup')
+        .send({ email: email.toUpperCase(), password: PASSWORD, nickname: '테스터' });
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe('EMAIL_TAKEN');
+    });
+
+    it('S3 로그인하면 쿠키 속성이 설계대로이고 no-store 이며, DB 에는 해시만 있다', async () => {
+      const { email } = await signup(app);
+      const browser = new Browser(app);
+      const res = await browser.post('/auth/login', { email, password: PASSWORD });
+
+      expect(res.status).toBe(200);
+      expect(res.headers['cache-control']).toBe('no-store');
+      expect(res.body.accessToken).toEqual(expect.any(String));
+      expect(res.body).not.toHaveProperty('refreshToken');
+
+      const cookie = findSetCookie(res, 'refresh_token')!;
+      expect(cookie).toMatch(/; Path=\/auth(;|$)/i);
+      expect(cookie).toMatch(/; HttpOnly(;|$)/i);
+      expect(cookie).toMatch(/; Secure(;|$)/i);
+      expect(cookie).toMatch(/; SameSite=Strict(;|$)/i);
+
+      const { rows } = await pool.query('SELECT 1 FROM refresh_tokens WHERE token_hash = $1', [sha256(browser.refreshToken!)]);
+      expect(rows).toHaveLength(1);
+    });
+```
+
+**S1 은 키 목록 전체를 비교한다.** `password_hash` 가 없는지만 보면 누군가 `passwordHash` 라는 이름으로 새게 만들어도 통과합니다.
+응답에 있어야 할 키를 **전부** 적어 두면 무엇이 더해져도 실패합니다.
+
+**S2 는 대문자로 바꾼 이메일.** 4장의 `normalizeEmail` 이 소문자로 바꿔 저장하므로, 대문자로 다시 가입하면 UNIQUE 제약에 걸려 409 가 나야 합니다.
+
+**S3 는 속성을 하나씩 정규식으로.** Express 가 `Set-Cookie` 의 속성을 어떤 순서로 쓰는지에 기대지 않으려고 속성마다 따로 확인합니다.
+`(;|$)` 는 `Path=/auth` 가 `Path=/authx` 같은 다른 값의 앞부분이 아님을 확인하려는 것입니다. 대소문자는 무시합니다(`i`).
+마지막으로 쿠키의 평문을 해시해서 DB 에 행이 하나 있는지 봅니다. 평문 그대로 저장했다면 해시로는 찾을 수 없습니다.
+
+S4 는 응답 시간을 비교합니다.
+
+```ts
+// api/test/auth.e2e-spec.ts (이어서)
+    it('S4 틀린 비밀번호와 없는 이메일은 같은 응답이고 시간도 비슷하다', async () => {
+      const { email } = await signup(app);
+      const browser = new Browser(app);
+      const timed = async (body: object) => {
+        const started = performance.now();
+        const res = await browser.post('/auth/login', body);
+        expect(res.status).toBe(401);
+        expect(res.body.code).toBe('INVALID_CREDENTIALS');
+        return performance.now() - started;
+      };
+      const nobody = () => ({ email: `nobody-${randomUUID()}@example.com`, password: 'wrong password' });
+
+      await timed(nobody()); // 더미 해시를 처음 만드는 비용을 측정에서 뺀다
+      const wrong: number[] = [];
+      const missing: number[] = [];
+      for (let i = 0; i < 3; i++) {
+        wrong.push(await timed({ email, password: 'wrong password' }));
+        missing.push(await timed(nobody()));
+      }
+      const median = (xs: number[]) => [...xs].sort((a, b) => a - b)[1];
+      // 없는 이메일에서 argon2 를 건너뛰면 한쪽이 수십 배 빨라진다. 그런 차이만 잡는 느슨한 기준이다.
+      expect(Math.abs(median(wrong) - median(missing))).toBeLessThan(Math.min(median(wrong), median(missing)) / 2);
+    }, 20_000);
+  });
+```
+
+시간을 비교하는 테스트는 기계의 부하에 따라 흔들리기 쉽습니다. 그래서 기준을 느슨하게 잡았습니다.
+"두 경우의 중앙값 차이가 짧은 쪽의 절반보다 작다" 는 기준은 5장의 `burn()` 이 빠져 없는 이메일이 argon2 없이 1ms 만에 끝나는 **큰** 결함은 잡고,
+몇 ms 의 흔들림은 넘어갑니다. 세 번씩 재서 중앙값을 쓰는 것도 한 번 튀는 값을 버리기 위해서입니다.
+
+맨 앞의 한 번은 측정하지 않습니다. `PasswordService.burn()` 은 처음 불릴 때 더미 해시를 **만들고**(`argon2.hash`) 그다음부터는 만들어 둔 것을 씁니다.
+첫 호출만 두 배 가까이 느리므로 측정에서 뺍니다.
+
+이 테스트는 반드시 로그인 제한이 꺼진 앱에서 돌아야 합니다. 로그인을 일곱 번 하기 때문입니다.
+
+```ts
+// api/test/auth.e2e-spec.ts (이어서)
+  describe('액세스 토큰', () => {
+    it('S5 Bearer 로 보호 API 를 부르고, 없거나 변조되거나 aud 가 다르면 401', async () => {
+      const { email, userId } = await signup(app);
+      const access = await new Browser(app).login(email);
+      const me = (token?: string) => {
+        const req = http().get('/users/me');
+        return token ? req.set('Authorization', `Bearer ${token}`) : req;
+      };
+
+      expect((await me(access)).status).toBe(200);
+
+      // 서명의 **첫** 글자를 바꾼다. 마지막 글자는 base64url 의 남는 비트라 바꿔도 같은 바이트가 될 수 있다.
+      const [header, payload, signature] = access.split('.');
+      const tampered = `${header}.${payload}.${signature[0] === 'A' ? 'B' : 'A'}${signature.slice(1)}`;
+
+      const config = app.get(AppConfig);
+      const otherAudience = await app.get(JwtService).signAsync(
+        { sid: 'x' },
+        {
+          secret: config.jwtAccessSecret,
+          algorithm: 'HS256',
+          subject: userId,
+          issuer: config.jwtIssuer,
+          audience: 'another-app',
+          expiresIn: 60,
+        },
+      );
+
+      for (const token of [undefined, tampered, otherAudience]) {
+        const res = await me(token);
+        expect(res.status).toBe(401);
+        expect(res.body.code).toBe('ACCESS_TOKEN_INVALID');
+      }
+    });
+
+    it('S6 alg 를 none 으로 바꾼 토큰은 401', async () => {
+      const { email } = await signup(app);
+      const access = await new Browser(app).login(email);
+      const none = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
+      const forged = `${none}.${access.split('.')[1]}.`;
+
+      const res = await http().get('/users/me').set('Authorization', `Bearer ${forged}`);
+      expect(res.status).toBe(401);
+      expect(res.body.code).toBe('ACCESS_TOKEN_INVALID');
+    });
+  });
+```
+
+**변조는 서명의 첫 글자로.** 흔히 토큰의 마지막 글자를 바꿔서 변조를 흉내 내는데, 여기에는 함정이 있습니다. HS256 서명은 32바이트(256비트)이고
+base64url 43글자는 258비트를 담으므로 마지막 글자의 아래 2비트는 버려지는 비트입니다. 마지막 글자를 바꿨는데 그 차이가 버려지는 비트에만 있으면
+디코딩한 서명 바이트가 같아서 검증이 **통과**해 버립니다. 테스트가 가끔 실패하는데 원인을 모르는 상황이 생깁니다. 첫 글자는 모든 비트가 쓰이므로 확실히 변조됩니다.
+
+**다른 `aud` 의 토큰은 같은 비밀로 서명.** 서명이 맞아도 `audience` 가 다르면 거부되어야 한다는 것을 보여 주려면, 비밀키는 같고 `aud` 만 다른 토큰이 필요합니다.
+앱의 `JwtService` 와 `AppConfig` 를 꺼내 직접 서명합니다. 5장의 `verifyAccessToken` 이 `audience` 를 확인하지 않게 바뀌면 이 테스트가 실패합니다.
+
+**`alg: none`.** 헤더만 `none` 으로 바꾸고 서명 칸을 비운 토큰입니다. 5장의 `algorithms: ['HS256']` 가 토큰 헤더의 `alg` 를 믿지 않게 막고 있습니다.
+
+## 13.7 e2e — 회전, CSRF, 세션 (S7~S16, S18)
+
+### 회전과 재사용 탐지
+
+7장에서 curl 로 한 실습을 그대로 테스트로 옮깁니다. grace 가 1초이므로 기다리는 시간도 1.5초면 충분합니다.
+
+```ts
+// api/test/auth.e2e-spec.ts (이어서)
+  describe('회전과 재사용 탐지', () => {
+    it('S7 refresh 하면 새 쿠키가 오고 옛 행은 rotated 로 남는다', async () => {
+      const { email } = await signup(app);
+      const browser = new Browser(app);
+      await browser.login(email);
+      const before = browser.refreshToken!;
+
+      const res = await browser.post('/auth/refresh');
+      expect(res.status).toBe(200);
+      expect(res.headers['cache-control']).toBe('no-store');
+      expect(browser.refreshToken).not.toBe(before);
+
+      const { rows } = await pool.query(
+        'SELECT revoke_reason, replaced_by FROM refresh_tokens WHERE token_hash = $1',
+        [sha256(before)],
+      );
+      expect(rows[0].revoke_reason).toBe('rotated');
+      expect(rows[0].replaced_by).not.toBeNull();
+      expect(await liveTokens(before)).toBe(1);
+    });
+
+    it('S8 grace 안에 옛 쿠키가 오면 409, 쿠키를 건드리지 않고 family 는 산다', async () => {
+      const { email } = await signup(app);
+      const user = new Browser(app);
+      await user.login(email);
+      const stale = user.refreshToken!;
+
+      const lateTab = new Browser(app); // 같은 옛 쿠키를 들고 조금 늦게 도착한 요청
+      await lateTab.fetchCsrf();
+      lateTab.cookies.set('refresh_token', stale);
+
+      await user.post('/auth/refresh');
+      const res = await lateTab.post('/auth/refresh');
+
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe('REFRESH_TOKEN_ROTATED');
+      expect(findSetCookie(res, 'refresh_token')).toBeUndefined();
+      expect(await liveTokens(stale)).toBe(1);
+    });
+
+    it('S9 grace 뒤에 옛 쿠키가 오면 401 REUSED, family 가 끊기고 정상 쿠키도 죽는다', async () => {
+      const { email } = await signup(app);
+      const user = new Browser(app);
+      await user.login(email);
+      const stolen = user.refreshToken!;
+
+      await user.post('/auth/refresh'); // 정상 사용자가 먼저 회전
+      await sleep(1_500); // REFRESH_REUSE_GRACE_SEC=1 을 넘긴다
+
+      const thief = new Browser(app);
+      thief.cookies.set('refresh_token', stolen);
+      const res = await thief.post('/auth/refresh');
+
+      expect(res.status).toBe(401);
+      expect(res.body.code).toBe('REFRESH_TOKEN_REUSED');
+      expect(findSetCookie(res, 'refresh_token')).toMatch(/^refresh_token=;.*Path=\/auth/i);
+      // 폐기가 롤백되지 않고 저장됐는지 DB 로 확인한다 (7.4절의 버그를 잡는 줄)
+      expect(await liveTokens(stolen)).toBe(0);
+      expect(await familyReasons(stolen)).toEqual(['rotated', 'reuse_detected']);
+
+      const after = await user.post('/auth/refresh'); // 정상 사용자의 최신 쿠키
+      expect(after.status).toBe(401);
+      expect(after.body.code).toBe('REFRESH_TOKEN_REUSED');
+    }, 10_000);
+  });
+```
+
+**S7 은 응답과 DB 를 함께.** 새 쿠키가 왔다는 것만으로는 옛 토큰이 폐기되었는지 알 수 없습니다. 옛 행이 `rotated` 이고 `replaced_by` 가 채워졌고,
+family 에 살아 있는 행이 정확히 하나라는 것까지 확인해야 회전입니다.
+
+**S8 에서 늦은 탭은 CSRF 토큰을 먼저 받아 둔다.** grace 가 1초뿐이라 정상 사용자의 회전과 늦은 요청 사이에 CSRF 발급 왕복이 끼면 여유가 줄어듭니다.
+준비를 먼저 끝내고 두 요청을 연달아 보냅니다. 409 응답에 `refresh_token` 의 `Set-Cookie` 가 **없는** 것이 7장 7.9절의 "409 면 쿠키를 건드리지 않는다" 입니다.
+
+**S9 가 이 장에서 가장 중요한 테스트.** 7장 7.4절에서 본 롤백 버그는 응답 코드만 보면 드러나지 않습니다. 401 `REFRESH_TOKEN_REUSED` 는 그대로 오기 때문입니다.
+`liveTokens(stolen)` 이 0 이고 family 의 기록이 `['rotated', 'reuse_detected']` 인지 DB 에서 확인하는 두 줄이 그 버그를 잡습니다.
+첫 행(로그인 때의 토큰)은 회전으로 이미 `rotated` 였으므로 그대로이고, 둘째 행(정상 사용자가 회전으로 받은 토큰)이 `reuse_detected` 가 됩니다.
+마지막으로 정상 사용자의 쿠키도 거부되는 것까지 봅니다. 정상 사용자가 들고 있던 최신 토큰은 탐지 때 `reuse_detected` 로 바뀌었으므로 코드는 `REFRESH_TOKEN_REUSED` 입니다. 사용자에게 "만료" 가 아니라 진짜 이유를 알리기 위한 설계입니다(7.5절).
+
+### CSRF
+
+CSRF 테스트는 `Browser.post` 를 쓰지 않고 헤더를 손으로 조립합니다. 로그인까지 정상적으로 마친 브라우저를 하나 만들어 두고, 요청마다 **한 가지만** 망가뜨립니다.
+
+```ts
+// api/test/auth.e2e-spec.ts (이어서)
+  describe('CSRF', () => {
+    async function loggedIn(): Promise<Browser> {
+      const { email } = await signup(app);
+      const browser = new Browser(app);
+      await browser.login(email);
+      return browser;
+    }
+    const refreshWith = (headers: Record<string, string>) => {
+      let req = http().post('/auth/refresh');
+      for (const [name, value] of Object.entries(headers)) req = req.set(name, value);
+      return req;
+    };
+    const cookiesOf = (browser: Browser) =>
+      `csrf_token=${browser.cookies.get('csrf_token')}; refresh_token=${browser.refreshToken}`;
+
+    it('S10 X-CSRF-Token 헤더가 없으면 403 CSRF_TOKEN_INVALID', async () => {
+      const browser = await loggedIn();
+      const res = await refreshWith({ Origin: webOrigin(app), Cookie: cookiesOf(browser) });
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('CSRF_TOKEN_INVALID');
+    });
+
+    it('S11 헤더와 쿠키가 같아도 서명이 틀리면 403 CSRF_TOKEN_INVALID', async () => {
+      const browser = await loggedIn();
+      const res = await refreshWith({
+        Origin: webOrigin(app),
+        'X-CSRF-Token': 'abc.def',
+        Cookie: `csrf_token=abc.def; refresh_token=${browser.refreshToken}`,
+      });
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('CSRF_TOKEN_INVALID');
+    });
+
+    it('S12 Origin 이 허용 목록 밖이면 403 CSRF_ORIGIN_REJECTED', async () => {
+      const browser = await loggedIn();
+      const res = await refreshWith({
+        Origin: 'http://evil.test',
+        'X-CSRF-Token': browser.csrfToken,
+        Cookie: cookiesOf(browser),
+      });
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('CSRF_ORIGIN_REJECTED');
+    });
+
+    it('S13 Origin 도 Referer 도 없으면 403 CSRF_ORIGIN_REJECTED, 거부된 요청은 토큰을 건드리지 않는다', async () => {
+      const browser = await loggedIn();
+      const res = await refreshWith({ 'X-CSRF-Token': browser.csrfToken, Cookie: cookiesOf(browser) });
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('CSRF_ORIGIN_REJECTED');
+
+      expect((await browser.post('/auth/refresh')).status).toBe(200);
+    });
+  });
+```
+
+`supertest` 는 `Origin` 이나 `Referer` 헤더를 스스로 붙이지 않으므로 S13 은 두 헤더를 **빼기만** 하면 됩니다.
+S11 의 `abc.def` 는 9장의 "쿠키 주입" 공격을 흉내 낸 것입니다. 헤더와 쿠키가 같으니 단순한 double-submit 검사라면 통과하지만,
+서명이 서버 비밀로 만든 HMAC 과 맞지 않아 거부됩니다. S13 의 마지막 줄은 가드에서 거부된 요청이 회전을 일으키지 않았다는 것,
+즉 같은 쿠키가 여전히 살아 있다는 것을 확인합니다.
+
+### 로그아웃과 세션
+
+```ts
+// api/test/auth.e2e-spec.ts (이어서)
+  describe('로그아웃과 세션', () => {
+    it('S14 로그아웃은 family 를 끊고 쿠키를 지우며, 두 번 해도 204', async () => {
+      const { email } = await signup(app);
+      const browser = new Browser(app);
+      await browser.login(email);
+      const token = browser.refreshToken!;
+
+      const res = await browser.post('/auth/logout');
+      expect(res.status).toBe(204);
+      expect(findSetCookie(res, 'refresh_token')).toMatch(/^refresh_token=;.*Path=\/auth/i);
+      expect(await liveTokens(token)).toBe(0);
+
+      const replay = new Browser(app);
+      replay.cookies.set('refresh_token', token);
+      expect((await replay.post('/auth/refresh')).status).toBe(401);
+
+      expect((await browser.post('/auth/logout')).status).toBe(204); // 쿠키가 없어도 204
+    });
+
+    it('S15 전체 로그아웃은 모든 세션을 끊는다', async () => {
+      const { email } = await signup(app);
+      const laptop = new Browser(app);
+      const phone = new Browser(app);
+      const access = await laptop.login(email);
+      await phone.login(email);
+
+      const res = await http().post('/auth/logout-all').set('Authorization', `Bearer ${access}`);
+      expect(res.status).toBe(204);
+      for (const browser of [laptop, phone]) {
+        expect((await browser.post('/auth/refresh')).status).toBe(401);
+      }
+    });
+
+    it('S16 세션 목록의 current 는 하나이고, 남의 세션은 404 로 지우지 못한다', async () => {
+      type SessionBody = { sessionId: string; current: boolean };
+      const alice = await signup(app);
+      const bob = await signup(app);
+      const aliceAccess = await new Browser(app).login(alice.email);
+      const phoneAccess = await new Browser(app).login(alice.email);
+      const bobAccess = await new Browser(app).login(bob.email);
+      const bearer = (token: string) => ({ Authorization: `Bearer ${token}` });
+      const sessions = async () => (await http().get('/auth/sessions').set(bearer(aliceAccess))).body as SessionBody[];
+
+      const list = await sessions();
+      expect(list).toHaveLength(2);
+      expect(list.filter((s) => s.current)).toHaveLength(1);
+      expect(list.find((s) => s.current)!.sessionId).toBe(jwtPayload(aliceAccess).sid);
+
+      const phoneSid = jwtPayload(phoneAccess).sid;
+      const byBob = await http().delete(`/auth/sessions/${phoneSid}`).set(bearer(bobAccess));
+      expect(byBob.status).toBe(404);
+      expect(byBob.body.code).toBe('SESSION_NOT_FOUND');
+      expect(await sessions()).toHaveLength(2); // 앨리스의 휴대폰 세션은 살아 있다
+
+      const malformed = await http().delete('/auth/sessions/not-a-uuid').set(bearer(aliceAccess));
+      expect(malformed.status).toBe(404);
+      expect(malformed.body.code).toBe('SESSION_NOT_FOUND');
+
+      const byAlice = await http().delete(`/auth/sessions/${phoneSid}`).set(bearer(aliceAccess));
+      expect(byAlice.status).toBe(204);
+      expect(await sessions()).toHaveLength(1);
+    });
+  });
+```
+
+**S14 의 재생.** 로그아웃한 브라우저의 저장소에서는 삭제 지시에 따라 쿠키가 지워졌으므로, 로그아웃 전에 값을 따로 기억해 두었다가 다른 `Browser` 에 심어 refresh 합니다.
+"쿠키만 지우고 서버에서는 폐기하지 않는" 로그아웃이라면 이 줄에서 200 이 나와 실패합니다. 마지막 줄은 7장의 멱등성입니다.
+
+**S15 는 쿠키를 지우지 않은 채로 확인.** `logout-all` 은 `http()` 로 보냈으므로 두 `Browser` 의 저장소에는 쿠키가 그대로 있습니다.
+그 쿠키로 refresh 가 401 이라는 것은 **서버가** 두 세션을 모두 폐기했다는 뜻입니다.
+
+**S16 에서 세션 id 는 JWT 의 `sid` 로.** 휴대폰 세션의 id 는 휴대폰 로그인의 액세스 토큰 `sid` 에 있습니다(6장에서 `sid` = `family_id`).
+밥이 이 id 로 지우려 하면 404, 앨리스의 목록은 그대로 둘. UUID 가 아닌 id 도 같은 404. 앨리스 본인이 지우면 204 이고 목록이 하나로 줄어듭니다.
+이 테스트가 7장의 `user_id` 조건을 지킵니다.
+
+### CORS
+
+```ts
+// api/test/auth.e2e-spec.ts (이어서)
+  describe('CORS', () => {
+    it('S18 허용 목록 밖 Origin 의 preflight 에는 Allow-Origin 이 없다', async () => {
+      const preflight = (origin: string) =>
+        http()
+          .options('/auth/refresh')
+          .set('Origin', origin)
+          .set('Access-Control-Request-Method', 'POST')
+          .set('Access-Control-Request-Headers', 'content-type,x-csrf-token');
+
+      const evil = await preflight('http://evil.test');
+      expect(evil.headers['access-control-allow-origin']).toBeUndefined();
+
+      const good = await preflight(webOrigin(app));
+      expect(good.headers['access-control-allow-origin']).toBe(webOrigin(app));
+      expect(good.headers['access-control-allow-credentials']).toBe('true');
+    });
+  });
+});
+```
+
+거부되는 쪽만 확인하면 "CORS 가 아예 꺼져 있어서" 통과하는 경우를 구별할 수 없습니다. 허용된 출처에 대해서는 헤더가 **있는** 것까지 확인해야
+설정이 동작한다는 증명이 됩니다. 마지막 `});` 는 맨 바깥 `describe('auth (e2e)')` 를 닫습니다.
+
+## 13.8 따로 돌리는 두 파일 — S17 과 S19
+
+### S17 세션 절대 상한
+
+세션 상한을 테스트하려면 `SESSION_MAX_AGE_SEC` 를 몇 초로 줄여야 합니다. 그런데 이 값을 주 테스트 파일의 앱에 주면 **다른 모든 테스트의 세션이 몇 초 만에 끝나 버립니다.**
+그래서 이 시나리오만 별도 파일에서 별도의 앱으로 돌립니다.
+
+```ts
+// api/test/session-max-age.e2e-spec.ts
+import type { INestApplication } from '@nestjs/common';
+import { Browser, createTestApp, signup, sleep } from './helpers';
+
+describe('세션 절대 상한 (e2e)', () => {
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    app = await createTestApp({ env: { SESSION_MAX_AGE_SEC: '2' } });
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('S17 회전해도 세션 상한은 늘지 않고, 상한이 지나면 401', async () => {
+    const { email } = await signup(app);
+    const browser = new Browser(app);
+    await browser.login(email);
+
+    await sleep(1_000);
+    expect((await browser.post('/auth/refresh')).status).toBe(200); // 1초: 아직 상한 안
+
+    await sleep(1_500);
+    const res = await browser.post('/auth/refresh'); // 2.5초: 방금 회전했지만 상한은 로그인 시각 + 2초
+    expect(res.status).toBe(401);
+    expect(res.body.code).toBe('REFRESH_TOKEN_INVALID');
+  }, 10_000);
+});
+```
+
+중간의 refresh 가 핵심입니다. 상한 전에 한 번 회전시켜 두었는데도 상한이 지나면 401 이 나야, 회전이 세션을 늘리지 않는다(`session_expires_at` 을 물려받는다)는 것이 증명됩니다.
+중간 refresh 없이 3초 기다렸다 401 을 확인하면 "토큰 하나가 만료되었다" 는 것만 확인하는 셈입니다.
+
+### S19 로그인 제한
+
+```ts
+// api/test/login-throttle.e2e-spec.ts
+import type { INestApplication } from '@nestjs/common';
+import { Browser, createTestApp, signup } from './helpers';
+
+describe('로그인 제한 (e2e)', () => {
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    app = await createTestApp({ throttle: true }); // 이 파일만 진짜 LoginThrottlerGuard 를 쓴다
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('S19 틀린 로그인 6번째는 429 TOO_MANY_REQUESTS', async () => {
+    const { email } = await signup(app);
+    const browser = new Browser(app);
+    const statuses: number[] = [];
+    let last = '';
+    for (let i = 0; i < 6; i++) {
+      const res = await browser.post('/auth/login', { email, password: 'wrong password' });
+      statuses.push(res.status);
+      last = res.body.code;
+    }
+    expect(statuses).toEqual([401, 401, 401, 401, 401, 429]);
+    expect(last).toBe('TOO_MANY_REQUESTS');
+  }, 20_000);
+});
+```
+
+이 파일은 로그인 제한을 켠 앱을 **새로** 만듭니다. 13.3절에서 설명했듯이 제한의 횟수 기록은 앱 인스턴스마다 따로 있으므로,
+주 테스트 파일이 로그인을 수십 번 했어도 이 앱의 기록은 0 에서 시작합니다. 러너가 여러 파일을 병렬로 돌려도 마찬가지입니다.
+이 파일 안에서는 로그인을 정확히 여섯 번만 합니다. `GET /auth/csrf` 는 제한 대상이 아니므로 세지 않습니다.
+
+제한 창은 1분이므로, 이 파일을 1분 안에 두 번 돌려도 매번 새 앱이라 결과는 같습니다. 반면 13.9절의 curl 스크립트는 **떠 있는 서버 하나**에 요청하므로
+1분 안에 여러 번 돌리면 그 서버의 기록이 쌓여 429 가 납니다. 도구마다 제한이 다르게 작동하는 이유가 여기에 있습니다.
+
+### 돌리기
+
+```bash
+$ cd ~/Workspace/auth-lab/api
+$ pnpm test:e2e
+```
+
+아래는 이 책을 쓰며 부록 C 코드로 프로젝트를 만들어 실제로 돌린 결과입니다(PostgreSQL 18.6, `--reporter=verbose` 로 테스트 이름을 펼쳤습니다).
+
+```
+ ✓ test/auth.e2e-spec.ts > auth (e2e) > 가입과 로그인 > S1 가입하면 201 이고 비밀번호 해시를 돌려주지 않는다 82ms
+ ✓ test/auth.e2e-spec.ts > auth (e2e) > 가입과 로그인 > S2 대소문자만 다른 이메일은 409 EMAIL_TAKEN 71ms
+ ✓ test/login-throttle.e2e-spec.ts > 로그인 제한 (e2e) > S19 틀린 로그인 6번째는 429 TOO_MANY_REQUESTS 260ms
+ ✓ test/auth.e2e-spec.ts > auth (e2e) > 가입과 로그인 > S3 로그인하면 쿠키 속성이 설계대로이고 no-store 이며, DB 에는 해시만 있다 80ms
+ ✓ test/auth.e2e-spec.ts > auth (e2e) > 가입과 로그인 > S4 틀린 비밀번호와 없는 이메일은 같은 응답이고 시간도 비슷하다 331ms
+ …
+ ✓ test/auth.e2e-spec.ts > auth (e2e) > 회전과 재사용 탐지 > S9 grace 뒤에 옛 쿠키가 오면 401 REUSED, family 가 끊기고 정상 쿠키도 죽는다 1611ms
+ ✓ test/session-max-age.e2e-spec.ts > 세션 절대 상한 (e2e) > S17 회전해도 세션 상한은 늘지 않고, 상한이 지나면 401 2648ms
+ …
+ ✓ test/auth.e2e-spec.ts > auth (e2e) > CORS > S18 허용 목록 밖 Origin 의 preflight 에는 Allow-Origin 이 없다 2ms
+
+ Test Files  3 passed (3)
+      Tests  19 passed (19)
+```
+
+S1~S19 가 모두 통과해야 합니다. 세 파일이 병렬로 돌기 때문에 순서는 섞여 나옵니다. 시간이 가장 오래 걸리는 것은 S9·S17 의 기다림입니다.
+
+## 13.9 curl 스모크 스크립트
+
+⚠️ 스모크 스크립트를 돌리기 전에 **그 포트에 떠 있는 것이 정말 이 API 인지** 확인하세요. 이 책을 쓰며 돌려 볼 때 4000 번 포트를 다른 프로젝트의 서버가 쓰고 있었는데,
+API 는 `EADDRINUSE` 로 조용히 죽고 스크립트는 남의 서버에 요청을 보내 `/users/me` 가 404 라는 엉뚱한 실패를 쏟아냈습니다.
+`lsof -nP -iTCP:4000 -sTCP:LISTEN` 으로 확인하고, 겹치면 `PORT=4417 API_ORIGIN=http://localhost:4417` 처럼 API 를 다른 포트로 띄운 뒤 `API=http://localhost:4417 bash scripts/smoke.sh` 로 돌립니다.
+
+e2e 테스트는 테스트 프로세스 안에서 앱을 만듭니다. 그러면 **실제로 떠 있는 서버**의 설정(`.env`, 실행 명령, 프록시)은 검사하지 않습니다.
+배포한 직후나 설정을 바꾼 뒤에는 떠 있는 서버에 진짜 HTTP 요청을 보내 봐야 합니다. 그 일을 하는 짧은 스크립트입니다.
+
+```bash
+# api/scripts/smoke.sh — 떠 있는 API 에 curl 로 핵심 시나리오를 돌린다. api 폴더에서 bash 로 실행한다.
+#   bash scripts/smoke.sh
+#   API=http://localhost:4000 GRACE=10 bash scripts/smoke.sh
+# 로그인을 네 번 한다(S3·S4 두 번·S9 뒤 재로그인). 1분 안에 두 번 돌리면 로그인 제한(1분 5회)에 걸린다.
+set -o pipefail
+
+API=${API:-http://localhost:4000}
+ORIGIN='Origin: http://localhost:5173'
+GRACE=${GRACE:-10}              # api/.env 의 REFRESH_REUSE_GRACE_SEC 와 같게
+JAR=$(mktemp)                   # 쿠키 저장소 — 브라우저 역할
+H=$(mktemp)                     # 마지막 응답의 헤더
+B=$(mktemp)                     # 마지막 응답의 본문
+trap 'rm -f "$JAR" "$H" "$B"' EXIT
+FAILED=0
+
+csrf() { curl -s -c "$JAR" -b "$JAR" "$API/auth/csrf" | jq -r .csrfToken; }
+
+# call <메서드> <경로> [curl 인자…] — 상태 코드를 출력하고 헤더·본문은 $H·$B 에 남긴다
+call() {
+  local method=$1 path=$2
+  shift 2
+  curl -s -D "$H" -o "$B" -w '%{http_code}' -X "$method" "$API$path" "$@"
+}
+
+# post <경로> [JSON] — 브라우저처럼 쿠키 저장소·Origin·CSRF 헤더를 붙인다 (9장의 post 와 같은 헤더)
+post() {
+  call POST "$1" -c "$JAR" -b "$JAR" -H "$ORIGIN" -H "X-CSRF-Token: $T" -H 'Content-Type: application/json' ${2:+-d "$2"}
+}
+
+# stale <리프레시 토큰> — 저장소를 쓰지 않고 지정한 리프레시 토큰으로 refresh 한다
+stale() {
+  call POST /auth/refresh -H "$ORIGIN" -H "X-CSRF-Token: $T" \
+    -H "Cookie: csrf_token=$(cookie csrf_token); refresh_token=$1"
+}
+
+cookie() { awk -v n="$1" '$6 == n { print $7 }' "$JAR"; }            # 저장소에서 쿠키 값 꺼내기
+code() { jq -r '.code // empty' "$B"; }                               # 마지막 응답의 에러 코드
+setcookie() { grep -i "^set-cookie: $1=" "$H" | tr -d '\r'; }         # 마지막 응답의 Set-Cookie 한 줄
+
+check() { # check <이름> <실제> <기대>
+  if [[ "$2" == "$3" ]]; then
+    printf 'PASS  %-38s %s\n' "$1" "$2"
+  else
+    printf 'FAIL  %-38s 실제=%s 기대=%s\n' "$1" "$2" "$3"
+    FAILED=1
+  fi
+}
+```
+
+앞부분의 `API`·`ORIGIN`·`JAR`·`csrf()`·`T` 는 9장 9.7절의 준비 함수를 그대로 가져온 것입니다. 바꾼 것은 `post` 하나입니다.
+9장의 `post` 는 `-i` 로 헤더와 본문을 화면에 그대로 뿌려 사람이 읽게 했지만, 스크립트는 값을 **비교**해야 하므로 상태 코드만 출력하고
+헤더와 본문은 파일에 남기는 `call` 을 거치게 했습니다. 요청에 붙는 헤더와 `${2:+-d "$2"}` 로 본문을 붙이는 방식은 9장과 같습니다. 몇 가지를 짚습니다.
+
+**`call` 이 상태 코드만 출력한다.** `-w '%{http_code}'` 로 상태 코드를 표준 출력에 내고, 헤더(`-D`)와 본문(`-o`)은 파일에 씁니다.
+그래서 `check "이름" "$(call …)" 200` 처럼 상태 코드를 바로 비교하고, 이어서 `$(code)` 나 `$(setcookie refresh_token)` 으로 같은 응답의 나머지를 봅니다.
+`$(…)` 는 하위 셸에서 돌지만 결과를 파일에 남기므로 바깥에서 읽을 수 있습니다.
+
+**`stale` 은 저장소를 쓰지 않는다.** 옛 토큰을 보낼 때 `-b "$JAR"` 를 쓰면 저장소의 최신 쿠키가 같이 실립니다. `Cookie` 헤더를 직접 만들어
+원하는 리프레시 토큰만 보냅니다. `-c` 도 주지 않으므로 이 요청의 응답은 저장소를 바꾸지 않습니다.
+
+**`set -e` 를 쓰지 않는다.** `grep -c` 는 일치가 0개이면 종료 코드 1 을 냅니다. 실패한 확인도 끝까지 출력하고 마지막에 모아서 판정하려고 중간에 멈추지 않게 했습니다.
+
+이어서 시나리오입니다.
+
+```bash
+# api/scripts/smoke.sh (이어서)
+EMAIL="smoke-$(date +%s)-$RANDOM@example.com"
+PW='smoke password 1234'
+T=$(csrf)
+
+# JSON 본문은 jq 로 먼저 만든다. macOS 기본 bash 3.2 는 "$( … "{\"k\":…}" … )" 처럼
+# 명령 치환 안에서 이스케이프한 따옴표를 잘못 읽어 본문과 인자가 깨진다.
+json() { jq -nc "$@"; }
+SIGNUP=$(json --arg e "$EMAIL" --arg p "$PW" '{email:$e, password:$p, nickname:"스모크"}')
+LOGIN=$(json --arg e "$EMAIL" --arg p "$PW" '{email:$e, password:$p}')
+
+echo "== 가입·로그인"
+check "S1 가입" "$(call POST /auth/signup -H 'Content-Type: application/json' \
+  -d "$SIGNUP")" 201
+check "S1 응답 키" "$(jq -c 'keys' "$B")" '["createdAt","email","id","nickname"]'
+UPPER=$(tr '[:lower:]' '[:upper:]' <<<"$EMAIL")
+DUP=$(json --arg e "$UPPER" --arg p "$PW" '{email:$e, password:$p, nickname:"스모크"}')
+check "S2 중복 가입" "$(call POST /auth/signup -H 'Content-Type: application/json' \
+  -d "$DUP")" 409
+check "S2 code" "$(code)" EMAIL_TAKEN
+
+check "S3 로그인" "$(post /auth/login "$LOGIN")" 200
+ACCESS=$(jq -r .accessToken "$B")
+RC=$(setcookie refresh_token)
+for attr in 'Path=/auth' 'HttpOnly' 'Secure' 'SameSite=Strict'; do
+  check "S3 쿠키 속성 $attr" "$(grep -ci "; $attr" <<<"$RC")" 1
+done
+check "S3 Cache-Control" "$(grep -i '^cache-control:' "$H" | tr -d '\r' | cut -d' ' -f2)" no-store
+
+for kind in wrong missing; do
+  if [[ $kind == wrong ]]; then who=$EMAIL; else who="nobody-$RANDOM@example.com"; fi
+  body=$(json --arg e "$who" '{email:$e, password:"wrong password"}')
+  t=$(curl -s -o "$B" -w '%{time_total}' -c "$JAR" -b "$JAR" -H "$ORIGIN" -H "X-CSRF-Token: $T" \
+    -H 'Content-Type: application/json' -X POST "$API/auth/login" -d "$body")
+  check "S4 $kind code" "$(code)" INVALID_CREDENTIALS
+  echo "      S4 $kind 응답 시간 ${t}s (기록용)"
+done
+
+echo "== 액세스 토큰"
+check "S5 Bearer" "$(call GET /users/me -H "Authorization: Bearer $ACCESS")" 200
+check "S5 Bearer 없음" "$(call GET /users/me)" 401
+SIG=${ACCESS##*.}
+if [[ ${SIG:0:1} == A ]]; then FIRST=B; else FIRST=A; fi
+check "S5 변조" "$(call GET /users/me -H "Authorization: Bearer ${ACCESS%.*}.$FIRST${SIG:1}")" 401
+NONE=$(printf '{"alg":"none","typ":"JWT"}' | base64 | tr '+/' '-_' | tr -d '=')
+PAYLOAD=$(cut -d. -f2 <<<"$ACCESS")
+check "S6 alg none" "$(call GET /users/me -H "Authorization: Bearer $NONE.$PAYLOAD.")" 401
+
+echo "== 회전과 재사용 탐지"
+OLD=$(cookie refresh_token)
+check "S7 회전" "$(post /auth/refresh)" 200
+check "S7 쿠키가 바뀜" "$([[ "$(cookie refresh_token)" != "$OLD" ]] && echo yes)" yes
+check "S8 grace 안 옛 쿠키" "$(stale "$OLD")" 409
+check "S8 code" "$(code)" REFRESH_TOKEN_ROTATED
+check "S8 Set-Cookie 없음" "$(setcookie refresh_token | wc -l | tr -d ' ')" 0
+echo "      grace(${GRACE}s) 가 지나기를 기다립니다"
+sleep $((GRACE + 1))
+check "S9 grace 뒤 옛 쿠키" "$(stale "$OLD")" 401
+check "S9 code" "$(code)" REFRESH_TOKEN_REUSED
+check "S9 쿠키 삭제 헤더" "$(setcookie refresh_token | grep -ci '^set-cookie: refresh_token=;')" 1
+check "S9 정상 쿠키도 죽음" "$(post /auth/refresh)" 401
+
+echo "== CSRF (다시 로그인)"
+check "재로그인" "$(post /auth/login "$LOGIN")" 200
+check "S10 CSRF 헤더 없음" "$(call POST /auth/refresh -b "$JAR" -H "$ORIGIN")" 403
+check "S10 code" "$(code)" CSRF_TOKEN_INVALID
+check "S11 위조 짝" "$(call POST /auth/refresh -H "$ORIGIN" -H 'X-CSRF-Token: abc.def' \
+  -H "Cookie: csrf_token=abc.def; refresh_token=$(cookie refresh_token)")" 403
+check "S11 code" "$(code)" CSRF_TOKEN_INVALID
+check "S12 Origin 위조" "$(call POST /auth/refresh -b "$JAR" -H 'Origin: http://evil.test' -H "X-CSRF-Token: $T")" 403
+check "S12 code" "$(code)" CSRF_ORIGIN_REJECTED
+check "S13 Origin 없음" "$(call POST /auth/refresh -b "$JAR" -H "X-CSRF-Token: $T")" 403
+check "S13 code" "$(code)" CSRF_ORIGIN_REJECTED
+
+echo "== 로그아웃"
+LIVE=$(cookie refresh_token)
+check "S14 로그아웃" "$(post /auth/logout)" 204
+check "S14 삭제 헤더 Path=/auth" "$(setcookie refresh_token | grep -ci '^set-cookie: refresh_token=;.*path=/auth')" 1
+check "S14 같은 쿠키로 refresh" "$(stale "$LIVE")" 401
+check "S14 한 번 더 로그아웃" "$(post /auth/logout)" 204
+
+echo "== CORS"
+call OPTIONS /auth/refresh -H 'Origin: http://evil.test' -H 'Access-Control-Request-Method: POST' >/dev/null
+check "S18 evil 출처 Allow-Origin 없음" "$(grep -ci '^access-control-allow-origin' "$H")" 0
+call OPTIONS /auth/refresh -H "$ORIGIN" -H 'Access-Control-Request-Method: POST' >/dev/null
+check "S18 FE 출처 Allow-Origin 있음" "$(grep -ci '^access-control-allow-origin: http://localhost:5173' "$H")" 1
+
+echo
+if [[ $FAILED == 0 ]]; then echo "전부 통과"; else echo "실패가 있습니다"; exit 1; fi
+```
+
+스크립트에서 몇 군데를 설명합니다.
+
+**S4 는 기록만.** curl 의 `%{time_total}` 로 두 경우의 응답 시간을 출력하지만 판정하지 않습니다. 한 번씩만 재는 값은 네트워크 사정으로 흔들리므로
+눈으로 비교하고 결과 표(13.11절)에 적습니다. 판정은 여러 번 재서 중앙값을 비교하는 e2e 테스트가 합니다.
+
+**S5 의 변조는 서명의 첫 글자.** `${ACCESS##*.}` 는 마지막 `.` 뒤(서명), `${ACCESS%.*}` 는 마지막 `.` 앞(헤더와 본문)입니다. 13.6절에서 말한 이유로 첫 글자를 바꿉니다.
+
+**S6 의 base64url.** `base64` 명령은 표준 base64 를 내므로 `+/` 를 `-_` 로 바꾸고 `=` 패딩을 지웁니다. 이 헤더는 짧아서 줄바꿈이 끼지 않습니다.
+
+**S9 의 기다림.** `GRACE` 기본값 10 에 1초를 더해 11초 기다립니다. `.env` 의 grace 를 바꿨다면 `GRACE=3 bash scripts/smoke.sh` 처럼 맞춰 줍니다.
+
+**S9 뒤 재로그인.** S9 에서 이 세션은 재사용 탐지로 끝났으므로 CSRF 시나리오를 위해 새로 로그인합니다. CSRF 토큰(`$T`)은 세션과 무관하므로 그대로 씁니다.
+
+**S14 의 재생.** 로그아웃 전에 저장소의 쿠키를 `LIVE` 에 기억해 두었다가 `stale` 로 보냅니다. 로그아웃 응답의 삭제 지시로 저장소의 쿠키는 이미 지워졌기 때문입니다.
+
+S15~S17, S19 는 이 스크립트에 넣지 않았습니다. S15·S16 은 사용자 둘과 세션 여럿이 필요해 스크립트가 길어지고, S17 은 서버를 다른 설정으로 다시 띄워야 하며,
+S19 는 이 서버의 로그인 제한 기록을 채워 이후의 스모크 실행을 1분 동안 막습니다. 넷 모두 e2e 테스트가 확인합니다.
+
+예시 출력입니다.
+
+```
+$ bash scripts/smoke.sh
+== 가입·로그인
+PASS  S1 가입                                 201
+PASS  S1 응답 키                              ["createdAt","email","id","nickname"]
+PASS  S2 중복 가입                            409
+PASS  S2 code                                 EMAIL_TAKEN
+PASS  S3 로그인                               200
+PASS  S3 쿠키 속성 Path=/auth                 1
+PASS  S3 쿠키 속성 HttpOnly                   1
+PASS  S3 쿠키 속성 Secure                     1
+PASS  S3 쿠키 속성 SameSite=Strict            1
+PASS  S3 Cache-Control                        no-store
+PASS  S4 wrong code                           INVALID_CREDENTIALS
+      S4 wrong 응답 시간 0.061s (기록용)
+PASS  S4 missing code                         INVALID_CREDENTIALS
+      S4 missing 응답 시간 0.058s (기록용)
+== 액세스 토큰
+…
+== 회전과 재사용 탐지
+PASS  S7 회전                                 200
+…
+      grace(10s) 가 지나기를 기다립니다
+PASS  S9 grace 뒤 옛 쿠키                     401
+…
+전부 통과
+```
+
+(예시 출력) S3 의 쿠키가 저장되지 않아 S7 이후가 줄줄이 실패한다면 curl 이 `Secure` 쿠키를 localhost 에서 받아들이지 않는 것일 수 있습니다(6장 6.12절).
+
+## 13.10 브라우저 시나리오 S20~S22
+
+마지막 세 시나리오는 브라우저에서만 재현됩니다. 새로고침, 여러 탭, 탭 사이의 잠금과 `BroadcastChannel` 은 테스트 프로세스가 흉내 낼 수 없는 브라우저의 동작이기 때문입니다.
+Chrome 으로 진행합니다.
+
+### 준비 — 개발자 도구에서 볼 곳
+
+API(`localhost:4000`)와 FE(`localhost:5173`)를 띄우고, 가입한 계정으로 로그인할 수 있는 상태에서 시작합니다. 개발자 도구(F12)에서 두 탭을 씁니다.
+
+**Network 탭.**
+
+- 위쪽의 **Preserve log** 를 켭니다. 새로고침해도 이전 요청이 지워지지 않습니다.
+- 필터 칸에 `auth` 를 입력하면 `/auth/*` 요청만 보입니다.
+- 요청 하나를 누르면 오른쪽에 하위 탭이 열립니다. **Headers** 에서 상태 코드와 요청·응답 헤더(`Set-Cookie`, `X-CSRF-Token`, `Origin`)를,
+  **Cookies** 에서 그 요청에 실린 쿠키와 응답이 설정한 쿠키를, **Response** 에서 본문(에러 `code`)을 봅니다.
+- 쿠키가 저장되지 않았다면 Cookies 하위 탭에서 해당 쿠키 줄에 경고 표시와 이유가 나옵니다. `SameSite`·`Secure` 문제를 찾을 때 가장 먼저 볼 곳입니다.
+
+**Application 탭.** 왼쪽 **Storage > Cookies** 에서 출처를 고르면 저장된 쿠키 목록이 보입니다. 쿠키는 포트를 구분하지 않으므로
+`localhost` 에 저장된 `refresh_token`(Path `/auth`)과 `csrf_token`(Path `/`)을 볼 수 있습니다. 목록에서 찾기 어려우면 Network 탭의 Cookies 하위 탭으로 확인합니다.
+HttpOnly 열에 체크가 있어야 하고, 이 쿠키들은 콘솔의 `document.cookie` 에는 나오지 않아야 합니다.
+
+### S20 새로고침해도 로그인이 유지된다
+
+1. `http://localhost:5173/login` 에서 로그인합니다. 내 정보 화면으로 이동합니다.
+2. Network 탭에 `csrf`(GET, 200)와 `login`(POST, 200)이 보입니다. `login` 의 Cookies 하위 탭 응답 쪽에 `refresh_token` 이 있는지 봅니다.
+3. **F5** 로 새로고침합니다.
+4. 기대 결과:
+   - 화면이 잠깐 "세션 확인 중…" 을 보였다가 **로그인 화면을 거치지 않고** 내 정보 화면이 그대로 나옵니다(11장의 `RequireAuth`).
+   - 새로고침 뒤 Network 탭에 `refresh`(POST)가 **정확히 한 번**, 200 으로 보입니다. React StrictMode 가 effect 를 두 번 실행해도 single-flight(12장) 때문에 요청은 하나입니다.
+   - 그 `refresh` 의 요청 Cookies 에 `refresh_token` 이 실려 있고, 응답에 새 `refresh_token` 이 설정되어 있습니다. 두 값이 다릅니다.
+5. 기록: refresh 요청 수, 상태 코드, 화면이 로그인 페이지로 깜빡였는지.
+
+`refresh` 가 두 번 나가고 두 번째가 409 라면 single-flight 가 동작하지 않는 것입니다. 401 이면 쿠키가 실리지 않은 것이므로 FE 를 `127.0.0.1` 로 열지 않았는지(6장) 확인합니다.
+
+### S21 두 탭이 동시에 만료되어도 재사용 탐지가 터지지 않는다
+
+1. `api/.env` 의 `ACCESS_TOKEN_TTL_SEC` 를 `5` 로 바꾸고 API 를 다시 띄웁니다.
+2. 로그인한 뒤 같은 창에서 `http://localhost:5173/` 을 **탭 두 개**로 엽니다. 각 탭에서 개발자 도구를 열고 Network 탭의 Preserve log 를 켭니다.
+   내 정보 화면의 "액세스 토큰 남은 시간" 이 두 탭 모두 0 이 될 때까지 기다립니다(6초 이상).
+3. 두 탭에서 거의 동시에 API 를 부르는 동작을 합니다. 예를 들어 탭 A 에서 "닉네임 변경" 을 누르고 곧바로 탭 B 로 옮겨 "닉네임 변경" 을 누릅니다.
+   두 요청을 확실히 겹치게 하려면 두 탭 모두 Network 탭의 쓰로틀링을 **Slow 4G**(또는 가장 느린 값)로 두고 누르면 요청이 오래 걸려 겹치기 쉽습니다.
+4. 기대 결과:
+   - 각 탭에서 `PATCH /users/me` 가 한 번 401 을 받고, `refresh` 가 한 번 나간 뒤, `PATCH /users/me` 가 200 으로 다시 나갑니다(12장의 자동 재시도).
+   - 두 탭의 `refresh` 가 **모두 200** 입니다. 409 가 보이더라도 곧이은 재시도가 200 이어야 하고, `REFRESH_TOKEN_REUSED` 는 어디에도 없어야 합니다.
+   - 두 `refresh` 요청의 시작 시각을 비교하면(요청 줄에 마우스를 올리거나 Timing 하위 탭), 한 탭의 `refresh` 가 **끝난 뒤에** 다른 탭의 `refresh` 가 시작됩니다.
+     `navigator.locks` 가 두 탭의 refresh 를 한 줄로 세운 것입니다(12장). 뒤에 간 탭의 요청 Cookies 에는 앞 탭이 받은 새 `refresh_token` 이 실려 있습니다.
+   - 두 탭 모두 로그인 화면으로 가지 않습니다.
+5. DB 로 한 번 더 확인합니다. 이 family 에 `reuse_detected` 가 없고 살아 있는 행이 하나여야 합니다.
+
+```sql
+auth_lab=# SELECT revoke_reason, count(*) FROM refresh_tokens
+            WHERE family_id = (SELECT r.family_id FROM refresh_tokens r JOIN users u ON u.id = r.user_id
+                                WHERE u.email = '<로그인한 이메일>' ORDER BY r.created_at DESC LIMIT 1)
+            GROUP BY revoke_reason;
+ revoke_reason | count
+---------------+-------
+ rotated       |     3
+               |     1
+```
+
+(예시 출력) 그 사용자가 가장 최근에 발급받은 토큰의 family, 즉 방금 두 탭이 회전시킨 세션을 봅니다. `rotated` 의 개수는 몇 번 회전했는지에 따라 다릅니다.
+
+6. 끝나면 쓰로틀링을 끄고 `ACCESS_TOKEN_TTL_SEC=600` 으로 되돌린 뒤 API 를 다시 띄웁니다.
+
+### S22 한 탭에서 로그아웃하면 다른 탭도 로그아웃된다
+
+1. 로그인한 상태에서 탭 A 와 탭 B 에 `http://localhost:5173/` 을 엽니다. 둘 다 내 정보 화면입니다.
+2. 탭 A 에서 "로그아웃" 을 누릅니다.
+3. 기대 결과:
+   - 탭 A 의 Network 탭에 `logout`(POST)이 204 로 보이고, 응답 Cookies 에서 `refresh_token` 이 삭제(빈 값, 과거 만료)로 설정됩니다.
+   - 탭 B 로 옮기면 **아무것도 누르지 않았는데** 로그인 화면이 떠 있고 "로그아웃했습니다." 가 보입니다(11·12장의 `BroadcastChannel`).
+   - 탭 B 의 Network 탭에는 새 요청이 없습니다. 탭 B 는 서버에 묻지 않고 탭 A 의 메시지만으로 상태를 바꿨습니다.
+   - Application 탭의 Cookies 에서 `refresh_token` 이 사라졌습니다.
+4. 탭 B 에서 뒤로 가기를 눌러 내 정보 화면으로 돌아가려 해도 다시 로그인 화면으로 갑니다.
+
+## 13.11 결과를 기록하는 양식
+
+시나리오는 돌린 것으로 끝나지 않고 **기록해야** 증명이 됩니다. "통과했다" 가 아니라 무엇을 돌려서 어떤 값이 나왔는지를 적습니다.
+나중에 설정이나 버전을 바꾼 뒤 같은 표를 다시 채워 비교할 수 있게 실행 정보도 함께 남깁니다.
+
+```markdown
+# 시나리오 검증 기록
+
+- 날짜:
+- 커밋:
+- API 실행 방식: (pnpm start:dev / 빌드 후 node dist/main.js / 배포 환경 URL)
+- 설정: ACCESS_TOKEN_TTL_SEC= , REFRESH_REUSE_GRACE_SEC= , SESSION_MAX_AGE_SEC= , COOKIE_SECURE=
+- 도구 버전: node , Chrome , curl
+- e2e: `pnpm test:e2e` → __ passed / __ total
+- smoke: `bash scripts/smoke.sh` → PASS __ / FAIL __
+
+| #   | 무엇                  | 기대                                                   | 실제 상태·code | 쿠키 헤더 | DB 행 | 도구    | 판정 | 비고 |
+|-----|-----------------------|--------------------------------------------------------|----------------|-----------|-------|---------|------|------|
+| S1  | 가입                  | 201, 해시 없음                                         |                |           |       | e2e·smoke |      |      |
+| S2  | 중복 가입             | 409 EMAIL_TAKEN                                        |                |           |       | e2e·smoke |      |      |
+| S3  | 로그인                | 200, Path=/auth·HttpOnly·Secure·SameSite=Strict, no-store |             |           |       | e2e·smoke |      |      |
+| S4  | 틀린 비번·없는 이메일 | 둘 다 401 INVALID_CREDENTIALS, 시간 비슷               |                |           |       | e2e·smoke | | 시간: __ms / __ms |
+| S5  | 보호 API              | 200 / 없음·변조·다른 aud 401 ACCESS_TOKEN_INVALID     |                |           |       | e2e·smoke |      |      |
+| S6  | alg none              | 401                                                    |                |           |       | e2e·smoke |      |      |
+| S7  | 회전                  | 200, 새 쿠키, 옛 행 rotated·replaced_by                |                |           |       | e2e·smoke |      |      |
+| S8  | race                  | 409 REFRESH_TOKEN_ROTATED, Set-Cookie 없음, 살아 있는 행 1 |           |           |       | e2e·smoke |      |      |
+| S9  | 재사용 탐지           | 401 REFRESH_TOKEN_REUSED, 삭제 헤더, 살아 있는 행 0, 정상 쿠키 401 | |          |       | e2e·smoke |      |      |
+| S10 | CSRF 헤더 없음        | 403 CSRF_TOKEN_INVALID                                 |                |           |       | e2e·smoke |      |      |
+| S11 | CSRF 위조 짝          | 403 CSRF_TOKEN_INVALID                                 |                |           |       | e2e·smoke |      |      |
+| S12 | Origin 위조           | 403 CSRF_ORIGIN_REJECTED                               |                |           |       | e2e·smoke |      |      |
+| S13 | Origin 없음           | 403 CSRF_ORIGIN_REJECTED                               |                |           |       | e2e·smoke |      |      |
+| S14 | 로그아웃              | 204, 삭제 헤더 Path=/auth, 살아 있는 행 0, 재생 401, 재로그아웃 204 | |         |       | e2e·smoke |      |      |
+| S15 | 전체 로그아웃         | 204, 두 세션 refresh 401                               |                |           |       | e2e     |      |      |
+| S16 | 세션 목록·삭제        | current 1개, 남의 세션 404 SESSION_NOT_FOUND           |                |           |       | e2e     |      |      |
+| S17 | 세션 상한             | 회전 후에도 상한 뒤 401                                |                |           |       | e2e     |      |      |
+| S18 | CORS                  | evil 출처 Allow-Origin 없음, FE 출처 있음              |                |           |       | e2e·smoke |      |      |
+| S19 | 로그인 제한           | 6번째 429 TOO_MANY_REQUESTS                            |                |           |       | e2e     |      |      |
+| S20 | 새로고침              | 로그인 유지, refresh 1회 200                           |                |           |       | 브라우저 |      |      |
+| S21 | 동시 만료             | 두 탭 성공, REUSED 없음, refresh 직렬화               |                |           |       | 브라우저 |      |      |
+| S22 | 로그아웃 동기화       | 다른 탭 즉시 로그인 화면, 새 요청 없음                 |                |           |       | 브라우저 |      |      |
+```
+
+한 줄을 채운 예를 보겠습니다.
+
+| # | 무엇 | 기대 | 실제 상태·code | 쿠키 헤더 | DB 행 | 도구 | 판정 | 비고 |
+|---|---|---|---|---|---|---|---|---|
+| S9 | 재사용 탐지 | 401 REUSED, 삭제 헤더, 살아 있는 행 0, 정상 쿠키 401 | 401 `REFRESH_TOKEN_REUSED` / 정상 쿠키 401 `REFRESH_TOKEN_REUSED` | `refresh_token=; Path=/auth; Expires=Thu, 01 Jan 1970 …` | `rotated`, `reuse_detected` (살아 있는 행 0) | e2e·smoke | 통과 | grace 1초(e2e) / 10초(smoke) |
+
+(예시) "쿠키 헤더" 와 "DB 행" 칸을 비워 두지 않는 것이 이 양식의 요점입니다. 7장에서 보았듯이 상태 코드만 맞고 DB 는 틀린 경우가 실제로 생깁니다.
+
+## 확인하기
+
+| # | 명령 | 기대 결과 |
+|---|---|---|
+| 1 | `docker compose up -d && pnpm db:migrate` | 에러 없이 끝난다 |
+| 2 | `pnpm test:e2e` (스캐폴드의 e2e 스크립트) | S1~S19, 19개 테스트 모두 통과 |
+| 3 | `api` 폴더에서 `bash scripts/smoke.sh` | 마지막 줄 `전부 통과`, 종료 코드 0 |
+| 4 | 1분 안에 `bash scripts/smoke.sh` 를 한 번 더 | 누적 다섯 번째인 S3 로그인은 통과하고, 여섯 번째인 S4 부터 FAIL(429). 로그인 제한이 떠 있는 서버 하나에 쌓인다는 확인 |
+| 5 | S20~S22 브라우저 절차 | 각 절의 기대 결과대로. 13.11절 양식을 채운다 |
+| 6 | `rotateInTx` 의 재사용 분기에서 `return { kind: 'reused' };` 를 일부러 `throw new Error('reused');` 로 바꾸고 e2e 실행 | S9 가 실패한다. 폐기 UPDATE 가 롤백되어 살아 있는 행이 남고 응답도 500 이 된다 (확인 뒤 되돌린다) |
+
+6번은 테스트가 정말로 버그를 잡는지 확인하는 방법입니다. 코드를 일부러 망가뜨렸을 때 실패하지 않는 테스트는 아무것도 증명하지 않습니다.
+같은 방식으로 `revokeSession` 의 `user_id = $1 AND` 를 지워 보면 S16 이, `rotateInTx` 의 `FOR UPDATE` 를 지워 보면… 아쉽게도 이 장의 테스트로는 잡히지 않습니다.
+연습문제 3번에서 다룹니다.
+
+## 자주 하는 실수
+
+**스캐폴드의 예제 e2e 테스트를 지우지 않았다.** `GET /` 가 404 라서 `app.e2e-spec.ts` 하나가 계속 실패합니다. 이 앱에는 그 경로가 없으므로 지웁니다.
+
+**DB 를 띄우지 않고 테스트를 돌렸다.** 앱은 DB 에 연결하지 않고도 컴파일되므로 `beforeAll` 은 통과하고, 첫 가입 요청에서 연결 거부(`ECONNREFUSED`) 에러로 실패합니다.
+`pg` 의 풀은 첫 쿼리 때 연결하기 때문입니다.
+
+**테스트 헬퍼에서 `cookieParser` 를 빠뜨렸다.** 로그인은 통과하는데 refresh 가 전부 401, CSRF 가 전부 403 입니다. `main.ts` 와 `createTestApp` 을 나란히 놓고 비교합니다.
+
+**S9 가 가끔 409 로 실패한다.** grace 가 1초로 적용되지 않은 것입니다. `createTestApp` 에 `env` 를 넘겼는지, `@nestjs/config` 가 `process.env` 를 우선하는지(13.3절) 확인합니다.
+반대로 기계가 매우 느려 S8 이 가끔 401 로 실패한다면 1초 grace 안에 두 요청이 끝나지 않은 것이므로 grace 를 `'2'` 로, S9 의 기다림을 `2_500` 으로 늘립니다.
+
+**변조 테스트가 가끔 통과해 버린다.** 서명의 마지막 글자를 바꿨기 때문입니다(13.6절). 첫 글자를 바꿉니다.
+
+**`supertest` 의 agent 로 쿠키를 다뤘다.** 리프레시 쿠키가 다음 요청에 실리지 않거나, 옛 토큰을 심을 방법이 없어 S8·S9 를 쓸 수 없습니다. 이 장의 `Browser` 처럼 쿠키를 직접 다룹니다.
+
+**스모크 스크립트를 연달아 돌렸다.** 두 번째 실행의 로그인이 429 로 실패합니다. 1분 쉬고 돌립니다. e2e 테스트는 앱을 새로 만들어서 이 문제가 없습니다.
+
+**S21 에서 새로고침으로 만료를 일으켰다.** 새로고침은 액세스 토큰 없이 부팅 refresh 를 부르는 경로(S20)라서 "만료 → 401 → refresh → 재시도" 경로를 거치지 않습니다.
+화면의 버튼으로 API 를 불러야 합니다.
+
+## 정리
+
+- 22개 시나리오는 상태 코드뿐 아니라 쿠키 헤더와 DB 행까지 기대값을 정해 둔 것이다. 셋 중 하나라도 다르면 설계가 깨진 것이다.
+- e2e 테스트는 실제 PostgreSQL 에 붙는다. 이 책의 핵심 로직이 트랜잭션·`FOR UPDATE`·`now()` 에 기대기 때문이다.
+- 테스트용 앱은 `main.ts` 와 같은 설정을 헬퍼에서 다시 적어 만든다. 두 곳을 함께 고쳐야 한다.
+- 테스트마다 고유한 이메일로 가입해 데이터를 격리한다.
+- grace·세션 상한은 앱을 만드는 동안만 `process.env` 를 바꿔 짧게 준다. `AppConfig` 가 생성 때 한 번만 읽기 때문에 가능하다.
+- 로그인 제한은 주 테스트에서 `overrideGuard` 로 끄고, S19 는 제한을 켠 별도 앱에서 확인한다. 횟수 기록이 앱마다 따로라 서로 간섭하지 않는다. `X-Forwarded-For` 로는 우회되지 않는다.
+- 쿠키는 `Browser` 헬퍼로 직접 다룬다. 훔친 토큰을 심는 테스트가 필요하기 때문이다.
+- S9 는 DB 에서 살아 있는 행이 0 인지 확인해야 롤백 버그를 잡는다.
+- 스모크 스크립트는 떠 있는 서버의 실제 설정을 점검한다. 로그인 제한을 공유하므로 연달아 돌리지 않는다.
+- S20~S22 는 Network 탭(Preserve log, Headers·Cookies·Response)과 Application 탭(Cookies)으로 확인한다.
+- 결과는 기대와 실제를 나란히 적은 표로 남긴다. 코드를 일부러 망가뜨려 테스트가 실패하는지도 확인한다.
+
+## 연습문제
+
+**1.** S9 테스트에서 `expect(await liveTokens(stolen)).toBe(0)` 과 `familyReasons` 확인 두 줄을 지우면, 7장 7.4절의 롤백 버그가 있어도 테스트가 통과합니까? 이유를 설명하세요.
+
+<details>
+<summary>해답</summary>
+
+통과합니다. 롤백 버그가 있어도 재사용을 발견한 순간 401 `REFRESH_TOKEN_REUSED` 예외가 던져지므로 응답 상태와 코드는 기대와 같습니다.
+쿠키 삭제 헤더도 컨트롤러가 401 이면 붙이므로 그대로 옵니다. 마지막의 "정상 쿠키로 refresh" 도 확인해 볼 만한데, 폐기가 롤백되었다면 정상 사용자의 최신 토큰은 살아 있으므로
+이 줄은 200 이 나와 실패합니다. 즉 마지막 줄도 버그를 잡지만, 버그의 위치(폐기가 저장되지 않음)를 가장 직접적으로 드러내는 것은 DB 확인입니다.
+응답만 보는 테스트는 "무엇을 말했나" 를, DB 확인은 "무엇을 했나" 를 검사합니다.
+
+</details>
+
+**2.** 동료가 주 테스트 파일에서 로그인 제한을 끄는 대신, 테스트마다 요청에 `X-Forwarded-For: 10.0.0.<난수>` 를 붙이자고 제안합니다. 이 방법이 동작하지 않는 이유와,
+만약 동작하게 만든다면 무엇이 위험한지 설명하세요.
+
+<details>
+<summary>해답</summary>
+
+이 앱은 Express 의 `trust proxy` 를 켜지 않았으므로 `req.ip` 가 `X-Forwarded-For` 를 무시하고 실제 연결 주소를 씁니다. 로그인 제한도 그 주소로 세므로
+헤더를 바꿔도 모든 요청이 같은 IP 로 세어져 여섯 번째에서 429 가 납니다. 동작하게 하려면 `trust proxy` 를 켜야 하는데, 프록시 없이 켜면 클라이언트가 보낸 헤더를
+그대로 믿게 되어 **공격자도 요청마다 헤더를 바꿔 로그인 제한을 우회**할 수 있습니다. 테스트를 위해 운영의 방어를 약하게 만드는 셈입니다.
+테스트에서는 가드를 교체하고, 제한 자체는 별도 앱에서 검증하는 편이 안전합니다.
+
+</details>
+
+**3.** `rotateInTx` 의 `FOR UPDATE` 를 지워도 이 장의 e2e 테스트는 모두 통과합니다. 왜 그런지 설명하고, 이 결함을 잡는 테스트를 설계해 보세요. (코드를 완성하지 않아도 됩니다.)
+
+<details>
+<summary>해답</summary>
+
+이 장의 테스트는 refresh 요청을 `await` 로 **하나씩** 보냅니다. 두 요청이 DB 에서 겹치지 않으므로 잠금이 있든 없든 결과가 같습니다.
+S8 도 정상 사용자의 회전이 끝난 뒤에 늦은 요청을 보내므로 잠금과 무관합니다.
+
+잡으려면 같은 쿠키로 refresh 두 건을 **동시에** 보내야 합니다. 예를 들어 같은 `Browser` 상태를 복사한 두 요청을 `Promise.all` 로 동시에 보내고,
+결과 상태 코드를 정렬해 `[200, 409]` 인지, family 의 살아 있는 행이 정확히 1 인지 확인합니다. `FOR UPDATE` 가 없으면 `[200, 200]` 이 나오고 살아 있는 행이 2 가 됩니다.
+다만 두 요청이 DB 에서 실제로 겹치는지는 타이밍에 달려 있어서, 잠금이 없어도 가끔 우연히 통과할 수 있습니다. 같은 검사를 여러 번(예: 20번) 반복해
+한 번이라도 `[200, 200]` 이 나오면 실패로 보는 방식이 현실적입니다. 7장 실습의 `&` 두 개와 같은 원리입니다.
+
+</details>
+
+**4.** 13.3절의 `createTestApp` 은 환경변수를 `compile()` 이 끝난 직후 되돌립니다. 만약 `AppConfig` 가 생성자에서 값을 읽지 않고, 필요할 때마다 `ConfigService.get` 을 부르는 방식이었다면
+이 방법에 어떤 문제가 생깁니까?
+
+<details>
+<summary>해답</summary>
+
+앱이 만들어진 뒤 테스트 도중에 값을 읽게 되므로, 되돌린 뒤의 원래 값(`.env` 의 10초, 30일)을 읽게 됩니다. `env` 로 준 테스트용 값이 적용되지 않아 S9·S17 이 실패합니다.
+되돌리지 않으면 이번에는 같은 프로세스에서 나중에 만들어지는 다른 앱이 테스트용 값(예: 세션 상한 2초)을 물려받아 엉뚱한 테스트가 실패합니다.
+설정을 생성 시점에 한 번 읽어 고정하는 3장의 `AppConfig` 설계가 이 격리 방식을 가능하게 합니다. 설정을 바꾸려면 앱을 다시 만들어야 한다는 것은 운영에서도 예측 가능한 동작입니다.
+
+</details>
+
+**5.** S21 을 브라우저에서 확인할 때 두 탭의 `refresh` 가 모두 200 이고 한 탭의 refresh 가 끝난 뒤 다른 탭의 refresh 가 시작되었습니다.
+12장의 탭 간 잠금(`navigator.locks`)을 일부러 빼고 같은 절차를 반복하면 무엇이 보일 것으로 예상합니까? grace 가 있을 때와 `REFRESH_REUSE_GRACE_SEC=0` 일 때로 나눠 답하세요.
+
+<details>
+<summary>해답</summary>
+
+잠금이 없으면 두 탭의 `refresh` 가 같은 옛 쿠키를 들고 겹쳐서 나갈 수 있습니다. 서버에서는 `FOR UPDATE` 때문에 하나가 먼저 회전(200)하고 다른 하나는 기다렸다가 "방금 rotated" 를 봅니다.
+
+- grace 10초일 때: 늦은 쪽은 409 `REFRESH_TOKEN_ROTATED` 를 받습니다. FE 가 409 에 한 번 재시도하고, 그 사이 쿠키 저장소에는 먼저 온 응답의 새 쿠키가 있으므로 재시도는 200 입니다. 두 탭 모두 로그인이 유지되고 `REUSED` 는 없습니다. Network 탭에는 409 가 하나 보입니다.
+- grace 0 일 때: 늦은 쪽의 옛 토큰은 곧바로 재사용으로 판정되어 401 `REFRESH_TOKEN_REUSED` 가 나고 family 전체가 폐기됩니다. 먼저 성공한 탭의 새 토큰도 죽으므로 두 탭 모두 곧 로그인 화면으로 가고, 11장의 "다른 곳에서 이 세션의 토큰이 다시 쓰였습니다" 안내가 뜹니다. 공격이 아닌데 탐지가 터지는 오탐입니다.
+
+탭 간 잠금이 1차 방어, grace 가 안전망이라는 7장의 설명을 브라우저에서 확인하는 실험입니다.
+
+</details>

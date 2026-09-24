@@ -1,0 +1,325 @@
+export const meta = {
+  title: "[로그인인증] 쿠키·헤더 레퍼런스 (A)",
+  summary: "쿠키 속성, SameSite 동작, CORS 헤더, 보안 헤더, JWT 클레임, 이 시리즈의 에러 코드를 한곳에 모은 레퍼런스.",
+  date: "2026-09",
+  status: "마무리",
+  order: 116,
+  tags: ["로그인인증", "cookie", "reference"],
+};
+
+![초록으로 채운 큰 열쇠 하나가 가로로 놓여 있고, 그 뒤에 같은 모양의 열쇠 두 개가 남색 윤곽선만으로 겹쳐 있다. 열쇠들 아래로 가는 선이 하나 지나간다.](/labs/login-auth-key.jpg)
+
+본문을 읽다가 속성 하나, 헤더 하나의 정확한 뜻을 다시 찾을 때 보는 표 모음입니다. 개념 설명은 [1장](/labs/login-auth-01)과 [2장](/labs/login-auth-02)에 있고, 여기서는 규칙과 이 책의 값만 정리합니다. 이 책의 코드와 관련된 값은 모두 [부록 C](/labs/login-auth-c) 기준입니다.
+
+브라우저마다, 버전마다 달라지는 세부는 사실처럼 적지 않고 "문서 확인" 으로 남겼습니다. 표에 그렇게 적힌 칸은 MDN 이나 해당 브라우저·라이브러리의 공식 문서에서 지금 쓰는 버전 기준으로 확인하세요.
+
+---
+
+## A.1 Set-Cookie 문법
+
+```
+Set-Cookie: <이름>=<값>[; <속성>[=<값>]]*
+Cookie: <이름>=<값>[; <이름>=<값>]*
+```
+
+| 규칙 | 내용 |
+|---|---|
+| 헤더 하나에 쿠키 하나 | 쿠키 여러 개는 `Set-Cookie` 를 여러 줄 보낸다. 쉼표로 잇지 않는다 (`Expires` 날짜에 쉼표가 있다) |
+| 요청에는 이름과 값만 | `Cookie` 헤더에는 속성이 오지 않는다. 서버는 받은 쿠키의 `Path`·만료를 알 수 없다 |
+| 쿠키의 정체 | **이름 + `Domain`(또는 호스트 전용 여부) + `Path`**. 셋이 같으면 덮어쓰고, 하나라도 다르면 별개의 쿠키 |
+| 포트 | 보지 않는다. `localhost:4000` 이 심은 쿠키는 `localhost:5173` 요청에도 실릴 수 있다 |
+| 삭제 | 같은 이름·`Domain`·`Path` 로 과거 `Expires` 나 `Max-Age=0` 을 보낸다. `Secure`·`SameSite` 도 설정 때와 똑같이 준다 (예: `SameSite=None` 에 `Secure` 가 빠진 삭제 헤더는 거부된다) |
+| 값에 쓸 수 없는 문자 | 공백, `"`, `,`, `;`, `\` 와 제어 문자. 이 책의 쿠키 값은 모두 base64url 이라 해당 없음 |
+| 크기·개수 한도 | RFC 6265 는 쿠키당 최소 4096바이트, 도메인당 최소 50개를 지원하라고 권한다. 실제 한도는 브라우저 문서 확인 |
+| 요청에 싣는 순서 | 경로가 긴 쿠키 먼저, 같으면 먼저 만든 쿠키 먼저 |
+
+---
+
+## A.2 쿠키 속성 전체
+
+| 속성 | 값 | 생략하면 | 효과 | 이 책 |
+|---|---|---|---|---|
+| `Expires` | HTTP 날짜 (`Wed, 07 Oct 2026 03:00:00 GMT`) | 세션 쿠키 | 그 시각에 만료 | `refresh_token` 이 씀 (토큰 만료 시각) |
+| `Max-Age` | 초 (정수) | 세션 쿠키 | 지금부터 N초 뒤 만료. `Expires` 와 함께 있으면 `Max-Age` 가 이긴다. `0` 이하면 즉시 삭제 | `csrf_token` 7200, `lab_session` 1800 |
+| `Domain` | 도메인 (`example.com`) | **호스트 전용** — 심은 호스트에만 | 그 도메인과 **모든 하위 도메인**에 보낸다. 공개 접미사나 관계없는 도메인이면 쿠키 거부 | 쓰지 않음 (전부 호스트 전용) |
+| `Path` | 경로 (`/auth`) | 요청 경로에서 계산한 기본값 | 그 경로와 하위 경로(`/` 경계)에만 보낸다. 보안 경계는 아님 | `refresh_token` `/auth`, 나머지 `/` |
+| `Secure` | 없음 (플래그) | HTTP 에도 보냄 | HTTPS 요청에만 보낸다. HTTP 페이지는 `Secure` 쿠키를 심거나 덮어쓸 수 없다. `http://localhost` 예외 처리는 브라우저 문서 확인 (Chrome 은 허용) | `COOKIE_SECURE=true` 면 붙음. `lab_session` 은 항상 붙음 |
+| `HttpOnly` | 없음 (플래그) | JS 가 읽음 | `document.cookie` 로 읽거나 쓸 수 없다. 요청에는 실린다 | 세 쿠키 모두 |
+| `SameSite` | `Strict` · `Lax` · `None` | Chrome 은 `Lax` 로 취급. 다른 브라우저는 문서 확인 | 다른 사이트에서 시작된 요청에 실을지 정한다 (A.5) | `refresh_token`·`csrf_token` `Strict`, `lab_session` 은 `LAB_COOKIE_SAMESITE` |
+| `Partitioned` | 없음 (플래그) | 파티션 없음 | 서드파티 문맥의 쿠키를 최상위 사이트별로 나눠 저장한다(CHIPS). `Secure` 필요. 지원 범위는 브라우저 문서 확인 | 쓰지 않음 |
+| `Priority` | `Low` · `Medium` · `High` | `Medium` | 쿠키 개수 한도로 지울 때의 우선순위. 표준이 아닌 Chrome 확장 | 쓰지 않음 |
+
+### 이 책의 쿠키
+
+부록 C 의 `api/src/auth/cookies.ts` 와 `api/src/lab/lab.controller.ts` 가 만드는 쿠키입니다. 아래 `Set-Cookie` 는 예시 출력이며, 속성의 순서는 Express 가 쓰는 `cookie` 라이브러리 버전에 따라 다를 수 있습니다. 순서는 의미에 영향을 주지 않습니다.
+
+| 이름 | 만드는 곳 | 속성 | 값 | 장 |
+|---|---|---|---|---|
+| `refresh_token` | `setRefreshCookie` (login·refresh 성공) | `HttpOnly; Secure; SameSite=Strict; Path=/auth; Expires=<토큰 만료>` | 32바이트 난수 base64url (43자) | 6장 |
+| `csrf_token` | `setCsrfCookie` (`GET /auth/csrf`) | `HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=7200` | `<nonce>.<HMAC(nonce)>` | 9장 |
+| `lab_session` | `LabController.login` (`POST /lab/login`) | `HttpOnly; Secure; SameSite=<LAB_COOKIE_SAMESITE>; Path=/; Max-Age=1800` | 액세스 토큰과 같은 JWT (`sid` = `lab`) | 8장 |
+
+- `refresh_token` 의 만료는 `Max-Age` 가 아니라 `Expires` 로 나갑니다. 코드가 DB 에 저장한 토큰 만료 시각(`expires_at`)을 그대로 넘기기 때문입니다. 그 값은 `min(발급 + REFRESH_TOKEN_TTL_SEC, session_expires_at)` 이라서 보통 14일 뒤지만 세션 상한 30일에 가까워지면 더 짧아집니다.
+- `Secure` 는 `COOKIE_SECURE` 가 `true` 일 때만 붙습니다(`lab_session` 은 예외로 항상 붙음). `COOKIE_SECURE` 를 끄면 `SameSite=None` 이 필요한 구성에서 쿠키가 거부되니 주의하세요.
+- `refresh_token` 은 401 응답(`REFRESH_TOKEN_INVALID`·`REFRESH_TOKEN_REUSED`)과 로그아웃·전체 로그아웃에서 `clearRefreshCookie` 로 지워집니다. 설정 때와 같은 `refreshOptions` 를 쓰므로 `Path=/auth; HttpOnly; Secure; SameSite=Strict` 가 그대로 붙고, 만료는 과거 시각입니다. `409 REFRESH_TOKEN_ROTATED` 에서는 지우지 않습니다.
+
+```
+Set-Cookie: refresh_token=Q0y1ECht…; Path=/auth; Expires=Wed, 07 Oct 2026 03:00:00 GMT; HttpOnly; Secure; SameSite=Strict
+Set-Cookie: csrf_token=pX3m…Qk.9f2W…aA; Max-Age=7200; Path=/; Expires=Thu, 24 Sep 2026 05:00:00 GMT; HttpOnly; Secure; SameSite=Strict
+Set-Cookie: refresh_token=; Path=/auth; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; Secure; SameSite=Strict
+```
+
+(예시 출력. 세 번째 줄은 삭제)
+
+---
+
+## A.3 `__Host-` · `__Secure-` 접두사
+
+쿠키 **이름**의 접두사로 브라우저에게 추가 조건을 강제하게 하는 장치입니다. 조건을 만족하지 않는 `Set-Cookie` 는 브라우저가 거부합니다. 공격자가 같은 사이트의 다른 서브도메인이나 HTTP 연결에서 같은 이름의 쿠키를 심는 **쿠키 주입**에 대비합니다.
+
+| 접두사 | 브라우저가 강제하는 조건 | 막아 주는 것 |
+|---|---|---|
+| `__Secure-` | `Secure` 속성 필수, 안전한 출처에서만 심을 수 있음 | HTTP 연결이나 공격자가 끼어든 평문 경로에서의 덮어쓰기 |
+| `__Host-` | 위 조건 + **`Domain` 없음**(호스트 전용) + **`Path=/`** | 위 + 다른 서브도메인이 `Domain=example.com` 으로 심는 쿠키, 좁은 `Path` 로 끼워 넣는 같은 이름 쿠키 |
+
+`http://localhost` 에서 접두사 쿠키를 받아들이는지는 브라우저 문서 확인.
+
+**이 책의 선택.** `refresh_token` 은 접두사를 쓰지 않습니다. `__Host-` 는 `Path=/` 를 강제하므로 `Path=/auth` 로 좁힐 수 없고, 이 책은 리프레시 쿠키가 `/auth/*` 밖의 요청에 실리지 않는 쪽을 택했습니다. `csrf_token` 은 이미 `Path=/`·호스트 전용이라 `__Host-csrf_token` 으로 바꿀 수 있는 조건을 갖췄지만, 부록 C 의 코드는 `csrf_token` 이라는 이름을 씁니다. 쿠키 주입은 CSRF 토큰의 HMAC 서명이 막습니다(9장). 운영에서 접두사를 쓸지는 [14장](/labs/login-auth-14)에서 다룹니다.
+
+---
+
+## A.4 사이트 판정 요약
+
+| 개념 | 구성 | 예 |
+|---|---|---|
+| 출처 (origin) | 스킴 + 호스트 + 포트 | `http://localhost:5173` |
+| 사이트 (site) | 스킴 + 등록 가능한 도메인 (eTLD+1) | `https://example.com` (`app.example.com` 과 `api.example.com` 의 사이트) |
+| 등록 가능한 도메인 | 공개 접미사 + 한 칸 | `example.com`, `example.co.kr`, `alice.github.io` |
+| 공개 접미사 | 공개 접미사 목록(PSL, publicsuffix.org)에 있는 이름 | `com`, `co.kr`, `github.io` |
+| `localhost`, IP 주소 | 호스트 이름 전체가 사이트를 정한다 | `localhost` ≠ `127.0.0.1` |
+
+주소 쌍별 판정 표는 1장 1.6절에 있습니다.
+
+---
+
+## A.5 SameSite 동작 매트릭스
+
+"같은 사이트" · "다른 사이트" 는 **요청을 시작한 페이지**와 **요청 대상**의 사이트를 비교한 것입니다. ✅ 는 쿠키가 실림, ❌ 는 실리지 않음입니다. 이 책의 로컬 구성으로 바꿔 읽으면 "같은 사이트" 는 `localhost:5173`·`localhost:5174` → `localhost:4000`, "다른 사이트" 는 `127.0.0.1:5174` → `localhost:4000` 입니다.
+
+| 요청 종류 | 예 | `Strict` | `Lax` | `None` (+`Secure`) |
+|---|---|---|---|---|
+| 같은 사이트의 `fetch`/XHR | `localhost:5173` 에서 `fetch('http://localhost:4000/auth/refresh', { credentials: 'include' })` | ✅ | ✅ | ✅ |
+| 같은 사이트의 폼 `POST` | `localhost:5174` 의 `<form action="http://localhost:4000/…">` | ✅ | ✅ | ✅ |
+| 다른 사이트에서 최상위 `GET` 이동 (링크 클릭) | `127.0.0.1:5174` 의 `<a href="http://localhost:4000/…">` | ❌ | ✅ | ✅ |
+| 다른 사이트에서 최상위 폼 `POST` | `127.0.0.1:5174` 의 `<form method="POST" action="http://localhost:4000/…">` (target 없음) | ❌ | ❌ | ✅ |
+| 다른 사이트 안의 iframe 로드, 또는 iframe 을 target 으로 한 폼 전송 | 8장 공격 페이지의 `target="sink"` | ❌ | ❌ | ✅ ※ |
+| 다른 사이트의 `fetch`/XHR | `127.0.0.1:5174` 에서 `fetch('http://localhost:4000/…', { credentials: 'include' })` | ❌ | ❌ | ✅ ※ |
+| 다른 사이트의 하위 자원 (`<img>`, `<script>`) | `<img src="http://localhost:4000/…">` | ❌ | ❌ | ✅ ※ |
+
+※ 다른 사이트 문맥의 `None` 쿠키, 곧 **서드파티 쿠키**는 브라우저의 차단 정책(시크릿 모드, 사용자 설정, 브라우저별 기본값)에 따라 실리지 않을 수 있습니다. 브라우저와 버전마다 다르므로 해당 브라우저 문서 확인.
+
+보충 규칙:
+
+- **`SameSite` 를 생략한 쿠키**: Chrome 은 `Lax` 로 취급하고, 심긴 지 2분이 안 된 쿠키는 다른 사이트의 최상위 `POST` 에도 예외적으로 싣는다고 알려져 있습니다. 정확한 조건과 다른 브라우저의 동작은 문서 확인. 이 책의 쿠키는 모두 `SameSite` 를 명시합니다.
+- **`Lax` 의 "안전한 메서드"** 는 `GET`·`HEAD` 등 서버 상태를 바꾸지 않는다고 약속된 메서드입니다. 서버가 `GET` 으로 상태를 바꾸면 `Lax` 가 아무것도 막지 못합니다.
+- **`Strict` 와 첫 방문**: 다른 사이트의 링크로 들어온 첫 문서 요청에는 `Strict` 쿠키가 없습니다. 이 책은 리프레시 쿠키를 문서 요청이 아니라 뜬 페이지의 `fetch` 에서만 쓰므로 영향이 없습니다.
+- **iframe 과 리다이렉트**: 요청이 iframe 안에서 시작되었거나 리다이렉트를 거친 경우 "요청을 시작한 사이트" 를 어떻게 계산하는지(상위 프레임까지 보는지, 리다이렉트 경로를 보는지)는 브라우저 문서 확인.
+- **`None` 은 `Secure` 가 필수**입니다. 빠지면 쿠키 자체가 거부됩니다. 부록 C 의 `lab_session` 이 `secure: true` 를 고정한 이유입니다.
+
+---
+
+## A.6 CORS 헤더
+
+### 요청 헤더 (브라우저가 붙임, JS 가 바꿀 수 없음)
+
+| 헤더 | 언제 | 내용 |
+|---|---|---|
+| `Origin` | 다른 출처로 가는 요청, 그리고 `GET`·`HEAD` 가 아닌 같은 출처 요청 등 | 요청을 시작한 페이지의 출처. 샌드박스 iframe 등에서는 `null`. 정확한 전송 조건은 Fetch 표준·브라우저 문서 확인 |
+| `Access-Control-Request-Method` | 사전 요청(`OPTIONS`) | 본 요청의 메서드 |
+| `Access-Control-Request-Headers` | 사전 요청 | 본 요청에 붙일 비안전 헤더 목록 (소문자, 쉼표 구분) |
+
+### 응답 헤더 (서버가 붙임)
+
+| 헤더 | 뜻 | 이 앱의 값 |
+|---|---|---|
+| `Access-Control-Allow-Origin` | 이 출처의 스크립트에게 응답을 보여 줘도 된다 | 요청 `Origin` 이 `WEB_ORIGINS` 에 있으면 그 출처 그대로, 없으면 헤더 없음 |
+| `Access-Control-Allow-Credentials` | 쿠키를 실은 요청의 응답도 보여 줘도 된다 | `true` |
+| `Access-Control-Allow-Methods` | (사전 요청 응답) 허용 메서드 | `GET,POST,PATCH,DELETE` |
+| `Access-Control-Allow-Headers` | (사전 요청 응답) 허용 요청 헤더 | `Content-Type,Authorization,X-CSRF-Token` |
+| `Access-Control-Expose-Headers` | 스크립트가 읽을 수 있게 할 응답 헤더 (기본으로 읽을 수 있는 헤더 외에) | 설정하지 않음 |
+| `Access-Control-Max-Age` | 사전 요청 결과를 캐시할 초 | 설정하지 않음. 브라우저별 상한은 문서 확인 |
+| `Vary: Origin` | 응답이 `Origin` 에 따라 달라진다 — 캐시가 출처별로 따로 저장하게 | CORS 미들웨어가 붙임 |
+
+이 값들은 부록 C `api/src/main.ts` 의 `app.enableCors({ origin: config.webOrigins, credentials: true, methods: [...], allowedHeaders: [...] })` 에서 나옵니다. 허용 목록 밖의 출처가 보낸 사전 요청은 `Access-Control-Allow-Origin` 없이 응답되고, 브라우저가 본 요청을 보내지 않습니다(13장 S18).
+
+```
+$ curl -si -X OPTIONS http://localhost:4000/auth/refresh \
+    -H 'Origin: http://localhost:5173' \
+    -H 'Access-Control-Request-Method: POST' \
+    -H 'Access-Control-Request-Headers: content-type,x-csrf-token'
+HTTP/1.1 204 No Content
+Access-Control-Allow-Origin: http://localhost:5173
+Vary: Origin
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Methods: GET,POST,PATCH,DELETE
+Access-Control-Allow-Headers: Content-Type,Authorization,X-CSRF-Token
+…
+```
+
+(예시 출력. helmet 이 붙이는 헤더는 `…` 로 줄였습니다)
+
+### credentials 를 쓸 때의 제약
+
+| 규칙 | 이유 |
+|---|---|
+| `Access-Control-Allow-Origin: *` 불가. 정확한 출처를 적는다 | 아무 사이트나 사용자의 쿠키로 받은 응답을 읽게 되므로 |
+| `Access-Control-Allow-Credentials: true` 필수 | 없으면 응답이 스크립트에 넘어가지 않는다 |
+| `Allow-Headers`·`Allow-Methods`·`Expose-Headers` 의 `*` 는 와일드카드가 아니라 글자 그대로의 `*` 로 해석된다 | 같은 이유 |
+| `Authorization` 은 `Allow-Headers: *` 로도 허용되지 않는다. 이름을 적는다 | Fetch 표준의 규칙 |
+| 요청 출처를 그대로 반사하는 설정(`origin: true`)을 쓰지 않는다 | 허용 목록이 없는 것과 같다. 부록 C 는 명시적 배열 |
+
+### simple request 조건 — 사전 요청 없이 곧장 가는 요청
+
+아래를 **모두** 만족하면 사전 요청 없이 본 요청이 서버에 도착합니다. 하나라도 어기면 사전 요청이 먼저 갑니다.
+
+| 항목 | 조건 |
+|---|---|
+| 메서드 | `GET`, `HEAD`, `POST` 중 하나 |
+| JS 가 직접 붙인 헤더 | CORS-safelisted 헤더만: `Accept`, `Accept-Language`, `Content-Language`, `Content-Type`(아래 값만), `Range`(단순 범위). 값의 길이 등 세부 제약은 Fetch 표준 확인 |
+| `Content-Type` | `application/x-www-form-urlencoded`, `multipart/form-data`, `text/plain` 중 하나 |
+| 본문 | `ReadableStream` 이 아님 |
+| XHR | 업로드 이벤트 리스너를 등록하지 않음 |
+
+이 책의 요청을 대입하면:
+
+| 요청 | 사전 요청 | 이유 |
+|---|---|---|
+| FE 의 `POST /auth/login` (JSON + `X-CSRF-Token`) | 있음 | `Content-Type: application/json`, 커스텀 헤더 |
+| FE 의 `GET /users/me` (`Authorization`) | 있음 | `Authorization` 헤더 |
+| FE 의 `GET /auth/csrf` | 없음 | 헤더를 붙이지 않은 `GET` |
+| 8장 공격 페이지의 폼 `POST /lab/nickname` | **없음** | `application/x-www-form-urlencoded` 폼. 서버에 도착해 처리된다 — CSRF 의 통로 |
+
+### 참고: 브라우저가 붙이는 그 밖의 요청 헤더
+
+| 헤더 | 내용 | 이 책 |
+|---|---|---|
+| `Referer` | 요청을 일으킨 페이지의 URL (정책에 따라 출처만 또는 생략) | `Origin` 이 없을 때 CSRF Origin 검사의 대체값 (`CsrfService.isAllowedOrigin`) |
+| `Sec-Fetch-Site` 등 Fetch Metadata | `same-origin`·`same-site`·`cross-site`·`none` 등 요청 맥락 | 쓰지 않음. 지원 범위는 브라우저 문서 확인 |
+
+---
+
+## A.7 이 앱의 보안 헤더 (helmet)
+
+부록 C 의 `main.ts` 는 `app.use(helmet())` 으로 helmet 의 기본 설정을 켭니다. helmet 8 이 기본으로 붙이거나 지우는 주요 헤더와 그 목적입니다. **정확한 기본값은 버전마다 바뀔 수 있으므로 값 열은 helmet 문서로 확인하세요.** 여기 적은 값은 이해를 돕기 위한 대표값입니다.
+
+| 헤더 | 목적 | 대표값 |
+|---|---|---|
+| `Content-Security-Policy` | 스크립트·스타일 등을 어디서 불러올 수 있는지 제한. XSS 의 피해를 줄인다 | 여러 지시어의 기본 묶음 — helmet 문서 확인 |
+| `Strict-Transport-Security` | 이후 이 호스트는 HTTPS 로만 접속하게 한다 (HSTS). HTTP 응답에서는 브라우저가 무시 | `max-age=…; includeSubDomains` — 기간은 helmet 문서 확인 |
+| `X-Content-Type-Options` | `Content-Type` 을 무시하고 내용을 추측하는 것(MIME 스니핑) 금지 | `nosniff` |
+| `X-Frame-Options` | 다른 사이트가 이 응답을 iframe 에 넣는 것(클릭재킹) 제한 | `SAMEORIGIN` |
+| `Referrer-Policy` | 이 응답이 만든 문서에서 나가는 요청의 `Referer` 를 제한 | `no-referrer` |
+| `Cross-Origin-Opener-Policy` | 다른 출처 창과 `window.opener` 로 연결되지 않게 격리 | `same-origin` — helmet 문서 확인 |
+| `Cross-Origin-Resource-Policy` | 다른 출처가 이 자원을 `no-cors` 방식(`<img>` 등)으로 가져가는 것 제한. CORS 모드 `fetch` 에는 CORS 규칙이 적용된다 | `same-origin` — helmet 문서 확인 |
+| `Origin-Agent-Cluster` | 출처 단위로 프로세스 격리를 요청 | `?1` |
+| `X-DNS-Prefetch-Control` | DNS 미리 조회 끄기 | `off` |
+| `X-Download-Options` | 옛 IE 의 다운로드 실행 방지 | `noopen` |
+| `X-Permitted-Cross-Domain-Policies` | 옛 Flash·PDF 의 교차 도메인 정책 파일 금지 | `none` |
+| `X-XSS-Protection` | 옛 브라우저의 XSS 필터 **끄기** (그 필터 자체가 취약점이 되어서) | `0` |
+| `X-Powered-By` | **제거**. 서버 기술(Express)을 광고하지 않는다 | (헤더 없음) |
+
+helmet 이 붙이지 않고 **앱이 직접 붙이는** 헤더도 하나 있습니다.
+
+| 헤더 | 붙이는 곳 | 이유 |
+|---|---|---|
+| `Cache-Control: no-store` | `GET /auth/csrf`, `POST /auth/login`, `POST /auth/refresh` | 토큰이 담긴 응답이 브라우저나 중간 캐시에 저장되지 않게 |
+
+⚠️ helmet 의 기본 CSP 는 API 가 직접 내려주는 HTML(Swagger UI `/docs`)에도 적용됩니다. Swagger UI 가 CSP 때문에 제대로 뜨지 않는다면 helmet 과 `@nestjs/swagger` 문서에서 두 설정의 조합을 확인하세요.
+
+---
+
+## A.8 JWT 레퍼런스
+
+### header
+
+| 필드 | 뜻 | 이 책 |
+|---|---|---|
+| `alg` | 서명 알고리즘 | `HS256`. 검증 측은 이 값을 믿지 않고 `algorithms: ['HS256']` 으로 고정한다 |
+| `typ` | 토큰 형식 | `JWT` |
+| `kid` | 서명 키 id. 여러 키를 돌려 쓸 때 어느 키인지 알린다 | 쓰지 않음. 키 교체 시 도입 (14장) |
+
+### 등록 클레임 (RFC 7519) 과 이 책의 클레임
+
+| 클레임 | 이름 | 형식 | 뜻 | 이 책의 값 | 만드는 옵션 (`signAccessToken`) |
+|---|---|---|---|---|---|
+| `iss` | issuer | 문자열 | 발급자 | `JWT_ISSUER` (`auth-lab-api`) | `issuer` |
+| `sub` | subject | 문자열 | 토큰의 주체 | 사용자 id (UUID) | `subject` |
+| `aud` | audience | 문자열 또는 배열 | 대상 | `JWT_AUDIENCE` (`auth-lab-web`) | `audience` |
+| `exp` | expiration time | NumericDate (초) | 이 시각 이후 무효 | 발급 + `ACCESS_TOKEN_TTL_SEC` (600) | `expiresIn` |
+| `nbf` | not before | NumericDate (초) | 이 시각 이전 무효 | 쓰지 않음 | — |
+| `iat` | issued at | NumericDate (초) | 발급 시각 | 발급 시각 | 라이브러리가 자동으로 |
+| `jti` | JWT ID | 문자열 | 토큰 고유 id | `randomUUID()` | `jwtid` |
+| `sid` | (이 책의 비공개 클레임) | 문자열 | 세션 id = 리프레시 family id | `refresh_tokens.family_id`. 실습 쿠키는 `lab` | payload `{ sid }` |
+
+검증 측(`verifyAccessToken`)이 확인하는 것: 서명(`secret`), 알고리즘(`algorithms: ['HS256']`), `exp`, `iss`(`issuer`), `aud`(`audience`). 하나라도 실패하면 `JwtAuthGuard` 가 `401 ACCESS_TOKEN_INVALID` 로 바꿉니다.
+
+---
+
+## A.9 HTTP 상태 코드와 에러 코드
+
+에러 응답은 `{ statusCode, code, message }` 모양입니다(`ErrorResponseDto`). **FE 는 `message` 가 아니라 `code` 로 분기합니다.** 코드 목록은 부록 C 의 `api/src/common/errors.ts` 의 `ErrorCode` 가 기준입니다.
+
+### 성공 응답
+
+| 상태 | 엔드포인트 |
+|---|---|
+| `200` | `GET /auth/csrf`, `POST /auth/login`, `POST /auth/refresh`, `GET /auth/sessions`, `GET /users/me`, `PATCH /users/me`, `GET /lab/settings`, `GET /lab/me`, `POST /lab/nickname` |
+| `201` | `POST /auth/signup` |
+| `204` | `POST /auth/logout` (쿠키가 없거나 이미 폐기돼도 `204`), `POST /auth/logout-all`, `DELETE /auth/sessions/:sessionId`, `POST /lab/login` |
+
+### 에러 코드
+
+| 상태 | `code` | 언제 | 나오는 곳 | FE 동작 |
+|---|---|---|---|---|
+| `400` | `VALIDATION_FAILED` | DTO 검증 실패 | 본문이 있는 모든 요청 (`signup`, `login`, `PATCH /users/me`, `/lab/login`, `/lab/nickname`) | 폼 오류 표시 |
+| `401` | `INVALID_CREDENTIALS` | 이메일 없음·비밀번호 틀림 (둘을 구분하지 않는다) | `POST /auth/login`, `POST /lab/login` | 폼 오류 |
+| `401` | `ACCESS_TOKEN_INVALID` | Bearer 없음·서명 불일치·만료·`iss`/`aud`/`alg` 불일치, 토큰의 사용자가 없음. 실습에서는 실습 쿠키 없음·무효 | Bearer 가 필요한 모든 엔드포인트, `GET /lab/me`, `POST /lab/nickname` | refresh 1회 후 원래 요청 재시도 |
+| `401` | `REFRESH_TOKEN_INVALID` | 쿠키 없음·DB 에 없음·만료·(재사용이 아닌 사유로) 폐기됨·사용자가 없음 | `POST /auth/refresh` | 로그아웃 상태로 전환. 쿠키 삭제 헤더가 함께 온다 |
+| `401` | `REFRESH_TOKEN_REUSED` | 재사용 탐지로 family 전체 폐기 | `POST /auth/refresh` | 로그아웃 + "다른 곳에서 세션이 사용됐다" 안내. 쿠키 삭제 헤더가 함께 온다 |
+| `403` | `CSRF_ORIGIN_REJECTED` | `Origin`(없으면 `Referer` 의 출처)이 허용 목록 밖이거나 둘 다 없음 | `login`, `refresh`, `logout`. 실습에서 `LAB_CHECK_ORIGIN=true` 일 때 `/lab/nickname` | 버그 — 설정 확인 |
+| `403` | `CSRF_TOKEN_INVALID` | `X-CSRF-Token` 헤더·`csrf_token` 쿠키 없음, 둘이 다름, 서명 불일치 | `login`, `refresh`, `logout`. 실습에서 `LAB_CHECK_TOKEN=true` 일 때 `/lab/nickname` | `GET /auth/csrf` 후 1회 재시도 |
+| `404` | `SESSION_NOT_FOUND` | 없는 세션, 남의 세션 (둘을 구분하지 않는다), UUID 가 아닌 경로 값 | `DELETE /auth/sessions/:sessionId` | 목록 새로고침 |
+| `404` | `LAB_DISABLED` | `LAB_MODE` 가 `true` 가 아님 | `/lab/*` 전부 | 실습 페이지에서만 표시. 운영에서는 정상 |
+| `409` | `EMAIL_TAKEN` | 가입 중복 (이메일은 소문자로 정규화해 비교) | `POST /auth/signup` | 폼 오류 |
+| `409` | `REFRESH_TOKEN_ROTATED` | grace(`REFRESH_REUSE_GRACE_SEC`, 10초) 안의 동시 refresh | `POST /auth/refresh` | refresh 1회 재시도. 쿠키는 건드리지 않는다 |
+| `429` | `TOO_MANY_REQUESTS` | 로그인 시도 제한 (1분에 5회) | `POST /auth/login` | 대기 안내 |
+
+### 검사 순서
+
+한 요청이 여러 조건에 동시에 걸리면 먼저 검사한 쪽의 에러가 나갑니다. NestJS 는 가드를 파이프(DTO 검증)보다 먼저 실행하고, 가드는 `@UseGuards` 에 적은 순서대로 실행합니다.
+
+| 엔드포인트 | 순서 |
+|---|---|
+| `POST /auth/login` | `LoginThrottlerGuard`(429) → `CsrfGuard`: Origin(403) → 토큰(403) → DTO 검증(400) → 자격 증명(401) |
+| `POST /auth/refresh`, `POST /auth/logout` | `CsrfGuard`: Origin(403) → 토큰(403) → 리프레시 쿠키 판정(401·409) |
+| Bearer 엔드포인트 | `JwtAuthGuard`(401) → DTO·경로 값 검증(400·404) → 처리 |
+| `/lab/*` | `LabEnabledGuard`(404 `LAB_DISABLED`) → DTO 검증(400) → 실습 쿠키(401) → 설정에 따라 Origin(403) → 토큰(403) |
+
+💡 `AppError` 로 던지지 않은 에러, 예를 들어 없는 경로(`404`)나 JSON 문법이 깨진 본문(`400`), 예상하지 못한 서버 오류(`500`)는 NestJS 기본 모양으로 나가며 `code` 필드가 없습니다. FE 는 `code` 가 없는 에러도 처리할 수 있어야 합니다.
+
+---
+
+## A.10 이 책의 API 가 쓰는 헤더 한눈에
+
+| 헤더 | 방향 | 누가 붙이나 | 용도 |
+|---|---|---|---|
+| `Authorization: Bearer <jwt>` | 요청 | FE (`authFetch` 의 `withAuth`) | 액세스 토큰 |
+| `X-CSRF-Token: <token>` | 요청 | FE (`ensureCsrf` 로 받은 값) | double-submit 의 짝 |
+| `Cookie` | 요청 | 브라우저 (`credentials: 'include'` 일 때) | `refresh_token`, `csrf_token` |
+| `Origin` | 요청 | 브라우저 | CSRF Origin 검사, CORS |
+| `Referer` | 요청 | 브라우저 | `Origin` 이 없을 때 Origin 검사 대체 |
+| `Content-Type: application/json` | 요청 | FE | 본문 형식 |
+| `Set-Cookie` | 응답 | API | `refresh_token`·`csrf_token` 설정·삭제 |
+| `Cache-Control: no-store` | 응답 | API | 토큰이 담긴 응답을 저장하지 않게 |
+| `Access-Control-*`, `Vary` | 응답 | API (CORS 미들웨어) | A.6 |
+| 보안 헤더 | 응답 | API (helmet) | A.7 |

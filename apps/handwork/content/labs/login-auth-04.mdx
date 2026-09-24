@@ -1,0 +1,887 @@
+export const meta = {
+  title: "[로그인인증] 가입 — 비밀번호를 저장하는 법 (04)",
+  summary: "argon2id 로 비밀번호를 해싱하고, 에러 응답 형식과 Swagger 문서화 규칙을 정한다.",
+  date: "2026-09",
+  status: "마무리",
+  order: 105,
+  tags: ["로그인인증", "argon2", "nestjs"],
+};
+
+![초록으로 채운 큰 열쇠 하나가 가로로 놓여 있고, 그 뒤에 같은 모양의 열쇠 두 개가 남색 윤곽선만으로 겹쳐 있다. 열쇠들 아래로 가는 선이 하나 지나간다.](/labs/login-auth-key.jpg)
+
+> **이 장을 마치면**
+>
+> - 비밀번호를 왜 "느린" 해시로 저장해야 하는지, bcrypt·scrypt·PBKDF2·argon2id 가 어떻게 다른지 설명할 수 있다.
+> - argon2id 를 OWASP 권장 파라미터로 설정하고, DB 에 저장된 해시 문자열의 각 부분을 읽을 수 있다.
+> - 모든 에러를 `{ statusCode, code, message }` 한 모양으로 내려보내는 에러 체계를 만들 수 있다.
+> - `ON CONFLICT DO NOTHING` 으로 경합 없이 중복 가입을 판정하고, 가입 API 가 드러내는 정보(사용자 열거)를 따져 볼 수 있다.
+> - DTO 의 모든 필드와 모든 에러 응답을 Swagger 에 문서화하는 규칙을 적용할 수 있다.
+
+## 들어가며
+
+3장에서 세운 서버에는 아직 엔드포인트가 하나도 없습니다. 이 장에서 첫 엔드포인트인 `POST /auth/signup` 을 만듭니다.
+
+가입은 인증 기능 가운데 가장 단순해 보입니다. 이메일과 비밀번호를 받아 DB 에 넣으면 끝나는 것 같습니다. 하지만 이 한 번의 INSERT 안에 인증 시스템의 가장 오래된 질문이 들어 있습니다. **비밀번호를 어떤 모양으로 저장할 것인가.** DB 는 언젠가 샌다고 가정해야 합니다. 백업 파일이 잘못된 곳에 올라가거나, SQL 삽입 취약점이 하나 생기거나, 퇴사자의 노트북에 덤프가 남아 있을 수 있습니다. 그날 공격자가 손에 넣는 것이 비밀번호 원문이 아니라, 원문을 알아내는 데 수백 년이 걸리는 무언가여야 합니다. 이 장의 절반은 그 "무언가" 를 고르는 이야기입니다.
+
+나머지 절반은 이 책 전체에 걸쳐 쓸 규칙을 정하는 일입니다. 에러 응답은 어떤 모양으로 내려보낼지, 프론트엔드는 에러를 무엇으로 구분할지, Swagger 문서에는 무엇을 반드시 적을지를 여기서 정합니다. 가입은 엔드포인트가 하나뿐이라 규칙을 세우기에 가장 좋은 자리입니다. 5장부터는 이 규칙을 그대로 따르기만 하면 됩니다.
+
+이 장에서 만들거나 고치는 파일은 다음과 같습니다.
+
+```
+api/src/
+├── main.ts                     ← exceptionFactory 추가
+├── app.module.ts               ← UsersModule, AuthModule 추가
+├── common/
+│   ├── errors.ts
+│   ├── error-response.dto.ts
+│   └── validation.ts
+├── users/
+│   ├── dto.ts
+│   ├── users.repository.ts
+│   └── users.module.ts
+└── auth/
+    ├── password.service.ts
+    ├── dto.ts                  ← SignupDto
+    ├── auth.service.ts         ← signup
+    ├── auth.controller.ts      ← signup
+    └── auth.module.ts
+```
+
+## 4.1 비밀번호를 어떻게 저장할 것인가
+
+코드를 쓰기 전에 원리부터 짚습니다. 여기서 고르는 알고리즘은 한 번 정하면 바꾸기 어렵습니다. 이미 저장된 해시를 다른 알고리즘으로 옮기려면 사용자가 다음에 로그인할 때 원문을 받아 다시 해싱하는 수밖에 없기 때문입니다.
+
+### 원문 저장, 그리고 암호화
+
+가장 나쁜 방법은 원문을 그대로 저장하는 것입니다. DB 가 새는 순간 모든 사용자의 비밀번호가 공개됩니다. 사람들은 여러 서비스에 같은 비밀번호를 쓰므로 피해는 우리 서비스에서 끝나지 않습니다.
+
+암호화(예: AES)해서 저장하는 것도 답이 아닙니다. 암호화는 **되돌릴 수 있게** 설계된 변환입니다. 복호화 키가 서버 어딘가에 있어야 하고, DB 를 가져간 공격자는 그 키도 함께 가져갈 가능성이 큽니다. 게다가 서버는 비밀번호 원문을 알 필요가 없습니다. 로그인할 때 "입력한 값이 가입할 때의 값과 같은가" 만 확인하면 됩니다. 그래서 되돌릴 수 없는 **해시**를 씁니다.
+
+### 빠른 해시가 위험한 이유
+
+해시라면 SHA-256 은 어떨까요? 입력이 1비트만 달라도 결과가 완전히 달라지고, 결과에서 입력을 되돌릴 방법도 알려져 있지 않습니다. 문제는 **너무 빠르다**는 것입니다.
+
+공격자는 해시를 되돌리지 않습니다. 후보 비밀번호를 하나씩 해싱해서 결과가 같은지 비교합니다. 사람들이 실제로 쓰는 비밀번호는 생각보다 좁은 범위에 몰려 있어서, 유출된 비밀번호 목록과 흔한 변형 규칙만으로도 상당수가 맞춰집니다. 이때 걸리는 시간은 오로지 "후보 하나를 해싱하는 데 드는 시간" 에 달려 있습니다. SHA-256 은 파일 무결성 검사처럼 큰 데이터를 빨리 처리하려고 만든 함수라, GPU 한 장으로 초당 수십억 번을 계산할 수 있습니다. 8자 소문자·숫자 조합 정도는 금방 전부 시도해 볼 수 있는 속도입니다.
+
+### 솔트 — 같은 비밀번호, 다른 해시
+
+빠르기와 별개로 또 하나의 문제가 있습니다. 두 사용자가 같은 비밀번호를 쓰면 해시도 같아집니다. 공격자는 DB 에서 같은 해시를 가진 사람들을 묶어 한 번에 공격할 수 있고, 흔한 비밀번호의 해시를 미리 계산해 둔 표(레인보우 테이블)로 즉시 찾아낼 수도 있습니다.
+
+**솔트(salt)** 는 사용자마다 다른 무작위 값을 비밀번호에 섞어 해싱하는 것입니다. 솔트가 다르면 같은 비밀번호라도 해시가 완전히 달라집니다. 미리 계산한 표는 쓸모가 없어지고, 공격자는 사용자 한 명 한 명을 따로 공격해야 합니다. 솔트는 비밀이 아닙니다. 해시 옆에 그대로 저장해 둡니다. 검증할 때 같은 솔트를 다시 섞어야 하기 때문입니다.
+
+### 느린 해시 — 키 유도 함수
+
+해결책은 **일부러 느리게 만든 해시**입니다. 정확히는 비밀번호 해싱용 키 유도 함수(KDF)라고 부릅니다. 로그인 한 번에 수십 밀리초가 걸려도 사용자는 알아채지 못합니다. 하지만 공격자에게는 후보 하나당 수십 밀리초가 걸린다는 뜻이고, 초당 수십억 번이던 시도가 초당 수십 번 수준으로 떨어집니다. 이 차이가 "유출돼도 대부분 안전하다" 와 "유출되면 대부분 뚫린다" 를 가릅니다.
+
+대표적인 네 가지를 비교해 보겠습니다.
+
+| 알고리즘 | 나온 해 | 느리게 만드는 방법 | 특징 |
+|---|---|---|---|
+| PBKDF2 | 2000 | 해시(HMAC-SHA256 등)를 수십만 번 반복 | 표준화가 잘 되어 있어 규제 환경(FIPS)에서 쓰기 쉽다. 메모리를 거의 쓰지 않아 GPU 로 병렬 공격하기 좋다 |
+| bcrypt | 1999 | Blowfish 암호의 키 설정을 반복 | 오래 검증됐다. 약 4KB 의 작은 메모리만 쓴다. 입력이 72바이트를 넘으면 뒷부분을 무시한다 |
+| scrypt | 2009 | 큰 메모리 영역을 채우고 무작위 순서로 다시 읽음 | 처음으로 **메모리 하드**를 내세운 함수. 파라미터 세 개가 서로 얽혀 있어 조정이 까다롭다 |
+| argon2id | 2015 | 메모리 크기·반복 횟수·병렬도를 따로 조정 | 2015년 비밀번호 해싱 대회(PHC) 우승작. RFC 9106 으로 표준화됐다 |
+
+### 메모리 하드가 왜 중요한가
+
+PBKDF2 와 bcrypt 는 **시간**으로 공격자를 늦춥니다. 반복 횟수를 늘리면 한 번의 계산이 오래 걸립니다. 그런데 공격자는 한 번을 빨리 할 필요가 없습니다. 동시에 많이 하면 됩니다. GPU 에는 작은 계산 코어가 수천 개 있고, 각 코어가 서로 다른 후보를 동시에 해싱합니다. 계산에 메모리가 거의 필요 없으면 코어 수만큼 병렬로 돌릴 수 있습니다. 전용 하드웨어(ASIC)를 만들면 더 쌉니다.
+
+**메모리 하드(memory-hard)** 함수는 계산 한 번에 큰 메모리를 요구합니다. argon2id 를 19 MiB 로 설정하면 후보 하나를 계산하는 동안 19 MiB 를 붙들고 있어야 합니다. GPU 코어가 수천 개여도 GPU 메모리가 한정되어 있으니 동시에 돌릴 수 있는 계산 수가 메모리에 묶입니다. 메모리는 계산 코어보다 훨씬 비싸서 전용 하드웨어로도 싸게 만들기 어렵습니다. 방어하는 서버 입장에서는 요청 하나당 19 MiB 를 잠깐 쓰는 것이 큰 부담이 아니지만, 수십억 번을 시도해야 하는 공격자에게는 결정적인 부담이 됩니다.
+
+### argon2id 를 고른 이유
+
+argon2 에는 세 변종이 있습니다. argon2d 는 데이터에 따라 메모리를 읽는 순서가 달라져 GPU 공격에 강하지만, 그 접근 패턴이 부채널(캐시 타이밍 등)로 샐 수 있습니다. argon2i 는 접근 순서가 데이터와 무관해 부채널에 강하지만 일부 시간·메모리 절충 공격에 상대적으로 약합니다. **argon2id** 는 앞부분을 argon2i 방식으로, 나머지를 argon2d 방식으로 돌려 둘의 장점을 섞은 것이고, RFC 9106 과 OWASP 모두 비밀번호 저장에 이것을 첫 번째로 권합니다.
+
+정리하면, 이 책은 다음 이유로 argon2id 를 씁니다.
+
+- 메모리 하드라서 GPU·ASIC 공격 비용이 가장 높습니다.
+- 메모리·시간·병렬도를 각각 조정할 수 있어, 서버 사양에 맞춰 튜닝하기 쉽습니다.
+- 표준(RFC 9106)이 있고, Node.js 에서 `argon2` 패키지로 바로 쓸 수 있습니다.
+- bcrypt 의 72바이트 제한 같은 함정이 없습니다.
+
+PBKDF2 를 써야 하는 경우도 있습니다. FIPS 인증이 요구되는 환경이라면 argon2 가 인증 목록에 없을 수 있습니다. 그때는 OWASP 가 권하는 반복 횟수(작성 시점 기준 HMAC-SHA256 으로 60만 회)를 따릅니다. bcrypt 를 이미 쓰고 있는 서비스라면 급히 바꿀 필요는 없습니다. 비용 인자를 충분히(OWASP 기준 10 이상) 두고, 72바이트 제한을 알고 쓰면 됩니다.
+
+### OWASP 권장 파라미터
+
+OWASP Password Storage Cheat Sheet 는 argon2id 의 **최소** 설정으로 다음을 권합니다(작성 시점 기준).
+
+| 파라미터 | 값 | 뜻 |
+|---|---|---|
+| `m` (memoryCost) | 19456 KiB (19 MiB) | 계산 한 번에 쓰는 메모리 |
+| `t` (timeCost) | 2 | 메모리 전체를 몇 번 훑는가 |
+| `p` (parallelism) | 1 | 병렬 레인 수 |
+
+같은 문서는 메모리를 늘리고 반복을 줄인 조합(예: 46 MiB, 1회)도 같은 수준으로 제시합니다. 메모리와 시간을 맞바꿀 수 있다는 뜻입니다. 이 책은 가장 많이 인용되는 19 MiB·2회·1레인을 씁니다. 권장값은 하드웨어 발전에 따라 올라가므로, 실제 서비스에 적용할 때는 최신 문서를 확인하세요.
+
+이 값을 서버 사양에 맞춰 올리는 기준은 **로그인 한 번에 허용할 수 있는 시간**입니다. 흔히 수십 밀리초에서 수백 밀리초 사이를 목표로 잡습니다. 너무 올리면 로그인 요청 몇 개로 서버 CPU 와 메모리가 바닥나는 서비스 거부 공격의 표적이 됩니다. 5장에서 로그인 시도 횟수를 제한하는 것도 이 때문입니다.
+
+## 4.2 에러 응답의 모양을 정한다
+
+가입 코드보다 먼저 에러 체계를 만듭니다. 가입 API 는 "이미 가입된 이메일" 이라는 에러를 내야 하고, 그 에러를 어떤 모양으로 내려보낼지 정해야 하기 때문입니다.
+
+NestJS 는 예외가 나면 기본적으로 이런 본문을 내려보냅니다.
+
+```json
+{ "statusCode": 409, "message": "Conflict" }
+```
+
+검증 실패일 때는 모양이 또 다릅니다.
+
+```json
+{ "message": ["email must be an email"], "error": "Bad Request", "statusCode": 400 }
+```
+
+`message` 가 어떤 때는 문자열이고 어떤 때는 배열입니다. 더 큰 문제는 프론트엔드가 **무엇으로 분기해야 하는지** 알 수 없다는 점입니다. 401 이 왔을 때 "비밀번호가 틀렸다" 인지 "액세스 토큰이 만료됐다" 인지 "리프레시 토큰이 재사용됐다" 인지 구분해야 합니다. 상태 코드만으로는 부족하고, `message` 는 사람이 읽으라고 쓴 문장이라 언제든 바뀔 수 있습니다. 문장을 고쳤더니 프론트엔드의 분기가 조용히 깨지는 일은 흔합니다.
+
+그래서 이 책은 모든 에러를 다음 한 모양으로 통일합니다.
+
+```json
+{ "statusCode": 401, "code": "ACCESS_TOKEN_INVALID", "message": "액세스 토큰이 유효하지 않다" }
+```
+
+`code` 는 기계가 읽는 값이고 바뀌지 않습니다. `message` 는 사람이 읽는 값이고 바뀌어도 됩니다. **프론트엔드는 `code` 로만 분기합니다.**
+
+### `errors.ts`
+
+```ts
+// api/src/common/errors.ts
+import { HttpException, HttpStatus } from '@nestjs/common';
+
+export const ErrorCode = {
+  VALIDATION_FAILED: 'VALIDATION_FAILED',
+  INVALID_CREDENTIALS: 'INVALID_CREDENTIALS',
+  ACCESS_TOKEN_INVALID: 'ACCESS_TOKEN_INVALID',
+  REFRESH_TOKEN_INVALID: 'REFRESH_TOKEN_INVALID',
+  REFRESH_TOKEN_REUSED: 'REFRESH_TOKEN_REUSED',
+  REFRESH_TOKEN_ROTATED: 'REFRESH_TOKEN_ROTATED',
+  CSRF_ORIGIN_REJECTED: 'CSRF_ORIGIN_REJECTED',
+  CSRF_TOKEN_INVALID: 'CSRF_TOKEN_INVALID',
+  EMAIL_TAKEN: 'EMAIL_TAKEN',
+  SESSION_NOT_FOUND: 'SESSION_NOT_FOUND',
+  TOO_MANY_REQUESTS: 'TOO_MANY_REQUESTS',
+} as const;
+export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
+
+/** 모든 에러 응답을 { statusCode, code, message } 한 모양으로 만든다. */
+export class AppError extends HttpException {
+  constructor(status: HttpStatus, readonly code: ErrorCode, message: string) {
+    super({ statusCode: status, code, message }, status);
+  }
+}
+```
+
+이 장에서 쓰는 코드는 `VALIDATION_FAILED` 와 `EMAIL_TAKEN` 둘뿐입니다. 그런데도 **뒤 장에서 쓰일 코드도 여기서 미리 정의합니다.** 에러 코드는 백엔드와 프론트엔드 사이의 계약이라, 목록 전체를 한눈에 보는 것이 설계에 도움이 되기 때문입니다. 각 코드가 언제 나는지는 다음 표와 같고, 쓰이는 장에서 다시 자세히 다룹니다.
+
+| status | code | 언제 | 처음 쓰는 장 |
+|---|---|---|---|
+| 400 | `VALIDATION_FAILED` | 요청 본문이 DTO 규칙에 맞지 않음 | 4장 |
+| 409 | `EMAIL_TAKEN` | 이미 가입된 이메일 | 4장 |
+| 401 | `INVALID_CREDENTIALS` | 이메일이 없거나 비밀번호가 틀림 (둘을 구분하지 않는다) | 5장 |
+| 401 | `ACCESS_TOKEN_INVALID` | Bearer 토큰이 없음·서명 불일치·만료 | 5장 |
+| 429 | `TOO_MANY_REQUESTS` | 로그인 시도 제한 | 5장 |
+| 401 | `REFRESH_TOKEN_INVALID` | 리프레시 쿠키가 없거나 무효 | 6장 |
+| 401 | `REFRESH_TOKEN_REUSED` | 재사용 탐지로 세션을 끊음 | 7장 |
+| 409 | `REFRESH_TOKEN_ROTATED` | 방금 회전된 토큰으로 동시에 요청함 | 7장 |
+| 404 | `SESSION_NOT_FOUND` | 없거나 남의 세션을 지우려 함 | 7장 |
+| 403 | `CSRF_ORIGIN_REJECTED` | 허용되지 않은 출처의 요청 | 9장 |
+| 403 | `CSRF_TOKEN_INVALID` | CSRF 토큰이 없거나 맞지 않음 | 9장 |
+
+💡 부록 C 의 `ErrorCode` 에는 `LAB_DISABLED` 가 하나 더 있습니다. 8장의 CSRF 실습실 전용 코드라 그 장에서 추가합니다.
+
+코드를 부분별로 봅시다.
+
+**`as const` 객체와 같은 이름의 타입.** TypeScript 에는 `enum` 이 있지만 이 책은 쓰지 않습니다. 대신 `as const` 를 붙인 평범한 객체를 씁니다. `as const` 는 각 값의 타입을 `string` 이 아니라 `'VALIDATION_FAILED'` 같은 문자열 리터럴로 고정합니다. 그 다음 줄의 `(typeof ErrorCode)[keyof typeof ErrorCode]` 는 "이 객체의 모든 값의 타입" 을 뽑아서 `'VALIDATION_FAILED' | 'INVALID_CREDENTIALS' | …` 라는 유니온 타입을 만듭니다. 값과 타입에 같은 이름 `ErrorCode` 를 붙여서, 코드에서는 `ErrorCode.EMAIL_TAKEN` 으로 값을 쓰고 타입 자리에서는 `ErrorCode` 로 유니온을 씁니다. `enum` 과 달리 결과가 평범한 문자열이라 JSON 으로 내보냈을 때 그대로 읽히고, 10장에서 Swagger 문서를 거쳐 프론트엔드 타입으로 옮겨질 때도 문자열 유니온이 됩니다.
+
+**`AppError`.** NestJS 의 `HttpException` 을 상속합니다. `HttpException` 의 첫 인자는 응답 본문, 둘째 인자는 상태 코드입니다. 본문을 `{ statusCode, code, message }` 객체로 넘기면 NestJS 는 그 객체를 그대로 JSON 으로 내려보냅니다. 생성자 매개변수의 `readonly code` 는 TypeScript 의 매개변수 속성 문법으로, `code` 를 인스턴스 속성으로도 저장합니다. 나중에 `error.code` 로 어떤 에러인지 확인할 수 있게 하려는 것입니다.
+
+`code` 의 타입이 `string` 이 아니라 `ErrorCode` 라는 점이 중요합니다. `new AppError(409, 'EMAIL_TAKN', …)` 처럼 오타를 내면 컴파일러가 막습니다. 표에 없는 코드는 만들 수 없습니다.
+
+### `error-response.dto.ts`
+
+에러 응답의 모양을 Swagger 문서에 알려 주는 클래스입니다.
+
+```ts
+// api/src/common/error-response.dto.ts
+import { ApiProperty } from '@nestjs/swagger';
+import { ErrorCode } from './errors';
+
+export class ErrorResponseDto {
+  @ApiProperty({ example: 401 })
+  statusCode!: number;
+
+  @ApiProperty({ enum: ErrorCode, enumName: 'ErrorCode', example: ErrorCode.ACCESS_TOKEN_INVALID })
+  code!: ErrorCode;
+
+  @ApiProperty({ example: '액세스 토큰이 유효하지 않다' })
+  message!: string;
+}
+```
+
+이 클래스는 실행 중에 쓰이지 않습니다. 실제 응답은 `AppError` 가 만듭니다. 이 클래스의 역할은 오로지 **문서**입니다. 컨트롤러에서 `@ApiConflictResponse({ type: ErrorResponseDto })` 처럼 쓰면 Swagger 에 에러 응답의 스키마가 표시됩니다.
+
+`@ApiProperty` 의 `enum: ErrorCode` 는 `code` 필드가 가질 수 있는 값을 문서에 나열합니다. `as const` 객체를 넘겨도 `@nestjs/swagger` 는 그 값들을 열거형으로 읽습니다. `enumName: 'ErrorCode'` 를 주면 이 열거형이 문서의 `components.schemas` 에 `ErrorCode` 라는 이름으로 **한 번만** 정의되고, 쓰는 곳에서는 그것을 참조합니다. 이름을 주지 않으면 쓰는 곳마다 값 목록이 복사됩니다. 10장에서 이 문서로 프론트엔드 타입을 만들 때 `ErrorCode` 라는 이름의 유니온 타입이 생기는 것도 이 옵션 덕분입니다.
+
+필드 이름 뒤의 `!` 는 TypeScript 의 확정 할당 단언입니다. 생성자에서 값을 넣지 않는 필드는 `strictPropertyInitialization` 옵션이 에러를 내는데, DTO 는 값을 직접 넣지 않고 검증 라이브러리나 직렬화가 채우므로 `!` 로 "채워질 것이다" 라고 알려 줍니다. 이 책의 모든 DTO 가 같은 방식입니다.
+
+### `validation.ts` — 검증 실패도 같은 모양으로
+
+`ValidationPipe` 가 DTO 검증에 실패하면 기본적으로 위에서 본 `{ message: [...], error: 'Bad Request' }` 모양의 400 을 냅니다. 이것도 우리 모양으로 바꿉니다.
+
+```ts
+// api/src/common/validation.ts
+import { HttpStatus, ValidationError } from '@nestjs/common';
+import { AppError, ErrorCode } from './errors';
+
+export function validationExceptionFactory(errors: ValidationError[]) {
+  const message = errors.flatMap((e) => Object.values(e.constraints ?? {})).join('; ');
+  return new AppError(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_FAILED, message || '입력값이 올바르지 않다');
+}
+```
+
+`ValidationPipe` 는 검증에 실패하면 실패 목록(`ValidationError[]`)을 이 함수에 넘기고, 이 함수가 돌려준 예외를 던집니다. 각 `ValidationError` 에는 실패한 필드와 `constraints` 라는 객체가 있습니다. `constraints` 는 `{ isEmail: 'email must be an email' }` 처럼 실패한 규칙 이름과 메시지의 쌍입니다. 이 함수는 모든 필드의 메시지를 모아 `; ` 로 이어 하나의 문자열로 만듭니다.
+
+`e.constraints ?? {}` 는 중첩 객체 필드처럼 `constraints` 가 없고 `children` 에만 에러가 있는 경우를 대비한 것입니다. 이 책의 DTO 는 모두 평평해서 그런 경우가 없지만, 없을 때 `Object.values(undefined)` 로 터지지 않게 막아 둡니다. 메시지가 하나도 모이지 않으면 기본 문구를 씁니다.
+
+이 함수를 `main.ts` 의 `ValidationPipe` 에 연결합니다. 3장에서 비워 두었던 자리입니다.
+
+```ts
+// api/src/main.ts
+// …
+import { AppModule } from './app.module';
+import { validationExceptionFactory } from './common/validation';
+import { AppConfig } from './config/app-config';
+// …
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      exceptionFactory: validationExceptionFactory,
+    }),
+  );
+// …
+```
+
+## 4.3 사용자 저장소 — `users/`
+
+이제 사용자 데이터를 다루는 코드를 씁니다. 3장에서 만든 `users` 테이블을 다시 보면 열은 `id`, `email`, `nickname`, `password_hash`, `created_at` 다섯 개입니다.
+
+### `users.repository.ts`
+
+SQL 을 실행하는 클래스입니다. 서비스 코드가 SQL 을 직접 들고 있지 않도록 저장소(repository) 클래스에 모아 둡니다.
+
+```ts
+// api/src/users/users.repository.ts
+import { Inject, Injectable } from '@nestjs/common';
+import type { Pool } from 'pg';
+import { PG_POOL } from '../database/database.module';
+
+export type UserRow = {
+  id: string;
+  email: string;
+  nickname: string;
+  password_hash: string;
+  created_at: Date;
+};
+
+@Injectable()
+export class UsersRepository {
+  constructor(@Inject(PG_POOL) private readonly pool: Pool) {}
+
+  /** 이메일이 이미 있으면 null. UNIQUE 제약으로 판단한다 — 먼저 조회하고 넣으면 그 사이에 경합이 생긴다. */
+  async create(input: { email: string; nickname: string; passwordHash: string }): Promise<UserRow | null> {
+    const { rows } = await this.pool.query<UserRow>(
+      `INSERT INTO users (email, nickname, password_hash) VALUES ($1, $2, $3)
+       ON CONFLICT (email) DO NOTHING
+       RETURNING *`,
+      [input.email, input.nickname, input.passwordHash],
+    );
+    return rows[0] ?? null;
+  }
+
+  async findByEmail(email: string): Promise<UserRow | null> {
+    const { rows } = await this.pool.query<UserRow>('SELECT * FROM users WHERE email = $1', [email]);
+    return rows[0] ?? null;
+  }
+
+  async findById(id: string): Promise<UserRow | null> {
+    const { rows } = await this.pool.query<UserRow>('SELECT * FROM users WHERE id = $1', [id]);
+    return rows[0] ?? null;
+  }
+
+  async updateNickname(id: string, nickname: string): Promise<UserRow | null> {
+    const { rows } = await this.pool.query<UserRow>(
+      'UPDATE users SET nickname = $2 WHERE id = $1 RETURNING *',
+      [id, nickname],
+    );
+    return rows[0] ?? null;
+  }
+}
+```
+
+**`UserRow`.** DB 행의 모양을 그대로 옮긴 타입입니다. 열 이름이 `password_hash`, `created_at` 처럼 스네이크 케이스인 것은 SQL 의 열 이름을 바꾸지 않고 그대로 받기 때문입니다. `created_at` 이 `Date` 인 것은 `pg` 가 `timestamptz` 열을 자바스크립트 `Date` 객체로 바꿔 주기 때문입니다. `pool.query<UserRow>(...)` 의 타입 인자는 `rows` 의 타입을 알려 줄 뿐 실제로 검사하지는 않습니다. SQL 과 이 타입이 어긋나지 않게 하는 것은 우리 몫입니다.
+
+**`import type { Pool }`.** 이 파일은 `Pool` 을 타입으로만 씁니다. 실제 인스턴스는 `PG_POOL` 로 주입받습니다. `import type` 으로 적으면 컴파일 결과에서 이 import 가 사라져, 이 파일이 `pg` 를 불필요하게 불러오지 않습니다.
+
+**매개변수 자리표시자.** 모든 쿼리가 값을 `$1`, `$2` 로 넣고 배열로 따로 넘깁니다. 문자열을 이어 붙여 SQL 을 만들지 않습니다. `pg` 는 SQL 문과 값을 DB 에 따로 보내므로, 값에 따옴표나 세미콜론이 들어 있어도 SQL 로 해석되지 않습니다. SQL 삽입을 막는 가장 확실한 방법입니다.
+
+**`create` 와 `ON CONFLICT DO NOTHING`.** 이 메서드가 이 파일의 핵심입니다. 이메일이 중복인지 판정하는 방법을 두 가지로 비교해 보겠습니다.
+
+흔히 떠올리는 방법은 먼저 조회하고, 없으면 넣는 것입니다.
+
+```ts
+// 이렇게 하지 않는다
+const existing = await this.findByEmail(email);
+if (existing) return null;
+await this.pool.query('INSERT INTO users …');
+```
+
+이 코드는 요청이 하나씩 올 때는 잘 동작합니다. 그런데 같은 이메일로 가입 요청 두 개가 **거의 동시에** 오면 어떻게 될까요. 두 요청이 모두 조회 단계에서 "없다" 는 답을 받고, 둘 다 INSERT 로 넘어갑니다. 먼저 도착한 쪽은 성공하고, 나중 쪽은 `UNIQUE` 제약 위반 에러로 터집니다. 이 에러를 잡지 않았다면 사용자는 409 대신 500 을 받습니다. 조회와 삽입 사이의 틈에서 벌어지는 이런 문제를 **경합 조건(race condition)** 이라고 부릅니다. 사용자가 가입 버튼을 두 번 누르는 것만으로 쉽게 재현됩니다.
+
+`ON CONFLICT (email) DO NOTHING` 은 판정을 DB 에 맡깁니다. INSERT 를 시도하되, `email` 의 `UNIQUE` 제약에 걸리면 에러를 내지 않고 **아무것도 하지 않습니다.** 그러면 `RETURNING *` 이 돌려줄 행도 없으므로 `rows` 가 빈 배열이 됩니다. 반대로 새로 들어갔으면 방금 넣은 행이 돌아옵니다. `rows[0] ?? null` 로 "새로 만들었으면 행, 이미 있었으면 null" 을 얻습니다. 판정과 삽입이 한 문장 안에서, DB 의 제약을 기준으로 원자적으로 일어나므로 틈이 없습니다.
+
+제약 위반 에러를 잡아서 처리하는 방법(`try … catch` 에서 PostgreSQL 에러 코드 `23505` 확인)도 있습니다. 동작은 하지만 두 가지 단점이 있습니다. 어떤 제약에 걸렸는지 확인하는 코드를 따로 써야 하고, 트랜잭션 안에서라면 에러가 난 순간 트랜잭션 전체가 중단됩니다. `ON CONFLICT (email)` 은 `email` 제약만 콕 집어 다루고 다른 에러는 그대로 던지므로 의도가 더 분명합니다.
+
+**나머지 메서드.** `findByEmail` 은 5장의 로그인에서, `findById` 는 5장의 `/users/me` 와 7장의 리프레시에서, `updateNickname` 은 5장의 닉네임 변경과 8장의 CSRF 공격 실습에서 씁니다. 모두 행이 없으면 `null` 을 돌려주는 같은 규칙을 따릅니다. `updateNickname` 도 `RETURNING *` 으로 바뀐 행을 곧바로 받아, 다시 조회하는 쿼리를 줄입니다.
+
+### `users/dto.ts` — 밖으로 나가는 사용자 모양
+
+DB 행을 그대로 응답으로 내보내면 `password_hash` 까지 나갑니다. 응답용 모양을 따로 정합니다.
+
+```ts
+// api/src/users/dto.ts
+import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { IsString, Length } from 'class-validator';
+import type { UserRow } from './users.repository';
+
+export const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
+
+export class UserDto {
+  @ApiProperty({ format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({ example: 'kim@example.com' })
+  email!: string;
+
+  @ApiProperty({ example: '김개발' })
+  nickname!: string;
+
+  @ApiProperty({ format: 'date-time' })
+  createdAt!: string;
+}
+
+export function toUserDto(row: UserRow): UserDto {
+  return { id: row.id, email: row.email, nickname: row.nickname, createdAt: row.created_at.toISOString() };
+}
+
+export class UpdateNicknameDto {
+  @ApiProperty({ example: '김개발', minLength: 2, maxLength: 20 })
+  @Transform(trim)
+  @IsString()
+  @Length(2, 20)
+  nickname!: string;
+}
+```
+
+**`UserDto` 와 `toUserDto`.** `UserDto` 는 네 필드만 가집니다. `toUserDto` 는 DB 행에서 이 네 필드를 **하나씩 골라** 새 객체를 만듭니다. `{ ...row }` 처럼 펼치거나 필요 없는 필드를 지우는 방식을 쓰지 않은 것이 중요합니다. 지우는 방식은 나중에 `users` 테이블에 민감한 열이 추가되면 그 열이 조용히 응답에 섞여 나갑니다. 고르는 방식은 새 열이 생겨도 누군가 명시적으로 추가하기 전에는 절대 나가지 않습니다. 인증 코드에서는 "허용 목록" 쪽이 늘 기본입니다.
+
+`createdAt` 은 `Date` 를 `toISOString()` 으로 바꿔 `2026-09-24T05:10:31.123Z` 같은 문자열로 내보냅니다. JSON 에는 날짜 타입이 없으므로, 형식을 명시적으로 정해 두는 편이 프론트엔드가 다루기 쉽습니다. Swagger 에는 `format: 'date-time'` 으로 이 사실을 적었습니다. 필드 이름도 여기서 카멜 케이스로 바뀝니다. DB 의 이름 규칙이 API 로 새어 나가지 않게 하는 경계가 바로 이 함수입니다.
+
+**`trim`.** 문자열이면 앞뒤 공백을 지우고, 아니면 그대로 돌려주는 변환 함수입니다. `class-transformer` 의 `@Transform` 데코레이터에 넘기는 형식(`({ value }) => …`)으로 만들었습니다. 문자열이 아닐 때 그대로 돌려주는 것은, 변환이 검증보다 먼저 일어나기 때문입니다. 숫자가 들어왔다면 변환하지 않고 넘겨서 다음 단계의 `@IsString()` 이 거부하게 합니다. 이 함수는 가입 DTO 에서도 쓰므로 `export` 합니다.
+
+**`UpdateNicknameDto`.** 닉네임 변경 요청의 본문입니다. 5장에서 `PATCH /users/me` 를 만들 때 쓰지만, 사용자 관련 DTO 를 한 파일에 모아 두려고 지금 함께 만듭니다. 데코레이터는 아래에서 위로 읽으면 실행 순서와 비슷합니다. 먼저 `@Transform(trim)` 으로 공백을 지우고, `@IsString()` 으로 문자열인지, `@Length(2, 20)` 으로 2~20자인지 검사합니다. 공백을 먼저 지우기 때문에 `"  a  "` 는 한 글자로 판정되어 거부됩니다.
+
+💡 `@ApiProperty` 에 `minLength`, `maxLength` 를 **따로** 적은 것을 눈여겨보세요. `@Length(2, 20)` 은 검증 규칙이고 `@ApiProperty` 는 문서입니다. `@nestjs/swagger` 는 기본 설정에서 검증 데코레이터를 읽어 문서에 반영하지 않으므로, 두 곳에 같은 숫자를 적어야 프론트엔드가 문서만 보고 같은 규칙을 걸 수 있습니다. 둘이 어긋나지 않게 관리하는 것이 이 책의 Swagger 규칙 중 하나입니다.
+
+### `users.module.ts`
+
+```ts
+// api/src/users/users.module.ts
+import { Module } from '@nestjs/common';
+import { UsersRepository } from './users.repository';
+
+@Module({
+  providers: [UsersRepository],
+  exports: [UsersRepository],
+})
+export class UsersModule {}
+```
+
+지금은 저장소 하나만 등록하고 밖으로 내보냅니다. `exports` 에 넣어야 이 모듈을 import 한 `AuthModule` 이 `UsersRepository` 를 주입받을 수 있습니다. 5장에서 `/users/me` 컨트롤러와 토큰 모듈이 여기에 추가됩니다.
+
+## 4.4 비밀번호 서비스 — `password.service.ts`
+
+4.1 절에서 고른 argon2id 를 코드로 옮깁니다.
+
+```ts
+// api/src/auth/password.service.ts
+import { Injectable } from '@nestjs/common';
+import * as argon2 from 'argon2';
+
+// OWASP Password Storage Cheat Sheet 의 argon2id 최소 권장값 (19 MiB, 2회, 병렬 1)
+const OPTIONS = { type: argon2.argon2id, memoryCost: 19456, timeCost: 2, parallelism: 1 } as const;
+
+@Injectable()
+export class PasswordService {
+  hash(password: string): Promise<string> {
+    return argon2.hash(password, OPTIONS);
+  }
+
+  verify(hash: string, password: string): Promise<boolean> {
+    return argon2.verify(hash, password);
+  }
+}
+```
+
+**`OPTIONS`.** `type: argon2.argon2id` 로 변종을 고르고, 나머지 셋이 4.1 절의 표와 같습니다. `memoryCost` 의 단위는 KiB 라서 19 MiB 는 `19 × 1024 = 19456` 입니다. `argon2` 패키지의 기본값이 이미 argon2id 에 가까운 설정이지만, 기본값에 기대지 않고 명시적으로 적습니다. 패키지가 기본값을 바꾸면 새로 가입하는 사람부터 조용히 다른 설정으로 해싱되기 때문입니다. 주석에 출처를 적어 두어 나중에 값을 올릴 때 어디를 확인해야 하는지도 남깁니다.
+
+**`hash`.** 솔트를 따로 만들 필요가 없습니다. `argon2.hash` 가 호출될 때마다 무작위 솔트를 새로 만들어 섞고, 결과 문자열 안에 솔트와 파라미터를 함께 넣어 돌려줍니다.
+
+**`verify`.** 저장된 해시 문자열과 사용자가 입력한 비밀번호를 받아 일치 여부를 돌려줍니다. 인자 순서가 `(hash, password)` 라는 점을 기억해 두세요. 두 인자가 모두 문자열이라 순서를 바꿔 넣어도 컴파일러가 잡아 주지 않습니다. `verify` 는 파라미터를 `OPTIONS` 에서 가져오지 않고 **해시 문자열에서** 읽습니다. 그래서 나중에 `OPTIONS` 를 올려도 예전 설정으로 저장된 해시는 여전히 검증됩니다.
+
+두 메서드 모두 `Promise` 를 돌려줍니다. argon2 계산은 수십 밀리초가 걸리는 무거운 작업이라, `argon2` 패키지는 이것을 Node.js 의 메인 스레드가 아닌 작업 스레드에서 돌립니다. 해싱하는 동안에도 서버가 다른 요청을 처리할 수 있다는 뜻입니다.
+
+💡 부록 C 의 `PasswordService` 에는 `burn` 이라는 메서드가 하나 더 있습니다. 로그인할 때 없는 이메일이 들어와도 비밀번호를 검증하는 만큼 시간을 쓰게 만드는 장치로, 5장에서 타이밍 공격을 다루며 추가합니다.
+
+### 해시 문자열 읽기
+
+`argon2.hash` 가 돌려주는 문자열은 이런 모양입니다.
+
+```
+$argon2id$v=19$m=19456,p=1,t=2$<솔트>$<해시>
+```
+
+`$` 로 나뉜 다섯 부분은 차례로 다음 뜻입니다.
+
+| 부분 | 예 | 뜻 |
+|---|---|---|
+| 알고리즘 | `argon2id` | 변종 |
+| 버전 | `v=19` | argon2 알고리즘 버전 1.3 (16진수 0x13 = 19) |
+| 파라미터 | `m=19456,t=2,p=1` | 메모리(KiB)·반복·병렬도 |
+| 솔트 | `…` | 무작위 솔트를 base64 로 (패딩 `=` 없이) |
+| 해시 | `…` | 계산 결과를 base64 로 |
+
+이 형식을 **PHC 문자열 형식**이라고 부릅니다. 검증에 필요한 모든 정보가 문자열 하나에 들어 있어서, DB 에는 `password_hash` 열 하나만 있으면 됩니다. 솔트 열을 따로 둘 필요가 없습니다.
+
+## 4.5 가입 요청 — `SignupDto`
+
+가입 요청 본문의 규칙을 정합니다. 인증 관련 DTO 는 `auth/dto.ts` 에 모읍니다. 이 장에서는 가입 DTO 만 만들고, 5장에서 로그인 DTO 와 응답 DTO 를 더합니다.
+
+```ts
+// api/src/auth/dto.ts
+import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { IsEmail, IsString, Length, MaxLength } from 'class-validator';
+import { trim } from '../users/dto';
+
+const normalizeEmail = ({ value }: { value: unknown }) =>
+  typeof value === 'string' ? value.trim().toLowerCase() : value;
+
+export class SignupDto {
+  @ApiProperty({ example: 'kim@example.com', maxLength: 254 })
+  @Transform(normalizeEmail)
+  @IsEmail()
+  @MaxLength(254)
+  email!: string;
+
+  @ApiProperty({ example: 'correct horse battery', minLength: 8, maxLength: 128 })
+  @IsString()
+  @Length(8, 128)
+  password!: string;
+
+  @ApiProperty({ example: '김개발', minLength: 2, maxLength: 20 })
+  @Transform(trim)
+  @IsString()
+  @Length(2, 20)
+  nickname!: string;
+}
+```
+
+### 이메일 정규화
+
+`normalizeEmail` 은 이메일의 앞뒤 공백을 지우고 **소문자로** 바꿉니다. 이것이 왜 필요한지는 DB 의 `UNIQUE` 제약을 생각하면 알 수 있습니다. PostgreSQL 의 `text` 비교는 대소문자를 구분합니다. 정규화하지 않으면 `Kim@Example.com` 과 `kim@example.com` 이 서로 다른 값으로 들어가, 같은 사람이 두 계정을 갖게 됩니다. 더 나쁜 경우는 로그인입니다. 가입할 때와 다른 대소문자로 입력하면 "이메일 또는 비밀번호가 맞지 않다" 는 답을 받고, 사용자는 비밀번호를 잊었다고 생각합니다.
+
+엄밀히 말하면 이메일 표준(RFC 5321)은 `@` 앞부분(로컬 파트)의 대소문자를 구분할 수 있다고 정합니다. 하지만 실제로 대소문자를 구분하는 메일 서버는 거의 없고, 사용자 역시 대소문자를 구분해서 기억하지 않습니다. 그래서 대부분의 서비스가 소문자로 정규화합니다. 반면 Gmail 이 로컬 파트의 점(`.`)이나 `+` 뒤를 무시하는 것처럼 **특정 메일 서비스의 규칙**까지 따라 정규화하지는 않습니다. 그 규칙은 서비스마다 다르고, 잘못 합치면 다른 사람의 계정이 한 계정으로 묶이는 더 큰 사고가 납니다.
+
+정규화는 **DTO 에서, 가입과 로그인 양쪽에 똑같이** 적용합니다. 5장의 `LoginDto` 도 같은 `normalizeEmail` 을 씁니다. 저장할 때와 찾을 때의 규칙이 같아야 합니다.
+
+### 데코레이터 순서와 역할
+
+`email` 필드의 데코레이터를 아래에서 위로 보면, `@MaxLength(254)` 로 길이를 제한하고, `@IsEmail()` 로 이메일 형식을 검사하고, `@Transform(normalizeEmail)` 로 정규화합니다. 실제 실행 순서는 이렇습니다. `ValidationPipe` 는 먼저 `class-transformer` 로 요청 본문을 `SignupDto` 인스턴스로 바꾸는데, 이때 `@Transform` 이 적용됩니다. 그다음 `class-validator` 가 바뀐 값을 대상으로 검증 데코레이터를 모두 검사합니다. 즉 **정규화한 뒤에 검증**합니다. `"  kim@example.com  "` 처럼 공백이 섞여 와도 공백을 지운 뒤 형식을 검사하므로 통과합니다.
+
+254자 제한은 이메일 주소가 SMTP 에서 가질 수 있는 실질적인 최대 길이입니다. 이보다 긴 값은 어차피 메일이 가지 않는 주소이고, 너무 긴 입력을 DB 까지 보내지 않는 효과도 있습니다.
+
+### 비밀번호 길이 — 8자에서 128자
+
+`password` 에는 `@Transform` 이 없습니다. **비밀번호는 절대 가공하지 않습니다.** 앞뒤 공백도 비밀번호의 일부일 수 있고, 가공 규칙이 가입과 로그인에서 조금이라도 달라지면 사용자는 영영 로그인하지 못합니다.
+
+최소 8자는 NIST SP 800-63B 가 오랫동안 권고해 온 하한입니다. 이 문서는 개정판에서 단일 인증 수단으로 쓰는 비밀번호의 최소 길이를 더 올렸으므로, 실제 서비스의 정책을 정할 때는 최신판을 확인하세요. 같은 문서가 권하는 또 한 가지는 대문자·숫자·특수문자를 반드시 섞으라는 식의 **구성 규칙을 강제하지 말라**는 것입니다. 그런 규칙은 `Password1!` 같은 예측 가능한 비밀번호만 늘립니다. 긴 문장형 비밀번호(예시 값의 `correct horse battery`)를 막지 않는 것이 더 중요합니다.
+
+최대 128자는 비밀번호를 짧게 만들려는 제한이 아닙니다. 해싱 비용을 공격자가 마음대로 키우지 못하게 하는 안전장치입니다. argon2 는 긴 입력도 잘 처리하지만, 수 메가바이트짜리 비밀번호를 보내는 요청이 쏟아지는 상황을 서버가 받아 줄 이유는 없습니다. 128자면 어떤 비밀번호 관리자가 만든 값도 충분히 담깁니다.
+
+### 전역 파이프의 세 옵션 다시 보기
+
+3장에서 `ValidationPipe` 에 준 옵션이 이 DTO 와 만나 어떻게 동작하는지 정리합니다.
+
+- `transform: true` — 컨트롤러가 받는 `dto` 가 평범한 객체가 아니라 `SignupDto` 인스턴스이고, `@Transform` 이 적용된 값(소문자 이메일, 공백 없는 닉네임)을 담고 있습니다.
+- `whitelist: true` — DTO 에 없는 속성을 걷어 냅니다.
+- `forbidNonWhitelisted: true` — 걷어 내는 대신 400 으로 거부합니다. 누군가 `{ "email": …, "role": "admin" }` 을 보내면 "property role should not exist" 로 막힙니다. 이 책의 가입 코드는 `role` 을 읽지 않으니 걷어 내기만 해도 안전하지만, 거부하면 클라이언트의 실수(필드 이름 오타 등)가 곧바로 드러난다는 장점이 있습니다.
+
+## 4.6 가입 서비스와 컨트롤러
+
+### `auth.service.ts` — `signup`
+
+```ts
+// api/src/auth/auth.service.ts
+import { Injectable } from '@nestjs/common';
+import { AppError, ErrorCode } from '../common/errors';
+import { UserDto, toUserDto } from '../users/dto';
+import { UsersRepository } from '../users/users.repository';
+import { SignupDto } from './dto';
+import { PasswordService } from './password.service';
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private readonly users: UsersRepository,
+    private readonly passwords: PasswordService,
+  ) {}
+
+  async signup(dto: SignupDto): Promise<UserDto> {
+    const passwordHash = await this.passwords.hash(dto.password);
+    const row = await this.users.create({ email: dto.email, nickname: dto.nickname, passwordHash });
+    if (!row) throw new AppError(409, ErrorCode.EMAIL_TAKEN, '이미 가입된 이메일이다');
+    return toUserDto(row);
+  }
+}
+```
+
+세 줄짜리 메서드지만 순서에 의미가 있습니다.
+
+첫 줄에서 **먼저 해싱합니다.** 이메일이 중복인지 모르는 상태에서 해싱부터 하는 것은 낭비처럼 보입니다. 중복이면 해시를 버리게 되니까요. 하지만 이 순서 덕분에 새 이메일이든 중복 이메일이든 응답까지 걸리는 시간이 비슷해집니다. 중복을 먼저 확인하고 바로 409 를 돌려주면, 중복일 때만 응답이 수십 밀리초 빨라집니다. 응답 시간만 재도 가입 여부를 알 수 있게 되는 셈입니다. 물론 가입 API 는 409 로 이미 그 사실을 알려 주므로(아래 4.7 절) 여기서 얻는 이득은 크지 않지만, 순서를 바꿀 이유도 없습니다.
+
+둘째 줄은 저장소의 `create` 를 부릅니다. 앞 절에서 본 대로 중복이면 `null` 이 돌아옵니다.
+
+셋째 줄에서 `null` 이면 `AppError` 로 409 `EMAIL_TAKEN` 을 던집니다. 상태 코드를 `409` 라는 숫자로 넘겼는데, 생성자의 매개변수 타입은 `HttpStatus` 열거형입니다. TypeScript 는 숫자 열거형 자리에 그 열거형에 **실제로 있는 값**의 숫자 리터럴을 넣는 것을 허용합니다. `HttpStatus.CONFLICT` 가 409 이므로 통과합니다.
+
+성공하면 `toUserDto` 로 바꿔 돌려줍니다. 여기서 `password_hash` 가 걸러집니다.
+
+### `auth.controller.ts` — `signup`
+
+```ts
+// api/src/auth/auth.controller.ts
+import { Body, Controller, Post } from '@nestjs/common';
+import { ApiBadRequestResponse, ApiConflictResponse, ApiCreatedResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ErrorResponseDto } from '../common/error-response.dto';
+import { UserDto } from '../users/dto';
+import { AuthService } from './auth.service';
+import { SignupDto } from './dto';
+
+@ApiTags('auth')
+@Controller('auth')
+export class AuthController {
+  constructor(private readonly auth: AuthService) {}
+
+  @Post('signup')
+  @ApiOperation({ summary: '회원가입' })
+  @ApiCreatedResponse({ type: UserDto })
+  @ApiConflictResponse({ type: ErrorResponseDto, description: 'EMAIL_TAKEN' })
+  @ApiBadRequestResponse({ type: ErrorResponseDto, description: 'VALIDATION_FAILED' })
+  signup(@Body() dto: SignupDto): Promise<UserDto> {
+    return this.auth.signup(dto);
+  }
+}
+```
+
+컨트롤러는 HTTP 와 서비스를 잇는 얇은 층입니다. 비즈니스 로직은 서비스에 두고, 컨트롤러에는 경로·상태 코드·문서만 둡니다.
+
+- `@Controller('auth')` 와 `@Post('signup')` 이 합쳐져 `POST /auth/signup` 이 됩니다.
+- `@Body() dto: SignupDto` 는 요청 본문을 `SignupDto` 로 받습니다. 매개변수의 타입이 `SignupDto` 라는 정보를 `ValidationPipe` 가 읽어 앞 절의 검증을 적용합니다. 타입을 `any` 로 적으면 검증이 일어나지 않습니다.
+- `POST` 의 기본 응답 상태는 201 Created 입니다. 가입은 새 자원을 만드는 요청이므로 그대로 둡니다. 5장의 로그인은 자원을 만들지 않으므로 `@HttpCode(200)` 으로 바꿉니다.
+- `@ApiTags('auth')` 는 Swagger UI 에서 이 컨트롤러의 엔드포인트를 `auth` 묶음으로 보여 줍니다.
+
+### `auth.module.ts` 와 `app.module.ts`
+
+```ts
+// api/src/auth/auth.module.ts
+import { Module } from '@nestjs/common';
+import { UsersModule } from '../users/users.module';
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
+import { PasswordService } from './password.service';
+
+@Module({
+  imports: [UsersModule],
+  controllers: [AuthController],
+  providers: [AuthService, PasswordService],
+})
+export class AuthModule {}
+```
+
+`AuthService` 가 `UsersRepository` 를 주입받으므로 `UsersModule` 을 import 합니다. `PasswordService` 는 이 모듈 안에서만 씁니다. 5장에서 토큰 모듈과 시도 제한 모듈이, 뒤 장에서 리프레시 토큰 저장소와 CSRF 서비스가 여기에 추가됩니다.
+
+루트 모듈에 두 모듈을 등록합니다.
+
+```ts
+// api/src/app.module.ts
+import { Module } from '@nestjs/common';
+import { AuthModule } from './auth/auth.module';
+import { AppConfigModule } from './config/app-config';
+import { DatabaseModule } from './database/database.module';
+import { UsersModule } from './users/users.module';
+
+@Module({
+  imports: [AppConfigModule, DatabaseModule, UsersModule, AuthModule],
+})
+export class AppModule {}
+```
+
+## 4.7 가입 API 는 무엇을 드러내는가 — 사용자 열거
+
+가입 API 가 완성됐습니다. 그런데 이 API 에는 설계상 피할 수 없는 성질이 하나 있습니다. **이 이메일이 가입되어 있는가** 를 누구에게나 알려 준다는 점입니다. 이미 가입된 이메일로 가입을 시도하면 409 `EMAIL_TAKEN` 이 오니까요.
+
+공격자가 이메일 목록을 들고 가입 API 를 하나씩 두드리면 우리 서비스의 회원 명단을 만들 수 있습니다. 이것을 **사용자 열거(user enumeration)** 라고 합니다. 회원 명단 자체가 민감한 서비스(의료, 성인, 채무 관련 서비스 등)라면 이것만으로도 사고입니다. 그렇지 않더라도 명단은 다음 공격의 출발점이 됩니다. 다른 곳에서 유출된 이메일·비밀번호 쌍을 우리 서비스의 회원에게만 골라서 대입하는 **크리덴셜 스터핑**이 훨씬 효율적이 됩니다.
+
+그렇다면 409 대신 성공처럼 보이는 응답을 주면 될까요? 그러면 정상 사용자가 곤란해집니다. 이미 가입했다는 사실을 잊은 사용자는 "가입됐다" 는 답을 받고 새 비밀번호로 로그인하다 실패합니다. 이 문제를 제대로 풀려면 가입을 **이메일 확인 절차**와 묶어야 합니다. 가입 요청에는 언제나 "메일을 확인하세요" 라고만 답하고, 새 이메일이면 가입 확인 메일을, 이미 있는 이메일이면 "이미 가입되어 있습니다. 로그인하세요" 라는 메일을 보내는 식입니다. 응답만 봐서는 차이가 없고, 사실은 그 메일함의 주인에게만 전달됩니다.
+
+이 책은 이메일 인증을 다루지 않으므로(머리말 참조) 409 를 그대로 둡니다. 대신 이 트레이드오프를 **알고** 선택한다는 점을 분명히 해 둡니다.
+
+- 가입 API 는 가입 여부를 드러냅니다. 이 책은 사용 편의를 위해 이것을 받아들입니다.
+- 로그인 API 는 가입 여부를 드러내지 **않습니다.** 5장에서 "이메일이 없음" 과 "비밀번호가 틀림" 을 같은 에러 코드, 같은 응답 시간으로 만듭니다. 가입 API 가 이미 드러내는데 로그인에서까지 애쓸 필요가 있느냐고 물을 수 있습니다. 로그인 쪽을 지켜 두면, 나중에 가입을 이메일 확인 방식으로 바꿨을 때 열거 경로가 완전히 닫힙니다. 한쪽이 열려 있다고 다른 쪽까지 열어 둘 이유는 없습니다.
+- 명단을 대량으로 긁어 가는 것은 요청 횟수 제한으로 늦출 수 있습니다. 이 책은 5장에서 로그인에만 제한을 겁니다. 가입에도 같은 방식으로 걸 수 있으며, 연습문제로 남깁니다.
+
+## 4.8 Swagger 문서화 규칙
+
+코드를 실행하기 전에 이 책이 지킬 Swagger 문서화 규칙을 정리합니다. 머리말에서 말했듯 이 책의 프론트엔드 개발자는 **Swagger 문서만 보고** 작업합니다. 10장에서는 이 문서에서 프론트엔드의 타입을 자동으로 만듭니다. 문서에 빠진 것은 프론트엔드에 존재하지 않는 것과 같습니다.
+
+**규칙 1. 요청·응답 DTO 의 모든 필드에 `@ApiProperty` 를 단다.** `@nestjs/swagger` 는 기본 설정에서 `@ApiProperty` 가 붙은 필드만 문서에 올립니다. 하나라도 빠지면 그 필드는 프론트엔드 타입에서 사라집니다. 필드에 검증 규칙이 있으면 `minLength`, `maxLength` 같은 문서 속성으로도 같이 적습니다. 예시 값(`example`)을 달아 두면 Swagger UI 의 "Try it out" 에 그 값이 미리 채워져 실습이 편해집니다.
+
+**규칙 2. 모든 엔드포인트에 성공 응답 데코레이터를 단다.** `@ApiCreatedResponse({ type: UserDto })` 처럼 상태 코드와 본문 타입을 적습니다. 이것이 없으면 문서에는 "201 — 설명 없음" 만 남고 프론트엔드는 응답 타입을 알 수 없습니다.
+
+**규칙 3. 모든 에러 응답 데코레이터에 `type: ErrorResponseDto` 와, 그 상태로 올 수 있는 `code` 를 `description` 에 전부 적는다.** 가입의 409 에는 `description: 'EMAIL_TAKEN'` 을 적었습니다. 하나의 상태 코드로 여러 에러 코드가 올 수 있으면 `'REFRESH_TOKEN_INVALID | REFRESH_TOKEN_REUSED'` 처럼 모두 적습니다(7장). 프론트엔드는 "이 엔드포인트가 401 을 줄 때 어떤 `code` 들을 처리해야 하는가" 를 이 설명에서 읽습니다.
+
+**규칙 4. 에러 코드는 `ErrorCode` 에만 정의한다.** 새 에러 상황이 생기면 먼저 `ErrorCode` 에 코드를 추가하고, 그다음 Swagger 설명에 적습니다. `ErrorResponseDto` 가 `enumName: 'ErrorCode'` 로 목록 전체를 문서에 올려 주므로, 프론트엔드는 한 곳에서 모든 코드를 봅니다.
+
+## 4.9 실행하고 확인한다
+
+서버를 띄웁니다. `start:dev` 로 띄워 두었다면 파일을 저장할 때마다 재시작되어 있을 것입니다.
+
+```
+$ pnpm start:dev
+```
+
+### Swagger UI 로 확인
+
+`http://localhost:4000/docs` 를 새로고침합니다. `auth` 묶음 아래에 `POST /auth/signup` 이 보여야 합니다. 펼쳐 보면 다음이 보입니다.
+
+- **Request body** — `SignupDto` 스키마. 세 필드와 각각의 길이 제한, 예시 값.
+- **Responses** — `201` 에 `UserDto`, `409` 에 `ErrorResponseDto` 와 설명 `EMAIL_TAKEN`.
+
+화면 맨 아래 **Schemas** 에는 `SignupDto`, `UserDto`, `ErrorResponseDto`, 그리고 `ErrorCode` 가 따로 보입니다. `ErrorCode` 를 펼치면 이 장에서 정의한 코드 11개가 나열되어 있습니다.
+
+**Try it out** 을 누르면 예시 값이 채워진 본문이 나옵니다. **Execute** 를 누르면 실제로 가입이 됩니다. 응답이 201 이고 본문에 `id`, `email`, `nickname`, `createdAt` 네 필드만 있는지 확인합니다. 한 번 더 **Execute** 를 누르면 409 와 `EMAIL_TAKEN` 이 와야 합니다.
+
+### curl 로 확인
+
+같은 것을 터미널에서도 확인합니다. 이 책의 뒤 장들은 curl 을 많이 쓰므로 익숙해져 두면 좋습니다. 매번 주소를 치지 않도록 변수를 하나 둡니다.
+
+```
+$ API=http://localhost:4000
+```
+
+새 사용자를 가입시킵니다. 앞에서 Swagger UI 로 `kim@example.com` 을 이미 가입시켰다면 이메일을 바꿔서 실행합니다.
+
+```
+$ curl -s -w '\n%{http_code}\n' -X POST "$API/auth/signup" \
+    -H 'Content-Type: application/json' \
+    -d '{"email":"lee@example.com","password":"correct horse battery","nickname":"이개발"}'
+```
+
+예시 출력:
+
+```
+{"id":"0b6c3f5e-…","email":"lee@example.com","nickname":"이개발","createdAt":"2026-09-24T05:21:07.412Z"}
+201
+```
+
+`-w '\n%{http_code}\n'` 은 응답 본문 뒤에 상태 코드를 한 줄 더 찍게 하는 옵션입니다. 본문에 `password_hash` 가 없는 것을 확인합니다.
+
+같은 이메일을 대소문자와 공백만 바꿔 다시 보냅니다.
+
+```
+$ curl -s -w '\n%{http_code}\n' -X POST "$API/auth/signup" \
+    -H 'Content-Type: application/json' \
+    -d '{"email":"  LEE@Example.COM ","password":"another password","nickname":"다른사람"}'
+```
+
+예시 출력:
+
+```
+{"statusCode":409,"code":"EMAIL_TAKEN","message":"이미 가입된 이메일이다"}
+409
+```
+
+정규화 덕분에 같은 이메일로 판정되어 409 가 왔습니다. 에러 본문이 우리가 정한 세 필드 모양인 것도 확인합니다.
+
+검증 실패를 봅니다. 비밀번호를 짧게, 이메일 형식을 틀리게 보냅니다.
+
+```
+$ curl -s -w '\n%{http_code}\n' -X POST "$API/auth/signup" \
+    -H 'Content-Type: application/json' \
+    -d '{"email":"not-an-email","password":"short","nickname":"박"}'
+```
+
+예시 출력:
+
+```
+{"statusCode":400,"code":"VALIDATION_FAILED","message":"email must be an email; password must be longer than or equal to 8 characters; nickname must be longer than or equal to 2 characters"}
+400
+```
+
+메시지 문구는 `class-validator` 의 기본 메시지라 버전에 따라 조금 다를 수 있습니다. 중요한 것은 모양이 `{ statusCode, code, message }` 이고 `code` 가 `VALIDATION_FAILED` 라는 점입니다.
+
+DTO 에 없는 필드를 섞어 봅니다.
+
+```
+$ curl -s -w '\n%{http_code}\n' -X POST "$API/auth/signup" \
+    -H 'Content-Type: application/json' \
+    -d '{"email":"park@example.com","password":"correct horse battery","nickname":"박개발","role":"admin"}'
+```
+
+예시 출력:
+
+```
+{"statusCode":400,"code":"VALIDATION_FAILED","message":"property role should not exist"}
+400
+```
+
+### DB 에서 해시 확인
+
+마지막으로 DB 에 무엇이 저장됐는지 봅니다.
+
+```
+$ pnpm db:psql
+auth_lab=# SELECT email, nickname, password_hash FROM users;
+```
+
+예시 출력:
+
+```
+      email       | nickname |                         password_hash
+------------------+----------+------------------------------------------------------------------
+ kim@example.com  | 김개발   | $argon2id$v=19$m=19456,p=1,t=2$…$…
+ lee@example.com  | 이개발   | $argon2id$v=19$m=19456,p=1,t=2$…$…
+```
+
+두 가지를 확인합니다. 첫째, `email` 이 소문자로 저장되어 있습니다. 둘째, `password_hash` 가 `$argon2id$v=19$m=19456,p=1,t=2$` 로 시작합니다. 앞 절의 `OPTIONS` 가 그대로 박혀 있습니다.
+
+두 사용자가 **같은 비밀번호**(`correct horse battery`)로 가입했는데도 해시의 뒷부분(솔트와 해시)이 완전히 다르다는 것도 확인하세요. 솔트가 하는 일이 바로 이것입니다.
+
+## 확인하기
+
+| # | 명령 | 기대 결과 |
+|---|---|---|
+| 1 | `curl -s $API/docs-json \| jq '.paths \| keys'` | `["/auth/signup"]` |
+| 2 | `curl -s $API/docs-json \| jq '.components.schemas.ErrorCode.enum \| length'` | `11` |
+| 3 | 새 이메일로 `POST /auth/signup` | `201`, 본문 키가 `id`·`email`·`nickname`·`createdAt` 넷뿐 |
+| 4 | 같은 이메일을 대소문자만 바꿔 `POST /auth/signup` | `409`, `code` 가 `EMAIL_TAKEN` |
+| 5 | 비밀번호 7자로 가입 | `400`, `code` 가 `VALIDATION_FAILED` |
+| 6 | 본문에 `"role":"admin"` 추가 | `400`, 메시지에 `property role should not exist` |
+| 7 | `SELECT email, left(password_hash, 31) FROM users;` | 이메일 소문자, 해시 앞부분이 `$argon2id$v=19$m=19456,p=1,t=2$` |
+
+## 자주 하는 실수
+
+**가입했는데 응답에 `password_hash` 가 들어 있다.** 서비스에서 `toUserDto(row)` 대신 `row` 를 그대로 돌려준 경우입니다. `Promise<UserDto>` 로 반환 타입을 적어 두었더라도, `UserRow` 에는 `UserDto` 의 네 필드가 모두 들어 있어서 TypeScript 는 이것을 막지 않습니다(구조적 타이핑). 응답으로 나가는 객체는 반드시 변환 함수를 거치게 합니다.
+
+**중복 가입인데 409 가 아니라 500 이 난다.** 저장소가 `ON CONFLICT (email) DO NOTHING` 없이 INSERT 하고 있습니다. `UNIQUE` 위반 에러가 그대로 올라가 500 이 됩니다.
+
+**대소문자만 다른 이메일이 두 번 가입된다.** `email` 필드에 `@Transform(normalizeEmail)` 이 빠졌거나, 전역 파이프의 `transform: true` 가 빠진 경우입니다. `transform` 이 꺼져 있으면 검증은 변환된 값으로 하지만 컨트롤러에는 원래 값이 넘어갈 수 있습니다.
+
+**검증 실패 응답이 `{ "message": [...], "error": "Bad Request" }` 모양이다.** `main.ts` 에 `exceptionFactory: validationExceptionFactory` 를 연결하지 않았습니다.
+
+**DTO 검증이 전혀 일어나지 않는다.** 컨트롤러 매개변수 타입을 `any` 나 인터페이스로 적었거나, `import type { SignupDto }` 로 가져온 경우입니다. `ValidationPipe` 는 실행 중에 남아 있는 **클래스** 정보를 읽습니다. 인터페이스나 `import type` 은 컴파일 후 사라지므로 검증할 대상이 없습니다. DTO 는 반드시 클래스로 만들고 일반 import 로 가져옵니다.
+
+**Swagger 에 필드가 보이지 않는다.** 해당 필드에 `@ApiProperty` 가 없습니다.
+
+**`argon2` 를 불러올 때 네이티브 바인딩을 찾지 못한다는 에러가 난다.** 3장의 ⚠️ 를 보세요. 패키지 매니저가 설치 스크립트를 막았을 가능성이 있습니다.
+
+**`argon2.verify(password, hash)` 로 인자 순서를 바꿔 썼다.** 이 장에서는 증상이 없지만 5장의 로그인이 늘 실패합니다. `verify(해시, 원문)` 순서입니다.
+
+## 정리
+
+- 비밀번호는 되돌릴 수 없고, 사용자마다 솔트가 다르고, **일부러 느린** 해시로 저장합니다. 빠른 해시는 GPU 로 초당 수십억 번 대입할 수 있어 쓸모가 없습니다.
+- 느린 해시 가운데 argon2id 는 **메모리 하드**라서 GPU·전용 하드웨어의 병렬 공격 비용이 가장 높습니다. OWASP 최소 권장값 `m=19456, t=2, p=1` 로 설정했습니다.
+- argon2 해시 문자열(PHC 형식)에는 알고리즘·버전·파라미터·솔트·해시가 모두 들어 있어 열 하나로 충분하고, 파라미터를 올려도 예전 해시가 그대로 검증됩니다.
+- 모든 에러는 `{ statusCode, code, message }` 한 모양입니다. 프론트엔드는 `code` 로 분기합니다. 에러 코드는 `ErrorCode` 한 곳에 정의하고, 뒤 장에서 쓸 코드도 미리 넣어 두었습니다.
+- 이메일은 DTO 에서 공백을 지우고 소문자로 정규화합니다. 비밀번호는 절대 가공하지 않습니다.
+- 중복 가입은 `ON CONFLICT (email) DO NOTHING` 으로 DB 의 제약에 판정을 맡겨 경합을 없앱니다.
+- 가입 API 는 가입 여부를 드러냅니다(사용자 열거). 이 책은 이것을 알고 받아들이며, 로그인 쪽에서는 드러내지 않게 만듭니다.
+- Swagger 문서는 모든 필드에 `@ApiProperty`, 모든 에러 응답에 `ErrorResponseDto` 와 `code` 를 적는 규칙을 따릅니다.
+
+다음 장에서는 가입한 사용자로 로그인하고, 액세스 토큰(JWT)을 발급해 보호된 API 를 부릅니다.
+
+## 연습문제
+
+**1.** `api/` 폴더에서 다음 명령으로 argon2 해싱 시간을 재 보세요. `memoryCost` 를 `19456`, `65536`, `262144` 로 바꿔 가며 실행하고 결과를 비교합니다. 로그인 한 번에 이 정도 시간을 쓰는 것이 여러분 서버에 적당한지, 동시에 로그인이 100건 들어오면 메모리를 얼마나 쓰는지 계산해 보세요.
+
+```
+$ node -e "
+const argon2 = require('argon2');
+const m = Number(process.argv[1]);
+(async () => {
+  const start = performance.now();
+  await argon2.hash('correct horse battery', { type: argon2.argon2id, memoryCost: m, timeCost: 2, parallelism: 1 });
+  console.log(m, 'KiB →', Math.round(performance.now() - start), 'ms');
+})();
+" 19456
+```
+
+<details>
+<summary>해답</summary>
+
+결과는 기계마다 다릅니다. 대체로 `memoryCost` 를 네 배로 늘리면 시간도 비슷한 비율로 늘어납니다. 메모리를 채우고 다시 읽는 일이 계산의 대부분이기 때문입니다.
+
+메모리는 동시에 진행되는 해싱 수에 비례합니다. 19 MiB 로 100건이 동시에 돌면 이론상 약 1.9 GiB 가 필요합니다. 실제로는 `argon2` 패키지가 쓰는 작업 스레드 수만큼만 동시에 계산하고 나머지는 대기하므로 그보다 적게 쓰지만, 대신 응답이 늦어집니다. 파라미터를 올릴수록 "비밀번호 유출 시 안전" 과 "로그인 폭주 시 서버 부담" 을 맞바꾸게 됩니다. 5장에서 로그인 시도 횟수를 제한하는 이유 중 하나가 이것입니다.
+
+</details>
+
+**2.** 이 장의 `users` 테이블은 이메일을 애플리케이션에서 소문자로 바꿔 저장해 대소문자 중복을 막습니다. DB 차원에서 같은 보장을 하려면 스키마를 어떻게 바꿀 수 있을까요? 두 가지 방법을 들고, 이 책이 DTO 정규화를 택한 이유를 생각해 보세요.
+
+<details>
+<summary>해답</summary>
+
+첫째, `email` 에 걸린 `UNIQUE` 대신 `CREATE UNIQUE INDEX users_email_lower_idx ON users (lower(email));` 처럼 **식 인덱스**로 유일성을 거는 방법이 있습니다. 둘째, 대소문자를 구분하지 않는 `citext` 확장 타입을 `email` 열에 쓰는 방법이 있습니다.
+
+두 방법 모두 DB 가 마지막 방어선이 된다는 장점이 있습니다. 다만 식 인덱스를 쓰면 `ON CONFLICT` 의 대상도 `(lower(email))` 로 맞춰야 하고, 조회할 때도 `WHERE lower(email) = lower($1)` 처럼 같은 식을 써야 인덱스가 쓰입니다. `citext` 는 확장을 설치해야 합니다. 이 책은 SQL 을 가장 단순하게 유지하려고 정규화를 DTO 한 곳에 모았습니다. 실무에서는 DTO 정규화와 식 인덱스를 **함께** 두는 것도 좋은 선택입니다.
+
+</details>
+
+**3.** 가입 API 에도 5장의 로그인처럼 요청 횟수 제한을 걸고 싶습니다. 사용자 열거를 늦추는 데 이것이 얼마나 도움이 되는지, 그리고 어떤 한계가 있는지 설명해 보세요.
+
+<details>
+<summary>해답</summary>
+
+IP 당 횟수 제한을 걸면 한 곳에서 대량의 이메일을 빠르게 확인하는 것을 늦출 수 있습니다. 명단 수집 비용이 올라갑니다.
+
+한계는 두 가지입니다. 공격자가 여러 IP(프록시, 봇넷)를 쓰면 IP 당 제한은 쉽게 우회됩니다. 또 제한을 너무 빡빡하게 걸면 같은 IP 를 공유하는 정상 사용자들(회사, 학교, 모바일 통신사의 NAT)이 가입하지 못합니다. 결국 횟수 제한은 **속도를 늦출 뿐** 열거 자체를 막지는 못합니다. 막으려면 4.7 절에서 설명한 대로 응답을 통일하고 결과를 이메일로 전달하는 설계가 필요합니다.
+
+</details>
+
+**4.** 다음 코드는 이 장의 `toUserDto` 를 "더 간단하게" 고친 것입니다. 무엇이 문제인가요?
+
+```ts
+export function toUserDto(row: UserRow): UserDto {
+  const { password_hash, created_at, ...rest } = row;
+  return { ...rest, createdAt: created_at.toISOString() };
+}
+```
+
+<details>
+<summary>해답</summary>
+
+지금 당장은 같은 결과를 냅니다. 문제는 **앞으로** 입니다. 이 코드는 "뺄 것" 을 적고 나머지를 전부 내보냅니다. 나중에 `users` 테이블에 `phone`, `mfa_secret`, `deleted_at` 같은 열이 추가되면 아무도 이 함수를 고치지 않아도 그 값이 응답에 섞여 나갑니다. `pool.query` 의 `SELECT *` 가 새 열까지 가져오기 때문입니다.
+
+원래 코드처럼 "내보낼 것" 을 하나씩 고르면 새 열은 누군가 명시적으로 추가하기 전까지 나가지 않습니다. 밖으로 나가는 데이터는 늘 허용 목록 방식으로 고릅니다.
+
+</details>
