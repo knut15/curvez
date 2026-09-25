@@ -1,0 +1,508 @@
+export const meta = {
+  title: "[타임시트] UI — Tailwind 4 토큰, shadcn 원본, 스켈레톤 (06)",
+  summary: "색 토큰 일곱 개를 globals.css 한 파일에 두고, shadcn 컴포넌트는 사용자가 지목한 네 개만 원본 그대로 들였다. 버튼 모양이 하루에 세 번 바뀌어도 한 파일만 고쳤고, 불러오는 중 화면을 불러온 뒤와 같은 크기로 맞춰 측정한 5개 화면의 CLS 가 0 이 됐다.",
+  date: "2026-09",
+  status: "마무리",
+  order: 207,
+  tags: ["타임시트", "tailwind", "shadcn", "design-tokens", "skeleton", "mdx"],
+};
+
+타임시트 웹의 화면은 따로 그린 시안 없이 만들었다. 헤더·하단 내비를 처음 만들 때 저장소에도 아티팩트 목록에도 이 앱의 시안이 없어서 이미 있던 색 토큰 위에서 규칙을 정해 나갔다. 그 뒤로 사용자의 짧은 요청이 올 때마다 규칙이 하나씩 늘었다. "폰트는 pretendard로", "스크롤은 전부 shadcn scroll-area 로", "파랑 빨강 촌스럽다", "layout shift 없도록 스켈레톤으로" 같은 요청이다.
+
+이 글은 그 규칙들이 코드 어디에 어떻게 들어갔는지를 순서대로 뜯어본다. 규칙의 원본은 저장소의 `.claude/skills/timesheet-ui/SKILL.md` §0 "디자인 기초 — 사용자가 정한 것" 표이고, 컴포넌트별 명세는 `docs/design/component-guide.md` 다.
+
+| 무엇 | 버전 (`node_modules` 실제 값) | 누가 골랐나 |
+| --- | --- | --- |
+| Tailwind CSS | 4.3.3 | 처음 뼈대에 있던 것 |
+| `@base-ui/react` (shadcn base-nova 의 바탕) | 1.8.0 | 사용자가 ScrollArea 를 지목해서 딸려 옴 |
+| `clsx` / `tailwind-merge` | 2.1.1 / 3.7.0 | 같은 이유 |
+| `class-variance-authority` / `tw-animate-css` | 0.7.1 / 1.4.0 | 사용자가 Dialog 를 지목, 설치는 물어보고 승인 |
+| `lucide-react` | 1.47.0 | 사용자 지시 "lucide 설치해서" |
+| `pretendard` | 1.3.9 | 사용자 지시 "폰트는 pretendard로" |
+| `@next/mdx` | 16.3.6 | 사용자 지시 "개발팀은 mdx 로 페이지" |
+
+표 1. 이 글에 나오는 UI 스택
+
+## 1. 색 토큰 — globals.css 한 파일
+
+토큰은 "이 색은 어디에 쓴다" 를 이름으로 정해 둔 값이다. 버튼에 `#1c1917` 을 직접 쓰지 않고 `foreground` 라는 이름을 쓰면 나중에 색을 바꿀 때 이름이 가리키는 값 한 곳만 고치면 된다.
+
+타임시트의 토큰은 일곱 개다. 라이트 값은 `:root` 에, 다크 값은 `prefers-color-scheme: dark` 미디어 쿼리 안의 `:root` 에 둔다. OS 가 다크 모드면 같은 이름이 다른 값을 가리킨다.
+
+```css
+:root {
+  /* 스크롤바·폼 컨트롤을 OS 테마에 맞춘다 — 없으면 다크 모드에서도 흰 스크롤바가 그려진다 */
+  color-scheme: light dark;
+  --background: #f5f5f4;
+  --foreground: #1c1917;
+  --surface: #ffffff;
+  --line: #e7e5e4;
+  --muted: #78716c;
+  --accent: #2563eb;
+  --warn: #dc2626;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0c0a09;
+    --foreground: #f5f5f4;
+    --surface: #1c1917;
+    --line: #292524;
+    --muted: #a8a29e;
+    --accent: #3b82f6;
+    --warn: #f87171;
+  }
+}
+```
+
+| 토큰 | 맡은 일 | 라이트 | 다크 |
+| --- | --- | --- | --- |
+| `background` | 페이지 바탕 | `#f5f5f4` | `#0c0a09` |
+| `foreground` | 본문 글자 | `#1c1917` | `#f5f5f4` |
+| `surface` | 카드·모달 바탕 | `#ffffff` | `#1c1917` |
+| `line` | 테두리·구분선 | `#e7e5e4` | `#292524` |
+| `muted` | 보조 **글자**색 | `#78716c` | `#a8a29e` |
+| `accent` | 강조(링크·활성 탭) | `#2563eb` | `#3b82f6` |
+| `warn` | 경고·지우기 | `#dc2626` | `#f87171` |
+
+표 2. 타임시트의 색 토큰 일곱 개
+
+맨 위의 `color-scheme: light dark` 는 처음부터 있던 줄이 아니다. 컴포넌트 가이드를 운영에 올린 뒤 브라우저로 보니 목차 옆에 흰 세로 막대가 보였다. 목차가 화면보다 7px 길어서 스크롤바가 생겼다. `color-scheme` 선언이 없으니 브라우저가 다크 모드에서도 스크롤바를 흰색으로 그렸다. 이 한 줄로 스크롤바와 폼 컨트롤이 OS 테마를 따라가게 했다.
+
+### 1-1. Tailwind 4 의 `@theme` 로 클래스 이름을 만든다
+
+Tailwind 4 는 설정 파일 대신 CSS 안의 `@theme` 블록에서 테마를 정한다. `--color-surface` 라는 변수를 적으면 `bg-surface`·`text-surface`·`border-surface` 같은 클래스가 생긴다.
+
+```css
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-line: var(--line);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-warn: var(--warn);
+  /* … shadcn 이름 잇기는 2절 … */
+  --font-sans: var(--font-pretendard);
+  --font-mono: var(--font-geist-mono);
+}
+```
+
+`inline` 을 붙이면 만들어진 클래스가 `var(--surface)` 를 그대로 품는다. 그래서 다크 모드에서 `:root` 의 `--surface` 값이 바뀌면 `bg-surface` 도 따라 바뀐다. 다크 모드용 클래스를 따로 쓰지 않아도 된다.
+
+## 2. shadcn 이름을 우리 토큰에 잇는다 — `muted` 가 겹친 자리
+
+shadcn 컴포넌트는 자기만의 색 이름을 쓴다. 스크롤바 손잡이는 `bg-border`, 포커스 테두리는 `ring-ring`, 모달 바탕은 `bg-popover`, 주 버튼은 `bg-primary` 다. 타임시트에는 이 이름들이 없다.
+
+원본 클래스를 고치지 않으려면 shadcn 이름이 우리 토큰 값을 가리키게 `@theme` 에서 이어 주면 된다. 새 색은 만들지 않는다.
+
+```css
+@theme inline {
+  /* shadcn 컴포넌트가 쓰는 이름을 우리 토큰에 잇는다 (scroll-area 의 bg-border, ring-ring) */
+  --color-border: var(--line);
+  --color-ring: var(--accent);
+  /* shadcn Dialog·Button 이 쓰는 이름 (2026-09-25 조건 수정 모달). muted 는 우리 쪽이 글자색이라 잇지 않는다 — 바탕이 필요한 곳은 바깥 className 으로 */
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted);
+  /* 주 버튼은 검정(다크 모드 흰색) — 2026-09-25 "파랑 빨강 촌스럽다, 모던하게" */
+  --color-primary: var(--foreground);
+  --color-primary-foreground: var(--surface);
+  --color-secondary: var(--line);
+  --color-secondary-foreground: var(--foreground);
+  --color-destructive: var(--warn);
+  --color-input: var(--line);
+}
+```
+
+여기서 한 이름이 문제가 됐다. `muted` 다. shadcn 에서 `muted` 는 옅은 **바탕색**이고 글자색은 `muted-foreground` 가 따로 있다. 타임시트의 `--muted` 는 이미 회색 **글자색**으로 앱 전체에 쓰이고 있었다. 같은 이름이 다른 역할을 맡고 있는 셈이다.
+
+shadcn 쪽 뜻에 맞춰 `--muted` 를 옅은 바탕색으로 바꾸면 앱 전체의 `text-muted` 글자가 흐려져 읽기 어려워진다. 그래서 `muted` 는 잇지 않았다. `muted-foreground` 만 우리 `--muted` 에 잇고 원본이 `bg-muted` 를 쓰는 곳은 그 컴포넌트를 쓰는 쪽에서 `className` 으로 덮는다. 8절의 스켈레톤이 바로 그 경우다.
+
+## 3. shadcn 은 지목된 것만, 원본 그대로
+
+shadcn 은 npm 패키지로 설치하는 라이브러리가 아니다. 레지스트리에 있는 컴포넌트 소스를 쓰는 쪽 프로젝트에 복사해 넣는 방식이다. 그래서 복사한 뒤 얼마든지 고칠 수 있는데 타임시트는 일부러 고치지 않기로 했다.
+
+### 3-1. 처음에는 들이지 않았다
+
+컴포넌트 가이드를 만들 때(TS-003 작업 카드) 사용자가 shadcn 문서 링크를 주면서 정한 범위는 "문서 형식만 따른다" 였다. 컴포넌트 코드를 들이는 것이 아니라 shadcn 문서처럼 생긴 가이드 페이지를 만드는 일이었다. 그러다 사용자가 컴포넌트를 하나씩 지목하면서 들어왔다.
+
+| 요청 | 사용자가 지목한 것 | 파일 |
+| --- | --- | --- |
+| 15 | "스크롤은 전부 shadcn scroll-area 로" | `components/ui/scroll-area.tsx` |
+| 26 | 조건 수정 모달을 shadcn Dialog 로 | `components/ui/dialog.tsx` |
+| 26 | (Dialog 원본이 부르는 Button — 원본 의존이라 같이) | `components/ui/button.tsx` |
+| 28 | 스켈레톤을 shadcn Skeleton 으로 | `components/ui/skeleton.tsx` |
+
+표 3. 들인 shadcn 컴포넌트 네 개
+
+스타일은 `base-nova` 다. shadcn 에는 Radix 기반 스타일과 Base UI 기반 스타일이 있다. 사용자가 준 링크(`ui.shadcn.com/docs/components/base/...`)가 Base UI 쪽이어서 `@base-ui/react` 를 설치했다. 아래 `cn` 구성(clsx + tailwind-merge)은 사용자의 다른 프로젝트(autoqa)와 같다.
+
+### 3-2. 원본은 고치지 않는다
+
+규칙은 스킬 문서에 이렇게 적혀 있다.
+
+- 레지스트리 원본(`https://ui.shadcn.com/r/styles/base-nova/<이름>.json`)을 `web/src/components/ui/<이름>.tsx` 에 **그대로** 둔다. 고칠 것이 있으면 바깥에서 className 으로
+- 원본이 쓰는 테마 이름(`bg-border`, `ring-ring` …)은 `globals.css` `@theme` 에서 우리 토큰으로 잇는다. 새 색을 만들지 않는다
+
+shadcn CLI 가 설치할 때 하는 경로 치환만 똑같이 했다. `cn` 을 `@/lib/utils` 에서 가져오게 하고 원본의 `IconPlaceholder` 를 lucide `XIcon` 으로 바꿨다. 클래스 문자열에는 손대지 않았다. 원본을 고쳐 두면 레지스트리가 갱신될 때마다 원본 변경과 앱 쪽 수정을 손으로 합쳐야 하기 때문이다.
+
+클래스 문자열을 합치는 함수가 `cn` 이다. `clsx` 가 조건부 클래스를 이어 붙이고, `tailwind-merge` 가 `h-10` 과 `h-8` 처럼 충돌하는 Tailwind 클래스 중 뒤의 것만 남긴다. 바깥 `className` 으로 원본을 덮을 수 있는 것이 이 함수 덕분이다.
+
+```ts
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+/** shadcn 컴포넌트가 쓰는 클래스 합치기 (autoqa 와 같은 구성) */
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+```
+
+### 3-3. ScrollArea 에서 막힌 두 곳
+
+ScrollArea 는 브라우저 기본 스크롤바 대신 얇은 스크롤바를 그리는 영역이다. 대상을 찾아보니 앱 안에서 따로 스크롤되는 곳은 10곳이었고 전부 가이드(코드 블록, 표, 목차)였다. 앱 화면은 페이지 전체만 스크롤돼서 바꿀 곳이 없었다.
+
+첫 번째로 막힌 곳은 최대 높이다. Root 에 `max-h` 를 주면 안쪽 viewport 가 내용만큼 늘어나서 스크롤이 생기지 않는다. 최대 높이는 viewport 에 줘야 한다.
+
+```tsx
+// ✅ viewport 에 최대 높이를 준다
+<ScrollArea className="[&>[data-slot=scroll-area-viewport]]:max-h-[28rem]">
+
+// ❌ Root 에만 주면 viewport 가 늘어나 스크롤이 생기지 않는다
+<ScrollArea className="max-h-[28rem]">
+```
+
+두 번째는 가로 넘침이다. `/guide/foundations` 를 390px 폭으로 보니 문서 폭이 437px 이었다. 색 표 안의 `sr-only` 요소(화면에는 안 보이고 스크린리더만 읽는 글자)는 절대 위치다. 이를 감싼 스크롤 틀에 `position` 이 없어서 문서 전체를 기준으로 자리를 잡고 폭을 넓혔다. 표 틀 네 종류에 `relative` 를 줘서 고쳤다.
+
+배포 뒤 운영에서 확인한 값은 남은 기본 스크롤 요소 0, 가이드 17쪽의 390px 문서 넘침 0 이었다.
+
+## 4. 설치하기 전에 물었다
+
+Dialog 를 들일 때 원본이 `ui/button.tsx` 를 불렀고, Button 원본은 `class-variance-authority` 가 있어야 돌았다. 모달이 열리고 닫힐 때의 움직임(`animate-in`·`fade-in-0`·`zoom-in-95`)은 `tw-animate-css` 가 맡는다. 앱에는 둘 다 없었다.
+
+사용자의 전역 규칙에 이 경우가 적혀 있다. 패키지 설치는 승인을 받고 라이브러리가 없다고 비슷한 것을 손으로 만들지 않는다. 이 규칙은 실제로 있었던 일에서 나왔다. 3D 장면을 사이트로 옮기라는 지시에 three.js 설치를 묻지 않고 셰이더를 직접 써서 비슷하게 만든 일이다. 설치는 한 줄로 되돌릴 수 있지만 손으로 쓴 대체품은 그 뒤로 계속 고쳐야 한다.
+
+그래서 무엇이 없고 무엇을 설치하면 되는지 적어서 물었고 승인을 받은 뒤 `web` 에 설치했다.
+
+| 패키지 | `web/package.json` 범위 | 왜 필요했나 |
+| --- | --- | --- |
+| `class-variance-authority` | `^0.7.1` | Button 의 `variant`·`size` 조합 |
+| `tw-animate-css` | `^1.4.0` | Dialog 의 열고 닫힘 움직임 |
+
+표 4. Dialog 때문에 물어보고 설치한 패키지
+
+`globals.css` 맨 위의 `@import "tw-animate-css";` 가 이때 들어갔다.
+
+## 5. 아이콘은 lucide-react 만, 글꼴은 Pretendard
+
+### 5-1. lucide-react
+
+하단 내비를 만들면서 사용자가 "lucide 설치해서 아이콘도 넣어주고" 라고 했다. 그 뒤로 아이콘은 lucide 하나만 쓴다. 하단 내비 아이콘, 달 이동 화살표, 모달 닫기 버튼, select 의 아래 화살표가 모두 lucide 다.
+
+아이콘은 이름으로 하나씩 가져온다. 쓰지 않는 아이콘이 번들에 들어가지 않는다(트리 셰이킹).
+
+```tsx
+import { Clock } from "lucide-react";   // 이름으로 하나씩 가져온다
+```
+
+달 이동 화살표는 사용자가 "좌우 화살표 아이콘 심플하고 예쁜걸로" 를 요청해서 lucide `ChevronLeft`/`ChevronRight` 를 40px 원형 `IconButton` 에 넣었다. `IconButton` 은 `aria-label` 과 `title` 을 같이 붙이고 `type="button"` 을 갖는다. 디자인 담당이 앞서 지적했던 문제도 이때 같이 풀렸다. "달 이동 버튼에 type 이 없어 form 안에서 제출 버튼으로 동작한다" 는 지적이었다.
+
+### 5-2. Pretendard 는 앱이 직접 제공한다
+
+"폰트는 pretendard로 수정" 요청에 npm `pretendard` 패키지를 설치하고 그 안의 가변 폰트 파일을 `next/font/local` 로 불렀다. 가변 폰트는 굵기마다 파일을 따로 두지 않고 한 파일 안에서 굵기(여기서는 45~920)를 연속으로 고르는 폰트다. 외부 CDN 을 쓰지 않으니 글꼴 파일도 앱과 같은 주소에서 내려간다.
+
+```tsx
+// 본문 글꼴 = Pretendard (2026-09-25 사용자 지시). npm pretendard 의 가변 폰트를 앱이 직접 제공한다 — 외부 CDN 없음
+const pretendard = localFont({
+  src: "../../node_modules/pretendard/dist/web/variable/woff2/PretendardVariable.woff2",
+  variable: "--font-pretendard",
+  weight: "45 920",
+  display: "swap",
+});
+```
+
+`--font-pretendard` 변수는 1절의 `@theme` 에서 `--font-sans` 로 이어진다. 시계처럼 숫자 폭이 일정해야 하는 곳은 Geist Mono 를 그대로 쓰고, 쓰지 않던 Geist Sans 는 뺐다. 운영 `/guide/foundations` 에서 본문과 제목의 computed font 가 pretendard 인 것, 로드된 글꼴이 pretendard 와 Geist Mono 둘인 것을 확인했다.
+
+## 6. 입력칸 `.field` — 모바일에서만 보인 겹침
+
+사용자가 휴대폰에서 보고 알려 준 버그다.
+
+> 모바일에서 멤버의 요청 페이지 보면 휴가신청의 시작/종료일 날짜 컴포넌트가 겹치고 대타요청의 날짜/동료선택의 높이가 다르며 겹친다.
+
+요청 화면은 로그인해야 보이는데 브라우저 자동화로는 비밀번호를 넣지 않는다. 그래서 가이드의 Field 예시를 390px iframe 에 띄워 쟀다(측정 방법은 08편). 이 예시도 같은 두 칸 격자와 같은 `.field` 클래스를 쓴다. 높이 차이는 재현됐다. select 43px, input 46px 이었다. 겹침은 데스크톱 Chrome 에서 재현되지 않았다. Chrome 의 날짜 칸은 좁아지면 같이 줄어든다.
+
+원인은 공용 입력칸 스타일에 둘 있었다.
+
+1. **높이가 없었다.** 위아래 여백만 있어서 input·date·select 가 각자 브라우저 기본 높이를 썼다.
+2. **격자 칸이 줄어들지 못했다.** 격자·flex 안의 요소는 기본 `min-width` 가 `auto` 라 내용보다 좁아지지 않는다. iOS Safari 의 날짜 칸은 기본 모양에 최소 폭이 있고 글자가 가운데 정렬이라 좁은 칸에서 옆 칸을 덮는다. 이것은 알려진 동작이라고 판단한 것이고 실기기로는 확인하지 못했다.
+
+고친 뒤의 `.field` 다.
+
+```css
+@layer components {
+  /*
+   * 입력칸 공통. 높이를 44px 로 못 박아 input·select·date 가 한 줄에서 같은 높이가 되게 하고,
+   * min-w-0 으로 두 칸 격자 안에서 줄어들 수 있게 한다 (2026-09-25 모바일 요청 화면 겹침·높이 차이).
+   */
+  .field {
+    @apply h-11 w-full min-w-0 rounded-xl border border-line bg-background px-3 text-base text-foreground outline-none focus:border-accent;
+  }
+  /* iOS Safari 의 날짜 칸은 기본 모양이 최소 폭을 갖고 가운데 정렬이라 좁은 칸에서 옆 칸을 덮는다 — 기본 모양을 끈다 */
+  input[type="date"].field,
+  input[type="datetime-local"].field {
+    appearance: none;
+    -webkit-appearance: none;
+    display: block;
+    text-align: left;
+  }
+  /* select 는 브라우저마다 높이·화살표가 달라 기본 모양을 끄고 lucide chevron-down 을 그린다 */
+  select.field {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 2.25rem;
+    /* background-image: lucide chevron-down SVG (생략) */
+  }
+}
+```
+
+두 칸 격자에 넣는 `Field` 컴포넌트에도 `min-w-0` 을 줬다. 안쪽 요소를 `div` 에서 `span` 으로 바꾼 것은 `label` 안에 블록 요소를 두던 문제를 같이 고친 것이다.
+
+```tsx
+export function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    // min-w-0: 격자 칸 안에서 줄어들 수 있게. 안쪽은 span — label 안에는 글자 수준 요소만 둔다
+    <label className="block min-w-0 text-sm">
+      <span className="text-muted">{label}</span>
+      <span className="mt-1 block">{children}</span>
+    </label>
+  );
+}
+```
+
+공용 스타일이라 사장 화면의 휴가·대타 등록, 멤버 조건 폼도 같이 고쳐졌다. 운영을 390·320px iframe 으로 다시 재니 모든 `.field` 높이가 44 하나였고 두 칸 행 2개의 겹침은 0(칸 사이 간격 12·8), 문서 가로 넘침도 0 이었다. 원래 증상인 iOS Safari 날짜 칸 겹침이 없어졌는지는 사람이 휴대폰으로 봐야 한다.
+
+## 7. 버튼 모양이 바뀐 순서 — `components/buttons.ts`
+
+버튼은 50분이 채 안 되는 동안 요청이 네 번 왔다.
+
+| 요청 | 원문 | 바뀐 것 |
+| --- | --- | --- |
+| 25 | 텍스트 전부 버튼 디자인으로 변경 | 멤버 카드의 글자 링크 → 테두리 버튼. 보통 동작 파랑(accent) 테두리, 지우기·내보내기 빨강(warn) 테두리 |
+| 26 | 버튼 작게 하고 조건 수정은 모달로 변경, 저장, 취소도 버튼 한사이즈 작게 | 카드 버튼 `h-10` → `h-8 text-xs`, 저장·취소 → `h-9`, 조건 수정은 Dialog |
+| 30 | 전제 버튼 디자인이 너무 촌스럽다 파랑 빨강. 모던하게 수정 | 색 테두리 제거. 주 동작 검정 채움, 보통 회색 채움, 지우기는 회색 글자 |
+| 31 | 멤버목록 버튼(뒤로가기) 작은 사이즈로 수정 | 서브헤더 뒤로 가기 `h-11` → `h-8 text-xs` |
+
+표 5. 버튼 요청이 온 순서
+
+요청 30 에서 버튼 모양을 새로 만들지 않았다. shadcn Button 은 요청 26 에서 이미 들였다. 그 `buttonVariants` 에 기본 variant 가 있으니 그 위에 크기만 얹은 클래스 묶음을 `web/src/components/buttons.ts` 한 곳에 뒀다.
+
+```ts
+// 앱 버튼 모양 — shadcn Button(buttonVariants) 위에 크기만 얹는다. 규칙은 timesheet-ui 스킬 §0 "버튼".
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+const small = "h-8 px-2.5 text-xs";
+
+/** 카드 안 작은 보통 동작 — 조건 수정·근무 기록·수정·복사 */
+export const BTN_ACCENT = cn(buttonVariants({ variant: "secondary" }), small);
+/** 카드 안 작은 지우기 동작 — 삭제·퇴사처리·취소(초대) */
+export const BTN_WARN = cn(buttonVariants({ variant: "ghost" }), small, "text-muted hover:bg-warn/10 hover:text-warn dark:hover:bg-warn/15");
+/** 폼 아래 저장·취소 (h-9, 나란히) */
+export const ACT_SAVE = cn(buttonVariants({ size: "lg" }), "flex-1 font-semibold");
+export const ACT_CANCEL = cn(buttonVariants({ variant: "secondary", size: "lg" }), "flex-1 font-semibold");
+/** 한 줄을 다 쓰는 큰 버튼 (h-12) */
+export const BLOCK_PRIMARY = cn(buttonVariants(), "h-12 w-full rounded-xl text-base font-semibold");
+export const BLOCK_SECONDARY = cn(buttonVariants({ variant: "secondary" }), "h-12 w-full rounded-xl text-base font-semibold");
+```
+
+색은 2절의 `@theme` 에서 잇는다. `primary` 를 `foreground` 에 이었으니 주 버튼은 라이트 모드에서 검정, 다크 모드에서 흰색이 된다. 파랑 채움·파랑 테두리 버튼은 로그인·온보딩·요청·초대·매장·멤버 화면에서 전부 이 상수로 바꿨다.
+
+예외가 둘 있다. 멤버 출퇴근 카드의 출근·퇴근 큰 버튼과 매장 50m 안에 들어오면 뜨는 배너다. 이 색은 꾸밈이 아니라 지금 상태(출근 전·근무 중)를 알리는 신호라서 명세(`member-today` §2-3) 그대로 뒀다.
+
+높이도 바꾸지 않았다. 8절의 스켈레톤이 이미 버튼 높이에 맞춰 자리를 잡고 있어서 높이가 바뀌면 불러오는 중과 불러온 뒤의 크기가 어긋난다.
+
+운영 가이드(다크 모드)에서 잰 값은 보통 버튼 바탕 `#292524` 에 밝은 글자, 저장 버튼 밝은 바탕에 어두운 글자, 퇴사처리 투명 바탕에 회색 글자, 높이 32/36/48 이었다. `BTN_ACCENT` 라는 이름은 파랑 테두리 시절에 붙은 것이라 지금 모양(회색 채움)과 맞지 않는다. 이름은 그대로 남아 있다.
+
+## 8. 스켈레톤 — 불러오는 중을 불러온 뒤와 같은 크기로
+
+> 모든 디자인에 layout shift 없도록 원래 사이즈에서 스켈레톤으로 적용해줘
+
+layout shift 는 데이터가 늦게 들어오면서 이미 보이던 요소가 밀려나는 현상이다. 불러오는 중에 "불러오는 중…" 글자 한 줄만 띄우면 데이터가 들어오는 순간 그 자리가 카드 여러 장으로 커지면서 아래 내용이 밀린다. 이것을 수치로 잰 것이 CLS(Cumulative Layout Shift)이고, 0 이면 한 번도 밀리지 않았다는 뜻이다.
+
+스켈레톤은 불러온 뒤의 모양을 회색 막대로 미리 그려 두는 방식이다. 요청에서 중요한 말은 "원래 사이즈에서" 다. 막대가 불러온 뒤와 **같은 크기**여야 밀리지 않는다.
+
+### 8-1. 원본 Skeleton 위에 `Bone` 과 `Loading`
+
+사용자가 shadcn Skeleton 을 골랐다. 원본은 짧다.
+
+```tsx
+function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="skeleton"
+      className={cn("animate-pulse rounded-md bg-muted", className)}
+      {...props}
+    />
+  )
+}
+```
+
+여기서 2절의 `muted` 문제가 다시 나온다. 원본의 `bg-muted` 는 이 앱에서 글자색이라 막대가 너무 진하다. 원본을 고치지 않고 바깥에 `Bone` 을 둬서 바탕만 `bg-line` 으로 덮었다. `Loading` 은 스켈레톤 영역을 감싸서 스크린리더에 "불러오는 중" 을 한 번만 읽힌다(`web/src/components/ui.tsx`).
+
+```tsx
+export function Bone({ className }: { className?: string }) {
+  return <Skeleton aria-hidden className={cn("bg-line", className)} />;
+}
+
+/** 스켈레톤 영역을 감싼다 — 스크린리더에는 "불러오는 중" 한 번만 읽힌다 */
+export function Loading({ children, className, label = "불러오는 중" }: { children: React.ReactNode; className?: string; label?: string }) {
+  return (
+    <div aria-busy="true" className={className}>
+      <span className="sr-only" role="status">{label}</span>
+      {children}
+    </div>
+  );
+}
+```
+
+### 8-2. 크기 규칙 — 줄 높이 칸 안에 막대
+
+크기 규칙은 하나다. 불러온 화면과 같은 틀(같은 Card·padding·gap)을 쓰고, 글자 한 줄은 그 글자의 줄 높이 칸 안에 막대를 가운데 둔다. 막대 높이를 줄 높이와 같게 하면 막대끼리 붙어 보여서 칸은 줄 높이로 잡고 막대는 그보다 얇게 둔다.
+
+| 글자 | 줄 높이 칸 | 막대 |
+| --- | --- | --- |
+| `text-xs` | `h-4` | `h-3` |
+| `text-sm` | `h-5` | `h-3.5` |
+| `text-base` | `h-6` | `h-4` |
+| `text-xl` | `h-7` | `h-5` |
+| `text-3xl` | `h-9` | `h-7` |
+
+표 6. 글자 크기별 스켈레톤 칸과 막대 높이
+
+헤더 스켈레톤이 이 규칙을 따른 예다. 윗줄(매장 이름)은 `h-5` 칸에 `h-3` 막대, 제목은 `h-7` 칸에 `h-5` 막대, 아바타는 같은 40px 원이다.
+
+```tsx
+export function HeaderSkeleton({ width = "max-w-3xl" }: { width?: string }) {
+  return (
+    <div aria-hidden className="sticky top-0 z-20 border-b border-line bg-background/90">
+      <div className={`mx-auto flex ${width} items-center justify-between gap-3 px-5 py-3`}>
+        <div className="space-y-0">
+          <div className="flex h-5 items-center"><Bone className="h-3 w-20" /></div>
+          <div className="flex h-7 items-center"><Bone className="h-5 w-16" /></div>
+        </div>
+        <Bone className="h-10 w-10 rounded-full" />
+      </div>
+    </div>
+  );
+}
+```
+
+`Bone`·`Loading` 과 셸 스켈레톤(`HeaderSkeleton`·`BottomNavSkeleton`)은 먼저 만들어 두고 화면별 스켈레톤은 개발 담당 에이전트 두 명에게 멤버 화면과 사장 화면으로 파일이 겹치지 않게 나눠 맡겼다.
+
+### 8-3. 스켈레톤이 드러낸 버그 둘
+
+두 담당이 작업하다 공유 파일에서 문제를 찾아 올려 보냈다.
+
+| 찾은 쪽 | 문제 | 수정 |
+| --- | --- | --- |
+| 멤버 화면 담당 | 첫 읽기가 실패하면 출퇴근 탭이 오류 대신 스켈레톤에 계속 머문다 | 상태 판단에서 실패를 먼저 보게 순서를 바꿈 |
+| 사장 화면 담당 | 매장 로고가 있으면 헤더가 72px, 스켈레톤은 68px | 헤더 윗줄을 `h-5` 로 고정 |
+
+표 7. 스켈레톤 작업 중 찾은 문제
+
+첫 번째는 스켈레톤이 만든 버그다. "불러오는 중…" 글자일 때는 실패가 눈에 띄었는데 스켈레톤은 계속 불러오는 중처럼 보여서 실패를 가린다. 로딩 판단보다 실패 판단이 먼저 와야 한다.
+
+### 8-4. 426 과 402 — 줄바꿈이 달랐다
+
+운영 가이드에서 `today-dashboard` 를 쟀더니 불러온 뒤 426px, 스켈레톤 402px 이었다. 가이드 미리보기 틀이 좁아서 카드 오른쪽의 "급여 탭에서 자세히" 가 다음 줄로 내려갔는데 스켈레톤은 그 자리에 짧은 막대를 둬서 내려가지 않았다.
+
+데이터와 상관없는 고정 글자는 스켈레톤에서도 글자 그대로 두기로 했다. 폭이 같으면 같은 자리에서 줄이 바뀐다.
+
+```tsx
+{/* 고정 글자는 그대로 — 좁은 폭에서 불러온 뒤와 같은 자리에서 줄바꿈된다 */}
+<span className="inline-flex shrink-0 items-center gap-0.5 text-sm text-accent">
+  급여 탭에서 자세히
+  <ChevronRight aria-hidden size={16} />
+</span>
+```
+
+### 8-5. 잰 값
+
+운영 가이드를 390px 폭에서 잰 "불러온 뒤 / 불러오는 중" 높이다.
+
+| 컴포넌트 | 390px | 비고 |
+| --- | --- | --- |
+| `clock-card` | 232 / 232 | |
+| `today-dashboard` | 426 / 426 | 8-4 수정 뒤 |
+| `pay-view` | 불러오는 중 1010 | basic 예시 계산값과 같음 |
+| skeleton 예시 | 130 / 130 | |
+| 가로 넘침 | 0 | |
+
+표 8. 스켈레톤과 불러온 뒤의 높이 비교 (px)
+
+그 뒤 성능 검사에서 로그인한 사장 계정으로 사장 화면 5개(대시보드·달력·요청·멤버·매장)를 각 5회 열고 `layout-shift` 기록을 읽었다. CLS 는 5개 화면 모두 0 이었다(`docs/verify/performance.md`).
+
+320px 폭에서는 `today-dashboard` 가 522 / 466 으로 56px 어긋난다. 이번 주 기간, 근무한 날처럼 **데이터 글자**가 좁은 폭에서 줄바꿈되는데 막대는 데이터 길이를 모르니 따라 내려가지 못한다. 고정 글자를 두는 방법으로는 풀리지 않아서 남은 이동으로 기록했다.
+
+## 9. `/guide` — MDX 로 만든 컴포넌트 가이드
+
+> 디자인팀 https://ui.shadcn.com/docs/components/base/avatar 이대로 timesheet 디자인 컴포넌트 가이드 만들고 개발팀은 mdx 로 페이지 만들어
+
+MDX 는 마크다운 안에 React 컴포넌트를 섞어 쓸 수 있는 형식이다. 설명 글은 마크다운으로 쓰고 그 사이에 실제 컴포넌트 예시를 끼워 넣을 수 있다. 사용자에게 물어서 정한 것은 셋이다. shadcn 은 문서 형식만 따르고, MDX 를 설치하고, `/guide` 를 운영에 공개한다.
+
+설치한 것은 `@next/mdx` 16.3.6, `@mdx-js/loader`·`@mdx-js/react` 3.1.1, `@types/mdx` 2.0.14 다. `next.config.ts` 에서 `page.mdx` 를 페이지로 인식하게 했다.
+
+```ts
+const nextConfig: NextConfig = {
+  // /guide 의 문서 페이지는 page.mdx 다
+  pageExtensions: ["js", "jsx", "md", "mdx", "ts", "tsx"],
+  // … rewrites …
+};
+
+const withMDX = createMDX({ extension: /\.(md|mdx)$/ });
+export default withMDX(nextConfig);
+```
+
+App Router 에서 `@next/mdx` 를 쓰려면 `web/mdx-components.tsx` 가 있어야 한다. 이 파일이 MDX 가 만드는 제목·문단·코드 블록을 우리 토큰 색으로 그리고, 가이드 전용 블록(`ComponentPreview`·`PropsTable`·`SimpleTable` 등)을 등록해서 MDX 안에서 import 없이 쓰게 한다. 코드 블록(`pre`)은 3절의 ScrollArea 로 감싼다.
+
+가이드 페이지 하나는 이렇게 생겼다(`web/src/app/guide/components/skeleton/page.mdx`).
+
+```mdx
+# Skeleton
+
+불러오는 동안 **불러온 뒤와 같은 크기**로 자리를 잡아 두는 막대. …
+
+<ComponentPreview name="skeleton/basic" width="max-w-md" />
+
+<FileLocation path="web/src/components/ui.tsx" importLine={`import { Bone, Loading } from "@/components/ui";`} />
+```
+
+지금 `web/src/app/guide` 아래 `page.mdx` 는 23개이고, 그중 컴포넌트 페이지가 21개다. 규칙은 "컴포넌트를 추가하거나 props·모양을 바꾼 커밋에는 가이드 페이지와 명세의 해당 절이 같이 들어간다" 이다.
+
+가이드는 로그인 없이 열린다. 그래서 8절과 6절의 측정처럼, 로그인해야 보이는 화면 대신 가이드 예시로 모양을 재는 용도로도 쓰였다.
+
+MDX 에서 막힌 일도 하나 있다. JSX 주석을 `return (` 바로 뒤에 넣어서 파싱 에러가 났는데 배포를 반복하던 스크립트가 빌드 실패를 무시하고 세 번 배포를 시도했다. 산출물이 없어서 전부 실패했고 배포된 것은 없었다. 주석을 JS 주석으로 옮겼고 그 뒤로 배포는 빌드가 성공했을 때만 한다.
+
+## 10. 대가와 남은 것
+
+| 선택 | 얻은 것 | 대가 |
+| --- | --- | --- |
+| shadcn 원본을 고치지 않음 | 레지스트리 갱신을 그대로 받을 수 있다 | 맞춤이 바깥 `className` 과 `@theme` 에 흩어진다 |
+| `muted` 를 잇지 않음 | 앱의 보조 글자색이 그대로다 | 원본이 `bg-muted` 를 쓰는 곳마다 덮어야 한다(`Bone`) |
+| 버튼을 `buttons.ts` 한 곳에 | 다음 모양 변경도 한 파일만 고친다 | 상수 이름(`BTN_ACCENT`)이 지금 모양과 맞지 않는다 |
+| `.field` 높이 44px 고정 | input·date·select 높이가 하나다 | 글자를 크게 키우는 사용자 설정에서 칸이 모자랄지는 확인하지 않았다 |
+| 스켈레톤에 고정 글자를 둠 | 390px 에서 줄바꿈까지 같다 | 320px 에서 데이터 글자 줄바꿈 차이 56px 은 남는다 |
+
+표 9. 이 글의 선택과 대가
+
+확인하지 못한 것도 있다.
+
+- **로그인한 실제 화면.** 사장·멤버 화면의 버튼·스켈레톤·입력칸은 운영 가이드 예시와 iframe 으로만 쟀다.
+- **iOS Safari 날짜 칸.** 실기기에서 겹침이 사라졌는지 사람 확인이 필요하다.
+- **라이트 모드.** 버튼 색은 다크 모드에서 쟀다.
+- **`Spinner`.** 앱에서는 더 쓰지 않지만 가이드 페이지와 컴포넌트는 남아 있다. 파일 삭제는 승인이 필요한 일이라 지우지 않았다.
+
+이전 편: [타임시트] 로그인 인증 — JWT, argon2, 쿠키 세션, CSRF (05)
+
+다음 편: [타임시트] Vercel 배포 — 웹과 API 를 따로 올리고 리전을 재다 (07)

@@ -1,0 +1,241 @@
+export const meta = {
+  title: "[타임시트] Next.js 16 App Router — 같은 출처 쿠키와 정적 화면 (01)",
+  summary: "타임시트의 웹은 Next.js 16 App Router 로 만들었지만 서버 렌더는 거의 쓰지 않는다. rewrites 로 API 를 같은 출처 뒤에 두고, 화면은 미리 렌더된 정적 HTML 위에서 클라이언트가 세션을 부팅한다. 그 구조를 고른 이유와 배포에서 막힌 곳, 치른 비용을 정리했다.",
+  date: "2026-09",
+  status: "마무리",
+  order: 202,
+  tags: ["타임시트", "nextjs", "app-router", "rewrites", "mdx"],
+};
+
+타임시트 웹의 HTML 응답은 13~31ms 만에 첫 바이트가 온다. 운영에서 잰 값이다. 그런데 사장 화면에 데이터가 다 그려지기까지는 중앙값으로 0.6~0.9초가 걸린다. 두 숫자 사이의 차이가 이 웹의 구조를 그대로 보여 준다.
+
+HTML 은 빌드할 때 미리 만들어 둔 정적 파일이고 누가 로그인했는지는 브라우저가 API 에 물어본 뒤에야 안다. Next.js 16 을 쓰면서 서버 렌더로 사용자 데이터를 그리는 일은 하지 않았다. 그러면 Next 는 이 프로젝트에서 무슨 일을 했을까.
+
+웹이 맡은 일은 크게 셋이다. API 를 같은 출처 뒤에 숨기는 프록시, 로그인 상태를 되살리는 클라이언트 화면, 그리고 `/guide` 컴포넌트 가이드다. 여기에 Next 16 이라서 생긴 규칙과 배포에서 막힌 곳까지 순서대로 본다.
+
+## 1. 웹이 맡은 화면
+
+웹은 `web/` 폴더의 Next.js 16.3.6(App Router)이고 React 는 19.2.8 이다. 두 버전 모두 `web/node_modules/<패키지>/package.json` 에서 읽은 실제 설치값이다. Next·React 는 작업을 시작하기 전부터 저장소 뼈대에 있었다.
+
+| 경로 | 화면 | 누가 들어오나 |
+| --- | --- | --- |
+| `/` | 멤버(알바생) 출퇴근·기록·요청·급여·내 정보 | 매장 소속 멤버 |
+| `/admin/*` | 사장 대시보드·달력·요청·멤버·매장 | 매장 마스터 |
+| `/login`, `/signup`, `/onboarding`, `/join` | 로그인, 가입, 매장 만들기·초대 코드 등록 | 로그인 전이거나 소속이 없는 사용자 |
+| `/guide/*` | 컴포넌트 가이드 (MDX) | 로그인 없이 누구나 |
+
+표 1. 웹이 가진 화면과 들어오는 사람
+
+API 는 `server/` 의 Express 가 따로 맡는다. 웹은 데이터를 직접 읽지 않고 브라우저가 부르는 `/api/*` 를 API 서버로 넘겨 주기만 한다.
+
+## 2. Next 16 이라서 문서를 먼저 읽는다
+
+`web/AGENTS.md` 에는 `next dev` 가 스스로 써 넣는 블록이 있다. 첫 줄이 이렇다.
+
+```md
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` ... before writing any code.
+```
+
+에이전트가 학습한 Next 는 16 보다 옛 버전일 수 있다. 그래서 코드를 쓰기 전에 설치된 패키지 안의 문서(`node_modules/next/dist/docs/`)를 먼저 읽으라는 규칙이다. 프로젝트 `CLAUDE.md` §6 에도 같은 줄이 있다.
+
+이 규칙이 실제로 쓰인 흔적은 코드 주석에 남아 있다. `next.config.ts` 의 MDX 설정 옆에 읽은 문서 경로가 적혀 있다.
+
+```ts
+// /guide 의 문서 페이지는 page.mdx 다 — node_modules/next/dist/docs/01-app/02-guides/mdx.md
+pageExtensions: ["js", "jsx", "md", "mdx", "ts", "tsx"],
+```
+
+레이아웃이 받는 `LayoutProps<"/">` 도 Next 16 쪽 방식이다. 경로 문자열로 props 타입을 만들어 주는 전역 타입이라 `typecheck` 스크립트가 `next typegen && tsc --noEmit` 순서로 타입을 먼저 생성한다.
+
+## 3. rewrites 로 API 를 같은 출처에 둔다
+
+웹과 API 는 Vercel 프로젝트 두 개로 따로 올라가 있다. 주소도 다르다.
+
+- 웹 `https://timesheet-brown-ten.vercel.app`
+- API `https://timesheet-api-hazel.vercel.app`
+
+그런데 브라우저는 웹 주소만 부른다. `next.config.ts` 의 rewrites 가 `/api/*` 요청을 API 주소로 넘긴다. rewrites 는 주소창의 URL 은 그대로 두고 요청만 다른 곳으로 보내는 설정이다.
+
+```ts
+// API 는 별도 서버(server/)다. 브라우저에게는 같은 출처로 보이도록 /api 를 넘긴다 — docs/prd/05-auth.md 토폴로지.
+// 빌드 시점에 읽히므로 배포 환경변수 API_URL 을 바꾸면 다시 빌드해야 한다.
+const API_URL = process.env.API_URL ?? "http://localhost:4200";
+
+async rewrites() {
+  return [{ source: "/api/:path*", destination: `${API_URL}/api/:path*` }];
+},
+```
+
+이렇게 한 이유는 쿠키다. 로그인은 사용자가 직접 구현(JWT)을 골랐고 액세스·리프레시 토큰을 둘 다 HttpOnly 쿠키에 담는다. 쿠키에는 `SameSite=Strict` 를 걸었다. 다른 사이트에서 출발한 요청에는 쿠키를 싣지 않는다는 속성이다.
+
+`docs/prd/05-auth.md` 의 토폴로지 절이 그 사정을 적어 두었다. `vercel.app` 은 공개 접미사 목록(Public Suffix List)에 올라 있다. 그래서 `a.vercel.app` 과 `b.vercel.app` 은 브라우저 눈에 서로 다른 사이트다. 웹이 API 주소를 직접 부르면 `SameSite=None` 을 써야 하고 그러면 Safari 가 쿠키를 막는다. 웹 주소 뒤에 API 를 두면 같은 출처가 되니 CORS 설정도 필요 없고 `Strict` 도 그대로 동작한다.
+
+대가는 두 가지다.
+
+첫째, 요청이 한 번 더 거친다. 운영에서 멤버 앱이 부팅할 때 부르는 API 다섯 개를 10회씩 쟀다. 웹을 거친 쪽이 API 를 직접 부른 쪽보다 p50 기준 요청당 20~30ms 더 걸렸다.
+
+| 경로 | 합계 p50 | `/users/me` p50 | 기록 p50 |
+| --- | --- | --- | --- |
+| 웹 경유(rewrites) | 563 | 258 | 247 |
+| API 직접 | 482 | 230 | 226 |
+
+표 2. 멤버 앱 부팅 순서 그대로 잰 API 시간, 단위 ms (`docs/verify/performance.md` 표 1 일부)
+
+둘째, `API_URL` 은 빌드할 때 값이 굳는다. 주소를 바꾸면 웹을 다시 빌드해야 한다. 이 성질 때문에 배포에서 한 번 막혔다(7절).
+
+## 4. 화면은 클라이언트 컴포넌트, HTML 은 정적 파일
+
+App Router 에서 컴포넌트는 기본이 서버 컴포넌트다. 파일 맨 위에 `"use client"` 를 적으면 브라우저에서도 실행되는 클라이언트 컴포넌트가 된다. 이 앱은 `web/src` 에 `"use client"` 파일이 72개다.
+
+페이지 파일은 거의 얇은 껍데기다. 멤버 첫 화면은 이게 전부다.
+
+```tsx
+import TimesheetApp from "@/components/TimesheetApp";
+
+export default function Home() {
+  return <TimesheetApp />;
+}
+```
+
+`TimesheetApp` 이 클라이언트 컴포넌트이고 데이터는 브라우저가 `openapi-fetch` 로 부른다. `/admin` 은 `layout.tsx` 부터 `"use client"` 다. 서버에서 사용자 데이터를 읽는 페이지는 없다. 그래서 빌드할 때 HTML 을 미리 만들어 둘 수 있다. 히스토리의 한 빌드 기록은 "build 34/34 정적" 이다.
+
+운영에서 잰 결과에도 이 구조가 그대로 드러난다.
+
+| 화면 | HTML TTFB | `/users/me` 끝 | 마지막 API (p50) | 차례로 부르는 단계 |
+| --- | --- | --- | --- | --- |
+| `/admin` 대시보드 | 14 | 334 | 832 | 2 |
+| `/admin/calendar` 달력 | 14 | 320 | 914 | 2 |
+| `/admin/members` 멤버 | 13 | 325 | 827 | 3 |
+
+표 3. 사장 화면별 데이터 도착 시점, 단위 ms (`docs/verify/performance.md` 표 3 일부)
+
+HTML 은 10ms 대에 온다. 그 뒤로는 `/users/me` 로 로그인을 확인하고 그다음에 화면 데이터를 부른다. API 한 번이 서울에서 미국 동부(iad1)까지 왕복하느라 약 210ms 가 들고 그 왕복이 두세 번 이어진다. 레이아웃 이동(CLS)은 잰 5개 화면 모두 0 이었다. 스켈레톤이 불러온 뒤와 같은 크기로 자리를 먼저 잡기 때문이다.
+
+화면을 전부 클라이언트에서 그리기로 한 결정이 따로 적힌 문서는 찾지 못했다. 코드로 확인되는 사실은 이렇다. 토큰이 HttpOnly 쿠키라 JS 는 토큰을 볼 수 없다. 누가 로그인했는지는 브라우저가 `/api/users/me` 를 불러 봐야 안다.
+
+## 5. 세션 부팅과 `useArea`
+
+루트 레이아웃이 `SessionBoot` 를 한 번 그린다. 이 컴포넌트는 화면에 아무것도 그리지 않고 마운트될 때 `bootSession()` 을 부른다.
+
+```ts
+export async function bootSession(): Promise<void> {
+  try {
+    const { me, status } = await fetchMe();
+    if (me) return setState({ status: "authenticated", me });
+    if (status === 401 && (await refreshSession())) return;
+    if (state.status === "unknown") dropSession();
+  } catch {
+    // API 에 닿지 못했다. "확인 중" 에 멈추지 않게 익명으로 둔다
+    if (state.status === "unknown") dropSession();
+  }
+}
+```
+
+액세스 쿠키가 살아 있으면 `/users/me` 한 번으로 끝난다. 10분짜리 액세스 쿠키가 만료됐으면 401 이 오고 리프레시를 한 번 해서 다시 읽는다. 리프레시 쿠키가 마지막 사용 뒤 30일 동안 살아 있으니 앱을 계속 쓰는 한 다시 로그인할 일이 없다.
+
+세션 상태는 `unknown`·`authenticated`·`anonymous` 셋이다. React 에는 `useSyncExternalStore` 로 연결한다. 서버 렌더 때 쓰는 값(`getServerSession`)은 항상 `unknown` 이다. 그래서 미리 만든 HTML 에는 사용자가 없는 모양이 들어간다.
+
+화면마다 있어도 되는 사용자인지는 `useArea` 가 가린다.
+
+```ts
+export function useArea(area: Area): { session: SessionState; me: Me | null } {
+  const session = useSession();
+  const router = useRouter();
+  const home = homeOf(session);
+  const allowed = home !== null && areaOfHome[home] === area;
+  useEffect(() => {
+    if (home !== null && !allowed) router.replace(home);
+  }, [home, allowed, router]);
+  return { session, me: allowed && session.status === "authenticated" ? session.me : null };
+}
+```
+
+`homeOf` 는 로그인 안 함이면 `/login`, 소속이 없으면 `/onboarding`, 마스터면 `/admin`, 멤버면 `/` 를 돌려준다. `unknown` 동안에는 아무 데도 보내지 않는다. 주석에 이유가 적혀 있다. "곧장 보내면 새로고침마다 로그인 화면이 깜빡인다." `me` 가 `null` 인 동안 화면은 스켈레톤을 그린다.
+
+## 6. 렌더 중 시각과 hydration
+
+hydration 은 서버가 미리 만든 HTML 에 브라우저의 React 가 이벤트와 상태를 붙이는 과정이다. 이때 React 는 브라우저에서 처음 그린 결과가 HTML 과 같다고 가정한다. 시각처럼 그릴 때마다 달라지는 값이 들어가면 두 결과가 어긋난다.
+
+이 앱은 시각을 자주 쓴다. 멤버 시계는 1초마다, 진행 중인 근무 시간은 1분마다 바뀐다. 시각은 전부 `useNow` 훅으로 읽는다.
+
+```ts
+export function useNow(intervalMs: number) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), intervalMs);
+    return () => clearInterval(t);
+  }, [intervalMs]);
+  return now;
+}
+```
+
+근무 시간표(PRD 13)를 만들 때 한 번 막혔다. 날짜별 변경 목록에서 "오늘 이후" 를 거르려고 렌더 안에서 `Date.now()` 를 불렀다. lint 가 이렇게 막았다.
+
+```text
+Cannot call impure function during render
+```
+
+렌더는 같은 입력에 같은 결과를 내야 한다. 부를 때마다 값이 바뀌는 `Date.now()` 는 그 약속을 깬다. `dayKey(useNow(60_000))` 로 바꿨다. `Date.now()` 는 상태 초기값과 effect 안에서만 불린다.
+
+로그인 확인 전 첫 화면은 더 조심했다. 이 자리는 정적 HTML 에 들어가는 자리라 시계 글자를 그리면 빌드한 시각과 브라우저의 시각이 달라 hydration 이 어긋난다. 그래서 `ClockCardSkeleton` 은 날짜와 시계 글자까지 막대로 그린다. 막대 높이는 시계 글자 줄과 같은 20px·48px 이다. 로그인이 확인돼 진짜 시계가 들어와도 카드가 움직이지 않는다.
+
+## 7. Pretendard 와 `/guide`
+
+본문 글꼴 Pretendard 는 사용자 지시로 들였다. npm 패키지 `pretendard` 1.3.9 를 설치하고 `next/font/local` 로 가변 폰트 파일을 직접 읽는다. 외부 CDN 을 거치지 않는다.
+
+```ts
+// 본문 글꼴 = Pretendard (2026-09-25 사용자 지시). npm pretendard 의 가변 폰트를 앱이 직접 제공한다 — 외부 CDN 없음
+const pretendard = localFont({
+  src: "../../node_modules/pretendard/dist/web/variable/woff2/PretendardVariable.woff2",
+  variable: "--font-pretendard",
+  weight: "45 920",
+  display: "swap",
+});
+```
+
+코드 글꼴은 `next/font/google` 의 Geist Mono 를 그대로 두고 쓰지 않던 Geist Sans 는 뺐다. 운영 `/guide/foundations` 에서 본문과 제목의 계산된 글꼴이 pretendard 로 나오는 것을 확인했다.
+
+`/guide` 는 컴포넌트 가이드다. 사용자가 shadcn 문서 형식을 따라 MDX 로 페이지를 만들라고 했고 MDX 설치도 물어서 정했다. `@next/mdx` 16.3.6, `@mdx-js/loader`·`@mdx-js/react` 3.1.1 이 들어왔다. 설정은 두 곳이다.
+
+- `next.config.ts` — `pageExtensions` 에 `md`·`mdx` 를 넣고 `createMDX` 로 감싼다
+- `web/mdx-components.tsx` — App Router 에서 `@next/mdx` 를 쓰려면 이 파일이 있어야 한다. 제목·문단·코드 블록을 앱 색 토큰으로 그리고 `ComponentPreview`·`PropsTable` 같은 가이드 블록을 등록해 MDX 안에서 import 없이 쓴다
+
+`web/src/app/guide` 아래 `page.mdx` 가 23개다. `/guide` 레이아웃은 `useArea` 를 쓰지 않아 로그인 없이 열린다.
+
+MDX 에서 한 번 막혔다. 예시 코드의 `return (` 바로 뒤에 JSX 주석을 넣었더니 파싱 에러가 났다. 그때 배포 반복문이 빌드 실패를 무시하고 배포를 세 번 시도했다. 산출물이 없어 전부 실패했고 배포된 것은 없었다. 주석을 JS 주석으로 옮겼고 그 뒤로 배포는 빌드가 성공했을 때만 한다.
+
+## 8. 배포에서 막힌 곳
+
+웹은 두 가지 경로로 올라간다. 로컬에서 `vercel build` 로 빌드한 결과를 `vercel deploy --prebuilt` 로 올리는 경로, 그리고 `main` 에 머지하면 Vercel Git 연동이 원격에서 빌드하는 경로다. 막힌 곳은 대부분 첫 번째 경로에서 났다.
+
+| 증상 | 원인 | 고친 것 |
+| --- | --- | --- |
+| 첫 배포 업로드에서 `File does not exist: "node_modules/.pnpm/@swc+helpers@0.5.23/..."` | `web/` 에서 배포했다. pnpm 은 패키지 실체를 워크스페이스 루트 `node_modules/.pnpm` 에 두므로 업로드 범위 밖이었다 | 저장소 루트에서 `vercel build` + `deploy --prebuilt`, 프로젝트 설정 `rootDirectory: web` |
+| 재배포에서 `No Next.js version detected` | `vercel pull` 이 서버 쪽 설정(`rootDirectory` null)으로 로컬 `.vercel/project.json` 을 덮어썼다 | `vercel api` 로 프로젝트 설정 자체에 `rootDirectory: web` 을 PATCH |
+| `Invalid rewrite found` — destination 이 `"[SENSITIVE]/api/:path*"` | `API_URL` 을 Sensitive 로 넣어서 `vercel pull` 이 값 대신 가림 문자열을 내려줬다. rewrites 는 빌드 시점에 이 값을 읽는다 | 비밀값이 아니므로 `vercel env add API_URL production --no-sensitive` |
+| 배포 READY 직후 새 경로 404 (두 번) | 운영 주소가 새 배포를 가리키기 전에 요청했다. 몇 초~2분 뒤 200 | 코드 문제 아님. `vercel inspect` 로 운영 주소가 가리키는 배포를 확인 |
+| `api-upload-free` "Too many requests - try again in 24 hours (more than 5000)" | 무료 요금제의 하루 파일 업로드 5000개 한도. prebuilt 배포는 파일을 하나씩 올린다 | `--archive=tgz` 로 묶음 하나를 올린다. 이후 기본값 |
+
+표 4. 웹 배포에서 막힌 곳 (`docs/history/2026-09-25.md`)
+
+`Invalid rewrite` 는 3절의 "빌드할 때 값이 굳는다" 와 같은 뿌리다. 값이 런타임이 아니라 빌드 시점에 필요하니 빌드하는 쪽이 그 값을 읽을 수 있어야 한다. `docs/deploy.md` 의 환경변수 표에 이 이유를 같이 적어 두었다.
+
+## 9. 그래서 Next.js 는 무슨 일을 했나
+
+서버에서 사용자 데이터를 그리는 일은 하지 않았다. 대신 세 가지를 맡았다.
+
+| 맡은 일 | 얻은 것 | 대가 |
+| --- | --- | --- |
+| rewrites 프록시 | 같은 출처라 `SameSite=Strict` 쿠키가 그대로 동작하고 CORS 가 필요 없다 | 요청당 20~30ms, `API_URL` 을 바꾸면 다시 빌드 |
+| 정적 HTML + 클라이언트 화면 | HTML TTFB 13~31ms, CLS 0 | 로그인 확인 뒤에야 데이터를 부른다. 서울-미국 동부 왕복이 두세 번 이어진다 |
+| `/guide` MDX | 컴포넌트 문서와 실제 컴포넌트가 같은 코드로 그려진다 | 컴포넌트를 바꾸면 가이드 페이지·명세도 같이 고친다는 규칙이 붙었다 |
+
+표 5. 웹이 맡은 일과 그 대가
+
+남은 것도 있다. `docs/verify/performance.md` 의 병목 표는 느린 이유 1순위로 서울-미국 동부 거리를, 2순위로 로그인 확인 뒤에야 데이터 요청이 시작되는 순서를 꼽는다. 사장 화면에서 레이아웃과 페이지가 대시보드 API 를 각각 부르는 중복도 남아 있다. FCP·LCP 는 측정 탭이 가려진 상태라 기록이 남지 않아 재지 못했다. 로그인한 실화면은 자동화로 비밀번호를 넣지 않아 가이드 예시와 390·320px iframe 으로만 확인했다.
+
+이전 편: [타임시트] 스택과 구조 안내 (00)
+
+다음 편: [타임시트] Express 5 API — 라우터와 오류, Vercel 진입점 (02)

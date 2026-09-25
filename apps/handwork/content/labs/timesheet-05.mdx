@@ -1,0 +1,379 @@
+export const meta = {
+  title: "[타임시트] 로그인 인증 — JWT, argon2, 쿠키 세션, CSRF (05)",
+  summary: "타임시트의 로그인은 외부 인증 서비스 없이 Express 에 직접 만들었다. 전역 web-auth 스킬의 설계(JWT 10분, argon2id, 리프레시 토큰 회전과 재사용 탐지)를 가져온 뒤 액세스 토큰까지 HttpOnly 쿠키에 담는 30일 슬라이딩 세션으로 바꿨다. 모든 변경 요청에 건 CSRF 검사, FE 의 갱신 흐름, e2e 시나리오와 운영에서만 드러난 일까지 정리했다.",
+  date: "2026-09",
+  status: "마무리",
+  order: 206,
+  tags: ["타임시트", "auth", "jwt", "argon2", "csrf", "cookie-session"],
+};
+
+타임시트에 로그인이 들어온 것은 두 번째 요청에서다. 사장님이 로그인해서 알바생을 초대하고, 알바생은 가입한 뒤 초대 코드로 매장에 들어온다. 에이전트가 인증 방식을 묻자 사용자는 외부 서비스 대신 **직접 구현(JWT)** 을 골랐다. 설계는 사용자의 전역 스킬 `web-auth` 에 이미 정해져 있었다.
+
+몇 시간 뒤 여섯 번째 요청이 왔다. "로그인이 계속 유지되었으면 좋겠어. 액세스토큰으로 쿠키에 담고 리프레시 토큰으로 유지하도록." 에이전트가 두 가지를 되물었다. 사용자는 액세스 토큰을 HttpOnly 쿠키에 담고 마지막 사용 뒤 30일까지 로그인을 유지하는 쪽을 골랐다.
+
+JS 가 토큰을 한 글자도 보지 못하게 하면서 30일 동안 로그인을 유지하려면 서버와 FE 에서 무엇이 바뀌어야 할까. 이 글은 스킬의 기본 설계에서 출발해 쿠키 세션으로 바꾼 흐름을 코드와 함께 따라간다. e2e 시나리오와 운영에서만 드러난 일도 함께 본다.
+
+## 1. 인증이 맡은 일과 고른 것
+
+| 항목 | 값 | 누가 정했나 |
+| --- | --- | --- |
+| 방식 | 직접 구현 — JWT 액세스 토큰 + 리프레시 토큰 | 사용자 (요청 2) |
+| 설계 | 전역 스킬 `web-auth`. 참고 코드는 NestJS 라 Express 로 옮겼다 | 스킬 |
+| 패키지 | `jose` 6.2.12, `argon2` 0.45.1, `cookie-parser` 1.4.7, `express-rate-limit` 8.7.0, `helmet` 8.3.0 | 사용자가 "전부 설치" 로 승인 |
+| 토큰 보관 | 액세스·리프레시 둘 다 HttpOnly 쿠키 | 사용자 (요청 6) |
+| 유지 기간 | 슬라이딩 — 마지막 사용 뒤 30일 | 사용자 (요청 6) |
+
+표 1. 인증의 구성과 결정한 주체
+
+JWT(JSON Web Token)는 "이 요청은 누구의 것" 이라는 정보를 서명과 함께 담은 문자열이다. 서버는 서명만 검사하면 DB 를 보지 않고도 누구인지 안다. 대신 한 번 발급하면 중간에 취소하기 어렵다. 그래서 수명을 10분으로 짧게 두고 만료되면 수명이 긴 리프레시 토큰으로 새로 받는다.
+
+## 2. 출발점 — 스킬의 기본 설계와 바뀐 곳
+
+`web-auth` 스킬은 "정해진 설계" 라고 스스로 밝힌다. 프로젝트마다 다시 고르지 않고 바꿀 사정이 있으면 사용자에게 말하고 고르게 한다. 요청 6 이 그 사정이었다. 스킬에는 이런 경우를 위한 변형 문서(`references/cookie-session.md`)가 있다. 타임시트가 그 변형을 처음 적용한 프로젝트다.
+
+| 항목 | 스킬 기본 설계 | 타임시트 (쿠키 세션 변형) |
+| --- | --- | --- |
+| 액세스 토큰 전달 | 응답 본문 → FE 메모리 → `Authorization: Bearer` 헤더 | `access_token` 쿠키 (`HttpOnly; Secure; SameSite=Strict; Path=/api`) |
+| 서버가 읽는 곳 | Bearer 헤더 | 쿠키만. 헤더는 받지 않는다 |
+| 리프레시 토큰 | 14일 | 30일, 회전마다 새로 |
+| 세션 한도 | 첫 로그인 + 30일 (절대 상한) | 마지막 회전 + 30일 (슬라이딩) |
+| CSRF 검사 대상 | `login`·`refresh`·`logout` | 모든 `POST`·`PUT`·`PATCH`·`DELETE` |
+| FE 부팅 | 무조건 refresh | `/users/me` → 401 이면 refresh |
+
+표 2. 기본 설계와 쿠키 세션 변형의 차이
+
+JWT 서명 방식, argon2id 설정, 리프레시 토큰의 해시 저장·회전·재사용 탐지·잠금 순서는 바뀌지 않고 스킬 그대로다. 아래 3~5절이 그 부분이고, 6~8절이 바뀐 부분이다.
+
+## 3. 액세스 토큰 — jose 로 HS256, 10분
+
+JWT 는 `jose` 로 만든다. HS256 은 서버만 아는 비밀 키 하나로 서명하고 검사하는 방식이다. 클레임(토큰에 담는 값)은 `sub`(사용자 id), `sid`(세션 id — 리프레시 토큰 묶음의 id), `jti`(토큰 고유 id), `iss`(발급자), `aud`(대상)다.
+
+```ts
+// server/src/auth/tokens.ts
+export async function signAccessToken(userId: string, sessionId: string): Promise<string> {
+  return new SignJWT({ sid: sessionId })
+    .setProtectedHeader({ alg: "HS256", typ: "JWT" })
+    .setSubject(userId)
+    .setJti(randomUUID())
+    .setIssuer(JWT_ISSUER)
+    .setAudience(JWT_AUDIENCE)
+    .setIssuedAt()
+    .setExpirationTime(`${env.ACCESS_TOKEN_TTL_SEC}s`)
+    .sign(key);
+}
+
+/** 서명·만료·iss·aud 를 검사한다. alg 는 HS256 만 받는다 (alg:none 바꿔치기 차단). */
+export async function verifyAccessToken(token: string): Promise<{ userId: string; sessionId: string }> {
+  try {
+    const { payload } = await jwtVerify(token, key, { algorithms: ["HS256"], issuer: JWT_ISSUER, audience: JWT_AUDIENCE });
+    ...
+```
+
+검증 쪽의 `algorithms: ["HS256"]` 가 중요하다. JWT 헤더에는 서명 알고리즘이 적혀 있다. 공격자가 이 값을 `none`(서명 없음)으로 바꿔 보내는 공격이 있다. 받을 알고리즘을 하나로 못 박으면 헤더에 무엇이 적혀 오든 HS256 으로만 검사한다.
+
+`ACCESS_TOKEN_TTL_SEC` 의 기본값은 600초, 즉 10분이다. 비밀 키 `JWT_ACCESS_SECRET` 은 32자 이상이어야 서버가 뜬다(`env.ts` 의 zod 검사). 운영에서는 48바이트 난수를 Vercel 에 Sensitive 로 넣었다.
+
+## 4. 비밀번호 — argon2id
+
+비밀번호는 원문 대신 argon2id 해시로 저장한다. argon2id 는 계산에 메모리를 많이 쓰게 만든 해시라 해시가 새어도 비밀번호를 하나씩 대입해 보는 비용이 크다.
+
+```ts
+// server/src/auth/routes.ts
+const ARGON2 = { type: argon2.argon2id, memoryCost: 19456, timeCost: 2, parallelism: 1 } as const;
+
+// 없는 이메일에도 같은 시간을 쓰게 하는 더미 해시. 응답 시간으로 가입 여부가 드러나지 않게 한다.
+const dummyHash = argon2.hash("timing-equalizer", ARGON2);
+
+authRouter.post("/auth/login", loginLimiter, async (req, res) => {
+  const body = LoginBody.parse(req.body);
+  const user = await prisma.user.findUnique({ where: { email: body.email.toLowerCase() } });
+  const ok = await argon2.verify(user?.passwordHash ?? (await dummyHash), body.password);
+  if (!user || !ok) throw new AppError(401, "INVALID_CREDENTIALS");
+  await sendTokens(res, await issueRefreshToken(user.id, meta(req)));
+});
+```
+
+이메일이 없을 때 바로 401 을 돌려주면 그 응답은 argon2 검증을 건너뛰어 빨라진다. 응답 시간만 재도 "이 이메일은 가입돼 있다" 를 알 수 있게 된다. 없는 이메일에도 더미 해시로 검증을 한 번 돌린다. 로컬 e2e(S4)에서 틀린 비밀번호와 없는 이메일이 각각 36.8ms, 36.3ms 였다.
+
+로그인 실패는 IP 당 1분에 5번까지다. 성공한 로그인은 세지 않는다(`skipSuccessfulRequests: true`).
+
+## 5. 리프레시 토큰 — 해시 저장, 회전, 재사용 탐지
+
+### 해시만 저장하고, 쓸 때마다 바꾼다
+
+리프레시 토큰은 JWT 가 아니라 32바이트 난수다. DB 의 `refresh_tokens` 에는 원문 대신 SHA-256 해시만 넣는다. DB 가 새어도 쓸 수 있는 토큰은 나가지 않는다.
+
+refresh 할 때마다 새 토큰을 발급하고 옛 토큰은 `rotated` 로 표시한다. 이 과정을 회전이라고 부른다. 한 번의 로그인에서 이어진 토큰들은 같은 `family_id` 로 묶인다.
+
+### 이미 쓴 토큰이 다시 오면 묶음 전체를 끊는다
+
+회전된 옛 토큰이 다시 온다는 것은 누군가 그 토큰을 복사해 두었다는 뜻일 수 있다. 그러면 그 family 전체를 폐기한다(`REFRESH_TOKEN_REUSED`). 다만 옛 토큰이 회전된 지 10초 안에 오면 폐기하지 않고 409 를 돌려준다. 두 탭이 거의 동시에 refresh 하는 정상적인 경우를 공격으로 오해하지 않기 위한 유예 시간(grace)이다.
+
+### family 잠금을 먼저 잡는다
+
+같은 family 에 요청 두 개가 거의 동시에 오면 차례대로 처리해야 한다. 그런데 정상 회전 요청과 재사용 요청은 서로 **다른 토큰**을 들고 온다. 행 잠금(`FOR UPDATE`)은 각자 다른 행을 잠그니 서로를 기다리지 않는다. 그래서 family 단위로 advisory lock(앱이 정한 키로 거는 Postgres 잠금)을 먼저 잡는다.
+
+```ts
+// server/src/auth/refresh.ts — rotateRefreshToken
+// family 잠금을 먼저, 행 잠금을 나중에 — 정상 회전과 재사용 탐지를 한 줄로 세운다.
+await tx.$queryRaw`SELECT 1 FROM pg_advisory_xact_lock(hashtextextended(${familyId}::text, 0))`;
+```
+
+### 판정은 커밋한 뒤에 에러로 바꾼다
+
+Express 로 옮기면서 가장 신경 쓴 곳이다. 재사용을 탐지하면 family 를 폐기하는 `UPDATE` 를 한다. 그 자리에서 바로 에러를 던지면 Prisma 의 `$transaction` 이 롤백하면서 **폐기까지 되돌리니** 공격자의 토큰이 살아남는다.
+
+```ts
+// server/src/auth/refresh.ts
+/**
+ * 한 트랜잭션 안에서 판정하고, 결과를 COMMIT 한 뒤에 에러를 던진다.
+ * 탐지 UPDATE 뒤에 트랜잭션 안에서 던지면 롤백되어 폐기가 사라진다.
+ */
+export async function rotateRefreshToken(token: string, meta: Meta): Promise<Issued> {
+  const hash = sha256(token);
+  const result = await prisma.$transaction(async (tx): Promise<RotateResult> => {
+    ...
+      await tx.$executeRaw`
+        UPDATE refresh_tokens SET revoked_at = now(), revoke_reason = 'reuse_detected'
+         WHERE family_id = ${row.family_id}::uuid AND revoked_at IS NULL`;
+      return { kind: "reused" };   // ✅ 던지지 않고 값으로 돌려준다
+    ...
+  });
+
+  switch (result.kind) {           // 여기는 커밋이 끝난 뒤다
+    case "ok":
+      return result.issued;
+    case "invalid":
+      throw new AppError(401, "REFRESH_TOKEN_INVALID");
+    case "reused":
+      throw new AppError(401, "REFRESH_TOKEN_REUSED");
+    case "rotated":
+      throw new AppError(409, "REFRESH_TOKEN_ROTATED");
+  }
+}
+```
+
+트랜잭션 안에서는 결과를 값(`kind`)으로만 돌려주고 트랜잭션이 커밋된 뒤 바깥의 `switch` 에서 에러로 바꾼다. 회전한 행의 `revoked_at` 도 앱 시계(`new Date()`) 대신 DB 시계(`now()`)로 적는다. grace 판정이 SQL 안에서 `now()` 와 비교하기 때문에 같은 시계를 써야 10초가 정확히 10초다.
+
+## 6. 쿠키 세 개와 30일 슬라이딩
+
+### 쿠키
+
+| 이름 | 속성 | 수명 |
+| --- | --- | --- |
+| `access_token` | `HttpOnly; Secure; SameSite=Strict; Path=/api` | 10분 |
+| `refresh_token` | `HttpOnly; Secure; SameSite=Strict; Path=/api/auth` | 30일, 회전마다 새로 |
+| `csrf_token` | `HttpOnly; Secure; SameSite=Strict; Path=/` | 2시간 |
+
+표 3. 서버가 내려주는 쿠키
+
+`HttpOnly` 쿠키는 JS 가 읽을 수 없다. 페이지에 악성 스크립트가 끼어들어도(XSS) 토큰 문자열을 빼 가지 못한다. `SameSite=Strict` 는 다른 사이트에서 시작된 요청에는 쿠키를 싣지 않게 한다. 리프레시 쿠키의 `Path=/api/auth` 는 이 쿠키가 인증 경로에만 실리게 좁힌 것이다.
+
+로그인과 refresh 응답 본문에는 토큰이 없다. `{ expiresIn, user }` 만 준다. 쿠키를 지울 때는 설정할 때와 같은 옵션 객체를 쓴다. `Path` 가 하나라도 다르면 브라우저는 다른 쿠키로 보고 지우지 않기 때문이다.
+
+```ts
+// server/src/auth/routes.ts
+function clearAuthCookies(res: Response) {
+  res.clearCookie(REFRESH_COOKIE, refreshCookieBase);
+  res.clearCookie(ACCESS_COOKIE, accessCookieBase);
+}
+```
+
+### 같은 출처를 만든 이유
+
+웹은 `timesheet-brown-ten.vercel.app`, API 는 `timesheet-api-hazel.vercel.app` 이다. 둘을 직접 부르면 브라우저는 **다른 사이트**로 본다. `vercel.app` 이 공개 접미사 목록(Public Suffix List)에 있어서 그 아래 주소는 각각 별개의 사이트로 취급된다. 그러면 쿠키에 `SameSite=None` 을 써야 한다. Safari 는 그런 제3자 쿠키를 막는다.
+
+브라우저는 웹 주소만 부르고, 웹이 Next.js rewrites 로 `/api/*` 를 API 로 넘긴다. 브라우저 입장에서는 같은 출처라 `SameSite=Strict` 가 그대로 동작한다.
+
+### 슬라이딩 — 회전할 때 한도를 다시 잡는다
+
+스킬 기본 설계에서는 새 리프레시 토큰이 family 의 `session_expires_at` 을 그대로 물려받는다. 첫 로그인 뒤 30일이 지나면 계속 쓰고 있어도 끊긴다. 사용자가 원한 것은 "쓰는 동안 계속" 이었다. 그래서 회전할 때마다 한도를 그 시점부터 다시 잡는다.
+
+```ts
+// server/src/auth/refresh.ts — rotateRefreshToken
+// 슬라이딩: 쓸 때마다 세션 한도를 지금부터 다시 잡는다. 안 쓰면 마지막 회전 뒤 SESSION_MAX_AGE_SEC 에 끊긴다.
+const sessionExpiresAt = new Date(Date.now() + env.SESSION_MAX_AGE_SEC * 1000);
+const expiresAt = new Date(Math.min(Date.now() + env.REFRESH_TOKEN_TTL_SEC * 1000, sessionExpiresAt.getTime()));
+```
+
+`SESSION_MAX_AGE_SEC` 의 뜻이 "최대 수명" 에서 "유휴 한도" 로 바뀌었다. 이름은 그대로 두고 주석과 PRD 를 고쳤다.
+
+## 7. 모든 변경 요청에 Origin 과 서명된 `X-CSRF-Token`
+
+CSRF(Cross-Site Request Forgery)는 다른 사이트가 사용자 몰래 우리 API 로 요청을 보내게 만드는 공격이다. 브라우저는 요청을 누가 시작했든 그 주소의 쿠키를 싣는다. 기본 설계에서는 액세스 토큰이 메모리에 있었다. 그때 쿠키를 쓰는 요청은 `login`·`refresh`·`logout` 셋뿐이었다. 액세스 토큰이 쿠키가 되자 **데이터를 바꾸는 모든 요청**이 CSRF 대상이 됐다.
+
+세 겹 방어의 첫째는 쿠키의 `SameSite=Strict` 다. 둘째는 `Origin` 헤더(요청을 시작한 페이지의 출처)가 허용 목록에 있는지 보는 검사다. 셋째는 서명된 double-submit 토큰이다. 같은 값을 쿠키와 `X-CSRF-Token` 헤더 양쪽에 실어 보내게 하고 서버가 둘이 같은지 비교한다. 다른 사이트는 우리 쿠키 값을 읽을 수 없으니 헤더에 같은 값을 넣지 못한다.
+
+```ts
+// server/src/auth/csrf.ts
+export const csrfGuard: RequestHandler = (req, _res, next) => {
+  let origin = req.headers.origin;
+  if (!origin && req.headers.referer) {
+    try {
+      origin = new URL(req.headers.referer).origin;
+    } catch {
+      origin = undefined;
+    }
+  }
+  if (!origin || !env.WEB_ORIGINS.includes(origin)) return next(new AppError(403, "CSRF_ORIGIN_REJECTED"));
+
+  const header = req.headers["x-csrf-token"];
+  const cookie: unknown = req.cookies?.[CSRF_COOKIE];
+  if (typeof header !== "string" || typeof cookie !== "string" || !safeEqual(header, cookie) || !isValidCsrfToken(header)) {
+    return next(new AppError(403, "CSRF_TOKEN_INVALID"));
+  }
+  next();
+};
+```
+
+토큰은 `난수.HMAC서명` 모양이다. 쿠키와 헤더가 같은지만 보지 않고 서버 비밀(`CSRF_SECRET`)로 서명까지 검사한다. 공격자가 어떤 방법으로 쿠키에 자기 값을 심더라도 서명을 만들 수 없으니 통과하지 못한다. 토큰 발급 API 는 쿠키에 유효한 토큰이 이미 있으면 같은 값을 준다. 탭마다 새로 만들면 마지막 탭만 쿠키와 짝이 맞기 때문이다.
+
+이 검사를 라우트마다 붙이지 않고 `app.ts` 에 전역으로 한 번 걸었다.
+
+```ts
+// server/src/app.ts
+// 인증이 쿠키라 브라우저가 자동으로 싣는다 — 상태를 바꾸는 모든 요청에 Origin + CSRF 토큰 검사를 건다.
+const UNSAFE = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+app.use("/api", (req, res, next) => (UNSAFE.has(req.method) ? csrfGuard(req, res, next) : next()));
+app.use("/api", authRouter, logoRouter, storeRouter, shiftRouter, requestsRouter);
+```
+
+라우트마다 붙이면 새 라우트를 만들 때 빠뜨리는 곳이 생긴다. 쿠키 세션으로 바꾸면서 login·refresh·logout 에 붙어 있던 개별 `csrfGuard` 는 떼어 냈다.
+
+## 8. FE — 토큰을 모르는 세션
+
+`web/src/auth/session.ts` 는 토큰을 보지 않는다. 이 모듈이 아는 것은 "누가 로그인했나"(`me`)와 CSRF 토큰뿐이다.
+
+| 규칙 | 이유 |
+| --- | --- |
+| 부팅은 `bootSession()` — `/users/me` 먼저, 401 이면 refresh 한 번 | 액세스 쿠키가 살아 있으면 refresh 요청조차 없다 |
+| refresh 는 single-flight + `navigator.locks` | 탭끼리 쿠키를 공유한다. 잠금이 없으면 두 탭이 같은 토큰으로 회전해 재사용 탐지가 오탐한다 |
+| `authFetch` 가 변경 요청에 `X-CSRF-Token` 을 붙인다 | 서버가 모든 변경 요청을 검사한다 |
+| `CSRF_TOKEN_INVALID` 면 토큰을 새로 받아 1회, 401 이면 refresh 뒤 1회만 재시도 | 무한 루프를 막는다 |
+| 로그인·로그아웃은 `BroadcastChannel("auth")` 로 다른 탭에 알린다 | 한 탭에서 로그아웃하면 다른 탭의 세션 상태도 로그아웃으로 바뀐다 |
+
+표 4. FE 세션 규칙 (`.claude/skills/timesheet-auth/SKILL.md` 4절)
+
+single-flight 는 같은 작업이 여러 번 불려도 실제로는 한 번만 돌리고 결과를 나눠 갖는 방식이다. 한 탭 안에서 API 세 개가 동시에 401 을 받아도 refresh 는 한 번만 나간다. `navigator.locks` 는 탭 사이에 거는 잠금이다. 두 탭이 동시에 만료돼도 한 탭이 refresh 를 끝낼 때까지 다른 탭이 기다린다.
+
+```ts
+// web/src/auth/session.ts
+/** single-flight + 탭 간 잠금. 성공하면 true. 탭끼리 쿠키를 공유하므로 잠금 없이는 재사용 탐지가 오탐한다. */
+export function refreshSession(): Promise<boolean> {
+  refreshing ??= navigator.locks
+    .request("auth-refresh", () => runRefresh(false))
+    // lib.dom 타입은 콜백의 Promise 를 한 겹 더 감싼다. 실제 값은 boolean 이다 — then 으로 타입을 풀어 준다.
+    .then((ok) => ok)
+    .catch(() => false)
+    .finally(() => (refreshing = null));
+  return refreshing!;
+}
+```
+
+`.then((ok) => ok)` 는 타입 때문에 들어간 줄이다. 처음에는 `Type 'Promise<boolean | Promise<boolean>>' is not assignable ...` 에러가 났다. `as Promise<boolean>` 로 단언하자 `TS2352` 로 다시 막혔다. 값을 한 번 통과시키는 `then` 이 타입을 속이는 부분이 가장 적었다.
+
+API 클라이언트(`openapi-fetch`)는 `fetch` 자리에 `authFetch` 를 끼워 쓴다.
+
+```ts
+// web/src/auth/session.ts
+export async function authFetch(request: Request): Promise<Response> {
+  const unsafe = UNSAFE.has(request.method);
+  const retry = request.clone(); // 본문은 한 번만 읽힌다 — 보내기 전에 복제해 둔다
+  const send = async (r: Request) => {
+    if (unsafe) r.headers.set("X-CSRF-Token", await ensureCsrf());
+    return fetch(r, { credentials: "include" });
+  };
+  const response = await send(request);
+  if (response.status === 403 && unsafe && (await response.clone().json().catch(() => null))?.code === "CSRF_TOKEN_INVALID") {
+    csrfToken = null;
+    return send(retry);
+  }
+  if (response.status !== 401) return response;
+  if (!(await refreshSession())) return response;
+  return send(retry);
+}
+```
+
+API 계약(OpenAPI)에는 `x-csrf-token` 헤더를 optional 로 적었다. 서버는 필수로 검사하지만 계약에 필수로 적으면 생성된 타입이 모든 호출에 헤더를 요구한다. 실제로는 `authFetch` 가 붙이니 호출하는 코드가 매번 넣을 이유가 없다.
+
+## 9. e2e 시나리오
+
+테스트는 `server/test/e2e.test.ts` 한 파일이다. API 를 띄워 놓고 실제 HTTP 요청을 보낸다. 시나리오 번호는 `web-auth` 스킬의 `verify.md` 를 따른다. X-1·X-2 는 쿠키 세션 변형에서 더해졌다.
+
+| # | 무엇을 확인하나 | 로컬 | 운영 |
+| --- | --- | --- | --- |
+| S3 | `access_token`(`Path=/api`, `Max-Age=600`)·`refresh_token` 쿠키 속성, 본문에 토큰 없음 | ✅ | ✅ |
+| S5·S6 | 쿠키 없음·변조·다른 `aud`·`alg:none` → 거부, Bearer 헤더만 보내면 401 | ✅ | ✅ |
+| S7~S9 | 회전, 10초 안 옛 토큰 → 409, 10초 뒤 → 401 `REFRESH_TOKEN_REUSED` 와 family 폐기 | ✅ | ✅ (1차) |
+| S17·S17b | 한도 5초 서버에서 6초 방치 → 401, 3초마다 refresh 세 번 → 전부 200 | ✅ | — |
+| S23 | 회전이 family 잠금을 기다리는 사이 옛 토큰이 오면 새 토큰까지 폐기 | ✅ | ✅ (1차) |
+| X-1 | CSRF 헤더 없는 `POST /api/stores` → 403, 위조 Origin → 403 | ✅ | ✅ |
+| X-2 | refresh 가 새 access 쿠키, 로그아웃이 두 쿠키 삭제 | ✅ | ✅ |
+
+표 5. 인증 e2e 시나리오와 결과 (`docs/verify/auth.md`)
+
+S17 은 30일을 기다릴 수 없어서 `SESSION_MAX_AGE_SEC=5` 로 띄운 서버를 따로 두고 `S17=1` 일 때만 돌린다. 운영 설정을 바꿔야 하니 운영에서는 돌리지 않았다.
+
+S23 은 가장 까다로운 경우를 일부러 만든다. 테스트가 DB 에서 그 family 의 advisory lock 을 먼저 쥔다. 그 상태로 최신 토큰 요청과 10초 지난 옛 토큰 요청을 같이 보낸 다음 잠금을 놓는다. 로컬에서는 최신 토큰이 먼저 잠금을 얻어 200 뒤에 옛 토큰이 `REUSED` 였다. 운영에서는 옛 토큰이 먼저라 둘 다 `REUSED` 였다. 어느 쪽이 먼저든 살아 있는 토큰은 0개였다.
+
+결과 수치는 1차(본문 토큰)에서 로컬 11/11, 쿠키 세션으로 바꾼 뒤 로컬 15/15(수정 요청·휴가·대타 포함)와 S17·S17b 2/2, 운영 8/8 이다.
+
+첫 실행에서는 10건 중 8건이 403 으로 실패했다. 서버는 틀리지 않았다. 테스트 클라이언트가 요청 헤더에 쿠키를 먼저 싣고 그 뒤에 CSRF 토큰을 받아 와서 헤더에는 토큰이 있고 쿠키에는 없었다. double-submit 검사가 정확히 그 상황을 막았다. 토큰을 먼저 받도록 테스트를 고치자 10/10 이 됐다.
+
+## 10. 운영 e2e 에서 본 것
+
+로컬에서 통과한 e2e 를 운영 주소에 그대로 돌리자 두 건이 실패했다. 둘 다 Vercel 이 로컬과 다르게 동작해서 생긴 일이었고 앱 버그는 아니었다.
+
+### Vercel 방화벽이 `alg:none` 을 먼저 막는다
+
+```text
+SyntaxError: Unexpected token 'F', "Forbidden"
+```
+
+S6 의 `alg:none` 토큰 요청이 JSON 이 아닌 `Forbidden` 글자와 403 을 받았다. 응답 헤더에 `x-vercel-mitigated: deny` 가 있었다. 서명 없는 JWT 를 Vercel 방화벽이 앱에 닿기 전에 막은 것이다. 같은 토큰에 서명 자리만 채우면 앱까지 와서 401 이 됐다. 어느 쪽이 막든 거부이므로 테스트가 플랫폼의 거부도 인정하게 고쳤다.
+
+```ts
+// server/test/e2e.test.ts
+const blockedByPlatform = r6.status === 403 && r6.headers.get("x-vercel-mitigated") === "deny";
+assert.ok(r6.status === 401 || blockedByPlatform, `alg none → ${r6.status}`);
+```
+
+### `X-Forwarded-For` 를 덮어써서 429
+
+서버는 `trust proxy` 를 켜고 `X-Forwarded-For` 헤더의 첫 값을 클라이언트 IP 로 쓴다. 로그인 제한의 키가 이 IP 다. 테스트는 클라이언트마다 다른 `X-Forwarded-For` 를 넣어 제한이 서로 섞이지 않게 해 두었다.
+
+운영에서 매장·초대 테스트(I-1)가 첫 로그인부터 429 를 받았다. 운영 DB 의 `refresh_tokens.ip` 를 보니 테스트가 넣은 값은 하나도 없고 실제 IP 하나만 있었다. **Vercel 이 클라이언트가 보낸 `X-Forwarded-For` 를 덮어쓴다.** 모든 테스트가 같은 IP 로 잡혔다. 앞선 S4·S19 의 실패 로그인이 1분 제한을 채웠다.
+
+성공한 로그인이 카운트에 남는지도 확인했다. 응답 헤더의 남은 횟수가 `r=4` 에서 줄지 않았으니 성공은 세지 않는다. 결국 테스트 순서 문제였다. I-1 은 1분 쉬고 따로 돌려 통과했다. 덕분에 운영에서는 헤더를 위조해 로그인 제한을 피할 수 없다는 것도 확인됐다.
+
+## 11. 그래서 토큰을 모르는 JS 로 30일 로그인을 유지하려면 무엇이 바뀌어야 했나
+
+바뀐 것은 네 곳이다.
+
+- **토큰 전달:** 액세스 토큰을 응답 본문에서 `access_token` HttpOnly 쿠키로 옮기고, 서버는 Bearer 헤더를 아예 받지 않는다
+- **세션 한도:** 회전할 때마다 `session_expires_at` 을 지금 + 30일로 다시 잡는다. 회전·재사용 탐지·잠금은 그대로 둔다
+- **CSRF 범위:** 쿠키가 모든 요청에 실리니 Origin 검사와 서명된 `X-CSRF-Token` 을 모든 변경 요청에 전역으로 건다
+- **FE 부팅과 fetch:** `/users/me` 로 로그인 상태를 복구하고, `authFetch` 가 CSRF 헤더와 한 번의 재시도를 맡는다
+
+## 트레이드오프
+
+| 선택 | 대가 |
+| --- | --- |
+| 액세스 토큰을 HttpOnly 쿠키로 | XSS 가 토큰을 빼 가지는 못한다. 하지만 XSS 가 있으면 그 사용자로 요청은 여전히 보낼 수 있다(쿠키가 자동으로 실린다) |
+| 전역 CSRF | 토큰이 없는 클라이언트(스크립트 등)는 먼저 `/api/auth/csrf` 를 불러야 한다 |
+| 30일 슬라이딩 | 탈취된 리프레시 토큰이 재사용 탐지 전까지 계속 연장될 수 있다. 회전과 재사용 탐지가 있어야 고를 수 있는 선택이다 |
+| `x-csrf-token` optional 표기 | 타입이 헤더 누락을 잡지 못한다. `authFetch` 를 거치지 않는 호출은 런타임 403 으로만 드러난다 |
+| 로그인 제한을 함수 인스턴스 메모리에서 셈 | Vercel 인스턴스가 여럿이면 인스턴스마다 따로 세어 느슨해진다 |
+
+표 6. 인증 설계의 선택과 대가
+
+## 확인하지 못한 것
+
+- 브라우저 시나리오 S20~S22(새로고침 뒤 유지, 탭 두 개 동시 만료, 로그아웃 동기화)는 확인하지 못했다. 브라우저 자동화로 계정을 만들거나 비밀번호를 입력하지 않기 때문이다. 사람이 확인해야 한다
+- 슬라이딩 세션(S17·S17b)은 운영에서 돌리지 않았다. 한도를 5초로 줄인 서버가 따로 필요하다
+- 세션 목록과 전체 로그아웃(S15·S16)은 이번 범위에서 뺐다
+- 폐기된 리프레시 토큰 행을 지우는 주기 작업은 아직 없다
+
+이전 편: [타임시트] Prisma 7 과 Neon — 스키마, 마이그레이션, 운영 DB (04)
+
+다음 편: [타임시트] UI — Tailwind 4 토큰, shadcn 원본, 스켈레톤 (06)
