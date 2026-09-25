@@ -1,0 +1,270 @@
+export const meta = {
+  title: "[타임시트] Vercel 배포 — 웹과 API 를 따로 올리고 리전을 재다 (07)",
+  summary: "Next.js 웹과 Express API 를 Vercel 프로젝트 두 개로 나눠, 웹은 로컬에서 빌드해 올리고 API 는 Vercel 에서 빌드했다. 하루 동안 난 배포 실패를 순서대로 적고, 요청마다 약 210ms 가 서울과 미국 동부 사이 거리에서 나온다는 측정값까지 정리했다.",
+  date: "2026-09",
+  status: "마무리",
+  order: 208,
+  tags: ["타임시트", "vercel", "deployment", "pnpm-monorepo", "neon", "performance"],
+};
+
+타임시트는 한 저장소 안에 웹(`web/`, Next.js 16)과 API(`server/`, Express 5)가 같이 있는 pnpm 워크스페이스다. 이것을 Vercel 에 올리면서 배포가 여러 번 실패했다. 대부분 코드 로직이 아니라 모노레포 구조와 Vercel CLI 동작이 맞닿은 곳에서 났다.
+
+이 글은 두 프로젝트를 어떻게 나눴는지부터 보고 실패를 순서대로 따라간 뒤, 마지막에 운영에서 잰 응답 시간이 어디서 나오는지를 정리한다. 절차의 원본은 저장소의 `docs/deploy.md` 이고, 이 배포를 겪고 나서 사용자 전역 스킬 `vercel-monorepo-deploy` 가 새로 만들어졌다.
+
+## 1. 구조 — 브라우저는 웹 주소 하나만 부른다
+
+| 무엇 | 주소 | Vercel 프로젝트 |
+| --- | --- | --- |
+| 웹 (사용자가 여는 주소) | `https://timesheet-brown-ten.vercel.app` | `timesheet` |
+| API | `https://timesheet-api-hazel.vercel.app` | `timesheet-api` |
+| DB | Neon Postgres `timesheet-db` (us-east-1) | Vercel Marketplace 로 `timesheet-api` 에 연결 |
+
+표 1. 운영 주소와 프로젝트
+
+브라우저는 API 주소를 직접 부르지 않는다. 웹이 Next.js 의 rewrites 기능으로 `/api/*` 요청을 API 로 넘긴다. rewrites 는 브라우저가 보는 주소는 그대로 두고 서버 쪽에서 요청을 다른 곳으로 전달하는 설정이다.
+
+```ts
+// API 는 별도 서버(server/)다. 브라우저에게는 같은 출처로 보이도록 /api 를 넘긴다 — docs/prd/05-auth.md 토폴로지.
+// 빌드 시점에 읽히므로 배포 환경변수 API_URL 을 바꾸면 다시 빌드해야 한다.
+const API_URL = process.env.API_URL ?? "http://localhost:4200";
+
+const nextConfig: NextConfig = {
+  async rewrites() {
+    return [{ source: "/api/:path*", destination: `${API_URL}/api/:path*` }];
+  },
+};
+```
+
+이렇게 한 이유는 로그인 쿠키다(05편). 리프레시 토큰 쿠키는 `SameSite=Strict` 라서 같은 사이트에서 보낸 요청에만 실린다. 그런데 `*.vercel.app` 은 공개 접미사 목록에 올라 있어서 `timesheet-brown-ten.vercel.app` 과 `timesheet-api-hazel.vercel.app` 은 브라우저 입장에서 **서로 다른 사이트**다. 웹에서 API 주소를 직접 부르면 쿠키가 실리지 않는다. 웹 주소 하나로 모으면 브라우저에게는 같은 출처가 된다.
+
+운영 e2e 에서 확인한 것도 있다. rewrites 를 거쳐도 `Origin` 헤더와 실제 클라이언트 IP 가 API 까지 전달됐다. 그래서 CSRF 의 Origin 검사와 로그인 횟수 제한이 웹 주소 경유에서도 동작한다.
+
+## 2. 두 프로젝트를 다르게 올리는 이유
+
+같은 저장소인데 웹과 API 의 배포 방식이 다르다.
+
+| | 웹 `timesheet` | API `timesheet-api` |
+| --- | --- | --- |
+| 빌드하는 곳 | 로컬 (`vercel build` 뒤 `deploy --prebuilt`) | Vercel (원격 빌드, `vercel deploy`) |
+| `rootDirectory` | `web` | `server` (`framework=express`) |
+| Git 연결 | 있음 — `main` 머지면 자동 운영 배포, PR 에는 미리보기 | 없음 — 서버가 바뀌면 직접 배포 |
+| 이유 | 로컬에서 빌드 결과를 확인하고 그대로 올린다 | 네이티브 모듈이 macOS 용으로 들어가지 않게 |
+
+표 2. 웹과 API 의 배포 방식
+
+prebuilt 는 로컬에서 빌드한 결과물(`.vercel/output`)을 그대로 올리는 방식이다. Vercel 은 받은 결과물을 빌드하지 않고 바로 배포한다.
+
+API 가 이 방식을 쓰지 못하는 이유는 네이티브 모듈이다. 비밀번호 해시에 쓰는 argon2 와 Prisma 엔진은 C·Rust 로 된 바이너리를 운영체제별로 가진다. 개발 PC(macOS)에서 빌드하면 macOS 용 바이너리가 결과물에 들어가고 Vercel 의 Linux 함수에서는 돌지 않는다. 그래서 API 는 소스를 올려 Vercel 이 Linux 에서 빌드하게 한다.
+
+둘 다 **저장소 루트에서** 배포한다. pnpm 워크스페이스라 의존성과 lockfile 이 루트에 있기 때문이다(3절 첫 실패). 루트의 `.vercel/` 폴더는 웹 프로젝트에 연결돼 있어서 API 를 올릴 때는 환경변수로 대상을 바꾼다.
+
+```bash
+# 웹 — 로컬에서 빌드해 올린다
+vercel pull --yes --environment=production
+vercel build --prod
+vercel deploy --prebuilt --prod --yes --archive=tgz
+
+# API — Vercel 에서 빌드한다. 루트 .vercel 은 웹 것이라 대상을 환경변수로 바꾼다
+VERCEL_ORG_ID=<팀 id> VERCEL_PROJECT_ID=<API 프로젝트 id> \
+  vercel deploy --prod --yes --archive=tgz
+```
+
+원격 빌드는 소스를 통째로 올리니, 올리면 안 되는 것을 루트 `.vercelignore` 로 뺀다. CLI 업로드는 `.gitignore` 를 믿을 수 없어서 따로 둔다. 특히 로컬 `.env` 가 올라가면 비밀값이 새어 나간다.
+
+```text
+# 원격 빌드에 올리지 않는 것. 로컬 비밀값(.env)과 빌드 산출물.
+node_modules
+**/node_modules
+.env
+**/.env
+**/.env.local
+.omc
+**/.omc
+.vercel
+web/.next
+**/*.tsbuildinfo
+server/dist
+```
+
+DB 마이그레이션은 배포와 따로 돌린다. Neon 은 연결 풀러(연결을 모아 재사용하는 중간 서버)를 거치는 주소와 거치지 않는 주소를 둘 다 주는데, 마이그레이션은 풀러를 거치지 않는 `DATABASE_URL_UNPOOLED` 로 한다. 계약이 바뀐 변경은 API 를 먼저 올리고 웹을 올린다.
+
+## 3. 배포 실패 기록
+
+히스토리(`docs/history/2026-09-25.md`)에 적힌 배포 실패를 난 순서대로 옮긴다.
+
+| # | 증상 | 원인 | 수정 |
+| --- | --- | --- | --- |
+| 1 | 웹 prebuilt 업로드 `File does not exist: "node_modules/.pnpm/@swc+helpers@0.5.23/..."` | `web/` 에서 배포. pnpm 은 패키지를 루트 `node_modules/.pnpm` 에 둬서 업로드 범위 밖 | 루트에서 `vercel build` + `deploy --prebuilt`, `rootDirectory: web` |
+| 2 | API `fetch failed` | 업로드 중 일시 오류 | 같은 명령 재시도 |
+| 3 | API 원격 빌드만 `TS2349` (helmet) | 확인하지 못함. 로컬 설정 조합 6가지로 재현 안 됨 | 기본 import 유지 + 타입 단언 |
+| 4 | API 모든 요청 500 `FUNCTION_INVOCATION_FAILED` | Vercel 이 진입점으로 `src/app.ts` 를 `server.ts` 보다 먼저 고름 | `app.ts` 에서 `export default app` |
+| 5 | 웹 `No Next.js version detected` | `vercel pull` 이 서버 쪽 설정으로 로컬 `rootDirectory` 를 덮어씀 | `vercel api` 로 서버 설정 PATCH |
+| 6 | 웹 `Invalid rewrite found` | `API_URL` 을 Sensitive 로 넣어 pull 이 값을 가림 | `--no-sensitive` 로 다시 넣음 |
+| 7 | 루트 `package.json` 에 `"vercel-build": "next build"` 가 생김 | 실패한 `vercel build` 의 부산물 | `git checkout -- package.json` |
+| 8 | 배포 반복문이 빌드 실패를 무시하고 세 번 시도 | MDX 주석 파싱 에러. 산출물이 없어 전부 실패, 배포된 것 없음 | 배포는 빌드 성공일 때만 |
+| 9 | `api-upload-free` "Too many requests - try again in 24 hours (more than 5000)" | 무료 요금제 하루 파일 업로드 5000개 한도 | 웹은 `--archive=tgz` 로 성공, API 는 24시간 뒤로 |
+
+표 3. 하루 동안 난 배포 실패
+
+2번 `fetch failed` 는 한 번이 아니었다. 웹·API 모두 업로드 중에 여러 번 났고 매번 같은 명령을 다시 돌려 READY 가 됐다. 원인은 확인하지 못했다.
+
+몇 개만 더 뜯어보자.
+
+### 3-1. 원격 빌드에서만 생기는 타입 에러 (3번)
+
+```text
+src/app.ts(16,9): error TS2349: This expression is not callable. Type 'typeof import(".../helmet/index")' has no call signatures.
+```
+
+로컬 `tsc` 는 통과했다. module·moduleResolution·esModuleInterop·type 설정 조합 6가지로 로컬에서 재현해 보려 했지만 되지 않았다. Vercel 빌더의 타입 검사가 helmet 의 기본 내보내기를 함수가 아니라 모듈 객체로 본다는 것까지만 알 수 있었다.
+
+첫 수정(`import * as helmet` + `helmet.default()`)은 같은 에러가 났다. 두 번째로 기본 import 를 유지하고 타입만 단언했다. 런타임에서는 helmet 의 `index.cjs` 가 `module.exports.default` 를 자기 자신으로 두기 때문에 어느 쪽으로 불러도 함수다.
+
+```ts
+import helmetImport from "helmet";
+
+// Vercel 빌더의 타입 검사는 helmet 의 기본 내보내기를 모듈 객체로 잡는다(로컬 tsc 는 아니다).
+// 런타임은 ESM·CJS 모두 함수다 — helmet 의 index.cjs 가 module.exports.default 를 자기 자신으로 둔다.
+const helmet = helmetImport as unknown as () => RequestHandler;
+```
+
+원인은 끝내 확인하지 못했다. 이 우회는 "로컬 `tsc` 가 통과하면 Vercel 빌드도 통과한다" 는 가정이 맞지 않을 수 있다는 기록으로 남아 있다.
+
+### 3-2. 배포는 됐는데 요청이 전부 500 (4번)
+
+빌드가 성공했는데 모든 요청이 `FUNCTION_INVOCATION_FAILED` 였다. `vercel logs` 로 본 로그다.
+
+```text
+Invalid export found in module "/var/task/server/src/app.js". The default export must be a function or server.
+```
+
+Vercel 의 Express 지원은 진입점 파일을 이름으로 찾는데, `src/app.ts` 를 `src/server.ts` 보다 먼저 골랐다. `app.ts` 는 앱을 만들기만 하고 기본 내보내기가 없었다. `app.ts` 끝에 한 줄을 더했다.
+
+```ts
+// Vercel 은 src/app.ts 를 server.ts 보다 먼저 진입점으로 고른다. 기본 내보내기가 앱이어야 한다.
+export default app;
+```
+
+`listen` 은 `server.ts` 에 두고 `process.env.VERCEL` 이 없을 때(로컬)만 돈다. 확인은 `/health` 200, `/api/users/me` 401(로그인 안 한 요청이라 정상), 운영에서 끈 `/api/docs` 404 였다.
+
+### 3-3. `vercel pull` 이 로컬 설정을 덮어쓴다 (5번)
+
+웹을 다시 배포하는데 `No Next.js version detected` 가 났다. 루트에는 Next.js 가 없고 `web/` 에 있으니, `rootDirectory` 가 `web` 이 아니게 된 것이다. `vercel pull` 이 Vercel 서버에 저장된 프로젝트 설정(`rootDirectory` 가 null)으로 로컬 `.vercel/project.json` 을 덮어썼다.
+
+로컬 파일만 고치면 다음 `pull` 에서 또 덮인다. 설정은 서버 쪽에 넣어야 한다.
+
+```bash
+echo '{"rootDirectory":"web"}' | vercel api "/v9/projects/<웹 프로젝트>?teamId=<팀>" -X PATCH --input -
+```
+
+### 3-4. 환경변수 — Sensitive 로 넣으면 빌드가 값을 못 읽는다 (6번)
+
+| 프로젝트 | 이름 | 값·넣는 법 |
+| --- | --- | --- |
+| 웹 | `API_URL` | API 주소. rewrites 에 빌드 시점에 굳는다. **`--no-sensitive`** |
+| API | `DATABASE_URL` 외 `PG*`·`POSTGRES_*` | Neon 연동이 넣는다 |
+| API | `JWT_ACCESS_SECRET`, `CSRF_SECRET` | 서로 다른 48바이트 난수. Sensitive, 값은 어디에도 적지 않았다 |
+| API | `WEB_ORIGINS` | 웹 운영 주소 (CSRF Origin 허용 목록) |
+| API | `COOKIE_SECURE` / `SWAGGER_ENABLED` | `true` / `false` |
+
+표 4. 운영 환경변수
+
+Vercel 의 Sensitive 환경변수는 한 번 넣으면 값을 다시 읽을 수 없다. 원격 빌드에서는 쓸 수 있지만 `vercel pull` 로 내려받으면 값이 가려진다. 웹은 로컬에서 빌드하니 `API_URL` 이 가려진 채로 빌드됐다.
+
+```text
+destination does not start with /, http://, or https:// ... "[SENSITIVE]/api/:path*"
+```
+
+`API_URL` 은 비밀이 아니다. 누구나 열 수 있는 공개 API 주소다. 그래서 일반 값으로 다시 넣었다.
+
+```bash
+vercel env add API_URL production --no-sensitive
+```
+
+서명 키처럼 진짜 비밀인 값만 Sensitive 로 둔다. 이 값들은 원격 빌드인 API 쪽에만 있어서 가려져도 문제가 없다.
+
+### 3-5. 하루 업로드 5000개 (9번)
+
+오후 5시 20분쯤, 멤버 카드 버튼 이름을 "퇴사처리" 로 바꾼 변경을 배포하는데 Vercel 이 거절했다.
+
+```text
+api-upload-free
+Too many requests - try again in 24 hours (more than 5000)
+```
+
+무료 요금제는 하루에 올릴 수 있는 파일이 5000개다. 배포 횟수가 아니라 **파일 개수**로 센다. prebuilt 배포는 빌드 결과물을 파일 하나씩 올리는데, 이날 오전부터 웹을 여러 번 prebuilt 로 올리면서 개수가 쌓였다.
+
+`--archive=tgz` 를 붙이면 결과물을 묶음 파일 하나로 올린다. 웹은 이것으로 바로 배포됐다. API 는 묶음으로 올려도 같은 한도 에러가 났다. 원격 빌드인 API 가 왜 묶음으로도 막혔는지는 확인하지 못했다. 그때 API 쪽 변경은 문서 요약과 오류 글자뿐이라 동작 차이가 없어서 24시간 뒤로 미뤘다. 그 뒤 API 배포가 실제로 이뤄졌는지는 확인하지 못했다.
+
+이후 배포 명령은 `--archive=tgz` 를 기본으로 하고 `docs/deploy.md` 에 "업로드 한도" 절을 새로 뒀다.
+
+## 4. READY 직후의 404
+
+배포가 READY 로 끝났는데 새로 만든 경로가 404 인 일이 두 번 있었다. 근무 달력(`/admin/calendar`)과 가이드 `progress-bar` 페이지다. 근무 시간표 API 를 올린 직후에도 새 API 경로가 잠깐 404 였다가 곧 401(로그인 안 한 요청의 정상 응답)이 됐다.
+
+세 번 모두 코드 문제가 아니었다. 빌드 산출물(`.vercel/output`)에는 페이지가 있었고 몇 초에서 1~2분 뒤 다시 요청하니 200 이었다. 배포가 READY 가 된 직후, 운영 주소가 새 배포를 가리키도록 바뀌기 전에 요청한 것이다. `vercel inspect` 로 운영 주소가 새 배포를 가리키는 것을 확인할 수 있다.
+
+"배포 READY" 와 "운영 주소가 새 배포를 가리킨다" 는 같은 시점이 아니다. 배포 직후 확인이 실패하면 코드를 의심하기 전에 조금 기다렸다가 다시 본다.
+
+비슷한 일로, 배포 확인을 위해 운영 번들에서 한글 문구를 `grep` 했는데 0건이 나온 적이 있다. 최소화된 번들에서 한글이 `\uXXXX` 로 이스케이프돼 있었다. 원문과 이스케이프 형태를 둘 다 찾도록 바꾸자 새 문구가 나왔다.
+
+## 5. 리전 — 요청 하나에 약 210ms
+
+기능을 다 올린 뒤 운영 성능을 쟀다(`docs/verify/performance.md`, 2026-09-25 22:00 KST, 서울의 개발 PC 유선 회선). 리전은 서버가 실제로 돌아가는 데이터센터 위치다.
+
+DB 를 전혀 거치지 않는 `/health` 도 중앙값(p50)이 214ms 였다. 응답 헤더를 보면 이유가 나온다.
+
+```text
+x-vercel-id: icn1::iad1
+```
+
+앞의 `icn1` 은 요청이 들어온 Vercel 엣지(서울), 뒤의 `iad1` 은 함수가 실행된 리전(미국 동부 워싱턴 D.C. 근처)이다. DB 인 Neon 도 us-east-1(미국 동부)에 있다. 요청은 서울에서 들어와 미국 동부까지 갔다가 돌아온다.
+
+| 무엇 | p50 (ms) | p90 (ms) |
+| --- | --- | --- |
+| `/health` (DB 없음, API 직접) | 214 | 238 |
+| 사장 대시보드 `/stores/me/dashboard` (웹 경유) | 237 | 309 |
+| 멤버 앱 부팅 합계 (웹 경유, `/users/me` 뒤 4개 병렬) | 563 | 1088 |
+| 멤버 앱 부팅 합계 (API 직접) | 482 | 1533 |
+
+표 5. 운영에서 잰 응답 시간 (10회)
+
+DB 를 한두 번 읽는 API 가 `/health` 보다 10~40ms 더 걸릴 뿐이다. 요청 시간의 대부분은 서울과 미국 동부 사이를 오가는 네트워크 시간이다. 웹 주소를 거치는 rewrites 는 직접 호출보다 요청당 20~30ms 더 든다. p90 이 p50 의 2~3배인 것은 함수 콜드 스타트(쉬던 서버 함수가 새로 뜨는 시간)가 섞여서다.
+
+| # | 무엇 | 크기 |
+| --- | --- | --- |
+| 1 | 서울 ↔ 미국 동부 왕복 | 요청당 약 210ms |
+| 2 | 로그인 확인(`/users/me`)이 끝나야 화면 데이터 요청 시작 | 왕복 1회(약 250ms) |
+| 3 | 사장 화면에서 대시보드 API 를 두 번 부름 | 늦은 쪽이 250~500ms 더 |
+| 4 | 멤버 화면에서 날짜별 변경을 멤버마다 따로 부름 | 왕복 1회 추가, 멤버 수만큼 요청 |
+| 5 | 함수 콜드 스타트 | p90 이 p50 의 2~3배 |
+
+표 6. 느린 이유를 큰 것부터 (`docs/verify/performance.md` §4)
+
+1번이 나머지를 합친 것보다 크다. 서버 함수와 DB 를 사용자와 가까운 리전에 두면 요청마다 약 200ms 가 줄어들 수 있다. 다만 리전을 옮기는 일은 새 DB 프로젝트를 만들고 데이터를 옮기는 작업이 따르는 결정이라, 이번에는 재기만 하고 옮기지 않았다. HTML 은 미리 렌더된 정적 파일이라 TTFB 13~31ms 로 빨랐다.
+
+측정 방법(스크립트와 브라우저 측정)은 08편에서 다룬다.
+
+## 6. 대가와 남은 것
+
+| 선택 | 얻은 것 | 대가 |
+| --- | --- | --- |
+| 웹 prebuilt | 로컬에서 본 빌드 결과를 그대로 올린다 | 파일을 하나씩 올려 하루 업로드 한도가 빨리 찬다 → `--archive=tgz` |
+| API 원격 빌드 | 네이티브 모듈이 Linux 용으로 빌드된다 | 로컬 `tsc` 와 다른 타입 검사 결과가 나올 수 있다(helmet) |
+| rewrites 로 같은 출처 | `SameSite=Strict` 쿠키가 동작한다 | 요청당 20~30ms, `API_URL` 을 바꾸면 웹을 다시 빌드해야 한다 |
+| API 는 Git 연결 없음 | 루트 `.vercel` 하나로 웹을 관리한다 | 서버가 바뀌면 배포 명령을 따로 돌려야 한다 |
+| 리전 그대로 (iad1 + us-east-1) | DB 이전 작업을 하지 않았다 | 한국 사용자 요청마다 약 210ms |
+
+표 7. 배포 구조의 선택과 대가
+
+남은 것은 이렇다.
+
+- **리전 이전.** 재기만 했다. 옮길지는 정하지 않았다.
+- **API 재배포.** 업로드 한도로 미룬 "퇴사처리" 문구 변경이 운영 API 에 반영됐는지 확인하지 못했다.
+- **로그인 횟수 제한.** 함수 인스턴스 메모리에서 센다. 인스턴스가 여럿이면 느슨해진다. 엄격하게 하려면 공유 저장소(Redis 등)가 필요하다.
+- **만료된 리프레시 토큰 행.** 주기적으로 지우는 작업이 아직 없다.
+- **`fetch failed`.** 하루 내내 재시도로 넘겼고 원인은 확인하지 못했다.
+
+이전 편: [타임시트] UI — Tailwind 4 토큰, shadcn 원본, 스켈레톤 (06)
+
+다음 편: [타임시트] 테스트와 검증 — 로직 단위 테스트부터 운영 측정까지 (08)

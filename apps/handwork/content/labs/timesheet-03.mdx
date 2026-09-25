@@ -1,0 +1,214 @@
+export const meta = {
+  title: "[타임시트] zod 계약 하나로 검증·문서·FE 타입 (03)",
+  summary: "타임시트는 server/src/contract.ts 의 zod 스키마 하나에서 요청 검증, OpenAPI 문서, FE 타입을 모두 뽑는다. 계약을 바꾸면 타입 검사가 깨지는 곳이 곧 FE 가 고칠 곳이 된다. 그 흐름과 생성기에서 막힌 곳, 이 방식이 치르는 비용을 적었다.",
+  date: "2026-09",
+  status: "마무리",
+  order: 204,
+  tags: ["타임시트", "zod", "openapi", "openapi-fetch", "typescript"],
+};
+
+사장님이 멤버별 근무 시간표를 정하는 기능(PRD 13)을 넣을 때, 멤버 정보 응답에 `schedule` 필드가 새로 생겼다. 서버에서 필드 하나를 더하면 FE 에서는 그 필드를 읽는 화면, 저장할 때 보내는 본문, 타입 정의가 같이 바뀌어야 한다.
+
+FE 와 BE 가 따로 있는 프로젝트라면 대개 이 지점이 어긋난다. 서버는 바꿨는데 FE 는 옛 모양을 보내거나, 문서만 옛날 그대로 남는다. 서버 스키마가 바뀌었을 때 FE 는 고칠 곳을 어떻게 알 수 있을까.
+
+타임시트는 스키마를 한 파일에만 둔다. 그 파일에서 요청 검증과 API 문서와 FE 타입이 차례로 나온다. 이 편은 그 흐름을 한 단계씩 따라가고 생성기가 예상과 다르게 동작한 두 곳과 이 방식이 치르는 비용을 본다.
+
+## 1. 계약이 흐르는 길
+
+여기서 계약은 API 요청과 응답의 모양을 적은 약속이다. 어떤 경로에 어떤 본문을 보내면 어떤 응답과 오류가 오는지를 정한다. 원본은 `server/src/contract.ts` 하나다.
+
+| 단계 | 무엇이 | 무엇을 만드나 | 명령 |
+| --- | --- | --- | --- |
+| 1 | zod 4.6.5 | `contract.ts` 의 스키마로 요청을 검증한다 | 서버 실행 중 `Body.parse(req.body)` |
+| 2 | @asteasolutions/zod-to-openapi 9.1.0 | 같은 스키마로 OpenAPI 3.1 문서 `docs/api/openapi.json` | `pnpm --filter timesheet-server openapi:export` |
+| 3 | openapi-typescript 7.13.0 | 그 문서로 TS 타입 `web/src/api/schema.d.ts` | `pnpm --filter timesheet-web gen:api` |
+| 4 | openapi-fetch 0.17.0 | 그 타입을 입힌 HTTP 클라이언트 | 화면 코드에서 `api.GET(...)`·`api.PATCH(...)` |
+
+표 1. 계약 원본에서 FE 호출까지. 버전은 `node_modules/<패키지>/package.json` 의 실제 설치값
+
+zod 는 저장소 뼈대에 이미 있었다. 나머지 셋은 사용자가 로그인 구현 때 한꺼번에 승인한 패키지 목록에 들어 있었다. 로그인 설계를 담은 전역 스킬 `web-auth` 가 "Swagger 로 FE 에 계약을 넘긴다" 는 방식을 쓰고 이 셋이 그 방식에 맞춘 도구다. 하나하나 다른 도구와 비교해서 고른 것은 아니다.
+
+지금 계약에는 경로 46개, 동작 53개가 있다. 프로젝트 `CLAUDE.md` §4 에 규칙을 적어 두었다.
+
+> API 계약의 원본은 `server/src/contract.ts` 다. 바꾸면 `openapi:export` → `web` 의 `gen:api` 순서로 돌리고, `tsc` 가 깨지는 곳이 FE 가 고칠 곳이다.
+
+## 2. 스키마 하나가 검증과 문서를 같이 맡는다
+
+`contract.ts` 의 스키마는 평범한 zod 스키마에 `.meta({ id })` 로 이름을 붙인 것이다.
+
+```ts
+export const LoginBody = z.object({ email: z.string().max(254), password: z.string().max(128) }).meta({ id: "LoginBody" });
+```
+
+라우트는 이 스키마로 요청을 검증한다.
+
+```ts
+authRouter.post("/auth/login", loginLimiter, async (req, res) => {
+  const body = LoginBody.parse(req.body);
+```
+
+검증에 실패하면 zod 가 `ZodError` 를 던지고 서버의 오류 처리기가 400 `VALIDATION_FAILED` 로 바꾼다(02편). `.meta` 로 붙인 이름은 OpenAPI 문서에서 재사용되는 스키마(`components.schemas.LoginBody`)의 이름이 되고 그대로 FE 타입 이름까지 간다.
+
+경로는 `path()` 라는 작은 헬퍼로 등록한다. 한 줄에 메서드, 경로, 요약, 본문, 성공 응답, 오류 코드를 적는다.
+
+```ts
+path("post", "/api/auth/login", "로그인", { csrf: true, body: LoginBody, ok: [200, SessionResponse], errors: { 401: "INVALID_CREDENTIALS", 403: "CSRF_*", 429: "TOO_MANY_REQUESTS" } });
+path("get", "/api/users/me", "내 정보와 소속", { auth: true, ok: [200, MeDto], errors: { 401: "ACCESS_TOKEN_INVALID" } });
+```
+
+`openapi:export` 스크립트는 이 등록을 모아 JSON 파일로 쓴다. 여덟 줄짜리다.
+
+```ts
+// API 계약을 docs/api/openapi.json 으로 내보낸다. web 의 gen:api 가 이 파일을 읽는다.
+import { mkdirSync, writeFileSync } from "node:fs";
+import { openApiDocument } from "../src/contract.js";
+
+const out = new URL("../../docs/api/openapi.json", import.meta.url);
+mkdirSync(new URL(".", out), { recursive: true });
+writeFileSync(out, JSON.stringify(openApiDocument(), null, 2) + "\n");
+console.log(`wrote ${out.pathname}`);
+```
+
+같은 문서가 로컬에서는 Swagger UI(`/api/docs`)로도 뜬다. 운영에서는 끈다.
+
+오류 코드도 계약에 들어간다. `ErrorResponse` 스키마의 `code` 는 서버의 `ERROR_CODES` 배열에 `INTERNAL` 을 더한 enum 이다. 서버가 던질 수 있는 코드 목록과 FE 가 받는 타입이 같은 배열에서 나온다.
+
+## 3. FE 는 생성된 타입만 본다
+
+`gen:api` 가 만든 `schema.d.ts` 에는 경로별 타입(`paths`)과 스키마 타입(`components`)이 들어 있다. 이 파일은 손으로 고치지 않는다. 화면이 쓰기 편하게 `web/src/api/client.ts` 에서 이름만 붙여 다시 내보낸다.
+
+```ts
+import createClient from "openapi-fetch";
+import type { components, paths } from "./schema";
+import { authFetch } from "@/auth/session";
+
+/** 앱 API 용. 쿠키 인증 + 변경 요청에 CSRF 헤더 자동, 401 이면 refresh 후 1회 재시도. 같은 출처(/api)로 부르고 Next rewrites 가 서버로 넘긴다. */
+export const api = createClient<paths>({ credentials: "include", fetch: authFetch });
+
+type S = components["schemas"];
+export type Me = S["MeDto"];
+export type Schedule = S["ScheduleDto"];
+```
+
+openapi-fetch 는 `paths` 타입을 받아 경로 문자열, 경로 변수, 본문, 응답을 전부 타입으로 묶는다. 사장 화면에서 멤버 조건을 저장하는 호출이 이렇다.
+
+```ts
+const { error } = await api.PATCH("/api/stores/me/members/{userId}", { params: { path: { userId: member.userId } }, body });
+```
+
+경로 문자열에 오타가 있거나, `userId` 를 빠뜨리거나, `body` 에 계약에 없는 필드를 넣으면 타입 검사에서 걸린다. 응답의 `data`·`error` 도 그 경로의 성공 응답과 `ErrorResponse` 타입으로 나온다.
+
+`fetch: authFetch` 자리에 끼운 함수가 쿠키 인증의 뒷일을 맡는다. 변경 요청에 `X-CSRF-Token` 헤더를 붙이고 401 이면 토큰을 회전한 뒤 한 번 다시 보낸다. 화면 코드는 이런 일을 모른다.
+
+## 4. `.nullable()` 이 공유 스키마를 바꿔 버렸다
+
+처음 로그인 기능을 붙였을 때 웹 타입 검사가 11곳에서 깨졌다.
+
+```text
+'membership' is possibly 'null'
+```
+
+계약에는 이렇게 적었다.
+
+```ts
+membership: MyMembershipDto.nullable()
+```
+
+뜻은 "`MeDto` 의 `membership` 필드는 null 일 수 있다" 였다. 그런데 zod-to-openapi 는 `.meta({ id })` 로 이름 붙은 스키마를 참조(`$ref`)로 만들면서 nullable 을 참조 대상 쪽에 붙였다. `MyMembershipDto` 자체가 `"type": ["object", "null"]` 이 되면서 이 타입을 쓰는 모든 곳이 null 가능이 됐다.
+
+`z.union` 으로 감싸서 고쳤다. 계약 파일에 이유를 주석으로 남겼다.
+
+```ts
+// .nullable() 로 쓰면 생성기가 MyMembershipDto 자체를 nullable 로 만든다. union 으로 감싼다.
+export const MeDto = z.object({ user: UserDto, membership: z.union([MyMembershipDto, z.null()]) }).meta({ id: "MeDto" });
+```
+
+지금 생성된 문서에서 `MeDto.membership` 은 `anyOf` 로 나온다.
+
+```json
+"membership": {
+  "anyOf": [
+    { "$ref": "#/components/schemas/MyMembershipDto" },
+    { "type": "null" }
+  ]
+}
+```
+
+FE 타입도 필드에만 null 이 붙는다.
+
+```ts
+MeDto: {
+    user: components["schemas"]["UserDto"];
+    membership: components["schemas"]["MyMembershipDto"] | null;
+};
+```
+
+그 뒤로 이름 붙은 스키마가 null 일 수 있는 자리는 전부 같은 방식을 쓴다. 시간표도 `const MaybeSchedule = z.union([ScheduleDto, z.null()])` 이다. `lat: z.number().nullable()` 처럼 이름 없는 원시 타입의 `.nullable()` 은 그대로 둔다. 참조가 아니라 그 자리에 바로 적히기 때문이다.
+
+## 5. `x-csrf-token` 을 optional 로 적은 이유
+
+서버는 GET 이 아닌 모든 요청에서 `X-CSRF-Token` 헤더를 필수로 검사한다. 그런데 계약에는 optional 로 적혀 있다.
+
+```ts
+// 서버는 필수로 검사한다(app.ts). 계약에서 optional 인 것은 FE fetch 래퍼(authFetch)가 자동으로 붙이기 때문이다 —
+// 필수로 두면 생성된 타입이 모든 호출에 헤더를 요구한다.
+const csrfHeader = z.object({ "x-csrf-token": z.string().optional() });
+```
+
+헤더를 필수로 적으면 openapi-typescript 가 그 헤더를 필수 파라미터로 만든다. 그러면 화면에서 `api.POST` 를 부를 때마다 `params: { header: { "x-csrf-token": ... } }` 를 채워야 한다. 헤더는 `authFetch` 가 이미 붙이니 화면이 할 일이 아니다.
+
+예외가 하나 있다. 로그인·가입·토큰 회전은 `authFetch` 를 거치지 않는 `authApi` 로 부른다. 토큰 회전이 자기 자신을 다시 부르지 않게 분리한 클라이언트다. 여기서는 세션 모듈이 헤더를 직접 넣는다.
+
+```ts
+authApi.POST("/api/auth/login", { body: { email, password }, params: { header: { "x-csrf-token": csrf } } }),
+```
+
+대가는 분명하다. 계약 문서만 보면 CSRF 헤더가 없어도 되는 것처럼 읽힌다. 헤더가 빠진 요청은 타입 검사가 아니라 런타임의 403 `CSRF_TOKEN_INVALID` 로 드러난다. 주석이 그 차이를 설명하는 유일한 곳이다.
+
+## 6. 계약을 바꾸면 `tsc` 가 고칠 곳을 알려 준다
+
+PRD 13 근무 시간표는 커밋 `8a2d044` 하나에 들어갔다. 계약부터 화면까지 한 커밋에서 같이 바뀌었다.
+
+| 층 | 파일 | 추가 / 삭제 줄 |
+| --- | --- | --- |
+| 계약 원본 | `server/src/contract.ts` | 36 / 4 |
+| 서버 | `server/src/stores/routes.ts`, `server/src/lib/dto.ts` | 57 / 2, 14 / 2 |
+| 생성 문서 | `docs/api/openapi.json` | 356 / 9 |
+| 생성 타입 | `web/src/api/schema.d.ts` | 217 / 2 |
+| FE 타입 이름 | `web/src/api/client.ts` (`Schedule`, `ScheduleException`) | 2 / 0 |
+| 화면 | `web/src/app/admin/members/page.tsx`, `web/src/components/TimesheetApp.tsx` | 164 / 18, 26 / 2 |
+| 테스트 | `server/test/e2e.test.ts` (WS-1~WS-6), `web/src/lib/schedule.test.mjs` | 74 / 0, 30 / 0 |
+
+표 2. PRD 13 커밋에서 바뀐 계약·생성물·화면 (`git show --numstat 8a2d044`)
+
+계약에 새로 들어간 것은 `ScheduleDto`, 요일·시각을 검증하는 `ScheduleBody`, 날짜별 변경 스키마, 날짜별 변경을 조회·등록·삭제하는 동작 네 개다. 멤버 조건 수정 본문에서는 주 시간·주 일수를 빼고 `schedule` 을 받게 했다. 주 시간은 서버가 시간표에서 계산하니 FE 가 보낼 값이 아니다.
+
+이 변경이 FE 에 닿는 길은 `CLAUDE.md` §4 의 순서 그대로다. `contract.ts` 를 고치고 `openapi:export`, `gen:api` 를 돌리면 `schema.d.ts` 의 `MemberDto` 에 `schedule` 이 생기고 조건 수정 본문 타입에서는 `weeklyHours` 가 사라진다. 그 상태로 웹 `tsc` 를 돌리면 옛 본문을 보내던 자리가 깨진다. 깨진 자리가 FE 가 고칠 목록이다. 이 커밋에서 FE 쪽은 `admin/members/page.tsx` 의 조건 수정 모달과 날짜별 변경 목록, 멤버 화면 `TimesheetApp.tsx` 에 본인 날짜별 변경 카드가 생겼다. 커밋 기록의 검증은 "server e2e 17/17(WS-1~WS-6 추가), web test 54/54, typecheck·lint 0" 이다.
+
+명령을 어느 순서로 몇 번 돌렸는지, `tsc` 가 처음에 몇 곳에서 깨졌는지는 히스토리에 남아 있지 않아 확인하지 못했다. 히스토리에 남은 이 작업의 타입 에러는 서버 쪽 하나다. `prisma migrate dev` 뒤 `tsc` 가 `scheduleException` 이 없다고 했다. Prisma 7 은 `migrate dev` 가 클라이언트를 만들지 않아 `prisma generate` 를 따로 돌려 풀었다.
+
+같은 흐름이 더 작게 기록된 사례도 있다. 헤더·아바타 작업 때 초대 목록의 아바타 색을 사용자 id 로 정해야 했는데 `InviteDto` 에 사용자 id 가 없었다. 처음에는 이름으로 색을 정하는 우회 주석을 달았다. 그러다 계약에 `usedByUserId` 를 더하는 쪽으로 바꿨다. 히스토리의 확인 줄이 "openapi 재생성, web 타입 생성, 로컬 e2e 11/11 (usedByUserId 단정 추가)" 다. FE 가 우회하는 대신 계약을 고치고 생성물을 다시 만든 뒤 테스트에 새 필드를 확인하는 단정을 더한 순서다.
+
+배포에도 순서가 붙는다. `docs/deploy.md` 는 "계약이 바뀐 변경은 API 를 먼저 올린다" 고 적는다. 웹이 먼저 올라가면 새 필드를 기대하는 화면이 옛 API 를 부른다. 쿠키 인증으로 바꿨을 때는 API 와 웹 사이 공백을 줄이려고 두 배포를 연달아 올렸다.
+
+## 7. 이 방식이 치르는 비용
+
+| 비용 | 실제로 어떻게 나타났나 |
+| --- | --- |
+| 생성기가 스키마를 옮기는 방식을 알아야 한다 | `.nullable()` 이 공유 스키마를 null 가능으로 바꿔 웹 타입 11곳이 깨졌다. zod 코드만 보고는 알 수 없고 생성된 JSON 을 열어 봐야 보인다 |
+| 계약은 모양만 넘기고 계산은 못 넘긴다 | 시간표에서 주 시간을 구하는 식이 서버 `contract.ts` 의 `scheduleTerms` 와 웹 `lib/schedule.ts` 에 따로 있다. 둘은 주석으로만 묶여 있다 |
+| 타입으로 드러나지 않는 규칙이 남는다 | CSRF 헤더는 계약상 optional 이라 빠뜨려도 타입 검사를 통과한다. 403 은 런타임에서야 보인다 |
+| 오류 코드는 문자열 설명으로만 붙는다 | 경로별 `errors` 는 `"CSRF_*"` 같은 설명 글자다. 응답 스키마는 모든 오류가 같은 `ErrorResponse` 라서 어떤 경로가 어떤 코드를 내는지는 타입이 알려 주지 않는다 |
+| 생성물이 커밋에 크게 섞인다 | PRD 13 한 커밋에서 `openapi.json` 에 356줄, `schema.d.ts` 에 217줄이 더해졌다. 리뷰할 때 손으로 쓴 줄을 골라 봐야 한다 |
+
+표 3. zod 계약 한 벌이 치르는 비용
+
+## 8. 그래서 FE 는 고칠 곳을 어떻게 알았나
+
+타입 검사가 알려 줬다. 서버 스키마가 원본이고 문서와 FE 타입은 거기서 명령 두 개로 다시 만들어지는 생성물이다. 생성물을 다시 만든 뒤 `tsc` 가 깨지는 자리가 FE 가 고칠 자리다. 시간표처럼 필드가 늘거나 본문에서 필드가 빠지는 변경은 이 방식으로 빠짐없이 드러난다.
+
+드러나지 않는 것도 있다. 생성기가 zod 를 예상과 다르게 옮기는 경우, 계약 밖에서 두 번 적힌 계산식, 타입에 싣지 않은 CSRF 헤더와 경로별 오류 코드다. 이 세 가지는 생성된 JSON 을 열어 보거나, 주석을 읽거나, e2e 로 부딪쳐 봐야 안다.
+
+이전 편: [타임시트] Express 5 API — 라우터와 오류, Vercel 진입점 (02)
+
+다음 편: [타임시트] Prisma 7 과 Neon — 스키마, 마이그레이션, 운영 DB (04)
