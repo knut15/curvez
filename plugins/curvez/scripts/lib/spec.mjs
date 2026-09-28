@@ -105,6 +105,16 @@ export const DESCRIPTION_MIN_LENGTH = 40;
 /** description 에 있어야 할 따옴표 트리거 최소 개수. */
 export const MIN_QUOTED_TRIGGERS = 3;
 
+/** 원칙 파일(principles/*.md) 프론트매터 필수 필드. */
+export const PRINCIPLE_REQUIRED_FIELDS = ["name", "applies_when"];
+
+/** 원칙 본문에 있어야 할 굵은 표제. 규칙만 있고 이유·판정 질문이 없으면 적용 여부를 정할 수 없다. */
+export const PRINCIPLE_REQUIRED_LABELS = [
+  "**이유:**",
+  "**패턴:**",
+  "**판정 질문:**",
+];
+
 /** 핸드오프 status 허용값. */
 export const HANDOFF_STATUSES = ["done", "blocked", "partial"];
 

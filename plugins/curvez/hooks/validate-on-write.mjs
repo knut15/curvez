@@ -37,6 +37,11 @@ function pickValidator(p) {
   if (/[/\\]agents[/\\][^/\\]+\.md$/.test(p)) {
     return { script: "validate-agents.mjs", target: p, label: "에이전트" };
   }
+  if (/[/\\]principles[/\\][^/\\]+\.md$/.test(p)) {
+    // 인덱스와 파일의 1:1 대응을 함께 보려면 디렉터리 단위로 검사해야 한다.
+    const m = p.match(/^(.*[/\\]principles)[/\\]/);
+    return { script: "validate-principles.mjs", target: m[1], label: "원칙" };
+  }
   if (/[/\\]skills[/\\]/.test(p)) {
     // SKILL.md 든 references/*.md 든 스킬 디렉터리 단위로 검사한다.
     const m = p.match(/^(.*[/\\]skills[/\\][^/\\]+)[/\\]/);
