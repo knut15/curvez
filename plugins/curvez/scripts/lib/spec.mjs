@@ -136,6 +136,21 @@ export const BRIEF_FIELDS = [
  */
 export const BRIEF_STRICT_FIELDS = ["GOAL", "SCOPE", "REPORT"];
 
+/** 자율 권한 파일(.curvez/grant.md) 프론트매터 필수 필드. */
+export const GRANT_REQUIRED_FIELDS = ["target", "expires"];
+
+/**
+ * 자율 권한이 있어도 머지를 멈추는 변경. diff 에 이 경로가 하나라도 있으면 사람에게 넘긴다.
+ * 이유: 의존성 변경은 설치 승인, curvez 자체 수정은 규약 수정 승인, 워크플로 변경은 배포 판단이다.
+ * 셋 다 전역 규칙이 권한 밖으로 둔 행동이다. 강제 push·원격 브랜치 삭제는 guard-bash 가 막는다.
+ */
+export const GRANT_STOP_PATTERNS = [
+  /(^|\/)package\.json$/,
+  /(^|\/)(pnpm-lock\.yaml|package-lock\.json|yarn\.lock|bun\.lockb?)$/,
+  /^plugins\/curvez\//,
+  /^\.github\/workflows\//,
+];
+
 /** 핸드오프 status 허용값. */
 export const HANDOFF_STATUSES = ["done", "blocked", "partial"];
 
