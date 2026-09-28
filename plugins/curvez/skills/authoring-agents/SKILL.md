@@ -30,7 +30,7 @@ description: curvez 규약에 맞는 서브에이전트 정의를 새로 만들�
 ### 1. 뼈대를 만든다
 
 ```bash
-node "$CLAUDE_PLUGIN_ROOT/scripts/new-agent.mjs" <name> --model <opus|sonnet|haiku> [--readonly]
+node "$CURVEZ_ROOT/scripts/new-agent.mjs" <name> --model <opus|sonnet|haiku> [--readonly]
 ```
 
 - 프로젝트 전용 에이전트는 `.claude/agents/` 에 생긴다
@@ -110,7 +110,7 @@ for f in agents/curvez-orchestrator.md skills/team-orchestration/SKILL.md docs/t
 done
 
 # 개수·연결을 기계로 확인한다. 손으로 세지 마라
-node "$CLAUDE_PLUGIN_ROOT/scripts/doctor.mjs" --plugin
+node "$CURVEZ_ROOT/scripts/doctor.mjs" --plugin
 ```
 
 `doctor` 가 개수 불일치·고립·제어면 미등록을 전부 잡는다. 문서 관계의 전체 그림은
@@ -119,7 +119,7 @@ node "$CLAUDE_PLUGIN_ROOT/scripts/doctor.mjs" --plugin
 ### 5. 검증한다
 
 ```bash
-node "$CLAUDE_PLUGIN_ROOT/scripts/validate-agents.mjs" .claude/agents/<name>.md
+node "$CURVEZ_ROOT/scripts/validate-agents.mjs" .claude/agents/<name>.md
 ```
 
 오류 0개가 될 때까지 고친다. 뼈대의 `<!-- TODO -->` 를 지우지 않으면 통과하지 않는다.

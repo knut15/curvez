@@ -111,7 +111,7 @@ console.log(JSON.stringify({
 `commands` 이름 후보, 그 스택에서만 걸리는 함정이 거기 있다.
 
 ```
-$CLAUDE_PLUGIN_ROOT/presets/stack/<stack>.md
+$CURVEZ_ROOT/presets/stack/<stack>.md
 ```
 
 | `stack`    | 프리셋                      | 거기서만 알 수 있는 것                                                                                      |
@@ -370,7 +370,7 @@ JS 계열(`js/mjs/cjs/jsx`)만 검사한다.
 
 ### CLAUDE.md 가 없으면 코딩 지침 템플릿을 복제한다
 
-프로젝트 루트에 `CLAUDE.md` 가 없으면 `$CLAUDE_PLUGIN_ROOT/templates/CLAUDE.md`
+프로젝트 루트에 `CLAUDE.md` 가 없으면 `$CURVEZ_ROOT/templates/CLAUDE.md`
 (Karpathy 코딩 지침 12항)를 그대로 복제한다. **이미 있으면 내용과 무관하게 손대지 않는다 —
 `--force` 로도 덮지 않는다.**
 **이유:** CLAUDE.md 는 사용자가 프로젝트 규칙을 직접 쌓아 가는 파일이다. 병합·갱신을 시도하면
@@ -400,7 +400,7 @@ process.exit(missing.length || ghost.length ? 1 : 0);
 스크립트를 부르면 감지·판정·스캐폴드가 한 번에 끝난다.
 
 ```bash
-node "$CLAUDE_PLUGIN_ROOT/scripts/bootstrap.mjs" [--dry-run] [--json] [--force]
+node "$CURVEZ_ROOT/scripts/bootstrap.mjs" [--dry-run] [--json] [--force]
 ```
 
 **스크립트는 사용자에게 묻지 않는다.** 자동 판정만 하고 나머지는 `questions[]` 로 돌려준다.

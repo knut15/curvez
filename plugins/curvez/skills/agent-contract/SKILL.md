@@ -136,7 +136,7 @@ STANDING:   .curvez/standing.md
 6. **파일로 쓰고 검증한다**
 
 ```bash
-node "$CLAUDE_PLUGIN_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
+node "$CURVEZ_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
 ```
 
 ## 읽는 절차

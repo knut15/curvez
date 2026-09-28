@@ -88,13 +88,13 @@ curvez 는 **DDD 하나만** 제공한다. 고를 것이 없으므로 이 단계
 같은 구조를 반복해서 쓰게 되면 그때 프리셋으로 승격할지 판단한다 — 한 번 쓴 구조를
 프리셋으로 만들면 검증되지 않은 것이 기본값이 된다.
 
-프리셋 본문은 `$CLAUDE_PLUGIN_ROOT/presets/architecture/<이름>.md` 에서 읽는다.
+프리셋 본문은 `$CURVEZ_ROOT/presets/architecture/<이름>.md` 에서 읽는다.
 
 **이 파일이 없어도 멈추지 마라.** 정상 설치에는 있지만, 설치가 불완전하거나 프로젝트가 지웠을 수 있다.
 
 ```bash
 PRESET=ddd   # 고른 값
-test -f "$CLAUDE_PLUGIN_ROOT/presets/architecture/$PRESET.md" \
+test -f "$CURVEZ_ROOT/presets/architecture/$PRESET.md" \
   && echo "preset file OK" || echo "preset file MISSING -> 내장 폴백"
 ```
 

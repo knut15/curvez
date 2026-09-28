@@ -20,9 +20,35 @@
  * exit 0 고정 — 알림의 실패가 세션 시작을 막으면 안 된다.
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import {
+  appendFileSync,
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  mkdirSync,
+} from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+
+// 에이전트의 Bash 에 플러그인 경로를 CURVEZ_ROOT 로 내보낸다.
+// 이유: CLAUDE_PLUGIN_ROOT 는 훅 실행 환경에만 있고 Bash 에는 전달되지 않는다(2026-09-28 실측,
+// 메인 세션과 서브에이전트 모두 빈 값). SessionStart 훅이 CLAUDE_ENV_FILE 에 쓴 export 는
+// 메인 세션과 서브에이전트의 Bash 에 모두 전달된다(같은 날 실측). curvez 프로젝트가 아니어도
+// 내보낸다 — bootstrap 은 profile.json 이 생기기 전에 돈다.
+if (process.env.CLAUDE_ENV_FILE) {
+  try {
+    const root = fileURLToPath(new URL("..", import.meta.url)).replace(
+      /\/$/,
+      "",
+    );
+    appendFileSync(
+      process.env.CLAUDE_ENV_FILE,
+      `export CURVEZ_ROOT=${JSON.stringify(root)}\n`,
+    );
+  } catch {
+    /* 실패하면 CURVEZ_ROOT 를 쓰는 명령이 빈 경로로 실패해 드러난다 */
+  }
+}
 
 let input = {};
 try {
@@ -61,18 +87,6 @@ try {
   writeFileSync(marker, version + "\n");
 } catch {
   /* 기록에 실패해 알림이 반복되는 쪽이, 알림이 사라지는 쪽보다 낫다 */
-}
-
-// 플러그인 경로를 프로젝트에 남긴다.
-// 이유: CLAUDE_PLUGIN_ROOT 는 훅 실행 환경에만 있고 에이전트의 Bash 에는 전달되지 않는다
-// (2026-09-28 실측, 메인 세션과 서브에이전트 모두 빈 값). 에이전트는 이 파일에서 경로를 읽는다.
-try {
-  writeFileSync(
-    join(ROOT, ".curvez", "tmp", "plugin-root"),
-    fileURLToPath(new URL("..", import.meta.url)).replace(/\/$/, "") + "\n",
-  );
-} catch {
-  /* 기록에 실패하면 읽는 쪽이 blocked 로 알린다 */
 }
 
 if (seen === null || seen === version) process.exit(0);

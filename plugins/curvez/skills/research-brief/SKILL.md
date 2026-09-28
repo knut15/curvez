@@ -238,7 +238,7 @@ rm -f "$FACTS"
 # 핸드오프의 blocked_on 개수 — 위 `확인불가` 수치와 같아야 한다
 HANDOFF=$(ls -t .curvez/handoff/curvez-researcher.*.json 2>/dev/null | head -1)
 [ -n "$HANDOFF" ] && node -e 'const j=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));console.log("blocked_on:",j.blocked_on.length)' "$HANDOFF"
-node "$CLAUDE_PLUGIN_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
+node "$CURVEZ_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
 ```
 
 `grep -c` 는 0건일 때 종료 코드 1을 낸다. `set -e` 아래에서 돌리면 첫 0에서 스크립트가 죽으므로

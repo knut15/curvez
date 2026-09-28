@@ -346,7 +346,7 @@ console.log(`pairs=${rows.length} light=${light} dark=${dark} contrast-fail=${ba
 echo "impl-files=$(find "$DESIGN" \( -name '*.tsx' -o -name '*.ts' -o -name '*.css' \) 2>/dev/null | wc -l | tr -d ' ')"
 
 # 7. 핸드오프 스키마
-node "$CLAUDE_PLUGIN_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
+node "$CURVEZ_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
 ```
 
 **통과 기준 (전부 만족해야 `status: done`)**

@@ -389,8 +389,8 @@ TS=$(date +%Y%m%d-%H%M%S)
 5. 고친 뒤 **해당 검증 스크립트를 돌려 exit 0 을 확인한다**
 
 ```bash
-node "$CLAUDE_PLUGIN_ROOT/scripts/validate-agents.mjs" "$CLAUDE_PLUGIN_ROOT/agents/<고친파일>.md"
-node "$CLAUDE_PLUGIN_ROOT/scripts/validate-skills.mjs" "$CLAUDE_PLUGIN_ROOT/skills/<고친스킬>"
+node "$CURVEZ_ROOT/scripts/validate-agents.mjs" "$CURVEZ_ROOT/agents/<고친파일>.md"
+node "$CURVEZ_ROOT/scripts/validate-skills.mjs" "$CURVEZ_ROOT/skills/<고친스킬>"
 ```
 
 6. exit 0 이 아니면 **고친 것을 그대로 두지 말고** 검증 오류를 먼저 닫는다. 못 닫으면 실패한 명령과
@@ -446,7 +446,7 @@ node "$CLAUDE_PLUGIN_ROOT/scripts/validate-skills.mjs" "$CLAUDE_PLUGIN_ROOT/skil
 
 ```bash
 # 1. 핸드오프 스키마 검증 — 대신 기록한 리뷰어 핸드오프 포함
-node "$CLAUDE_PLUGIN_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
+node "$CURVEZ_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
 
 # 2. 이번 라운드에 띄운 워커 수와 새로 생긴 핸드오프 파일 수를 대조한다
 ls -1 .curvez/handoff/*.json | wc -l
@@ -455,7 +455,7 @@ ls -1 .curvez/handoff/*.json | wc -l
 grep -h '"status"' .curvez/handoff/*.json | sort | uniq -c
 
 # 4. Agent 도구 독점 확인 — 결과가 1이어야 한다
-grep -l '^tools:.*Agent' "$CLAUDE_PLUGIN_ROOT"/agents/*.md | wc -l
+grep -l '^tools:.*Agent' "$CURVEZ_ROOT"/agents/*.md | wc -l
 
 # 5. 팀 문서 존재 확인
 test -f .curvez/team.md && echo "team.md OK"

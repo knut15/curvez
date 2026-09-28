@@ -298,7 +298,7 @@ grep -cE '^## (실행 이력|어긋난 지점|액션 아이템|확인 불가|이
 ls .curvez/handoff/*.json 2>/dev/null | wc -l
 
 # 9. 핸드오프 스키마 검증
-node "$CLAUDE_PLUGIN_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
+node "$CURVEZ_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
 ```
 
 - [ ] 1번의 `ls | grep -c` 출력이 `1` 이상 — 파일명 날짜가 `date +%F` 와 일치. **추측한 날짜 0건**

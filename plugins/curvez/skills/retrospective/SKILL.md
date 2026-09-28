@@ -261,4 +261,4 @@ test "$A" -le 7 && test "$A" = "$W" && test "$A" = "$E" \
 - [ ] 회고 파일명의 날짜가 `date +%F` 출력과 일치한다
 - [ ] 로그로 복원 못 한 것이 `## 확인 불가` 에 사유와 함께 있다
 - [ ] 규약 파일을 직접 고치지 않았다
-- [ ] `node "$CLAUDE_PLUGIN_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/` 가 오류 0개
+- [ ] `node "$CURVEZ_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/` 가 오류 0개

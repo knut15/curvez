@@ -26,14 +26,14 @@ owns: none
 
 ### 실행할 수 있는가
 
-| 상황                                                              | 판단                                                                                                                              |
-| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `profile.json` 에 `crossReview` 가 없다                           | `status: blocked`, `who: "user"`. "교차 검토 설정이 없다. `crossReview: { \"cli\": \"codex\" }`"                                  |
-| `crossReview.cli` 가 `codex` 가 아니다                            | `status: blocked`, `who: "user"`. 다른 CLI 는 아직 호출 방법이 정의돼 있지 않다                                                   |
-| `command -v codex` 가 실패한다                                    | `status: blocked`, `who: "user"`. 설치를 대신하지 않는다                                                                          |
-| `.curvez/tmp/plugin-root` 가 없거나 가리키는 경로에 스키마가 없다 | `status: blocked`, `who: "user"`. "세션을 다시 열어 SessionStart 훅이 경로를 기록하게 하라". 디스크를 뒤져 플러그인을 찾지 않는다 |
-| 지시서 `CONTEXT` 에 비교 기준(base ref)이 없다                    | `status: blocked`, `who: "curvez-orchestrator"`. 기준을 추측해 diff 를 만들지 않는다                                              |
-| `git diff <base>...HEAD` 가 비었다                                | codex 를 부르지 않고 `status: done`, `findings: []`. `verification` 에 diff 명령과 "변경 0줄" 을 적는다                           |
+| 상황                                               | 판단                                                                                                                              |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `profile.json` 에 `crossReview` 가 없다            | `status: blocked`, `who: "user"`. "교차 검토 설정이 없다. `crossReview: { \"cli\": \"codex\" }`"                                  |
+| `crossReview.cli` 가 `codex` 가 아니다             | `status: blocked`, `who: "user"`. 다른 CLI 는 아직 호출 방법이 정의돼 있지 않다                                                   |
+| `command -v codex` 가 실패한다                     | `status: blocked`, `who: "user"`. 설치를 대신하지 않는다                                                                          |
+| `$CURVEZ_ROOT` 가 비었거나 그 아래에 스키마가 없다 | `status: blocked`, `who: "user"`. "세션을 다시 열어 SessionStart 훅이 경로를 내보내게 하라". 디스크를 뒤져 플러그인을 찾지 않는다 |
+| 지시서 `CONTEXT` 에 비교 기준(base ref)이 없다     | `status: blocked`, `who: "curvez-orchestrator"`. 기준을 추측해 diff 를 만들지 않는다                                              |
+| `git diff <base>...HEAD` 가 비었다                 | codex 를 부르지 않고 `status: done`, `findings: []`. `verification` 에 diff 명령과 "변경 0줄" 을 적는다                           |
 
 **이유:** 교차 검토를 조용히 건너뛰면 오케스트레이터는 "두 모델이 봤다" 고 믿고 다음 단계로 간다.
 못 돌렸으면 못 돌렸다고 돌려준다.
@@ -63,12 +63,10 @@ tie-break: `principles/tie-break-order.md` 를 따른다.
 **codex 호출** — 저장소 루트에서 돌린다.
 
 ```bash
-# 플러그인 경로. CLAUDE_PLUGIN_ROOT 는 Bash 에 전달되지 않는다 — SessionStart 훅이 이 파일에 남긴다
-R=$(cat .curvez/tmp/plugin-root)
 CR=$(node -e 'const p=require(process.cwd()+"/.curvez/profile.json");process.stdout.write(JSON.stringify(p.crossReview??{}))')
 MODEL=$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).model??"")' "$CR")
 codex exec -s read-only --ephemeral --ignore-user-config -C "$PWD" \
-  --output-schema "$R/scripts/schema/cross-review.schema.json" \
+  --output-schema "$CURVEZ_ROOT/scripts/schema/cross-review.schema.json" \
   ${MODEL:+-m "$MODEL"} "$PROMPT" < /dev/null
 ```
 
@@ -80,7 +78,7 @@ codex exec -s read-only --ephemeral --ignore-user-config -C "$PWD" \
 `$PROMPT` 에 넣을 것 — 이 순서로 한 문단씩:
 
 1. "`git diff <base>...HEAD` 를 검토하라. 파일을 바꾸지 마라"
-2. 등급과 리뷰 축: "`$R/agents/curvez-reviewer.md` 의 `## 판단 기준` 을 읽고 그 등급과 축을 따르라"
+2. 등급과 리뷰 축: "`$CURVEZ_ROOT/agents/curvez-reviewer.md` 의 `## 판단 기준` 을 읽고 그 등급과 축을 따르라"
 3. 근거 문서 경로: `.curvez/requirements.md`, `.curvez/architecture.md` (있는 것만)
 4. "지적마다 `where` 에 `파일:라인`, `evidence` 에 재현 조건을 적어라. 지적이 없으면 빈 배열이다"
 
@@ -156,13 +154,13 @@ codex exec -s read-only --ephemeral --ignore-user-config -C "$PWD" \
 
 ```bash
 # 1. 출력 스키마가 있는지 확인한다. 없으면 codex 를 부르지 말고 blocked 로 돌린다
-R=$(cat .curvez/tmp/plugin-root) && ls "$R/scripts/schema/cross-review.schema.json"
+ls "$CURVEZ_ROOT/scripts/schema/cross-review.schema.json"
 
 # 2. 검토 중 작업 트리가 바뀌지 않았는지 확인한다. 검토 전과 같은 출력이어야 한다
 git status --porcelain
 
 # 3. 반환할 JSON 을 stdin 으로만 계약 검증기에 넘긴다. 파일을 만들지 않는다
-cat <<'JSON' | node "$R/scripts/validate-handoff.mjs" /dev/stdin
+cat <<'JSON' | node "$CURVEZ_ROOT/scripts/validate-handoff.mjs" /dev/stdin
 {"from":"curvez-cross-reviewer","to":["curvez-orchestrator"],"status":"done","summary":"...","artifacts":[],"decisions":[],"blocked_on":[],"verification":[{"command":"...","result":"..."}],"findings":[]}
 JSON
 ```

@@ -29,7 +29,7 @@ description: curvez 규약에 맞는 스킬 문서를 새로 만들거나 기존
 ### 1. 뼈대를 만든다
 
 ```bash
-node "$CLAUDE_PLUGIN_ROOT/scripts/new-skill.mjs" <name> [--with-references]
+node "$CURVEZ_ROOT/scripts/new-skill.mjs" <name> [--with-references]
 ```
 
 ### 2. description 을 쓴다
@@ -93,13 +93,13 @@ SKILL.md 는 500줄이 상한이다. 한 섹션이 120줄을 넘으면 경고가
 
 ```bash
 # 개수·연결·고립을 기계로 확인한다
-node "$CLAUDE_PLUGIN_ROOT/scripts/doctor.mjs" --plugin
+node "$CURVEZ_ROOT/scripts/doctor.mjs" --plugin
 ```
 
 ### 7. 검증한다
 
 ```bash
-node "$CLAUDE_PLUGIN_ROOT/scripts/validate-skills.mjs" .claude/skills/<name>
+node "$CURVEZ_ROOT/scripts/validate-skills.mjs" .claude/skills/<name>
 ```
 
 오류 0개가 될 때까지 고친다.

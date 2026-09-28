@@ -113,7 +113,7 @@ description 의 트리거가 인접 스킬과 겹치는 것이다. 아래 "새 �
 ### 1. 스캐폴드
 
 ```bash
-node "$CLAUDE_PLUGIN_ROOT/scripts/new-agent.mjs" <name> --model <opus|sonnet|haiku|inherit> [--readonly]
+node "$CURVEZ_ROOT/scripts/new-agent.mjs" <name> --model <opus|sonnet|haiku|inherit> [--readonly]
 ```
 
 - 출력은 기본으로 `.claude/agents/<name>.md` 다
@@ -134,7 +134,7 @@ node "$CLAUDE_PLUGIN_ROOT/scripts/new-agent.mjs" <name> --model <opus|sonnet|hai
 `## 협업과 팀 내 위치` 의 소유 경로를 기존 에이전트 전부와 대조한다.
 
 ```bash
-grep -rn "파일 소유권" "$CLAUDE_PLUGIN_ROOT/agents" .claude/agents
+grep -rn "파일 소유권" "$CURVEZ_ROOT/agents" .claude/agents
 ```
 
 겹치면 병렬 실행에서 나중에 쓴 쪽이 앞선 쪽을 조용히 지운다. 에러도 로그도 남지 않는다.
@@ -183,7 +183,7 @@ A 가 "B 에게 넘긴다" 고만 적고 B 정의에 "A 에게서 받는다" 가
 ### 5. 검증
 
 ```bash
-node "$CLAUDE_PLUGIN_ROOT/scripts/validate-agents.mjs" .claude/agents/<name>.md
+node "$CURVEZ_ROOT/scripts/validate-agents.mjs" .claude/agents/<name>.md
 ```
 
 오류 0개가 될 때까지 고친다. 채우고 나면 통과한다 — 실제로 채워서 돌려보니
@@ -198,7 +198,7 @@ node "$CLAUDE_PLUGIN_ROOT/scripts/validate-agents.mjs" .claude/agents/<name>.md
 ### 1. 스캐폴드
 
 ```bash
-node "$CLAUDE_PLUGIN_ROOT/scripts/new-skill.mjs" <name> [--with-references]
+node "$CURVEZ_ROOT/scripts/new-skill.mjs" <name> [--with-references]
 ```
 
 `--with-references` 는 `references/` 와 예시 파일 둘을 함께 만든다.
@@ -219,7 +219,7 @@ node "$CLAUDE_PLUGIN_ROOT/scripts/new-skill.mjs" <name> [--with-references]
 새 스킬의 트리거로 기존 스킬을 훑는다.
 
 ```bash
-grep -rn "결제" "$CLAUDE_PLUGIN_ROOT/skills" .claude/skills --include='SKILL.md'
+grep -rn "결제" "$CURVEZ_ROOT/skills" .claude/skills --include='SKILL.md'
 ```
 
 (`--include` 는 반드시 따옴표로 감싼다. zsh 에서 따옴표가 없으면 `no matches found` 로 죽는다.
@@ -232,7 +232,7 @@ grep -rn "결제" "$CLAUDE_PLUGIN_ROOT/skills" .claude/skills --include='SKILL.m
 ### 4. 검증
 
 ```bash
-node "$CLAUDE_PLUGIN_ROOT/scripts/validate-skills.mjs" .claude/skills/<name>
+node "$CURVEZ_ROOT/scripts/validate-skills.mjs" .claude/skills/<name>
 ```
 
 ---
@@ -240,7 +240,7 @@ node "$CLAUDE_PLUGIN_ROOT/scripts/validate-skills.mjs" .claude/skills/<name>
 ## 전체 점검
 
 ```bash
-node "$CLAUDE_PLUGIN_ROOT/scripts/doctor.mjs"
+node "$CURVEZ_ROOT/scripts/doctor.mjs"
 ```
 
 플러그인 구조 + 에이전트 + 스킬 + 핸드오프를 한 번에 본다.
@@ -254,7 +254,8 @@ node "$CLAUDE_PLUGIN_ROOT/scripts/doctor.mjs"
   다른 데서 돌리면 프로젝트 파일을 건너뛰고도 통과한다
 - `--plugin` 을 붙이면 코어만 본다. 코어를 고쳤을 때 프로젝트 상태에 영향받지 않고 확인하는 용도다
 
-`$CLAUDE_PLUGIN_ROOT` 는 Claude Code 세션 안에서만 설정된다.
+`$CURVEZ_ROOT` 는 curvez 의 SessionStart 훅(`hooks/notify-update.mjs`)이 Claude Code 세션 안에서만 내보낸다.
+`$CLAUDE_PLUGIN_ROOT` 는 훅 실행 환경에만 있고 Bash 명령에는 전달되지 않아 쓰지 않는다.
 터미널에서 직접 돌릴 때 이 변수가 비면 경로가 `/scripts/doctor.mjs` 로 접혀
 `MODULE_NOT_FOUND` 가 난다. 실측으로 확인했다. 직접 돌릴 때는 절대경로를 쓰거나 먼저 `export` 한다.
 
@@ -366,7 +367,7 @@ node "$CLAUDE_PLUGIN_ROOT/scripts/doctor.mjs"
 ## 요약 — 새 담당자가 첫날 할 일
 
 1. [README](README.md)로 전체 그림을 잡는다
-2. `node "$CLAUDE_PLUGIN_ROOT/scripts/doctor.mjs" --plugin` 을 돌려 설치가 온전한지 본다
+2. `node "$CURVEZ_ROOT/scripts/doctor.mjs" --plugin` 을 돌려 설치가 온전한지 본다
 3. 프로젝트 prefix 를 정한다 (검증기가 안 잡아주므로 팀 규칙으로 남긴다)
 4. 가장 아쉬운 담당자 **하나**만 만든다. 스캐폴드 → TODO 채우기 → 소유권 대조 → 검증
 5. 한 라운드 돌려보고, 그때 드러난 것으로 두 번째를 만든다

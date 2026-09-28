@@ -66,6 +66,6 @@ const out = [result.stdout, result.stderr].filter(Boolean).join("\n").trim();
 process.stderr.write(
   `curvez ${pick.label} 검증 실패 — 방금 편집한 파일이 규약을 어긴다.\n${out}\n` +
     `위 오류를 고친 뒤 다음 명령으로 재확인하라:\n` +
-    `  node "$CLAUDE_PLUGIN_ROOT/scripts/${pick.script}" ${pick.target}\n`,
+    `  node "$CURVEZ_ROOT/scripts/${pick.script}" ${pick.target}\n`,
 );
 process.exit(0);

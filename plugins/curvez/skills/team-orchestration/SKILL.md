@@ -253,7 +253,7 @@ curvez-structure-reviewer/DUP-01  ← 원본 id: DUP-01, 다른 지적
 수합 직후 돌린다. 대필한 리뷰어 핸드오프도 포함된다.
 
 ```bash
-node "$CLAUDE_PLUGIN_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
+node "$CURVEZ_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
 ```
 
 **오류 0개를 확인하기 전에 다음 라운드를 시작하지 마라.**
@@ -270,7 +270,7 @@ grep -h '"status"' .curvez/handoff/*.json | sort | uniq -c
 ls -1 .curvez/handoff/*.json | wc -l
 
 # Agent 도구 독점 확인 — 결과가 1이어야 한다
-grep -l '^tools:.*Agent' "$CLAUDE_PLUGIN_ROOT"/agents/*.md | wc -l
+grep -l '^tools:.*Agent' "$CURVEZ_ROOT"/agents/*.md | wc -l
 ```
 
 검증 실패를 요약하거나 숨기지 마라. 실패한 명령과 실제 출력을 그대로 `verification` 에 적고
