@@ -166,3 +166,17 @@ export const ARTIFACT_KINDS = [
   "commit",
   "pr",
 ];
+
+/**
+ * 게이트 루프(`curvez:gate-loop`)의 상한. `loop-state.mjs` 가 이 값으로 계속·멈춤을 판정한다.
+ *
+ * 수정 반복 상한을 리뷰 재실행 상한(2회)과 따로 두는 이유: 리뷰 루프가 2회 안에 안 닫히는 것은
+ * 기준 문제라 사람이 정해야 하지만, 테스트 실패 → 수정은 기준이 테스트로 이미 정해져 있어
+ * 더 돌 여지가 있다. 그래도 끝이 없으면 토큰만 쓰므로 상한을 둔다.
+ *
+ * 진전 없음 판정: 같은 실패 결과(실패한 명령과 결과 문자열)가 연속으로 이만큼 나오면 멈춘다.
+ * 이유: 같은 실패가 반복되는 동안 남은 반복은 같은 추측을 되풀이할 뿐이다.
+ */
+export const LOOP_MAX_FIX = 5;
+export const LOOP_MAX_MINUTES = 60;
+export const LOOP_NO_PROGRESS = 3;

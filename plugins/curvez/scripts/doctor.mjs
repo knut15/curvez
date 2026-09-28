@@ -386,6 +386,11 @@ function checkRuntimeReadiness() {
       what: "금지어 가드 회귀 테스트",
       fallback: "없음 — 합성어 오탐이 조용히 늘어난다",
     },
+    {
+      path: "scripts/tests/loop-state.test.py",
+      what: "게이트 루프 판정 회귀 테스트",
+      fallback: "없음 — 멈춤 조건이 조용히 풀려 루프가 상한 없이 돈다",
+    },
   ];
 
   const missing = [];
@@ -428,6 +433,7 @@ function checkStructure() {
     "scripts/new-agent.mjs",
     "scripts/new-skill.mjs",
     "scripts/bootstrap.mjs",
+    "scripts/loop-state.mjs",
     "scripts/quality-gate.mjs",
     "hooks/hooks.json",
     "hooks/guard-bash.mjs",

@@ -119,6 +119,9 @@ function looksZeroRun(out) {
     /no tests? (found|to run)/i.test(out) ||
     /(^|[^0-9])0 (tests?|passed)/i.test(out) ||
     /Tests?: *0( |$)/i.test(out) ||
+    // node --test 의 요약 줄. 0개면 "ℹ tests 0", TAP 출력이면 "# tests 0" 이다.
+    // 위 패턴은 숫자가 뒤에 오는 이 형태를 못 잡아, 테스트가 하나도 없는데 통과로 나왔다
+    /^(ℹ|#) tests 0\s*$/m.test(out) ||
     /Test Files\s+0 passed/i.test(out)
   );
 }
