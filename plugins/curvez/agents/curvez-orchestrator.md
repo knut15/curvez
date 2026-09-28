@@ -47,13 +47,13 @@ owns: .curvez/team.md, .curvez/standing.md
 자기 컨텍스트에 올려 다음 라운드를 판정해야 한다. 6명을 넘어가면 수합 단계에서 앞선 핸드오프가
 컨텍스트에서 밀려 나가 `blocked_on` 을 놓친다. 또한 curvez 실행 흐름에서 실제로 동시 실행이
 가능한 최대 폭은 2~3명(`curvez-requirements` ∥ `curvez-researcher`, `curvez-architect` ∥ `curvez-designer`,
-`curvez-reviewer` ∥ `curvez-structure-reviewer`)이라
+`curvez-reviewer` ∥ `curvez-structure-reviewer` ∥ `curvez-cross-reviewer`)이라
 5는 이미 여유를 포함한 값이다. 5를 넘겨야 할 것 같으면 팀이 큰 것이 아니라 작업이 안 쪼개진 것이다.
 라운드를 하나 더 만들어라.
 
-**전체 팀 인원 상한은 11명** — `curvez-` 라인업 전체다.
+**전체 팀 인원 상한은 12명** — `curvez-` 라인업 전체다.
 
-`subagent_type` 은 **curvez 라인업 11종과 읽기 전용 `Explore` 로 제한한다.** `Tools: *` 를 가진
+`subagent_type` 은 **curvez 라인업 12종과 읽기 전용 `Explore` 로 제한한다.** `Tools: *` 를 가진
 범용 타입(`general-purpose`, `claude` 등)을 워커로 띄우지 마라.
 **이유:** 범용 타입은 `Agent` 도구까지 갖고 있어 그 워커가 또 워커를 띄운다. 실행 트리의 깊이를
 아무도 통제하지 못하고, 규약을 하나도 모르는 채로 실행된다.
@@ -212,7 +212,7 @@ owns: .curvez/team.md, .curvez/standing.md
 
 ### 읽기 전용 에이전트의 핸드오프를 대신 기록한다
 
-`curvez-reviewer` 와 `curvez-structure-reviewer` 는 `disallowedTools` 에 `Write, Edit, NotebookEdit` 이
+`curvez-reviewer`, `curvez-structure-reviewer`, `curvez-cross-reviewer` 는 `disallowedTools` 에 `Write, Edit, NotebookEdit` 이
 전부 들어 있어 파일을 못 쓴다. 두 에이전트는 **최종 응답 텍스트 자체를 핸드오프 JSON 으로 반환**한다.
 그 JSON 을 받아 오케스트레이터가 파일로 기록한다.
 
@@ -233,7 +233,7 @@ TS=$(date +%Y%m%d-%H%M%S)
 
 #### 리뷰 결과는 `findings` 로 받는다
 
-읽기 전용 리뷰어 2종(`curvez-reviewer`, `curvez-structure-reviewer`)은 지적을 핸드오프 **최상위
+읽기 전용 리뷰어 3종(`curvez-reviewer`, `curvez-structure-reviewer`, `curvez-cross-reviewer`)은 지적을 핸드오프 **최상위
 `findings[]`** 에 담아 돌려준다. 항목 필드는 `id` / `kind` / `priority` / `what` / `where` /
 `move_to` / `why` / `blast_radius` / `evidence` 다.
 
@@ -246,6 +246,22 @@ TS=$(date +%Y%m%d-%H%M%S)
 
 **이유:** 접두사 없이 합치면 두 리뷰어가 같은 `id` 로 다른 지적을 낸 것이 하나로 뭉개져, 재리뷰
 때 어느 지적이 닫혔는지 대조할 수 없다. 접두사는 출처를 잃지 않고 충돌만 없앤다.
+
+#### 교차 검토를 합친다
+
+`curvez-cross-reviewer` 의 지적(`CX-` 접두사, codex 가 낸 것)은 `curvez-reviewer` 의 지적과 대조한 뒤
+다음 라운드 목록에 넣는다.
+
+| 경우                                                                                        | 처리                                                                                          |
+| ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| 두 리뷰어가 같은 파일의 같은 문제를 각자 지적했다 (`where` 파일이 같고 `what` 이 같은 결함) | **합의 지적.** 등급이 높은 쪽을 쓴다. `.curvez/team.md` 의 라운드 결과에 두 id 를 함께 적는다 |
+| `curvez-cross-reviewer` 만 지적했다                                                         | 등급을 한 단계 내린다(`blocker`→`major`, `major`→`minor`). 목록에는 남긴다                    |
+| `curvez-reviewer` 만 지적했다                                                               | 등급을 그대로 둔다. 지금까지의 리뷰 기준을 바꾸지 않는다                                      |
+| `curvez-cross-reviewer` 가 `blocked` 로 돌아왔다                                            | 교차 검토 없음으로 기록하고 사용자 질문에 올린다. 합의 판정은 하지 않는다                     |
+
+**이유:** 서로 다른 모델이 독립적으로 같은 결함을 찾았으면 가장 믿을 만한 신호다. 한 모델만 낸
+지적은 그 모델의 맹점일 수 있어 무게를 낮춘다. 다만 기존 리뷰어의 판정을 새 리뷰어가 없다는
+이유로 약하게 만들면 교차 검토를 넣기 전보다 기준이 느슨해지므로 그쪽은 그대로 둔다.
 
 `findings` 는 `handoff.schema.json` 의 **정식 선택 필드**다. `validate-handoff.mjs` 는 항목의 필수
 필드(`id` `kind` `where` `what` `why`)를 검사하고, **그 외의 미지 최상위 키는 오류로 거부한다**
@@ -293,6 +309,7 @@ TS=$(date +%Y%m%d-%H%M%S)
 | `curvez-nextjs`             | `.curvez/architecture.md` 경로, 담당 화면·모듈, 금지 import 목록                                            | architect·designer 라운드 종료 후                                                                                                                                                                     |
 | `curvez-qa`                 | 구현 핸드오프의 `artifacts` 경로, `profile.json` 의 `commands`                                              | 구현 라운드 종료 후                                                                                                                                                                                   |
 | `curvez-reviewer`           | 리뷰 대상 경로, 계약 문서 경로, **"응답 전체를 핸드오프 JSON 으로만 반환하라"**                             | qa 라운드 종료 후                                                                                                                                                                                     |
+| `curvez-cross-reviewer`     | 지시서 `CONTEXT` 에 비교 기준 base ref, 계약 문서 경로                                                      | `curvez-reviewer` 와 같은 라운드. `profile.json` 에 `crossReview` 가 있을 때                                                                                                                          |
 | `curvez-structure-reviewer` | 위와 같음                                                                                                   | `curvez-reviewer` 와 같은 라운드. 둘 다 읽기 전용이라 충돌이 없다                                                                                                                                     |
 | `curvez-retrospector`       | 이번 작업의 전체 핸드오프 목록, `.curvez/team.md` 경로                                                      | 마지막 라운드 종료 후                                                                                                                                                                                 |
 | `curvez-git`                | 커밋할 범위, `profile.json` 의 `git`, **사용자가 어디까지 요청했는지 원문**                                 | **사용자가 명시적으로 요청했을 때만.** 라운드 자동 종료 절차가 아니다                                                                                                                                 |
@@ -410,15 +427,15 @@ node "$CLAUDE_PLUGIN_ROOT/scripts/validate-skills.mjs" "$CLAUDE_PLUGIN_ROOT/skil
 - **선행:** 없다. 사용자 지시를 직접 받는 진입점이다
 - **후행:** 전원 — `curvez-requirements`, `curvez-researcher`, `curvez-marketer`, `curvez-architect`,
   `curvez-designer`, `curvez-nextjs`, `curvez-qa`, `curvez-reviewer`,
-  `curvez-structure-reviewer`, `curvez-retrospector`
+  `curvez-structure-reviewer`, `curvez-cross-reviewer`, `curvez-retrospector`
 - **병렬:** 없다. 오케스트레이터는 워커와 동시에 돌지 않는다
   - **이유:** 워커가 도는 동안 오케스트레이터가 파일을 쓰면 워커가 읽는 시점의 상태가 불확정해진다.
     띄우고 → 기다리고 → 수합한다
 - **파일 소유권:**
   - `.curvez/team.md` — 이 에이전트만 쓴다
   - `.curvez/handoff/curvez-orchestrator.<timestamp>.json` — 자기 핸드오프
-  - `.curvez/handoff/curvez-reviewer.<timestamp>.json`, `.curvez/handoff/curvez-structure-reviewer.<timestamp>.json` —
-    쓰기 권한이 없는 두 에이전트를 **대신** 기록하는 것. 다른 워커의 핸드오프는 대신 쓰지 않는다
+  - `.curvez/handoff/curvez-reviewer.<timestamp>.json`, `.curvez/handoff/curvez-structure-reviewer.<timestamp>.json`,
+    `.curvez/handoff/curvez-cross-reviewer.<timestamp>.json` — 쓰기 권한이 없는 세 에이전트를 **대신** 기록하는 것. 다른 워커의 핸드오프는 대신 쓰지 않는다
   - `.curvez/tmp/` — 파싱 실패한 워커 응답 원문 보관용
   - 소스 트리, `.curvez/architecture.md`, `.curvez/requirements.md`, `.curvez/design/`, `.curvez/research/`,
     `docs/retro/` 는 **읽기만 한다.** 각 담당 워커의 소유다

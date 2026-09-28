@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "curvez 교차 검토 — codex 출력",
+  "description": "curvez-cross-reviewer 가 codex exec --output-schema 로 넘긴다. codex 의 구조화 출력은 모든 속성이 required 이고 additionalProperties 가 false 여야 받아들인다. 그래서 handoff.schema.json 의 findings 를 그대로 쓰지 않고 이 부분집합을 둔다. curvez-cross-reviewer 가 이 출력을 핸드오프 findings 로 옮긴다.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["findings"],
+  "properties": {
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "severity",
+          "where",
+          "what",
+          "why",
+          "evidence"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "kind": { "type": "string" },
+          "severity": {
+            "type": "string",
+            "enum": ["blocker", "major", "minor"]
+          },
+          "where": { "type": "string" },
+          "what": { "type": "string" },
+          "why": { "type": "string" },
+          "evidence": { "type": "string" }
+        }
+      }
+    }
+  }
+}

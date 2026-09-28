@@ -62,6 +62,7 @@ curvez 팀 실행의 절차서다. 주 사용 에이전트는 `curvez-orchestrat
 | `curvez-nextjs`             | 웹 구현                                       | 설계 뒤                                                                                                                                  |
 | `curvez-qa`                 | 게이트 실행                                   | 구현 뒤. 단독                                                                                                                            |
 | `curvez-reviewer`           | 정확성·계약 리뷰                              | QA 뒤. `curvez-structure-reviewer` 와 병렬                                                                                               |
+| `curvez-cross-reviewer`     | 다른 모델(codex) 교차 검토                    | QA 뒤. `curvez-reviewer` 와 병렬. `profile.json` 에 `crossReview` 가 있을 때                                                             |
 | `curvez-structure-reviewer` | 구조·중복·순환                                | QA 뒤                                                                                                                                    |
 | `curvez-retrospector`       | 회고·규약 수정안                              | 마지막. 단독                                                                                                                             |
 | `curvez-git`                | 커밋·PR·머지                                  | **자동으로 돌지 않는다.** 아래 참조                                                                                                      |
@@ -195,10 +196,10 @@ curvez 팀 실행의 절차서다. 주 사용 에이전트는 `curvez-orchestrat
 그 예외에 해당하지 않는 질문을 미리 대신 묻지 마라.
 **이유:** 무엇을 물어야 하는지는 그 워커가 자기 절차를 돌려 봐야 안다.
 
-### 읽기 전용 2종은 대필한다
+### 읽기 전용 3종은 대필한다
 
-`curvez-reviewer` 와 `curvez-structure-reviewer` 는 `disallowedTools` 에 쓰기 도구가 전부 들어 있어
-파일을 못 쓴다. 두 에이전트는 **최종 응답 텍스트 자체를 핸드오프 JSON 으로 반환**하고,
+`curvez-reviewer`, `curvez-structure-reviewer`, `curvez-cross-reviewer` 는 `disallowedTools` 에 쓰기 도구가 전부 들어 있어
+파일을 못 쓴다. 세 에이전트는 **최종 응답 텍스트 자체를 핸드오프 JSON 으로 반환**하고,
 오케스트레이터가 그것을 파일로 기록한다. 대필 6단계(파싱 확인 → `from` 대조 → `findings` 보존 →
 타임스탬프 → 기록 → 검증)는 `curvez-orchestrator.md` 의
 `### 읽기 전용 에이전트의 핸드오프를 대신 기록한다` 를 그대로 따른다.
