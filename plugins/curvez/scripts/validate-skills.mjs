@@ -275,6 +275,12 @@ function validateSkill(file, report) {
     }
   }
 
+  // 8-1. 플레이북 — 본문 목록과 파일의 1:1, 형식, 가리키는 이름의 실재
+  //      이유: 플레이북 단계는 할 일 목록에 글자 그대로 옮겨진다. 없는 에이전트·원칙을 가리키거나
+  //      보고 형식이 빠진 단계는 옮긴 목록에서도 그대로 틀린다.
+  const playDir = join(skillDir, "playbooks");
+  if (existsSync(playDir)) validatePlaybooks(file, body, playDir, report);
+
   // 9. why-first — 금지 규칙에 이유가 붙어 있는가
   //    이유: 이유를 모르면 문서에 없는 엣지 케이스에서 판단을 이어갈 수 없다.
   const hasProhibition =
@@ -301,6 +307,75 @@ function validateSkill(file, report) {
       "skill/tone-not-imperative",
       `존댓말·설명조 표현이 ${politeCount}건 있다. \`~하라\`, \`~한다\` 명령형으로 고쳐라.`,
     );
+  }
+}
+
+/** 이름이 코어 에이전트·스킬이나 프로젝트 에이전트로 실재하는가. */
+function nameExists(name) {
+  return [
+    join(PLUGIN_ROOT, "agents", `${name}.md`),
+    join(PLUGIN_ROOT, "skills", name, "SKILL.md"),
+    join(process.cwd(), ".claude", "agents", `${name}.md`),
+  ].some(existsSync);
+}
+
+function validatePlaybooks(skillFile, skillBody, playDir, report) {
+  const files = readdirSync(playDir).filter((f) => f.endsWith(".md"));
+  for (const f of files) {
+    const path = join(playDir, f);
+    report.track(path);
+
+    if (!skillBody.includes(`playbooks/${f}`)) {
+      report.error(
+        skillFile,
+        null,
+        "playbook/unlisted",
+        `playbooks/${f} 를 본문에서 가리키지 않는다. 고를 수 없는 플레이북이다.`,
+      );
+    }
+
+    const text = readFileSync(path, "utf8");
+    const lines = text.split("\n");
+    if (!lines.some((l) => /^\d+\. /.test(l))) {
+      report.error(
+        path,
+        null,
+        "playbook/no-steps",
+        "번호 단계(`1. …`)가 없다.",
+      );
+    }
+    const last = lines.filter((l) => l.trim()).at(-1) ?? "";
+    if (!last.startsWith("보고:")) {
+      report.error(
+        path,
+        null,
+        "playbook/report-missing",
+        "마지막 줄이 `보고:` 가 아니다. 무엇을 보고하고 끝내는지가 없다.",
+      );
+    }
+
+    lines.forEach((line, i) => {
+      for (const [, name] of line.matchAll(/`(curvez-[a-z-]+)`/g)) {
+        if (!nameExists(name)) {
+          report.error(
+            path,
+            i + 1,
+            "playbook/unknown-name",
+            `\`${name}\` 이라는 에이전트·스킬이 없다.`,
+          );
+        }
+      }
+      for (const [, slug] of line.matchAll(/principles\/([a-z-]+)\.md/g)) {
+        if (!existsSync(join(PLUGIN_ROOT, "principles", `${slug}.md`))) {
+          report.error(
+            path,
+            i + 1,
+            "playbook/unknown-principle",
+            `principles/${slug}.md 가 없다.`,
+          );
+        }
+      }
+    });
   }
 }
 
