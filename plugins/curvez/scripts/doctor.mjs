@@ -386,6 +386,11 @@ function checkRuntimeReadiness() {
       what: "금지어 가드 회귀 테스트",
       fallback: "없음 — 합성어 오탐이 조용히 늘어난다",
     },
+    {
+      path: "hooks/tests/check-brief.test.py",
+      what: "지시서 가드 회귀 테스트",
+      fallback: "없음 — curvez 가 아닌 서브에이전트까지 막혀도 모른다",
+    },
   ];
 
   const missing = [];
@@ -436,6 +441,7 @@ function checkStructure() {
     "hooks/guard-forbidden-words.mjs",
     "hooks/validate-on-write.mjs",
     "hooks/check-handoff.mjs",
+    "hooks/check-brief.mjs",
     "hooks/notify-update.mjs",
   ];
 

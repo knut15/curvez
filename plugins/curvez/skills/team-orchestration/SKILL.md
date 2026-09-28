@@ -114,12 +114,9 @@ curvez 팀 실행의 절차서다. 주 사용 에이전트는 `curvez-orchestrat
    - `subagent_type` 에 넣는 값은 **`curvez:` 를 붙인 `curvez:curvez-nextjs` 형태**다.
      이 문서에 적힌 `curvez-nextjs` 는 지칭이지 호출 값이 아니다. 접두사 없이 부르면 거부된다.
      대응표는 `curvez-orchestrator.md` 의 `#### 호출 값에는 플러그인 접두사가 붙는다` 에 있다
-3. 각 워커 프롬프트에 반드시 넣는다
-   - 담당 범위와 **소유 경로**, "이 경로 밖은 쓰지 마라"
-   - 읽어야 할 입력 파일의 정확한 경로
-   - 핸드오프를 `.curvez/handoff/<name>.<timestamp>.json` 으로 남기라는 지시
-     (읽기 전용 2종은 제외 — `## 핸드오프 수합` 참조)
-   - 막히면 추측하지 말고 `status: blocked` 로 돌아오라는 지시
+3. 각 워커 프롬프트는 `agent-contract` 의 `## 지시서` 형식으로 쓴다. `.curvez/standing.md` 가
+   없으면 첫 워커를 띄우기 전에 만든다
+   - 칸이 빠지거나 비면 `hooks/check-brief.mjs` 가 호출을 막는다. 막히면 칸을 채워 다시 띄운다
    - **이유:** 워커는 팀 명단도 다른 워커의 소유 경로도 모른다. 프롬프트에 없는 것은 워커가 추측한다
 4. **워커에게 `Agent` 도구를 쓰라고 지시하지 마라.** 오케스트레이터를 포함한 라인업 전체에서
    `tools` 에 `Agent` 가 있는 것은 `curvez-orchestrator` 하나뿐이다

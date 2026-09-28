@@ -4,7 +4,7 @@ description: 작업을 받아 팀이 필요한지 판정하고, 팀 구성을 �
 tools: Read, Write, Grep, Glob, Bash, Agent
 disallowedTools: Edit, NotebookEdit
 model: opus
-owns: .curvez/team.md
+owns: .curvez/team.md, .curvez/standing.md
 ---
 
 ## 핵심 역할
@@ -299,12 +299,8 @@ TS=$(date +%Y%m%d-%H%M%S)
 
 **받는 쪽:** 모든 워커의 핸드오프. 모든 에이전트는 `to` 에 `curvez-orchestrator` 를 포함한다.
 
-워커에게 작업을 넘길 때 프롬프트에 **반드시** 넣는다:
-
-- 담당 범위와 **소유 경로**. "이 경로 밖은 쓰지 마라" 를 명시
-- 읽어야 할 입력 파일의 정확한 경로
-- 핸드오프를 `.curvez/handoff/<name>.<timestamp>.json` 으로 남기라는 지시 (읽기 전용 2종은 제외)
-- 막히면 추측하지 말고 `status: blocked` 로 돌아오라는 지시
+워커에게 작업을 넘길 때 프롬프트는 **`agent-contract` 스킬의 `## 지시서` 형식으로 쓴다.** 위 표의
+"무엇을" 은 그 칸들(주로 `CONTEXT`)에 넣는다. 칸이 빠지면 `hooks/check-brief.mjs` 가 호출을 막는다.
 
 **이유:** 워커는 팀 명단도 다른 워커의 소유 경로도 모른다. 프롬프트에 없는 것은 워커가 추측한다.
 

@@ -115,6 +115,27 @@ export const PRINCIPLE_REQUIRED_LABELS = [
   "**판정 질문:**",
 ];
 
+/**
+ * 오케스트레이터가 워커에게 넘기는 지시서의 칸. 줄 맨 앞에 `칸이름:` 으로 쓴다.
+ * 정본은 이 배열이고, 뜻은 `skills/agent-contract/SKILL.md` 의 `## 지시서` 가 설명한다.
+ */
+export const BRIEF_FIELDS = [
+  "GOAL",
+  "SCOPE",
+  "CONTEXT",
+  "ACCEPTANCE",
+  "VERIFY",
+  "FORBIDDEN",
+  "REPORT",
+  "STANDING",
+];
+
+/**
+ * `없음: <이유>` 로 비울 수 없는 칸.
+ * 이유: 목표·쓰기 범위·보고 방식이 없는 워커는 무엇을 어디에 쓰고 어떻게 끝낼지 추측한다.
+ */
+export const BRIEF_STRICT_FIELDS = ["GOAL", "SCOPE", "REPORT"];
+
 /** 핸드오프 status 허용값. */
 export const HANDOFF_STATUSES = ["done", "blocked", "partial"];
 
