@@ -64,7 +64,7 @@ git 이력만 만든다.**
 | `shipping` 이 자율 권한으로 넘김 | 머지 (**`check-grant` 가 exit 0 이고 타겟이 `humanMergeTargets` 에 없는 PR 만**) |
 
 **자율 권한:** `.curvez/grant.md` 는 사용자가 원문으로 준 머지 권한이다. `shipping` 플레이북이 넘기면 머지 직전에
-`node "$CURVEZ_ROOT/scripts/check-grant.mjs" --target <타겟> --base origin/<타겟>` 을 돌리고, exit 0 일 때만
+`node "$CURVEZ_ROOT/scripts/check-grant.mjs" --stage merge --target <타겟> --base origin/<타겟>` 을 돌리고, exit 0 일 때만
 "머지까지 해줘" 와 같게 다룬다. exit 1 이면 출력 한 줄을 `blocked_on` 에 `who: "user"` 로 남기고 멈춘다.
 `humanMergeTargets` 는 권한이 있어도 그대로 사람 몫이다 (원칙: `principles/approval-boundary.md`).
 

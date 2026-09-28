@@ -136,6 +136,9 @@ export const BRIEF_FIELDS = [
  */
 export const BRIEF_STRICT_FIELDS = ["GOAL", "SCOPE", "REPORT"];
 
+/** check-grant 의 판정 단계. team 은 권한만, merge 는 권한·멈춤 경로·머지 증거까지 본다. */
+export const GRANT_STAGES = ["team", "merge"];
+
 /** 자율 권한 파일(.curvez/grant.md) 프론트매터 필수 필드. */
 export const GRANT_REQUIRED_FIELDS = ["target", "expires"];
 
