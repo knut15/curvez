@@ -255,6 +255,8 @@ ls -d tests test __tests__ e2e 2>/dev/null | head -3
 
 - `paths` 값은 **저장소 루트 기준 상대 경로**다. 끝에 `/` 를 붙이지 않는다
 - `architecture` 초기값은 `"ddd"` 다. 확정은 `architecture-setup` 이 한다
+- `crossReview` 는 선택 키다. bootstrap 은 쓰지 않고, 교차 검토를 쓸 사용자가 `{ "cli": "codex" }`
+  (모델을 고정하려면 `"model"` 도)로 넣는다. 읽는 쪽은 `curvez-cross-reviewer` 다
 - 값을 모르는 선택 키는 **키째로 생략한다.** 빈 문자열·`null` 을 넣지 마라
   - **이유:** 후속 에이전트는 키 존재 여부로 분기한다. `""` 는 "없음" 이 아니라 "빈 경로" 로 읽혀
     루트 전체를 대상으로 삼는 명령이 만들어진다

@@ -427,6 +427,7 @@ function checkStructure() {
     "scripts/lib/frontmatter.mjs",
     "scripts/lib/report.mjs",
     "scripts/schema/handoff.schema.json",
+    "scripts/schema/cross-review.schema.json",
     "scripts/validate-agents.mjs",
     "scripts/validate-skills.mjs",
     "scripts/validate-handoff.mjs",

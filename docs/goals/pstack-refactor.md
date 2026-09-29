@@ -230,6 +230,11 @@ STANDING    .curvez/standing.md 경로 (고정 지시문)
 
 검증기는 원칙마다 원칙 파일 밖에서 가리키는 곳이 최소 한 곳 있는지 본다.
 
+### P3 에서 바꾼 것
+
+- **합치기 규칙.** 설계는 "한쪽만 낸 지적은 등급을 한 단계 내린다" 였다. 실제로는 `curvez-cross-reviewer` 만 낸 지적만 내리고, `curvez-reviewer` 만 낸 지적은 그대로 둔다. 기존 리뷰어의 판정을 새 리뷰어가 못 봤다는 이유로 약하게 만들면 교차 검토를 넣기 전보다 기준이 느슨해지기 때문이다.
+- **플러그인 경로.** `CLAUDE_PLUGIN_ROOT` 는 훅 실행 환경에만 있고 에이전트의 Bash 에는 전달되지 않는다(메인 세션과 서브에이전트 모두 빈 값). SessionStart 훅 `notify-update.mjs` 가 `.curvez/tmp/plugin-root` 에 경로를 남기고, `curvez-cross-reviewer` 는 그 파일을 읽는다. 같은 변수를 쓰는 기존 에이전트 명령은 이번 범위 밖이다.
+
 ## 5. 하지 않는 것
 
 - pstack 의 나머지 스킬(arena, swarm, how, why, unslop 등)은 가져오지 않는다.

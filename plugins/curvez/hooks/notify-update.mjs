@@ -22,6 +22,7 @@
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 let input = {};
 try {
@@ -60,6 +61,18 @@ try {
   writeFileSync(marker, version + "\n");
 } catch {
   /* 기록에 실패해 알림이 반복되는 쪽이, 알림이 사라지는 쪽보다 낫다 */
+}
+
+// 플러그인 경로를 프로젝트에 남긴다.
+// 이유: CLAUDE_PLUGIN_ROOT 는 훅 실행 환경에만 있고 에이전트의 Bash 에는 전달되지 않는다
+// (2026-09-28 실측, 메인 세션과 서브에이전트 모두 빈 값). 에이전트는 이 파일에서 경로를 읽는다.
+try {
+  writeFileSync(
+    join(ROOT, ".curvez", "tmp", "plugin-root"),
+    fileURLToPath(new URL("..", import.meta.url)).replace(/\/$/, "") + "\n",
+  );
+} catch {
+  /* 기록에 실패하면 읽는 쪽이 blocked 로 알린다 */
 }
 
 if (seen === null || seen === version) process.exit(0);
