@@ -12,6 +12,32 @@ curvez 는 **user scope 플러그인**이다. 한 번 업데이트하면 그 계
 
 ---
 
+## 0.6.0 — pstack 참고 리팩터링: 원칙·지시서·교차 검토·플레이북·자율 권한
+
+설계와 단계별 기록은 저장소의 `docs/goals/pstack-refactor.md` 에 있다.
+
+| #   | 변경                                                                                                              | 정본                                            |
+| --- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| ①   | 여러 정의에 걸친 규칙 12개를 원칙 파일로 나눴다                                                                   | `principles/README.md`                          |
+| ②   | curvez 워커 호출은 지시서 칸 8개를 채워야 뜬다. 빈 칸이 있으면 `check-brief` 훅이 막는다                          | `skills/agent-contract/SKILL.md` 의 `## 지시서` |
+| ③   | 다른 모델(codex)이 diff 를 따로 보는 `curvez-cross-reviewer` 를 더했다. 에이전트 13종                             | `agents/curvez-cross-reviewer.md`               |
+| ④   | 플러그인 경로 변수를 `$CLAUDE_PLUGIN_ROOT` 에서 `$CURVEZ_ROOT` 로 옮겼다. SessionStart 훅이 내보낸다              | `hooks/notify-update.mjs`                       |
+| ⑤   | 작업 종류별 플레이북 입구 `curvez-mode` 와 플레이북 6개를 더했다. 스킬 17종                                       | `skills/curvez-mode/SKILL.md`                   |
+| ⑥   | `.curvez/grant.md` 자율 권한과 머지 판정기 `check-grant` 를 더했다. 머지는 리뷰·QA·교차 검토 증거가 있어야 열린다 | `scripts/check-grant.mjs`                       |
+
+**프로젝트에서 할 일**
+
+- 업데이트 뒤 세션을 새로 연다. `CURVEZ_ROOT` 는 세션이 시작될 때 내보낸다
+- 프로젝트가 직접 만든 에이전트·스킬에 `$CLAUDE_PLUGIN_ROOT` 가 있으면 `$CURVEZ_ROOT` 로 바꾼다. 앞의 것은 Bash 명령에 전달되지 않아 빈 경로가 된다
+- 프로젝트 문서나 스킬이 curvez 워커를 자유 서술로 부르고 있으면 지시서 형식으로 바꾼다. 그대로 두면 호출이 막힌다
+- 선택: 교차 검토를 쓰려면 `profile.json` 에 `"crossReview": { "cli": "codex" }` 를 넣는다. codex CLI 가 필요하다
+- 선택: 자율 머지를 쓰려면 사용자 원문을 인용한 `.curvez/grant.md` 를 두고, 머지 대상이 `git.humanMergeTargets` 에 없어야 한다
+
+**알려진 한계:** 헤드리스(`claude -p`) 자율 실행이 오케스트레이터 도중에 멈추는 일이 있었다. 원인은 찾지 못했다.
+대화형 세션에서 쓰는 것을 권한다.
+
+---
+
 ## 마켓플레이스 0.6.0 — `frontend-constraints` 플러그인 추가
 
 **curvez 플러그인 자체는 `0.5.0` 그대로다.** 바뀐 것은 마켓플레이스이고, 이 레포가 플러그인
