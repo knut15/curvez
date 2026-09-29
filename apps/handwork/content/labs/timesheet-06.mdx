@@ -7,6 +7,8 @@ export const meta = {
   tags: ["타임시트", "tailwind", "shadcn", "design-tokens", "skeleton", "mdx"],
 };
 
+![남색 윤곽선으로 그린 둥근 칸이 가로 일곱, 세로 다섯 줄로 늘어선 격자가 있다. 절반쯤은 초록으로 채워져 있고 세 칸은 빨간 윤곽선이다. 오른쪽에 납작한 판 세 장이 쌓여 있고 맨 위 판만 초록이다.](/labs/timesheet.jpg)
+
 타임시트 웹의 화면은 따로 그린 시안 없이 만들었다. 헤더·하단 내비를 처음 만들 때 저장소에도 아티팩트 목록에도 이 앱의 시안이 없어서 이미 있던 색 토큰 위에서 규칙을 정해 나갔다. 그 뒤로 사용자의 짧은 요청이 올 때마다 규칙이 하나씩 늘었다. "폰트는 pretendard로", "스크롤은 전부 shadcn scroll-area 로", "파랑 빨강 촌스럽다", "layout shift 없도록 스켈레톤으로" 같은 요청이다.
 
 이 글은 그 규칙들이 코드 어디에 어떻게 들어갔는지를 순서대로 뜯어본다. 규칙의 원본은 저장소의 `.claude/skills/timesheet-ui/SKILL.md` §0 "디자인 기초 — 사용자가 정한 것" 표이고, 컴포넌트별 명세는 `docs/design/component-guide.md` 다.

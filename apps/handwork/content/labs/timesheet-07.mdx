@@ -7,6 +7,8 @@ export const meta = {
   tags: ["타임시트", "vercel", "deployment", "pnpm-monorepo", "neon", "performance"],
 };
 
+![남색 윤곽선으로 그린 둥근 칸이 가로 일곱, 세로 다섯 줄로 늘어선 격자가 있다. 절반쯤은 초록으로 채워져 있고 세 칸은 빨간 윤곽선이다. 오른쪽에 납작한 판 세 장이 쌓여 있고 맨 위 판만 초록이다.](/labs/timesheet.jpg)
+
 타임시트는 한 저장소 안에 웹(`web/`, Next.js 16)과 API(`server/`, Express 5)가 같이 있는 pnpm 워크스페이스다. 이것을 Vercel 에 올리면서 배포가 여러 번 실패했다. 대부분 코드 로직이 아니라 모노레포 구조와 Vercel CLI 동작이 맞닿은 곳에서 났다.
 
 이 글은 두 프로젝트를 어떻게 나눴는지부터 보고 실패를 순서대로 따라간 뒤, 마지막에 운영에서 잰 응답 시간이 어디서 나오는지를 정리한다. 절차의 원본은 저장소의 `docs/deploy.md` 이고, 이 배포를 겪고 나서 사용자 전역 스킬 `vercel-monorepo-deploy` 가 새로 만들어졌다.
