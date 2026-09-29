@@ -294,5 +294,5 @@ description: 코드베이스 구조를 기계적으로 검출해 중복 코드·
 - [ ] `status: done` 이면 `verification` 이 1건 이상이고 `blocked_on` 이 비어 있다
 - [ ] 응답 텍스트 전체가 JSON 하나다. 앞뒤에 문장이 없다
 
-반환 직전 `node "$CLAUDE_PLUGIN_ROOT/scripts/validate-handoff.mjs" <파일>` 로 검증한다.
+반환 직전 `node "$CURVEZ_ROOT/scripts/validate-handoff.mjs" <파일>` 로 검증한다.
 읽기 전용이라 파일을 못 만들면 오케스트레이터가 대필한 뒤 검증하도록 `to` 에 명시한다.

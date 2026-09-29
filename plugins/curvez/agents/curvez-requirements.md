@@ -200,7 +200,7 @@ grep -nE '빠르게|적절히|충분히|쾌적|사용자 친화|잘 동작|직�
 awk '/^## 범위 밖/{f=1;next} /^## /{f=0} f && /^[-*] /{n++} END{print n+0}' "$REQ"
 
 # 6. 핸드오프 계약 검증
-node "$CLAUDE_PLUGIN_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
+node "$CURVEZ_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
 ```
 
 통과 기준 — 하나라도 못 넘으면 `done` 을 쓰지 않는다.

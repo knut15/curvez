@@ -72,7 +72,7 @@ discover 에서 찾다가 "curvez 가 사라졌다" 고 판단하지 마라 — 
 | `~/.claude/plugins/installed_plugins.json` 의 `curvez@curvez` | `version` 과 `gitCommitSha` 가 올라갔다 |
 
 ```bash
-node "$CLAUDE_PLUGIN_ROOT/scripts/doctor.mjs"
+node "$CURVEZ_ROOT/scripts/doctor.mjs"
 ```
 
 에이전트 13/13 · 스킬 16/16 통과, exit 0 이면 된다.

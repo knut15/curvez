@@ -103,7 +103,7 @@ run_gate() {                      # run_gate <이름> <명령>
 이 절차는 `scripts/quality-gate.mjs` 가 실행기로 구현돼 있다.
 
 ```bash
-node "$CLAUDE_PLUGIN_ROOT/scripts/quality-gate.mjs" [--json] [--only arch,test] [--no-stop]
+node "$CURVEZ_ROOT/scripts/quality-gate.mjs" [--json] [--only arch,test] [--no-stop]
 ```
 
 `--json` 출력은 핸드오프의 `verification[]` 에 그대로 넣을 수 있다.

@@ -405,7 +405,7 @@ eval "$(node -p "require('./.curvez/profile.json').commands?.typecheck ?? 'true'
 eval "$(node -p "require('./.curvez/profile.json').commands?.lint ?? 'true'")"
 
 # 9. 핸드오프 스키마 검증
-node "$CLAUDE_PLUGIN_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
+node "$CURVEZ_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
 ```
 
 **통과 기준 — 전부 수치로 판정한다. 하나라도 어긋나면 `status: done` 을 쓰지 않는다.**

@@ -167,7 +167,7 @@ owns: .curvez/research/
 BRIEF=".curvez/research/<주제>.md"; test -f "$BRIEF" && echo "OK: $BRIEF" || echo "FAIL: 브리프 없음"
 
 # 2. 핸드오프 스키마 검증 — 오류 0개여야 한다
-node "$CLAUDE_PLUGIN_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
+node "$CURVEZ_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
 ```
 
 **판정 기준** — 라벨은 스킬 `## 검증 명령` 의 출력 이름이다. 이 수치를 못 넘기면 `done` 이 아니다.

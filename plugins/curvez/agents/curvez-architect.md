@@ -38,7 +38,7 @@ owns: .curvez/architecture.md
 | ------------ | --------------------------------------------------------------- |
 | `ddd` (기본) | 도메인 규칙이 화면보다 복잡하다. 서버 상태·계산 로직이 핵심이다 |
 
-프리셋 본문은 `$CLAUDE_PLUGIN_ROOT/presets/architecture/<이름>.md` 에서 읽는다.
+프리셋 본문은 `$CURVEZ_ROOT/presets/architecture/<이름>.md` 에서 읽는다.
 
 **프리셋 파일이 없으면 `blocked` 로 멈추지 마라.** 아래 내장 폴백으로 진행하고, `decisions` 에
 `what: "프리셋 파일 부재로 내장 폴백 사용"`, `reversible_at: ".curvez/architecture.md:레이어 정의"` 를 남긴다.
@@ -107,13 +107,13 @@ owns: .curvez/architecture.md
 
 **입력**
 
-| 경로                                                   | 필수 | 없을 때                                                                                                                                                              |
-| ------------------------------------------------------ | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `.curvez/profile.json`                                 | O    | `blocked`. `blocked_on` 에 `{ "question": "profile.json 이 없다. bootstrap 을 먼저 실행하라", "who": "curvez-orchestrator" }` 를 남긴다. 스택을 추측해 진행하지 마라 |
-| `.curvez/handoff/curvez-requirements.*.json`           | O    | `blocked`. 요구사항 없이 정한 레이어는 근거가 없다. 단 `status: partial` 인 핸드오프는 확정된 범위만 근거로 삼아 진행하고, 미확정 범위는 `## 미결` 에 적는다         |
-| `$CLAUDE_PLUGIN_ROOT/presets/architecture/<프리셋>.md` | X    | 내장 폴백으로 진행하고 `decisions` 에 남긴다                                                                                                                         |
-| `.curvez/research/*.md`                                | X    | 없이 진행한다                                                                                                                                                        |
-| `.curvez/architecture.md` (기존)                       | X    | 있으면 먼저 Read 하고 `## 결정 로그` 를 보존한 채 다시 쓴다                                                                                                          |
+| 경로                                            | 필수 | 없을 때                                                                                                                                                              |
+| ----------------------------------------------- | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.curvez/profile.json`                          | O    | `blocked`. `blocked_on` 에 `{ "question": "profile.json 이 없다. bootstrap 을 먼저 실행하라", "who": "curvez-orchestrator" }` 를 남긴다. 스택을 추측해 진행하지 마라 |
+| `.curvez/handoff/curvez-requirements.*.json`    | O    | `blocked`. 요구사항 없이 정한 레이어는 근거가 없다. 단 `status: partial` 인 핸드오프는 확정된 범위만 근거로 삼아 진행하고, 미확정 범위는 `## 미결` 에 적는다         |
+| `$CURVEZ_ROOT/presets/architecture/<프리셋>.md` | X    | 내장 폴백으로 진행하고 `decisions` 에 남긴다                                                                                                                         |
+| `.curvez/research/*.md`                         | X    | 없이 진행한다                                                                                                                                                        |
+| `.curvez/architecture.md` (기존)                | X    | 있으면 먼저 Read 하고 `## 결정 로그` 를 보존한 채 다시 쓴다                                                                                                          |
 
 `profile.json` 의 `stack` 값으로 분기한다. 품질 게이트 명령은 `commands` 에서 읽고 하드코딩하지 마라.
 
@@ -230,7 +230,7 @@ done
 grep -nE '^[-*[:space:]]*domain +→' "$ARCH" | wc -l
 
 # 6. 핸드오프 스키마 검증
-node "$CLAUDE_PLUGIN_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
+node "$CURVEZ_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
 ```
 
 **통과 기준 (전부 수치로 판정한다)**

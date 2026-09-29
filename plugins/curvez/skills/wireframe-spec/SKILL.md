@@ -211,7 +211,7 @@ console.log(`pairs=${rows.length} light=${light} dark=${dark} contrast-fail=${ba
 echo "impl-files=$(find "$DESIGN" \( -name '*.tsx' -o -name '*.ts' -o -name '*.css' \) 2>/dev/null | wc -l | tr -d ' ')"
 
 # 7. 핸드오프 스키마
-node "$CLAUDE_PLUGIN_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
+node "$CURVEZ_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
 ```
 
 대비가 `FAIL` 이면 값을 고쳐 다시 돌린다. 3회 안에 못 맞추면 실패한 쌍을 `verification` 에 그대로 적고 `status: partial` 로 낮춘다.

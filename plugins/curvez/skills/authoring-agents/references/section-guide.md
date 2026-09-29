@@ -162,7 +162,7 @@
 ## 품질 자체 검증
 
 ```bash
-node "$CLAUDE_PLUGIN_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
+node "$CURVEZ_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
 grep -rn "from ['\"]next" src/domain/ | wc -l
 ```
 

@@ -221,7 +221,7 @@ console.log(`unverified-marks=${(t.match(/확인 불가/g)||[]).length}`);
 echo "impl-files=$(find "$BRAND" \( -name '*.tsx' -o -name '*.ts' -o -name '*.css' \) 2>/dev/null | wc -l | tr -d ' ')"
 
 # 5. 핸드오프 스키마
-node "$CLAUDE_PLUGIN_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
+node "$CURVEZ_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
 ```
 
 **통과 기준 (전부 만족해야 `status: done`)**

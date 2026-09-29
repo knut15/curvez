@@ -200,12 +200,12 @@ owns: none
 ```bash
 # 1. 절차의 정본이 실제로 있는지 확인한다. 없으면 검사를 시작하지 말고 blocked 로 돌린다
 #    (blocked_on 에 who: "curvez-orchestrator" 로 스킬 유실을 알린다)
-ls "$CLAUDE_PLUGIN_ROOT/skills/structure-audit/SKILL.md" \
-   "$CLAUDE_PLUGIN_ROOT/skills/structure-audit/references/detection-commands.md"
+ls "$CURVEZ_ROOT/skills/structure-audit/SKILL.md" \
+   "$CURVEZ_ROOT/skills/structure-audit/references/detection-commands.md"
 
 # 2. 반환할 응답 텍스트(핸드오프 JSON) 를 그대로 계약 검증기에 흘린다.
 #    stdin 으로만 넘기므로 파일을 만들지 않는다 — 읽기 전용 규약을 지킨다.
-cat <<'JSON' | node "$CLAUDE_PLUGIN_ROOT/scripts/validate-handoff.mjs" /dev/stdin
+cat <<'JSON' | node "$CURVEZ_ROOT/scripts/validate-handoff.mjs" /dev/stdin
 {"from":"curvez-structure-reviewer","to":["curvez-orchestrator"],"status":"done","summary":"검사 완료","artifacts":[],"decisions":[{"what":"...","why":"..."}],"blocked_on":[],"verification":[{"command":"...","result":"..."}],"findings":[{"id":"CYC-01","kind":"cycle","priority":"P0","what":"...","where":["src/a.ts:3"],"move_to":"...","why":"...","blast_radius":{"files":4},"evidence":{"command":"...","output":"..."}}]}
 JSON
 ```
