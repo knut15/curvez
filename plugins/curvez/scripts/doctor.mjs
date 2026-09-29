@@ -425,6 +425,8 @@ function checkStructure() {
     "scripts/validate-agents.mjs",
     "scripts/validate-skills.mjs",
     "scripts/validate-handoff.mjs",
+    "scripts/validate-principles.mjs",
+    "principles/README.md",
     "scripts/new-agent.mjs",
     "scripts/new-skill.mjs",
     "scripts/bootstrap.mjs",
@@ -531,6 +533,13 @@ function main() {
   } else {
     console.log("\n── 스킬 검증 ──\n건너뜀 — skills/ 디렉터리가 없다.");
   }
+
+  results.push([
+    "원칙",
+    run("원칙 검증", "validate-principles.mjs", [
+      join(PLUGIN_ROOT, "principles"),
+    ]),
+  ]);
 
   if (handoffTargets.length > 0) {
     results.push([

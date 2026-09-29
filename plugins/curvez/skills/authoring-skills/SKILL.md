@@ -108,7 +108,7 @@ node "$CLAUDE_PLUGIN_ROOT/scripts/validate-skills.mjs" .claude/skills/<name>
 
 ### 금지에는 이유를 붙인다
 
-"~하지 마라" 만 쓰면 문서에 없는 상황에서 판단이 멈춘다.
+"~하지 마라" 만 쓰면 문서에 없는 상황에서 판단이 멈춘다. (원칙: `principles/why-first.md`)
 
 **이유:** 규칙은 나열된 경우만 덮는다. 이유는 나열되지 않은 경우까지 덮는다.
 에이전트는 반드시 문서에 없는 상황을 만나므로, 이유가 있어야 같은 방향으로 판단을 이어간다.

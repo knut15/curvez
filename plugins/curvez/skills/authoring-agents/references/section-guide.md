@@ -126,9 +126,9 @@
 
 ### 반드시 넣을 것
 
-- 정보 부재 시 **추측 금지**를 명시
-- 검증 실패 시 **숨기지 않고 그대로 보고**를 명시
-- 재시도 상한
+- 정보 부재 시 **추측 금지**를 명시 (원칙: `principles/blocked-over-guessing.md`)
+- 검증 실패 시 **숨기지 않고 그대로 보고**를 명시 (원칙: `principles/numbers-not-adjectives.md`)
+- 재시도 상한 (원칙: `principles/retry-twice-then-partial.md`)
 
 **이유:** 이 셋이 없으면 실패가 조용한 `done` 으로 바뀐다. 팀 실행에서 이것이 가장 비싼 실패다.
 
