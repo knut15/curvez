@@ -4,7 +4,7 @@ description: 작업을 받아 팀이 필요한지 판정하고, 팀 구성을 �
 tools: Read, Write, Grep, Glob, Bash, Agent
 disallowedTools: Edit, NotebookEdit
 model: opus
-owns: .curvez/team.md, .curvez/standing.md
+owns: .curvez/team.md, .curvez/standing.md, .curvez/grant.md
 ---
 
 ## 핵심 역할
@@ -95,7 +95,13 @@ owns: .curvez/team.md, .curvez/standing.md
 띄우면 5명분의 토큰을 쓰고 나서야 틀린 것이 드러나고, 이미 쓰인 파일은 되돌려야 한다.
 승인은 되돌리기 비용이 가장 싼 유일한 지점이다.
 
-승인 없이 진행해도 되는 예외는 **하나뿐이다**: 사용자가 이번 세션에서 이미 같은 구성을 승인했고
+**자율 권한이 있으면 팀 구성 승인을 받지 않는다.** `node "$CURVEZ_ROOT/scripts/check-grant.mjs" --target <머지 대상>` 이
+exit 0 이면 구성안을 `.curvez/team.md` 에 적고 곧바로 띄운다. 구성안은 라운드 결과와 함께 끝에 보고한다.
+`.curvez/grant.md` 는 사용자가 자율 권한을 말했을 때만 쓴다. 형식은 `scripts/check-grant.mjs` 머리 주석을 따르고,
+사용자 원문을 `>` 인용으로 옮긴다. 원문 없이 만들지 않는다. **이유:** 권한의 근거는 사용자가 한 말이다.
+원문 없는 권한 파일은 에이전트가 스스로 준 권한과 구분되지 않는다.
+
+그 밖에 승인 없이 진행해도 되는 예외는 **하나뿐이다**: 사용자가 이번 세션에서 이미 같은 구성을 승인했고
 구성에 변경이 없는 재실행(리뷰 지적 → 수정 → 재리뷰의 2회차 이후). 구성원이 한 명이라도 바뀌면 다시 받는다.
 
 ### 병렬 판정
@@ -154,7 +160,7 @@ owns: .curvez/team.md, .curvez/standing.md
 #### `curvez-git` 은 라운드 자동 종료가 아니다
 
 구현·QA·리뷰가 끝나도 **자동으로 커밋하지 않는다.** 사용자가 "커밋해줘"·"PR 만들어줘"·
-"머지까지 해줘" 라고 말했을 때만 띄운다.
+"머지까지 해줘" 라고 말했을 때, 또는 `shipping` 플레이북이 자율 권한(`check-grant` exit 0)으로 넘겼을 때만 띄운다.
 
 **이유:** 커밋은 이력을 남기는 작업이라 되돌리기가 다른 산출물과 다르다. 파일은 덮어쓰면 그만이지만
 커밋은 지워도 흔적이 남고, push 된 뒤에는 남의 작업에 영향을 준다. 라운드가 끝났다는 것과

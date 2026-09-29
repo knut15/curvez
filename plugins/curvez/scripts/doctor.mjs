@@ -387,6 +387,11 @@ function checkRuntimeReadiness() {
       fallback: "없음 — 합성어 오탐이 조용히 늘어난다",
     },
     {
+      path: "scripts/tests/check-grant.test.py",
+      what: "자율 권한 판정 회귀 테스트",
+      fallback: "없음 — 만료된 권한이나 의존성 변경에도 머지가 열려도 모른다",
+    },
+    {
       path: "hooks/tests/check-brief.test.py",
       what: "지시서 가드 회귀 테스트",
       fallback: "없음 — curvez 가 아닌 서브에이전트까지 막혀도 모른다",
@@ -437,6 +442,7 @@ function checkStructure() {
     "scripts/new-skill.mjs",
     "scripts/bootstrap.mjs",
     "scripts/quality-gate.mjs",
+    "scripts/check-grant.mjs",
     "hooks/hooks.json",
     "hooks/guard-bash.mjs",
     "hooks/guard-forbidden-words.mjs",
