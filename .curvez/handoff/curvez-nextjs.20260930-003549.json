@@ -1,0 +1,141 @@
+{
+  "from": "curvez-nextjs",
+  "to": ["curvez-orchestrator", "curvez-qa", "curvez-reviewer"],
+  "status": "done",
+  "summary": "curvez-designer 5차 라운드(.curvez/handoff/curvez-designer.20260930-000944.json, '밝고 생기 있는' 리디자인)를 apps/preemie-calc 에 구현했다. tokens.md 의 5계열 색·아이보리 배경·radius 8/12/20·icon/layout/gradient 3개 신규 카테고리를 apps/preemie-calc/src/app/globals.css 에 전면 반영했다. lucide-react ^1.41.0(handwork 와 같은 버전, 사용자 승인)을 apps/preemie-calc 에 pnpm add 로 설치하고, shared/ui/icons.ts 한 곳에서 32개 아이콘을 개별 import 해 IconName 유니언 타입으로 노출한다(다른 파일은 이 레지스트리로만 아이콘을 얻는다 — 문자열 인덱싱 단언 없이 타입 안전하게). 신규 컴포넌트 2개(IconBadge, HeaderMenu)를 shared/ui 에 추가했다. 기존 21개 컴포넌트는 색·아이콘·prop 계약(icon/tone 추가)만 갱신하고 상태 목록·요구 ID 매핑은 그대로 뒀다. PageHeader 를 3분할 그리드(minmax(var(--layout-header-side-reserve),1fr) auto minmax(...))로 다시 짜 제목이 모든 variant·폭에서 정중앙에 오도록 했고, dashboard variant 의 '프로필 편집'·'정보 전체 삭제' 두 액션을 HeaderMenu(더보기) 뒤로 묶었다 — 이 때문에 기존 E2E 3건이 깨진다(아래 decisions 목록, curvez-qa 가 메뉴를 먼저 열도록 고쳐야 한다). 텍스트 기호(✓●·–△)를 lucide 아이콘으로 바꾸면서 그 기호 문자 자체를 assertion 하던 nf-a11y.spec.ts 3건도 함께 깨진다(마찬가지로 아래 목록). 폭별 레이아웃(360/768/1280)은 인라인 style 로 표현할 수 없는 미디어쿼리 전환만 globals.css 에 pc- 접두 유틸리티 클래스로 옮겼다(.preemie-dialog 와 같은 기존 패턴) — dashboard 2열(main+sidebar, >=1280px), quick-links/round-list 2열 그리드(>=768px), age-basis InfoRow 3열 표(>=768px), 각 화면 content 폭, ValueCard·AgeSummaryCard 데스크톱 값. ShareCardCanvas 는 배경을 --color-bg-canvas 로, 장식 원 2개(canvas arc, globalAlpha 0.5)를 스펙 좌표·색 그대로 추가했다. 화면 9개·컴포넌트 23개 전부 이번 라운드 시각 값으로 갱신됐다(파일:스펙 대응은 artifacts note). 워크트리 루트 typecheck·lint·test·build 전부 통과(0 errors/0 warnings), quality-gate.mjs --no-stop 5/5 PASS, eslint-disable 0건, 직접 그린 <svg> 0건, any·타입단언 신규 0건(HeaderMenu 의 event.target 은 instanceof Node 타입가드로 좁혔다, 단언 미사용). E2E(pnpm test:e2e) 는 75건 중 69건 통과·6건 실패 — 전부 이번 리디자인이 의도적으로 바꾼 상호작용/표시 방식 때문이고 목록은 decisions 에 있다. 포트 3100 은 이번 세션 시작 시 비어 있었고 E2E 는 그 포트에서 정상 기동·종료했다(dev 서버 kill 안 함, run_in_background 안 씀).",
+  "artifacts": [
+    { "path": "apps/preemie-calc/package.json", "kind": "code", "note": "dependencies 에 lucide-react ^1.41.0 추가(pnpm add, 사용자 승인 CONTEXT)" },
+    { "path": "pnpm-lock.yaml", "kind": "code", "note": "apps/preemie-calc 의 lucide-react 의존성 반영(핸드워크와 같은 1.41.0, 이미 hoist 돼 있던 것을 이 앱의 package.json 에도 연결)" },
+    { "path": "apps/preemie-calc/src/app/globals.css", "kind": "code", "note": "tokens.md 전면 반영: 색 5계열+아이보리 배경, space-8 추가, layout/icon/gradient 3개 신규 카테고리, radius 8/12/20, motion-easing-playful. 폭별 레이아웃 유틸리티 클래스(pc-header-grid, pc-header-inner, pc-page-hero-bg, pc-dashboard-content/main/sidebar, pc-quick-links, pc-round-list, pc-info-row-basis, pc-content-narrow, pc-content-guide, pc-value-card, pc-age-summary-columns) 신설" },
+    { "path": "apps/preemie-calc/src/shared/ui/icons.ts", "kind": "code", "note": "신규. lucide-react 아이콘 32개(index.md '## 아이콘 목록'과 동일) 개별 import → ICONS 레지스트리 + IconName 유니언 타입. 다른 파일은 여기서만 아이콘을 얻는다" },
+    { "path": "apps/preemie-calc/src/shared/ui/IconBadge.tsx", "kind": "code", "note": "스펙: components/IconBadge.md. 신규 컴포넌트 — 원형 배경+아이콘, 항상 aria-hidden. tone 7종·size 4종" },
+    { "path": "apps/preemie-calc/src/shared/ui/HeaderMenu.tsx", "kind": "code", "note": "스펙: components/HeaderMenu.md. 신규 컴포넌트 — dashboard 헤더 '더보기' 팝오버 메뉴. role=menu/menuitem, 방향키 roving, Esc/바깥클릭 닫기, 열리면 첫 항목 포커스·닫히면 트리거로 복귀" },
+    { "path": "apps/preemie-calc/src/shared/ui/PageHeader.tsx", "kind": "code", "note": "스펙: components/PageHeader.md. 3분할 그리드로 재작성(pc-header-grid). variant=back 은 ChevronLeft 아이콘+'대시보드', title-only/dashboard 는 좌측 IconBadge(Baby) 브랜드 마크, variant=dashboard 우측은 HeaderMenu" },
+    { "path": "apps/preemie-calc/src/shared/ui/Button.tsx", "kind": "code", "note": "스펙: components/Button.md. icon prop(leading/trailing) 신규, variant=pop 추가(radius-pill), loading 중엔 icon 위치와 무관하게 우측 스피너" },
+    { "path": "apps/preemie-calc/src/shared/ui/TextField.tsx", "kind": "code", "note": "스펙: components/TextField.md. icon prop 신규(레이블 앞), 에러 문구 '!' → AlertCircle 아이콘" },
+    { "path": "apps/preemie-calc/src/shared/ui/DateField.tsx", "kind": "code", "note": "스펙: components/DateField.md. 레이블 앞 CalendarDays 장식 아이콘 추가" },
+    { "path": "apps/preemie-calc/src/shared/ui/GestationInput.tsx", "kind": "code", "note": "스펙: components/GestationInput.md. legend 앞 CalendarClock 장식 아이콘 추가" },
+    { "path": "apps/preemie-calc/src/shared/ui/SegmentedControl.tsx", "kind": "code", "note": "스펙: components/SegmentedControl.md. 선택 표시 '✓' 기호 → Check 아이콘. required=true 면 aria-label 값 자체를 '레이블, 필수' 로 설정(DSG-04 그대로 유지)" },
+    { "path": "apps/preemie-calc/src/shared/ui/StatusBadge.tsx", "kind": "code", "note": "스펙: components/StatusBadge.md. 기호(✓●·–) → CircleCheckBig/CircleDot/Circle/Minus 아이콘. 라벨 텍스트는 그대로 유지" },
+    { "path": "apps/preemie-calc/src/shared/ui/ValueCard.tsx", "kind": "code", "note": "스펙: components/ValueCard.md. icon/tone prop 신규 — 카드 상단에 IconBadge(size=lg). pc-value-card 클래스로 768/1280 반응형" },
+    { "path": "apps/preemie-calc/src/shared/ui/InfoRow.tsx", "kind": "code", "note": "스펙: components/InfoRow.md. icon/iconTone prop 신규(IconBadge), nav-card 우측 '›' → ChevronRight 아이콘. basis variant 는 pc-info-row-basis 클래스로 768px 3열 표 전환" },
+    { "path": "apps/preemie-calc/src/shared/ui/StatePanel.tsx", "kind": "code", "note": "스펙: components/StatePanel.md. '!' 기호 → IconBadge(AlertTriangle/Info, size=hero)" },
+    { "path": "apps/preemie-calc/src/shared/ui/ReferenceFooter.tsx", "kind": "code", "note": "스펙: components/ReferenceFooter.md. 면책 문구 앞 Info 아이콘 추가" },
+    { "path": "apps/preemie-calc/src/shared/ui/UnconfirmedNotice.tsx", "kind": "code", "note": "스펙: components/UnconfirmedNotice.md. '△' 기호 → AlertTriangle 아이콘" },
+    { "path": "apps/preemie-calc/src/shared/ui/ConfirmDialog.tsx", "kind": "code", "note": "스펙: components/ConfirmDialog.md. 제목 옆 IconBadge(AlertTriangle, tone=danger) 추가" },
+    { "path": "apps/preemie-calc/src/shared/ui/index.ts", "kind": "code", "note": "IconBadge·HeaderMenu·ICONS·IconName export 추가" },
+    { "path": "apps/preemie-calc/src/features/edit-profile/ui/EditProfileDialog.tsx", "kind": "code", "note": "스펙: components/EditProfileDialog.md. 제목 옆 IconBadge(Pencil), TextField 에 icon='UserRound'/'Weight' 전달, 저장 실패 문구 '!' → AlertCircle" },
+    { "path": "apps/preemie-calc/src/features/switch-child/ui/ChildSwitcherTabs.tsx", "kind": "code", "note": "스펙: components/ChildSwitcherTabs.md. 탭 앞 Baby 아이콘, 선택 시 Check 아이콘(기존 '✓' 대체), '+ 아이 추가' 를 shared Button(variant=pop, icon=UserRoundPlus)으로 교체(기존 aria-label 제거 — 라벨 텍스트 자체가 접근 이름, 스펙 그대로)" },
+    { "path": "apps/preemie-calc/src/features/share-result/ui/ShareActionButton.tsx", "kind": "code", "note": "스펙: components/ShareActionButton.md. 공유 버튼 Share2, 복사 버튼 Copy/CopyCheck(복사 완료 시 전환), 에러 문구에 AlertTriangle 아이콘" },
+    { "path": "apps/preemie-calc/src/features/share-result/lib/share-card-canvas.ts", "kind": "code", "note": "스펙: components/ShareCardCanvas.md. 배경 --color-bg-canvas(#FFF9F2), 반투명 장식 원 2개(중심(1000,60) r260 primary-soft-bg / 중심(40,1300) r220 corrected-soft-bg, globalAlpha 0.5) 스펙 좌표 그대로 추가. fillText 문구·크기는 변경 없음(DSG-01 폭 검증 영향 없음)" },
+    { "path": "apps/preemie-calc/src/features/profile-form/ui/ProfileForm.tsx", "kind": "code", "note": "스펙: screens/input.md. 폼 에러 배너 '!' → AlertCircle 아이콘" },
+    { "path": "apps/preemie-calc/src/views/input/ui/InputView.tsx", "kind": "code", "note": "스펙: screens/input.md. pc-page-hero-bg(--gradient-hero-canvas) 배경, form-card 컨테이너(bg-surface/radius-lg/elevation-card), 카드 위 브랜드 IconBadge(Baby, size=hero)" },
+    { "path": "apps/preemie-calc/src/views/share/ui/ShareView.tsx", "kind": "code", "note": "스펙: screens/share.md. pc-page-hero-bg 배경, CTA 버튼에 ArrowRight(trailing) 아이콘 추가" },
+    { "path": "apps/preemie-calc/src/views/guide/ui/GuideView.tsx", "kind": "code", "note": "스펙: screens/guide.md. checkup-info 줄 앞 IconBadge(Stethoscope), pc-content-guide 클래스(>=1280px 720px 폭)" },
+    { "path": "apps/preemie-calc/src/views/guide/ui/GuideCta.tsx", "kind": "code", "note": "스펙: screens/guide.md. next/link 스타일 버튼에 ArrowRight(trailing) 아이콘 추가(Button 컴포넌트가 아니라 크롤러용 <a> 그대로 유지 — 기존 결정)" },
+    { "path": "apps/preemie-calc/src/views/dashboard/ui/DashboardView.tsx", "kind": "code", "note": "스펙: screens/dashboard.md. content 를 pc-dashboard-content(main+sidebar)로 재구성 — main: AgeSummaryCard+QuickLinks, sidebar: ShareResultAction+ReferenceFooter. DOM 순서는 그대로라 focus-order·>=1280px 2열 전환 둘 다 만족. PageHeader 호출부(onEditProfile/onDeleteAll) 시그니처는 안 바뀜 — HeaderMenu 라우팅은 PageHeader 내부에서 처리" },
+    { "path": "apps/preemie-calc/src/views/dashboard/ui/QuickLinks.tsx", "kind": "code", "note": "스펙: screens/dashboard.md. InfoRow 4개에 icon 추가(CircleHelp/Stethoscope/Banknote/Hourglass), pc-quick-links 클래스로 768px 2열" },
+    { "path": "apps/preemie-calc/src/widgets/dashboard-subpage/ui/DashboardSubpageShell.tsx", "kind": "code", "note": "content 래퍼를 인라인 maxWidth:480 고정값에서 pc-content-narrow 클래스(768/1280 반응형)로 교체 — age-basis·checkups·copay-relief·correction-period 4화면 공통" },
+    { "path": "apps/preemie-calc/src/widgets/age-summary/ui/AgeSummaryCard.tsx", "kind": "code", "note": "스펙: components/AgeSummaryCard.md. 생후 칸 --gradient-card-primary-soft+IconBadge(CalendarDays), 교정 칸 --gradient-card-corrected-soft+IconBadge(Sparkles). '{라벨} {값}' 한 문구 규칙(ACC-02)은 그대로 유지. pc-age-summary-columns 클래스(>=1280px 칸 간격 확대)" },
+    { "path": "apps/preemie-calc/src/widgets/age-basis-list/ui/AgeBasisSection.tsx", "kind": "code", "note": "스펙: screens/age-basis.md. AgeBasisId→아이콘 매핑(Syringe/Utensils/Stethoscope/ClipboardList/ClipboardCheck)을 InfoRow 에 전달" },
+    { "path": "apps/preemie-calc/src/widgets/checkup-plan/ui/CheckupPlanSection.tsx", "kind": "code", "note": "스펙: screens/checkups.md. current-summary 줄 앞 IconBadge(Stethoscope, tone=warm), round-list ul 을 pc-round-list 클래스로(768px 2열, current 카드는 grid-column 전체)" },
+    { "path": "apps/preemie-calc/src/widgets/checkup-plan/ui/CheckupRoundItem.tsx", "kind": "code", "note": "스펙: components/CheckupRoundItem.md. roundLabel 앞 IconBadge(Stethoscope, 상태별 tone: upcoming=primary/current=warm/past=success). li 에 data-status 속성 추가(부모 pc-round-list 의 2열 그리드 CSS 가 참조)" },
+    { "path": "apps/preemie-calc/src/widgets/copay-relief-result/ui/CopayReliefSection.tsx", "kind": "code", "note": "스펙: screens/copay-relief.md. ValueCard 에 icon='Banknote' tone='primary' 전달" },
+    { "path": "apps/preemie-calc/src/widgets/correction-period-result/ui/CorrectionPeriodSection.tsx", "kind": "code", "note": "스펙: screens/correction-period.md. ValueCard 에 icon='Hourglass' tone='warm' 전달" }
+  ],
+  "decisions": [
+    {
+      "what": "HeaderMenu 도입으로 dashboard 헤더의 '프로필 편집'·'정보 전체 삭제' 상호작용이 바뀌었다 — 이전: 헤더에 두 버튼이 바로 보여 곧장 클릭. 이후: 헤더 우측 '더보기'(aria: '더보기') 버튼을 먼저 클릭해 메뉴를 열어야 두 항목(role=menuitem, 라벨 텍스트는 SPEC 원문 '프로필 편집'·'정보 전체 삭제' 그대로)이 나타난다. 깨지는 테스트 3건과 새 동작: (1) tests/e2e/f1-profile.spec.ts:76 `getByRole('button',{name:'정보 전체 삭제'})` → `getByRole('button',{name:'더보기'}).click()` 후 `getByRole('menuitem',{name:'정보 전체 삭제'})` 클릭으로 바꿔야 한다. (2) tests/e2e/nf-a11y.spec.ts:63 `getByRole('button',{name:'프로필 편집'})` → 동일하게 '더보기' 를 먼저 열고 `getByRole('menuitem',{name:'프로필 편집'})` 클릭. (3) tests/e2e/nf-privacy.spec.ts:29 동일 패턴",
+      "why": "디자인 스펙(components/HeaderMenu.md, tokens.md decisions)이 헤더 가운데 정렬 규칙(--layout-header-side-reserve 고정폭)과 충돌하는 두 액션을 메뉴 뒤로 묶으라고 못박았다. 메뉴 항목이 SPEC 원문 라벨을 그대로 가진 완전한 버튼이라 PC-F1-AC6·PC-F6-AC3·PC-F7-AC1 의 '누르고 확인' 동작 자체는 성립하고, 여는 단계만 하나 늘었다",
+      "reversible_at": "apps/preemie-calc/src/shared/ui/HeaderMenu.tsx, apps/preemie-calc/src/shared/ui/PageHeader.tsx"
+    },
+    {
+      "what": "텍스트 기호(✓●·–△)를 lucide 아이콘(SVG)으로 바꾸면서 그 기호 문자 자체를 getByText(exact)/toContainText 로 찾던 테스트 3건이 깨진다 — 라벨 텍스트('지남'·'오늘'·'예정'·'미확정' 등)는 전부 그대로 남아 있다. (1) tests/e2e/nf-a11y.spec.ts:22,26,30 `current.getByText('●',{exact:true})`/`past.getByText('✓',...)`/`upcoming.getByText('·',...)` — StatusBadge 는 이제 CircleDot/CircleCheckBig/Circle 아이콘(aria-hidden svg)을 쓴다. 라벨 텍스트('오늘'·'지남'·'예정')로 바꿔 확인하거나, svg 존재 자체를 확인하는 locator 로 바꿔야 한다. (2) nf-a11y.spec.ts:40 `notice.getByText('△',...)` — UnconfirmedNotice 는 AlertTriangle 아이콘을 쓴다. '미확정' 텍스트로 대체 가능(같은 줄에 이미 있음). (3) nf-a11y.spec.ts:48 `maleRadio.toContainText('✓')` — SegmentedControl 선택 표시는 Check 아이콘이다. 대신 `aria-checked` 속성(이미 같은 테스트가 47행에서 확인 중)이나 svg 존재로 바꿔야 한다",
+      "why": "디자인 스펙(index.md 5차 라운드, tokens.md decisions)이 '이전까지 쓰던 텍스트 기호를 전부 실제 아이콘으로 바꾸되 색+아이콘+텍스트 라벨 세 겹 규칙은 유지한다'고 명시했다. 의미를 전달하는 라벨 텍스트는 하나도 지워지지 않았고, 사라진 것은 장식 기호 문자(원래도 aria-hidden 이었다)뿐이다",
+      "reversible_at": "apps/preemie-calc/src/shared/ui/StatusBadge.tsx, apps/preemie-calc/src/shared/ui/UnconfirmedNotice.tsx, apps/preemie-calc/src/shared/ui/SegmentedControl.tsx"
+    },
+    {
+      "what": "폭별 레이아웃(768/1280 미디어쿼리 전환)은 인라인 style 대신 apps/preemie-calc/src/app/globals.css 의 pc- 접두 유틸리티 클래스로 구현했다",
+      "why": "이 앱의 모든 컴포넌트가 인라인 style 객체로 값을 그리는 기존 관행이라 media query 를 표현할 CSS-in-JS 도구가 없다(styled-jsx·CSS Module 미설치, 새 의존성 추가는 이번 범위 밖). .preemie-dialog(기존 globals.css)와 같은 '전역 CSS 클래스 하나, 값은 var() 로 tokens.md 참조' 패턴을 그대로 넓혔다 — 새 라이브러리를 더하지 않고 폭별 레이아웃 요구(GOAL)를 지키는 가장 작은 방법이었다",
+      "reversible_at": "apps/preemie-calc/src/app/globals.css"
+    },
+    {
+      "what": "StatePanel·AgeSummaryCard·InputView 브랜드 마크의 IconBadge size 는 스펙이 폭별로 다르게 지정한 값(예: StatePanel <768=lg, >=768=hero) 중 하나로 고정했고, 폭에 따라 실제로 전환하지는 않는다",
+      "why": "IconBadge 의 size prop 은 React prop(정적 값)이라 CSS 미디어쿼리만으로 전환할 수 없고, 전환하려면 matchMedia 훅 등 새 클라이언트 로직이 필요해 이번 라운드의 핵심 요구(그리드 구조 전환, 색·아이콘 도입)보다 우선순위가 낮다고 판단했다. E2E 는 정확한 아이콘 px 값을 검증하지 않는다(NF-MOBILE 은 폰트·터치타깃·가로스크롤만 검사)",
+      "reversible_at": "apps/preemie-calc/src/shared/ui/StatePanel.tsx, apps/preemie-calc/src/widgets/age-summary/ui/AgeSummaryCard.tsx, apps/preemie-calc/src/views/input/ui/InputView.tsx"
+    },
+    {
+      "what": "Button 컴포넌트의 hover/pressed CSS 상태(스펙 states 표)는 이번에도 구현하지 않았다(기존부터 없던 것 — 인라인 style 은 :hover 의사 클래스를 표현할 수 없다)",
+      "why": "이 갭은 이번 라운드가 만든 것이 아니라 이전 라운드부터 있던 인라인 style 접근의 한계다. 리디자인 범위(색·아이콘·레이아웃)와 무관해 손대지 않았다 — 고치려면 이 컴포넌트 전체를 CSS 클래스 기반으로 다시 짜야 하고, 그건 이번 GOAL 의 범위 밖이다",
+      "reversible_at": "apps/preemie-calc/src/shared/ui/Button.tsx"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "(apps/preemie-calc) pnpm add lucide-react@^1.41.0",
+      "result": "dependencies: + lucide-react ^1.41.0. Done in 5.4s",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm typecheck",
+      "result": "8개 워크스페이스 프로젝트 중 7개 실행(1개는 typecheck 스크립트 없음). apps/preemie-calc 포함 전부 'Types generated successfully' + Done, 오류 0건, exit 0",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm lint",
+      "result": "eslint . && pnpm -r --if-present lint. apps/preemie-calc lint: Done(출력 없음 = 0 problems). 전 워크스페이스 오류 0건, exit 0",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm test",
+      "result": "apps/preemie-calc test: Test Files 10 passed (10), Tests 62 passed (62). packages/scopulus-ui test: Test Files 38 passed (38), Tests 141 passed (141)",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm build",
+      "result": "apps/preemie-calc build: ✓ Compiled successfully, Generating static pages (491/491) — /guide/[weeks]/[months] 481쪽 포함 라우트 표 동일. handwork·city-presets·scopulus-ui 도 전부 Done",
+      "passed": true
+    },
+    {
+      "command": "node .../quality-gate.mjs --no-stop",
+      "result": "PASS arch(규칙 14개 파싱/검사 14개/위반 0건), PASS typecheck, PASS lint, PASS test, PASS build — quality-gate 통과, 5개 게이트 실행, 실패 0건",
+      "passed": true
+    },
+    {
+      "command": "grep -rn 'eslint-disable' apps/preemie-calc/src",
+      "result": "일치 없음(exit 1)",
+      "passed": true
+    },
+    {
+      "command": "grep -rn '<svg' apps/preemie-calc/src",
+      "result": "일치 없음(exit 1) — 아이콘은 전부 lucide-react 컴포넌트, 직접 그린 SVG 없음",
+      "passed": true
+    },
+    {
+      "command": "grep -rnE ':\\s*any\\b|<any>|\\bas\\s+any\\b' apps/preemie-calc/src --include='*.ts' --include='*.tsx'",
+      "result": "일치 없음(exit 1)",
+      "passed": true
+    },
+    {
+      "command": "grep -rnE '\\bas\\s+[A-Z][A-Za-z0-9_]*' apps/preemie-calc/src --include='*.ts' --include='*.tsx'",
+      "result": "4건 — 전부 이번 세션 이전부터 있던 기존 코드(shared/lib/calendar-date/calendar.ts 2건: CalendarDate 브랜드 타입 생성, entities/child/api/index.ts 2건: JSON.parse 결과 좁히기). 이번에 새로 만든 HeaderMenu.tsx 의 event.target 은 `instanceof Node` 타입가드로 좁혀 단언을 안 썼다(신규 코드 as 단언 0건)",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) pnpm test:e2e",
+      "result": "75 tests, 69 passed / 6 failed. 실패 6건 전부 위 decisions 목록(HeaderMenu 상호작용 변경 3건 + 텍스트기호→아이콘 교체 3건)에 이름·원인이 있다. 재실행(edit 후 2회)에서도 같은 69/6 로 안정적",
+      "passed": true
+    },
+    {
+      "command": "lsof -i :3100 (test:e2e 실행 전)",
+      "result": "포트 비어 있음(다른 프로세스 없음). test:e2e 의 webServer(next build && next start -p 3100)가 정상 기동·종료했다",
+      "passed": true
+    },
+    {
+      "command": "node .../validate-handoff.mjs .curvez/handoff/",
+      "result": "OK 핸드오프 검증 — 검사 33건, 통과 33건, 실패 0건, 오류 0개, 경고 0개",
+      "passed": true
+    }
+  ]
+}

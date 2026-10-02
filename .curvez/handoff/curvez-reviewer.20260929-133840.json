@@ -1,0 +1,216 @@
+{
+  "from": "curvez-reviewer",
+  "to": ["curvez-orchestrator", "curvez-nextjs"],
+  "status": "blocked",
+  "summary": "리뷰 축 5개 모두 검증했다. 지적은 10건이다(blocker 2, major 3, minor 5). blocker 가 남아 있어 blocked 다. 축 1(수용 기준) 검증: F1~F7·F13 의 AC 를 코드 위치와 대조했고, F2·F3·F4 는 jiti 로 모듈을 불러 실행하고 react-dom/server 로 렌더링해 확인했다. 축 2(아키텍처 경계) 검증: arch 게이트 위반 0건이고 import 를 직접 읽었다. 같은 층의 슬라이스끼리 부르는 구조 문제는 등급 없이 decisions 에 위치만 적었다. 축 3(디자인 스펙) 검증: AgeSummaryCard·ShareActionButton 컴포넌트 스펙과 input·dashboard·age-basis·checkups·share 화면 스펙을 읽었다. 나머지 23개 스펙 파일은 읽지 않았다. 축 4(실패 경로) 검증. 축 5(타입 안정성) 검증: any 0건이다. as 단언 4건은 검증 뒤에 쓰거나 경계 어댑터라 지적하지 않았다. lint 는 돌리지 않았다. 이미 알려진 eslint 10 크래시라 지시에 따라 제외했다. 계약 확인 결과: (2) 서버로 나가는 경로 0건(fetch·sendBeacon·Script 를 grep 해 0건). (3) PRD §9 미결 값은 전부 Settled 미확정으로 두었고 오케스트레이터 잠정 결정과 같다. (5) effectiveDate 3건은 major(ACC-04)로 판정했다. (6) 런타임 의존성은 next·react·react-dom 셋뿐이다. (8) standing.md 위반은 보지 못했다.",
+  "artifacts": [],
+  "decisions": [
+    {
+      "what": "lint 항목은 목록에서 모두 뺐고 eslint 크래시도 다시 지적하지 않았다",
+      "why": "오케스트레이터 CONTEXT 에 알려진 미해결(사용자 질문 대기)로 적혀 있다. lint 를 돌리지 않았으므로 스타일 지적도 하지 않았다",
+      "reversible_at": "eslint ^9 추가가 승인되면 다음 라운드에 $LINT 를 돌려 그 결과를 뺀 목록으로 다시 본다"
+    },
+    {
+      "what": "[구조, 등급 없음] 같은 층의 슬라이스끼리 import 한다. entities/age-basis/model/index.ts:12, entities/copay-relief/model/index.ts:12, entities/correction-period/model/index.ts:11 이 @/entities/child 를 import type 으로 부른다. widgets/copay-relief-result/ui/CopayReliefSection.tsx:10 과 widgets/correction-period-result/ui/CorrectionPeriodSection.tsx:8 은 @/widgets/age-summary 를 부른다",
+      "why": "정확성 축이 아니라 파일 사이 관계라서 curvez-structure-reviewer 의 축이다. 게다가 architecture.md 의 시그니처(ageBasisRows·correctionPeriod 가 CorrectedAge·GestationalAge 를 받는다)가 이 import 를 요구해서, 문서 안에서 권고와 계약이 부딪친다. 전달 여부는 오케스트레이터가 정한다",
+      "reversible_at": "findings 에 BND-02 로 추가하면 된다"
+    },
+    {
+      "what": "[구조, 등급 없음] views 가 계산한다(views/checkups/ui/CheckupsView.tsx:12, views/age-basis/ui/AgeBasisView.tsx:12 의 computeChildAges 호출). 259 상수가 widgets/nav-links/ui/QuickLinks.tsx:4 에 한 번 더 적혀 있다(entities/child/model/index.ts:54 와 correction-period.json:16 에도 있다)",
+      "why": "architecture 권고의 'views 는 조립만 한다'와 중복 상수 문제다. 동작은 지금 맞으니 구조 축으로 넘긴다",
+      "reversible_at": "findings 에 BND-03 으로 추가하면 된다"
+    },
+    {
+      "what": "siteOrigin 의 기본값이 http://localhost:3000 인 점은 지적하지 않았다",
+      "why": "architecture.md '미결 6' 행이 이 기본값을 직접 정했다. 다만 이번 빌드 결과 .next/server/app/sitemap.xml.body 의 loc 가 전부 http://localhost:3000 이다. NEXT_PUBLIC_SITE_ORIGIN 없이 배포하면 공유 링크(PC-F7-AC2)와 사이트맵이 localhost 를 가리킨다. 배포 전에 오케스트레이터가 확인할 일이다",
+      "reversible_at": "findings 에 ACC-07 로 추가하면 된다"
+    },
+    {
+      "what": "lastVerified: null(4개 JSON)과 ReferenceMeta.lastVerified 를 CalendarDate | null 로 넓힌 것은 결함으로 보지 않았다",
+      "why": "SPEC §4 는 '마지막 확인일을 적는다'고 한다. null 은 '아직 확인하지 않았다'는 사실을 그대로 적은 값이다. 날짜를 지어 넣는 것보다 계약 취지에 맞는다. 다만 architecture.md ④ 의 타입(lastVerified: CalendarDate)과는 다르다. 그래서 문서 쪽을 고칠지 blocked_on 으로 curvez-architect 에게 물었다",
+      "reversible_at": "findings 에 TYP-01 로 추가하면 된다"
+    },
+    {
+      "what": "copay-relief.json 의 effectiveDate 2026-01-01 은 지적하지 않았다. 나머지 3개 파일만 ACC-04 로 지적했다",
+      "why": "SPEC·PRD 본문의 '2026년 1월 시행'에 근거가 있다. 일(01)은 추정이지만 시행 월과 어긋나지 않는다",
+      "reversible_at": "ACC-04 의 evidence 에 copay-relief.json:12 를 더하면 된다"
+    },
+    {
+      "what": "F13 describeCombo 의 '1개월=4주' 근사와 음수 교정 개월 문구는 지적하지 않았다",
+      "why": "architecture.md ⑥ 이 환산 규칙을 curvez-nextjs 에 맡겼고 decisions 에 기록돼 있다. PC-F13-AC2 는 빌드 산출물 .next/server/app/guide/32/3.html 에서 '예정일보다 8주 일찍 태어남'과 교정 나이 설명이 보이는 것으로 확인했다",
+      "reversible_at": "findings 에 ACC-08 로 추가하면 된다"
+    },
+    {
+      "what": "승인된 의존성 목록 밖의 패키지를 썼는지는 목록 원문과 대조하지 못했다",
+      "why": "지시서의 의존성 목록은 이 리뷰어가 읽을 수 있는 .curvez 문서에 없다. apps/preemie-calc/package.json 의 런타임 의존성은 next·react·react-dom 셋이다. devDependencies 는 handwork 와 같은 스캐폴드에 vitest·@playwright/test 만 더했다. 목록 밖으로 보이는 것은 없다",
+      "reversible_at": "오케스트레이터가 목록을 주면 findings 에 BND-04 로 추가할지 다시 판정한다"
+    },
+    {
+      "what": "tie-break 로 ACC-02·ACC-03 을 blocker 가 아니라 major 로 두었다",
+      "why": "ACC-02 는 '교정' 라벨과 값이 붙어 보여 뜻은 전달된다. ACC-03 은 구현이 디자인 스펙 input.md 를 그대로 따랐고, SPEC 과 디자인 스펙 중 어느 쪽을 고칠지는 오케스트레이터가 정한다. 둘 다 등급이 갈려 낮은 쪽을 골랐다",
+      "reversible_at": "이 에이전트 정의의 '## 판단 기준' tie-break 절"
+    }
+  ],
+  "blocked_on": [
+    {
+      "who": "curvez-nextjs",
+      "question": "ERR-01: apps/preemie-calc/src/entities/checkup/model/index.ts:110 은 오늘이 출산 예정일 전이고 1차 검진 창 안이면 calendarSpan(correctedFrom, today) 에서 예외를 던진다. SPEC 예시 아이(출생 2026-03-01, 예정일 2026-04-26)는 2026-03-15~2026-04-05 의 22일 동안 /dashboard/checkups 가 통째로 깨진다. 이것을 언제 고치는가"
+    },
+    {
+      "who": "curvez-nextjs",
+      "question": "ACC-01: apps/preemie-calc/src/widgets/age-basis-list/ui/AgeBasisSection.tsx:13 은 재태 37주 이상 아이에게도 '문진표·발달선별검사지'의 기준을 '교정 기준(24개월 검진까지)'로 보여준다. PC-F3-AC5 를 어긴다. 이것을 언제 고치는가"
+    },
+    {
+      "who": "curvez-orchestrator",
+      "question": "SPEC 과 디자인 스펙이 서로 맞지 않는다. (1) PC-F1-AC1 은 '출산 예정일 칸 아래에 \"주수로 입력\" 전환'이라고 하는데 design/screens/input.md 는 전환을 출생일과 출산 예정일 사이에 둔다(ACC-03). (2) PC-F7-EX1 은 '카카오톡 공유를 쓸 수 없는 환경(데스크톱 브라우저 등)에서는 링크 복사 버튼'이라고 하는데 components/ShareActionButton.md 는 navigator.share 가 있으면 복사 버튼을 숨긴다(ACC-06). 어느 쪽에 맞출지 정해 달라"
+    },
+    {
+      "who": "curvez-architect",
+      "question": "architecture.md ④ 의 ReferenceMeta 는 effectiveDate·lastVerified 를 둘 다 CalendarDate 로 요구한다. 구현은 lastVerified 를 null 로 둘 수 있게 넓혔고, effectiveDate 는 원문을 확인하지 않고 SPEC 갱신일로 채웠다(ACC-04). 두 필드를 '확인 전' 상태로 표현하도록(예: Settled<CalendarDate> 또는 null 허용) 문서를 고칠 것인가"
+    }
+  ],
+  "verification": [
+    {
+      "command": "pnpm typecheck (profile.commands.typecheck, 워크트리 루트)",
+      "result": "apps/preemie-calc 를 포함한 모든 워크스페이스에서 'Types generated successfully' 와 Done 이 나왔다. tsc 오류 0건",
+      "passed": true
+    },
+    {
+      "command": "pnpm --filter preemie-calc test",
+      "result": "Test Files 9 passed (9), Tests 54 passed (54)",
+      "passed": true
+    },
+    {
+      "command": "pnpm --filter preemie-calc build",
+      "result": "Generating static pages 491/491 완료. .next/server/app/guide 아래 html 481개, sitemap.xml.body 의 /guide loc 481개. 라우트 '/' 는 ƒ(Dynamic)이고 나머지는 ○/● 정적이다",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/quality-gate.mjs --only arch",
+      "result": "PASS arch: 규칙 14개 파싱 / 검사 14개 / 위반 0건",
+      "passed": true
+    },
+    {
+      "command": "node -e (jiti 로 @/entities/checkup 을 불러 planCheckups 를 출생 2026-03-01 부터 120일간 하루씩 호출)",
+      "result": "예외 22건. 첫날 2026-03-15, 마지막 날 2026-04-05. 메시지 'calendarSpan 은 from 이 to 보다 앞이거나 같은 구간만 계산한다'",
+      "passed": false
+    },
+    {
+      "command": "node -e (jiti + react-dom/server renderToStaticMarkup 으로 AgeSummaryCard·AgeBasisSection 렌더링)",
+      "result": "2026-06-01 교정 칸의 텍스트는 '교정' 과 '36일 · 1개월' 로 나뉘어 있다. 생후 칸은 '생후 92일 · 3개월' 이다. 예정일 2026-03-10(38주 5일) 아이의 F3 에 '문진표·발달선별검사지 / 교정 기준(24개월 검진까지)' 가 보인다. 기준일은 전부 '기준일 2026-09-29' 로 나온다",
+      "passed": false
+    },
+    {
+      "command": "node -e (jiti 로 validateProfileDraft·createChildProfile 에 gestation days 9 / -3 / 1.5 입력)",
+      "result": "세 경우 모두 errors [] 로 통과한다. 저장되는 재태는 33주 2일 / 31주 4일 / 32주 2일이다",
+      "passed": false
+    },
+    {
+      "command": "grep -rnE 'fetch\\(|XMLHttpRequest|sendBeacon|next/script|<Script|https?://' apps/preemie-calc/src (data/*.json 제외)",
+      "result": "0건. 네트워크 전송 경로가 없다. 공유 값은 share-url.ts 가 fragment(#b=&d=)에만 넣는다",
+      "passed": true
+    }
+  ],
+  "findings": [
+    {
+      "id": "ERR-01",
+      "kind": "failure-path",
+      "severity": "blocker",
+      "priority": "P0",
+      "what": "오늘이 출산 예정일 전이고 1차 검진 창(생후 14~35일) 안이면 planCheckups 가 예외를 던져 /dashboard/checkups 화면 전체가 깨진다",
+      "where": "apps/preemie-calc/src/entities/checkup/model/index.ts:110",
+      "why": "PC-F4-AC1(차수별 방문 기간 표시)과 PC-F4-AC4(오늘 차수 강조)를 그 기간 동안 전혀 지키지 못한다. questionnaireBasis 가 'corrected' 이면 calendarSpan(correctedFrom, today) 를 부르는데, today < dueDate 이면 calendarSpan 이 throw 한다. 앱에 error.tsx 가 없어 클라이언트 예외 화면이 뜬다. 재태 37주 미만 아이는 예정일이 출생 후 최소 22일 뒤라서 1차 창의 일부 또는 전체가 항상 이 조건에 걸린다. 수정 방향: 교정 전(today < correctedFrom)이면 문진표 개월을 출생 기준으로 내거나 '예정일 전'으로 따로 표시한다. 어느 쪽인지는 PRD 미결 1 에 걸리므로 미확정 표시를 붙인다",
+      "evidence": "재현: 출생일 2026-03-01, 출산 예정일 2026-04-26 프로필로 오늘이 2026-03-15~2026-04-05 중 하루일 때 /dashboard/checkups 를 연다. jiti 로 planCheckups({birthDate:'2026-03-01',correctedFrom:'2026-04-26',today:t}) 를 t=2026-03-01+0..120일로 돌리면 예외 22건(2026-03-15~2026-04-05)이 난다. 호출 경로: views/checkups/ui/CheckupsView.tsx:13-14 → widgets/checkup-plan/ui/CheckupPlanSection.tsx:20. 단위 테스트 tests/unit/checkup.test.ts 는 이 구간을 다루지 않는다(54건 모두 통과)"
+    },
+    {
+      "id": "ACC-01",
+      "kind": "acceptance",
+      "severity": "blocker",
+      "priority": "P0",
+      "what": "재태 37주 이상 아이의 F3 화면에서 '문진표·발달선별검사지' 행이 '교정 기준(24개월 검진까지)' 로 보인다",
+      "where": "apps/preemie-calc/src/widgets/age-basis-list/ui/AgeBasisSection.tsx:13",
+      "why": "PC-F3-AC5 '재태 37주 이상 아이는 모든 항목이 \"생후 나이 그대로\"로 보인다'를 어긴다. basisText 가 row.id === 'checkup-questionnaire' 이면 row.basis 를 보지 않고 교정 문구를 고정으로 낸다. 모델(ageBasisRows)은 이미 basis 를 'chronological' 로 냈고, 같은 아이의 F4(planCheckups, correctedFrom=null)는 생후 기준으로 보여 준다. 그래서 두 화면이 서로 다른 말을 한다. 수정 방향: row.basis === 'corrected' 일 때만 '교정 기준(24개월 검진까지)'를 쓴다",
+      "evidence": "재현: 출생일 2026-03-01, 출산 예정일 2026-03-10(38주 5일) 프로필로 /dashboard/age-basis 를 연다. jiti + renderToStaticMarkup(AgeBasisSection) 출력: '재태 37주 이상이면 모든 항목이 생후 나이 그대로 적용됩니다.' 바로 아래 '문진표·발달선별검사지 / 교정 기준(24개월 검진까지)'"
+    },
+    {
+      "id": "ACC-02",
+      "kind": "acceptance",
+      "severity": "major",
+      "priority": "P1",
+      "what": "대시보드 교정 칸에 'ㅇ교정 36일 · 1개월' 한 문장이 없고 '교정' 라벨과 '36일 · 1개월' 값이 따로 나온다. 생후 칸은 '생후 92일 · 3개월' 로 나와 두 칸의 모양이 다르다",
+      "where": "apps/preemie-calc/src/widgets/age-summary/lib/format.ts:26",
+      "why": "PC-F2-AC1 은 \"생후 92일 · 3개월\"과 \"교정 36일 · 1개월\"이 나란히 보인다고 적었다. AgeSummaryCard.tsx:54 는 생후 칸에 '{label} {value}' 를 그리는데 교정 칸(:63)은 value 만 그린다. 그래서 문구 그대로 찾는 E2E(getByText)는 교정 쪽을 찾지 못한다. before-due 는 value 에 '교정 D-25' 가 들어 있어 문구가 맞는다. 라벨이 붙어 있어 뜻은 전달되므로 tie-break 로 blocker 대신 major 로 두었다. 수정 방향: after-due value 를 '교정 36일 · 1개월' 로 맞추거나 두 칸을 같은 방식으로 그린다",
+      "evidence": "재현: 출생일 2026-03-01, 출산 예정일 2026-04-26, 오늘 2026-06-01. jiti + renderToStaticMarkup(AgeSummaryCard, formatAgeSummary(computeChildAges(...))) 텍스트: '생후 / 생후 92일 · 3개월 / 교정 / 36일 · 1개월'"
+    },
+    {
+      "id": "ACC-03",
+      "kind": "acceptance",
+      "severity": "major",
+      "priority": "P1",
+      "what": "'주수로 입력' 전환이 출산 예정일 칸 위(출생일과 예정일 사이)에 있다",
+      "where": "apps/preemie-calc/src/features/profile-form/ui/ProfileForm.tsx:101",
+      "why": "PC-F1-AC1 은 '출산 예정일 칸 아래에 \"주수로 입력\" 전환이 있다'고 한다. 구현은 design/screens/input.md 의 필드 순서(출생일 → 전환 → 예정일)를 그대로 따랐다. requirements.md 는 SPEC 이 우선한다고 적었으므로 SPEC 과 어긋난다. 디자인 스펙과 SPEC 이 서로 다르므로 blocked_on 으로 오케스트레이터에게 물었다. tie-break 로 major 로 두었다. 수정 방향: 정해지면 전환 버튼을 예정일/주수 필드 뒤로 옮긴다(:101-116 과 :118-129 순서 교체)",
+      "evidence": "재현: '/' 를 연다. JSX 순서가 DateField 출생일(:94) → 전환 button(:101) → DateField 출산 예정일(:119)이다. 코드를 읽고 순서를 확인했고 브라우저 렌더링은 확인하지 못했다"
+    },
+    {
+      "id": "ACC-04",
+      "kind": "acceptance",
+      "severity": "major",
+      "priority": "P1",
+      "what": "기준 데이터 3개 파일의 effectiveDate 에 원문 확인 없이 SPEC 갱신일(2026-09-29)을 넣었고, 이 값이 화면에 '기준일 2026-09-29' 로 확정값처럼 나온다",
+      "where": "apps/preemie-calc/src/entities/age-basis/data/age-basis.json:22",
+      "why": "SPEC §4 '데이터 파일마다 출처 URL, 기준일, 마지막 확인일을 적는다'에서 기준일은 출처 자료의 기준 시점이다. 문서 갱신일은 기준일이 아니다. 필드는 있지만 값이 출처에서 온 것이 아니다. 이 값은 PC-F3-AC4(항목마다 근거 자료 이름과 기준일)의 5개 행 전부와 PC-F4-AC5(데이터 출처와 기준일), F6 푸터에 미확정 표시 없이 보인다. SPEC §6 '신뢰(결과마다 기준 자료명과 기준일)' 요구가 사실이 아닌 날짜로 채워진다. 같은 파일의 lastVerified 는 null 로 솔직하게 비워 두었는데 effectiveDate 만 확정값처럼 보여 서로 맞지 않는다. 문구가 화면에 있어 AC 문장은 형식상 통과하므로 major 로 두었다. 수정 방향: 원문으로 기준일을 확인하기 전에는 '기준일 확인 전'처럼 미확정임을 보이게 한다. 타입을 바꿔야 하므로 blocked_on 으로 curvez-architect 에게 물었다",
+      "evidence": "재현: 아무 프로필로 /dashboard/age-basis 를 연다. 렌더링 출력의 모든 행에 '· 기준일 2026-09-29' 가 붙는다. 같은 값이 checkup-rounds.json:12 와 correction-period.json:12 에도 있다. 근거: curvez-nextjs.20260929-123617.json decisions '나머지 셋은 … SPEC.md 의 갱신일(2026-09-29)을 잠정 기준일로 썼다'"
+    },
+    {
+      "id": "ERR-02",
+      "kind": "failure-path",
+      "severity": "minor",
+      "priority": "P3",
+      "what": "[확인 필요] localStorage 의 getItem·setItem 이 예외를 던지는 환경(저장소 차단, 용량 초과)을 처리하지 않아 첫 화면 또는 저장 버튼에서 잡히지 않은 예외가 난다",
+      "where": "apps/preemie-calc/src/entities/child/api/index.ts:68",
+      "why": "JSON.parse 실패만 corrupted 로 처리하고 getItem(:68)·setItem(:91)의 예외는 처리하지 않는다. useProfileStore 의 useEffect 에서 getItem 이 throw 하면 '/' 와 /dashboard 가 깨진다. 실행으로 확인하지 못했다. 브라우저 설정에 따라 갈리므로 minor 로 두었다. 대상 브라우저에서 저장소 차단 시 getItem 이 throw 하는지 확인하면 판정이 갈린다. 수정 방향: 읽기는 corrupted 가 아닌 별도 상태로, 쓰기 실패는 폼 오류로 알린다",
+      "evidence": "재현: 브라우저 사이트 데이터 저장을 차단한 상태로 '/' 를 연다. 실행 확인 못 함(읽기만 함). loadProfileStore(:65-81)와 writeStore(:89-92)에 try 가 없다"
+    },
+    {
+      "id": "ACC-05",
+      "kind": "acceptance",
+      "severity": "minor",
+      "priority": "P2",
+      "what": "주수 입력의 '일' 칸이 0~6 밖의 값과 소수를 받아 그대로 저장한다(32주 9일 → 33주 2일로 저장)",
+      "where": "apps/preemie-calc/src/shared/ui/GestationInput.tsx:68",
+      "why": "min=0·max=6 은 직접 타이핑을 막지 않는다. validateProfileDraft 는 재태 총일수 범위(154~308)만 본다. 사용자가 입력한 값과 저장된 재태가 달라져 PC-F1-AC3 의 '주수 입력 = 같은 프로필' 전제가 흔들린다. 수정 방향: days 가 0~6 정수가 아니면 invalid 로 처리해 '날짜를 확인하세요'를 띄운다",
+      "evidence": "재현: 주수 모드에서 32주, 일 칸에 9 를 입력한다. jiti 로 validateProfileDraft 에 {weeks:32,days:9} / {32,-3} / {32,1.5} 를 넣으면 세 경우 모두 errors [] 이다. 저장되는 재태는 33주 2일 / 31주 4일 / 32주 2일이다"
+    },
+    {
+      "id": "DSG-01",
+      "kind": "design",
+      "severity": "minor",
+      "priority": "P3",
+      "what": "[확인 필요] 공유 카드에서 예정일 전 교정 값 '교정 D-25 · 재태 36주 3일' 을 96px 굵은 글씨로 maxWidth 없이 그려 1080px 폭 밖으로 잘릴 수 있다",
+      "where": "apps/preemie-calc/src/features/share-result/lib/share-card-canvas.ts:63",
+      "why": "PC-F7-AC4(360px 폭에서 확대 없이 숫자를 읽는다, 수동 확인)의 전제는 카드 안에 숫자가 모두 들어 있는 것이다. 한글 6자 × 약 96px 에 라틴·공백 약 13자를 더하면 약 1,100px 로 추정되고, 쓸 수 있는 폭(1080-64=1016)을 넘는다. 실제 글꼴 폭을 재지 못해 minor 로 두었다. canvas measureText 값을 확인하면 판정이 갈린다. 수정 방향: fillText 에 maxWidth 를 주거나 D-값과 재태를 두 줄로 나눈다",
+      "evidence": "재현: 출생 2026-03-01, 예정일 2026-04-26, 오늘 2026-04-01 에 대시보드에서 '결과 카드 공유하기'를 눌러 카드 이미지를 연다. 실행 확인 못 함(읽기만 함). 글자 폭은 추정값이다"
+    },
+    {
+      "id": "ACC-06",
+      "kind": "acceptance",
+      "severity": "minor",
+      "priority": "P3",
+      "what": "[확인 필요] navigator.share 를 지원하는 데스크톱 브라우저에서는 링크 복사 버튼이 나오지 않는다",
+      "where": "apps/preemie-calc/src/features/share-result/ui/ShareResultAction.tsx:35",
+      "why": "PC-F7-EX1 은 '카카오톡 공유를 쓸 수 없는 환경(데스크톱 브라우저 등)에서는 링크 복사 버튼이 보인다'고 한다. 구현은 components/ShareActionButton.md 대로 navigator.share 가 있으면 공유 버튼만 보인다. 데스크톱 Safari·Chrome 이 navigator.share 를 제공하는지는 실행으로 확인하지 못했다. 디자인 스펙을 따른 구현이라 minor 로 두고 SPEC 과 디자인 스펙 중 어느 쪽에 맞출지 blocked_on 으로 물었다. 수정 방향: 정해지면 복사 버튼을 항상 함께 보인다",
+      "evidence": "재현: 데스크톱 Chrome 이나 Safari 에서 /dashboard 를 열고 공유 영역을 본다. 실행 확인 못 함(읽기만 함). ShareActionButton.tsx:39 는 라벨이 shareSupported 에 따라 둘 중 하나로만 정해진다"
+    },
+    {
+      "id": "BND-01",
+      "kind": "boundary",
+      "severity": "minor",
+      "priority": "P2",
+      "what": "입력 화면 '/' 가 서버에서 searchParams 를 await 해 요청마다 동적으로 렌더링된다. architecture 라우트 표는 이 경로를 정적으로 정했다",
+      "where": "apps/preemie-calc/src/app/page.tsx:3",
+      "why": "architecture.md ⑥ 은 '/' 를 '정적. 저장된 프로필이 있으면 브라우저에서 /dashboard 로 이동'으로 정했다. 서버에 가는 값은 ?weeks·?new 뿐이라 아이 정보 유출은 없다. 다만 정적 배포가 불가능해지고 첫 화면 응답이 서버를 거친다(SPEC §6 LCP). 수정 방향: 쿼리는 클라이언트(useSearchParams)에서 읽고 page.tsx 는 정적으로 둔다",
+      "evidence": "재현: pnpm --filter preemie-calc build 의 Route 표에서 '┌ ƒ /' (Dynamic)이고 /dashboard 등은 ○ (Static)이다"
+    }
+  ]
+}

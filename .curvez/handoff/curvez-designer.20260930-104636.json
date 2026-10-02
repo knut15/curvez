@@ -1,0 +1,92 @@
+{
+  "from": "curvez-designer",
+  "to": ["curvez-orchestrator", "curvez-nextjs", "curvez-qa"],
+  "status": "done",
+  "summary": "9개 화면(input·input-weeks·dashboard·age-basis·checkups·copay-relief·correction-period·share·guide) 전부가 본문 최대 폭 하나(--layout-content-max, 720px)를 쓰도록 레이아웃 스펙을 통일했다(사용자 원문 '가로사이즈는 메인과 서브가 동일하게 만들어 왔다갔다하지말고' → 선택 '720px 한 열'). tokens.md 의 ## 레이아웃 절에서 화면마다 다르던 본문 폭 토큰 6개(--layout-content-max-mobile=400, --layout-content-max-tablet=640, --layout-content-max-desktop-narrow=640, --layout-container-max-desktop=1120, --layout-dashboard-sidebar-width=360, --layout-column-gap-desktop=32)를 폐기 표시하고 --layout-content-max(720) 하나로 합쳤다. dashboard 는 main+sidebar 2열(1120px) 구조를 버리고 1열로 바꿨다 — 순서는 age-summary → quick-links(2열 격자는 유지) → share-entry(이전에 사이드바에 있던 링크 복사·공유 버튼 영역) → disclaimer(레이아웃 트리는 원래도 1차원 목록이었고, 이번에는 ## responsive 절의 >=1280px 2열 분기만 없앴다). PageHeader 내부 3분할 그리드도 variant 와 무관하게 720px 를 쓴다(이전에는 variant=dashboard 만 1120px). input·input-weeks 의 form-card, share 의 card-preview 는 각각 400px·420px 로 좁히던 것을 720px 컨테이너 100% 채우는 쪽으로 바꿔 다른 조회 화면과 좌우 기준선을 맞췄다(CONTEXT '카드가 더 좁으면 기준선이 달라지므로 컨테이너 폭을 채우는 쪽을 우선 검토'). guide 는 이전에도 720px(다른 narrow 화면보다 넉넉히 둔 예외값)였는데 이번 라운드부터 예외가 아니라 공통값이 됐다. 좌우 패딩도 폭 구간별로 값 하나만 쓴다 — <1280px: --space-4(16px), >=1280px: --space-6(32px, 이전에도 대부분 화면이 이 패턴이었고 guide 만 32px 승격이 빠져 있어 맞췄다). ValueCard(480/560px)·StatePanel(480px)·다이얼로그(400px)·Button 최대 폭(320px)처럼 본문 컨테이너 '안'에 있는 개별 요소 폭은 지시서가 명시적으로 대상 밖으로 뒀으므로 그대로 뒀다 — copay-relief·correction-period 스펙의 480/560px 는 이 예외에 해당하고, 본문에 그 사실을 그대로 적었다. 코드(apps/preemie-calc/src/**)는 읽기만 했고 고치지 않았다 — 구현은 curvez-nextjs 몫이다.",
+  "artifacts": [
+    { "path": ".curvez/design/preemie-calc/tokens.md", "kind": "doc", "note": "## 레이아웃 절 전면 교체 — --layout-content-max(720px) 신규 추가, 기존 6개 토큰(mobile/tablet/desktop-narrow/container-max-desktop/dashboard-sidebar-width/column-gap-desktop) 폐기 표시. decisions 표에 7차 라운드 행 1개 추가" },
+    { "path": ".curvez/design/preemie-calc/index.md", "kind": "doc", "note": "끝에 '## 2026-09-30 7차 라운드' 요약 5개 항목 + 'decisions (7차 라운드분)' 표(4행) 추가" },
+    { "path": ".curvez/design/preemie-calc/screens/dashboard.md", "kind": "doc", "note": "content 리전 role·age-summary/share-entry/disclaimer role 을 1열 서술로 교체. ## responsive 3단 전부 --layout-content-max(720px) 로 교체(2열 grid-template-columns 규칙 삭제). a11y focus-order 에서 '시각적 2열 배치' 서술 제거" },
+    { "path": ".curvez/design/preemie-calc/screens/input.md", "kind": "doc", "note": "form-card role 에 '컨테이너 100% 채움' 규칙 추가(카드 자체 폭 제한 삭제). ## responsive 3단을 --layout-content-max(720px) 채움 규칙으로 교체" },
+    { "path": ".curvez/design/preemie-calc/screens/share.md", "kind": "doc", "note": "## responsive 3단을 --layout-content-max(720px) 채움 규칙으로 교체(이전 420px 폭 제한 삭제)" },
+    { "path": ".curvez/design/preemie-calc/screens/guide.md", "kind": "doc", "note": "## responsive 3단을 --layout-content-max(720px) 로 교체, '다른 narrow 화면보다 넉넉히' 라는 예외 설명을 '더는 예외가 아니다' 로 정정. 768~1279·>=1280 좌우 패딩 명시 추가" },
+    { "path": ".curvez/design/preemie-calc/screens/age-basis.md", "kind": "doc", "note": "## responsive 토큰명 갱신(--layout-content-max-tablet/-desktop-narrow → --layout-content-max)" },
+    { "path": ".curvez/design/preemie-calc/screens/checkups.md", "kind": "doc", "note": "## responsive 토큰명 갱신, 좌우 패딩 값 명시 추가" },
+    { "path": ".curvez/design/preemie-calc/screens/copay-relief.md", "kind": "doc", "note": "content 컨테이너 폭만 --layout-content-max(720px) 로 갱신. ValueCard 자체의 480/560px 값은 '본문 컨테이너 통일 대상이 아니다' 로 명시하고 그대로 유지" },
+    { "path": ".curvez/design/preemie-calc/screens/correction-period.md", "kind": "doc", "note": "copay-relief.md 와 동일한 패턴으로 갱신" },
+    { "path": ".curvez/design/preemie-calc/components/PageHeader.md", "kind": "doc", "note": "## 레이아웃 절 마지막 문장·## responsive 2줄을 variant 무관 --layout-content-max(720px) 로 통일(이전에는 variant=dashboard 만 1120px 예외)" },
+    { "path": ".curvez/design/preemie-calc/components/AgeSummaryCard.md", "kind": "doc", "note": "## responsive 768~1279·>=1280 을 '컨테이너 100% 채움' 으로 교체. 데스크톱 전용 34px 폰트 특수값 폐기(720px 로는 필요 없다), 기본값(28px) 복귀" },
+    { "path": ".curvez/design/preemie-calc/components/InfoRow.md", "kind": "doc", "note": ">=1280 행 토큰명 갱신(1120px 2열 main 컬럼 → 720px 1열 컨테이너)" },
+    { "path": ".curvez/design/preemie-calc/components/ShareActionButton.md", "kind": "doc", "note": ">=1280 행을 사이드바 폭 100% 규칙에서 768~1279 와 같은 최대 320px 규칙으로 교체(사이드바 구조 폐기에 따른 예외 제거)" },
+    { "path": ".curvez/design/preemie-calc/components/ChildSwitcherTabs.md", "kind": "doc", "note": ">=1280 행의 컨테이너 폭 참조를 1120px → 720px 로 교체(정렬 규칙 자체는 변경 없음)" },
+    { "path": ".curvez/design/preemie-calc/components/ReferenceFooter.md", "kind": "doc", "note": "## responsive 를 --layout-content-max(720px) 하나로 통일(dashboard 사이드바 360px 예외 삭제)" },
+    { "path": ".curvez/design/preemie-calc/components/HeaderMenu.md", "kind": "doc", "note": ">=1280 행 토큰명 갱신" },
+    { "path": ".curvez/design/preemie-calc/components/CheckupRoundItem.md", "kind": "doc", "note": ">=1280 행 토큰명·값 갱신(640→720)" },
+    { "path": ".curvez/design/preemie-calc/components/ValueCard.md", "kind": "doc", "note": ">=1280 행의 괄호 설명(화면 컨테이너 폭)만 720px 로 갱신 + '카드 자체 폭은 통일 대상이 아니다' 명시. 카드 자체의 480/560px 값은 바꾸지 않았다" }
+  ],
+  "decisions": [
+    {
+      "what": "화면마다 다르던 본문 최대 폭 토큰 6개를 --layout-content-max(720px) 하나로 합친다",
+      "why": "사용자 원문 '가로사이즈는 메인과 서브가 동일하게 만들어 왔다갔다하지말고'(선택지 '720px 한 열'). 시안이 없어 근거 순서 1번이 아니라 사용자의 직접 지시를 그대로 값으로 옮겼다",
+      "reversible_at": ".curvez/design/preemie-calc/tokens.md:## 레이아웃"
+    },
+    {
+      "what": "dashboard 의 main+sidebar 2열(1120px) 구조를 버리고 1열로 되돌린다. 공유 버튼 영역(share-entry)은 quick-links 바로 아래, disclaimer 바로 위에 둔다",
+      "why": "2열 구조 자체가 1120px 라는 dashboard 전용 값을 필요로 했다. 폭을 통일하려면 2열 구조를 없애는 것이 유일한 방법이었다 — 폭은 같은데 열 구성만 다르면 콘텐츠 배치가 화면마다 또 달라 보인다",
+      "reversible_at": ".curvez/design/preemie-calc/screens/dashboard.md"
+    },
+    {
+      "what": "input·input-weeks 의 form-card, share 의 card-preview 를 400px/420px 로 좁히지 않고 720px 컨테이너를 100% 채우게 바꾼다",
+      "why": "지시서 CONTEXT '카드가 더 좁으면 기준선이 달라지므로 컨테이너 폭을 채우는 쪽을 우선 검토'를 그대로 따랐다. 카드를 좁게 유지하면 좌우 시작선이 age-basis·checkups 같은 화면과 달라진다",
+      "reversible_at": ".curvez/design/preemie-calc/screens/input.md, .curvez/design/preemie-calc/screens/share.md"
+    },
+    {
+      "what": "ValueCard·StatePanel·다이얼로그·버튼처럼 본문 컨테이너 안에 있는 개별 요소의 폭(480/560/400/320px)은 그대로 둔다 — copay-relief·correction-period 스펙에는 그 사실을 명시하는 문구만 추가했다",
+      "why": "지시서가 이 값들을 명시적으로 대상 밖('대상이 아닌 것: 대화상자 400px, 버튼 최대 폭 320px 같은 본문 안 요소 폭')으로 뒀다. 컨테이너 폭 통일과 컨테이너 안 요소의 폭은 다른 문제라, VERIFY 의 1120/480/560px 그레프에 이 두 화면의 480/560px 가 남아 있는 이유이기도 하다",
+      "reversible_at": ".curvez/design/preemie-calc/components/ValueCard.md, .curvez/design/preemie-calc/components/StatePanel.md(미변경)"
+    },
+    {
+      "what": "guide 화면의 데스크톱 좌우 패딩을 --space-4(16px, 기존 코드/스펙에 명시 없이 비어 있던 값)에서 다른 8개 화면과 같은 --space-6(32px)으로 맞췄다",
+      "why": "GOAL 이 '좌우 기준선이 바뀌지 않게' 를 요구하는데, guide.md 는 폭(max-width)만 720px 로 이미 같았고 좌우 패딩이 명시돼 있지 않아 실제로는 기준선이 미세하게 달랐을 수 있다(pc-content-guide 클래스가 데스크톱 패딩 오버라이드가 없었다, globals.css:308-322 확인). 통일 목표에 직접 포함되는 값이라 함께 맞췄다",
+      "reversible_at": ".curvez/design/preemie-calc/screens/guide.md:## responsive"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "DESIGN=.curvez/design/preemie-calc; for f in \"$DESIGN/index.md\" \"$DESIGN/tokens.md\"; do test -f \"$f\" || echo MISSING-DOC $f; done; find \"$DESIGN/screens\" -name '*.md' | wc -l; find \"$DESIGN/components\" -name '*.md' | wc -l",
+      "result": "MISSING-DOC 출력 없음. screens=9, components=23(파일 목록 변화 없음, 기존 9개 화면·23개 컴포넌트 문서만 수정)",
+      "passed": true
+    },
+    {
+      "command": "화면 9종 필수 키(state:default/loading/empty/error, focus-order) 누락 검사(for-grep 루프)",
+      "result": "screen-missing=0",
+      "passed": true
+    },
+    {
+      "command": "컴포넌트 23종 필수 키(a11y:label/focus/contrast/target/role, ## props/states/a11y/responsive) 누락 검사",
+      "result": "component-missing=0",
+      "passed": true
+    },
+    {
+      "command": "grep -n '1120px\\|480px\\|560px' .curvez/design/preemie-calc/screens/*.md",
+      "result": "5줄 남음 — copay-relief.md:45-46, correction-period.md:38-39(ValueCard 자체 480/560px, '본문 컨테이너 통일 대상이 아니다' 라고 각 줄에 명시), dashboard.md:51(1120px 는 '이전 라운드의 main+sidebar 1120px 구조를 버리고' 라는 역사적 서술 안에서만 등장, 실제 레이아웃 값은 같은 줄의 --layout-content-max(720px)). --layout-content-max-mobile/-tablet/-desktop-narrow/-container-max-desktop/-dashboard-sidebar-width/-column-gap-desktop 는 screens/*.md 어디에도 남아 있지 않다(별도 grep 확인, 0건)",
+      "passed": true
+    },
+    {
+      "command": "node -e (tokens.md '## 대비 검증' fg/bg/mode/min 줄 파싱해 WCAG 대비 실측 — 이번 라운드에서 색 토큰을 건드리지 않아 회귀 여부만 재확인)",
+      "result": "pairs=20 light=20 dark=0 contrast-fail=0",
+      "passed": true
+    },
+    {
+      "command": "find .curvez/design/preemie-calc -name '*.tsx' -o -name '*.ts' -o -name '*.css'",
+      "result": "impl-files=0",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/",
+      "result": "OK 핸드오프 검증 — 검사 46건, 통과 46건, 실패 0건, 오류 0개, 경고 0개(이 핸드오프 파일을 쓰기 직전 상태 기준. 이 결과 문자열을 적어 넣는 이 편집 자체는 재검증하지 않았다 — 이전 curvez-designer 핸드오프도 같은 방식을 썼다)",
+      "passed": true
+    }
+  ]
+}

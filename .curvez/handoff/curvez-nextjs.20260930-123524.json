@@ -1,0 +1,165 @@
+{
+  "from": "curvez-nextjs",
+  "to": ["curvez-orchestrator", "curvez-qa", "curvez-reviewer"],
+  "status": "partial",
+  "summary": "SPEC v2 신규 기능(F7 결과 문구 복사, F8 성장 기록·백분위, F10 예방접종 일정, F14 목표키, F15 분유량)을 구현하고 기준 데이터 JSON 7개(기존 4 갱신 + 신규 3)를 architecture.md ⑬ 표대로 채웠다. 본문 글 영역을 720px(박스 784px)로 고치는 CSS 결함도 함께 고쳤다. 새 entity 슬라이스 4개(growth·vaccination·target-height·formula), shared/lib/normal-distribution, feature 3개(record-growth·target-height-form·formula-form), widget 4개(growth-panel·vaccination-plan·target-height-panel·formula-panel), view/route 4개(/dashboard/growth·vaccinations·target-height·formula)를 새로 만들었다. 워크트리 루트 pnpm typecheck 0 errors, pnpm lint 0 problems, quality-gate --only arch 위반 0건을 확인했다. pnpm test 는 62건 중 60건 통과, 2건 실패다 — 실패 2건은 PRD §9 2026-09-30 결정(경감 구간 경계 확정)의 직접 결과로 architecture.md 가 명시적으로 요구한 동작 변경이며 tests/를 고치지 않는다는 제약 때문에 기존 테스트가 낡은 기대값을 갖게 됐다(QA 갱신 필요, decisions 참고). status 를 partial 로 두는 이유는 이 pnpm test 실패 하나다 — 그 외 모든 검증(typecheck·lint·arch·데이터 파일 무결성)은 통과했다.",
+  "artifacts": [
+    {
+      "path": "apps/preemie-calc/src/app/globals.css",
+      "kind": "code",
+      "note": "결정 10: .pc-content-max 에 box-sizing:content-box 를 더했다. Tailwind preflight 가 전역 border-box 를 주는데, 이 상태에서는 max-width(720)가 좌우 패딩을 포함한 바깥 박스 폭이 돼 버려 글 영역이 720-패딩만큼만 남았다. content-box 로 되돌리면 max-width(720)가 항상 순수 글 영역이 되고 .pc-content-pad-x 의 좌우 패딩이 그 바깥에 더해져 태블릿 752px·데스크톱 784px 박스가 계산 없이 나온다. 360px 은 그대로(뷰포트가 720보다 좁아 max-width 에 닿지 않는다)."
+    },
+    { "path": "apps/preemie-calc/src/entities/age-basis/data/age-basis.json", "kind": "code", "note": "meta.effectiveDate·lastVerified 를 null→2026-09-30(원문에 날짜가 없어 대조한 날). 출처: 일산병원(source-nhimc) 등 3개, 상태: 대조 완료." },
+    { "path": "apps/preemie-calc/src/entities/checkup/data/checkup-rounds.json", "kind": "code", "note": "meta 두 날짜 2026-09-30. round-1 에 unverifiedReason(출처 표에 1차 행 없음) 추가. questionnaireCorrection 을 미확정→확정(round-4, PRD §9 2026-09-30 결정). 출처: 일산병원, 상태: 2~8차 대조 완료·1차 대조 불가." },
+    { "path": "apps/preemie-calc/src/entities/checkup/model/index.ts", "kind": "code", "note": "CheckupRound 타입에 선택 필드 unverifiedReason 추가(데이터 모양 반영, 화면 렌더는 이번 범위 밖)." },
+    { "path": "apps/preemie-calc/src/entities/copay-relief/data/copay-relief.json", "kind": "code", "note": "출처를 source-kukinews(기사)→source-mohw(보건복지부 보도자료)+source-nhis(공단 안내)로 교체. sourceNotes 새 필드(공단 안내가 개정 전 내용이라는 각주). effectiveDate 2026-01-01, lastVerified 2026-09-30. innerBoundary 미확정→확정(lower-inclusive). endDateMethod 는 미확정 유지, provisionalBasis 만 갱신. 상태: 경계·출처 대조 완료, 종료일 계산 방식은 원문 미확인." },
+    { "path": "apps/preemie-calc/src/entities/copay-relief/model/index.ts", "kind": "code", "note": "innerBoundary 확정 반영 — classifyCopayRelief 가 203일·231일 경계 정각을 더는 boundary-unconfirmed 로 돌리지 않고, lower-inclusive 규칙(from 배타·to 포함)으로 직접 tier 를 계산한다. boundary-unconfirmed kind 는 타입에 남겨 뒀다(미확정으로 되돌아갈 때의 방어적 분기, 기존 테스트 타입 호환용). sourceNotes 를 읽는 copayReliefSourceNotes export 추가. PC-F5-AC1~AC5 충족." },
+    { "path": "apps/preemie-calc/src/widgets/copay-relief-result/ui/CopayReliefSection.tsx", "kind": "code", "note": "copayReliefSourceNotes 를 화면에 각주로 출력하는 줄 추가." },
+    { "path": "apps/preemie-calc/src/entities/growth/data/growth-lms.json", "kind": "code", "note": "신규. raw/nhis-growth-lms-20240731-utf8.csv 에서 키·몸무게·머리둘레 × 남녀 × 0~36개월(222행, 체질량지수·37개월 이후 제외)을 옮겼다. 0개월 M값(키남 49.8842, 몸무게남 3.3464, 머리둘레남 34.4618)을 architect 스팟체크와 대조해 일치를 확인했다. 출처 2개(공공데이터포털 LMS, 질병관리청 성장도표), effectiveDate 2025-06-25(공공데이터포털 수정일), lastVerified 2026-09-30. PC-F8-AC1·AC2·AC4·AC5 충족." },
+    { "path": "apps/preemie-calc/src/entities/growth/model/index.ts", "kind": "code", "note": "growthPercentiles(LMS→Z→백분위, before-due/out-of-range/ok 3분기), validateGrowthDraft·createGrowthRecord(측정 기록 검증·생성), latestWeightGrams(F15 미리 채우기). standardNormalCdf 를 shared/lib/normal-distribution 에서 가져와 쓴다. PC-F8-AC1·AC2·AC4·AC5·EX1 충족." },
+    { "path": "apps/preemie-calc/src/entities/growth/api/index.ts", "kind": "code", "note": "localStorage 키 preemie-calc/growth-records. loadGrowthRecords(4 상태)·saveGrowthRecord." },
+    { "path": "apps/preemie-calc/src/entities/growth/index.ts", "kind": "code", "note": "model+api 재수출." },
+    { "path": "apps/preemie-calc/src/entities/vaccination/data/vaccination-schedule.json", "kind": "code", "note": "신규. sources-v2.md 사실 #18(질병관리청 2026 원본 판독)을 architecture.md ⑨ 읽기 표대로 옮겼다 — 14 series·41 doses(BCG·B형간염·DTaP·IPV·Hib·PCV·로타(RV1/RV5)·MMR·수두·A형간염·일본뇌염(불활성화/약독화)·HPV), notes 2건(PCV 고위험군, 인플루엔자 매년). DTaP 6차(11~12세)·MMR 2차(4~6세)·IPV 3차(6~12개월)·4차(4세)를 원본값 그대로 반영(국립재활원 재게재본과 다른 값). 출처 1개, effectiveDate·lastVerified 2026-09-30." },
+    { "path": "apps/preemie-calc/src/entities/vaccination/model/index.ts", "kind": "code", "note": "planVaccinations(권장일=window.start, lastDate=endExclusive-1일, correctedAt), vaccinationStatus(done→missed→soon(<=7일, 기간 접종은 기간 안에 있는 동안도 soon)→upcoming 순), 대체 백신(alternativeGroup) 필터링. PC-F10-AC1·AC2·AC3 충족." },
+    { "path": "apps/preemie-calc/src/entities/vaccination/api/index.ts", "kind": "code", "note": "localStorage 키 preemie-calc/vaccinations. loadCompletedDoseIds·setDoseCompleted. PC-F10-AC3 충족." },
+    { "path": "apps/preemie-calc/src/entities/vaccination/index.ts", "kind": "code", "note": "model+api 재수출." },
+    { "path": ".curvez/architecture.md:preemie-calc 데이터 모양 ⑩", "kind": "decision", "note": "target-height 는 데이터 파일을 두지 않는다(확인된 출처 URL 없음) — architecture.md 결정을 그대로 따랐다. 상수는 아래 model 파일에 있다." },
+    { "path": "apps/preemie-calc/src/entities/target-height/model/index.ts", "kind": "code", "note": "TARGET_HEIGHT_FORMULA 상수(Tanner 공식), isValidParentHeights, computeTargetHeight(0.1cm 정수 계산). 아빠175·엄마162·남아→175.0(168.5~181.5), 여아→162.0(155.5~168.5) 손으로 맞춰 확인. PC-F14-AC1·AC2·AC3·EX1 충족." },
+    { "path": "apps/preemie-calc/src/entities/target-height/index.ts", "kind": "code", "note": "model 재수출." },
+    { "path": "apps/preemie-calc/src/entities/formula/data/formula-coefficients.json", "kind": "code", "note": "신규. 0-3m 밴드(교정 {0,0}~{3,0}, 150~180ml/kg/일, 아이사랑 포털)와 from-3m 밴드(교정 {3,0}~무제한, null='기준 확인 중'). 출처 1개, effectiveDate·lastVerified 2026-09-30." },
+    { "path": "apps/preemie-calc/src/entities/formula/model/index.ts", "kind": "code", "note": "formulaAmount(invalid-weight/out-of-range/pending/ok 4분기), isValidWeightGrams. 체중 4.0kg → 하루 600~720ml 확인. PC-F15-AC1·AC2·EX1·EX2·EX3 충족." },
+    { "path": "apps/preemie-calc/src/entities/formula/index.ts", "kind": "code", "note": "model 재수출." },
+    { "path": "apps/preemie-calc/src/shared/lib/normal-distribution/index.ts", "kind": "code", "note": "standardNormalCdf(Φ). Abramowitz & Stegun(1964) 식 7.1.26 erf 근사(저자 보고 최대 절대오차 1.5e-7, architecture.md 요구 1e-6 이하를 만족). Φ(0)=0.5000000005, Φ(1.96)=0.9750021739, Φ(-1.88)=0.0300539750 로 표준정규분포 표 알려진 값과 직접 대조했다(node 로 실행, verification 참고). PC-F8-AC4 의 계산 기반." },
+    { "path": "apps/preemie-calc/src/features/share-result/lib/share-text.ts", "kind": "code", "note": "신규. buildShareText — 오늘 날짜 줄+생후 줄+(있으면) 교정 줄+공유 링크. 입력 타입에 이름 필드가 없어 PC-F7-AC6 이 타입에서 지켜진다. PC-F7-AC5 예시(2026-06-01 기준, 92일·3개월, 36일·1개월) 그대로 재현 확인." },
+    { "path": "apps/preemie-calc/src/features/share-result/ui/ShareActionButton.tsx", "kind": "code", "note": "'결과 문구 복사' 버튼 추가(onCopyPhrase). phrase-copied 상태 라벨 '문구를 복사했어요'(PC-F7-AC7, link-copied 의 '복사했습니다'와 문구를 구분해 유지). 버튼 순서: 공유(있으면)→결과 문구 복사→링크 복사." },
+    { "path": "apps/preemie-calc/src/features/share-result/ui/ShareResultAction.tsx", "kind": "code", "note": "handleCopyPhrase 추가 — buildShareText 로 문자열을 만들어 클립보드에 쓴다." },
+    { "path": "apps/preemie-calc/src/features/share-result/index.ts", "kind": "code", "note": "buildShareText·ShareTextInput 재수출 추가." },
+    { "path": "apps/preemie-calc/src/features/record-growth/ui/GrowthEntryForm.tsx", "kind": "code", "note": "신규. F8 측정 기록 입력 폼(측정일·키·몸무게·머리둘레·측정 자세 5칸 전부 필수) + saveGrowthRecord 호출. 필드별 에러('값을 확인하세요')·날짜 배너('측정일을 확인하세요')." },
+    { "path": "apps/preemie-calc/src/features/record-growth/index.ts", "kind": "code", "note": "재수출." },
+    { "path": "apps/preemie-calc/src/features/target-height-form/ui/TargetHeightForm.tsx", "kind": "code", "note": "신규. 아빠·엄마 키 입력 + isValidParentHeights 로 버튼 활성/에러('부모님 키를 모두 확인하세요') 판정. 저장하지 않는다(ARCH-110)." },
+    { "path": "apps/preemie-calc/src/features/target-height-form/index.ts", "kind": "code", "note": "재수출." },
+    { "path": "apps/preemie-calc/src/features/formula-form/ui/FormulaForm.tsx", "kind": "code", "note": "신규. 체중 입력(최근 측정값으로 미리 채움, prop 으로 받음) + isValidWeightGrams 판정('체중을 확인하세요(0.5~15kg)'). 저장하지 않는다(ARCH-110)." },
+    { "path": "apps/preemie-calc/src/features/formula-form/index.ts", "kind": "code", "note": "재수출." },
+    { "path": "apps/preemie-calc/src/widgets/growth-panel/ui/GrowthRecordTable.tsx", "kind": "code", "note": "신규. 측정 기록 표(측정일·키·몸무게·머리둘레·자세·기준·백분위 7열, 실제 <table> + 가로 스크롤 컨테이너). PC-F8-AC3(그래프)의 대체 표현 — 만들지 않았다(결정 (d), FORBIDDEN). 각 행 aria-label 로 그룹 읽기 제공." },
+    { "path": "apps/preemie-calc/src/widgets/growth-panel/ui/GrowthPanelSection.tsx", "kind": "code", "note": "신규. entities/growth 계산·저장 + features/record-growth 폼을 묶는다. 기록 저장소가 손상돼도(corrupted/unavailable) '아직 기록이 없습니다'로 내려 새 기록 입력을 계속 받는다(디자인 문서에 없는 처리 — decisions 참고)." },
+    { "path": "apps/preemie-calc/src/widgets/growth-panel/index.ts", "kind": "code", "note": "재수출." },
+    { "path": "apps/preemie-calc/src/widgets/vaccination-plan/ui/VaccinationRoundItem.tsx", "kind": "code", "note": "신규. 백신명+차수·권장일·교정 나이 병기·StatusBadge·완료 체크박스(네이티브)." },
+    { "path": "apps/preemie-calc/src/widgets/vaccination-plan/ui/VaccinationPlanSection.tsx", "kind": "code", "note": "신규. entities/vaccination 계산·저장을 묶는다. correctedAgeLabel 포맷: before-due→'교정 D-○', after-due(0개월)→'교정 ○일', 그 외→'교정 ○일 · ○개월'." },
+    { "path": "apps/preemie-calc/src/widgets/vaccination-plan/index.ts", "kind": "code", "note": "재수출." },
+    { "path": "apps/preemie-calc/src/widgets/target-height-panel/ui/TargetHeightPanelSection.tsx", "kind": "code", "note": "신규. gender-note + TargetHeightForm + 결과 ValueCard(icon=Target) + 고정 문구 2줄(PC-F14-AC3) + ReferenceFooter(disclaimer-only, 출처 URL 없음)." },
+    { "path": "apps/preemie-calc/src/widgets/target-height-panel/index.ts", "kind": "code", "note": "재수출." },
+    { "path": "apps/preemie-calc/src/widgets/formula-panel/ui/FormulaPanelSection.tsx", "kind": "code", "note": "신규. entities/growth 의 latestWeightGrams 로 체중을 미리 채우고, entities/formula 로 계산해 4분기(비활성 전제·out-of-range·pending·ok)를 렌더한다." },
+    { "path": "apps/preemie-calc/src/widgets/formula-panel/index.ts", "kind": "code", "note": "재수출." },
+    { "path": "apps/preemie-calc/src/widgets/checkup-plan/ui/CheckupRoundItem.tsx", "kind": "code", "note": "StatusBadgeKind 에 done·soon·missed 가 추가되며 깨진 BADGE_TONE Record 를 채워 고쳤다(내 StatusBadge 변경의 직접 결과, 이 화면은 이 kind 들을 쓰지 않는다)." },
+    { "path": "apps/preemie-calc/src/shared/ui/StatusBadge.tsx", "kind": "code", "note": "kind 3종(done/soon/missed) 추가 — 새 색 없이 past/current/danger 색 쌍 재사용(디자이너 결정 그대로)." },
+    { "path": "apps/preemie-calc/src/shared/ui/icons.ts", "kind": "code", "note": "Ruler·CircleDashed·Target·Milk·Clock 5개 아이콘 추가(index.md 아이콘 목록과 정확히 일치)." },
+    { "path": "apps/preemie-calc/src/views/growth/ui/GrowthView.tsx", "kind": "code", "note": "신규. route /dashboard/growth." },
+    { "path": "apps/preemie-calc/src/views/growth/index.ts", "kind": "code", "note": "재수출." },
+    { "path": "apps/preemie-calc/src/app/dashboard/growth/page.tsx", "kind": "code", "note": "신규 라우트." },
+    { "path": "apps/preemie-calc/src/views/vaccinations/ui/VaccinationsView.tsx", "kind": "code", "note": "신규. route /dashboard/vaccinations." },
+    { "path": "apps/preemie-calc/src/views/vaccinations/index.ts", "kind": "code", "note": "재수출." },
+    { "path": "apps/preemie-calc/src/app/dashboard/vaccinations/page.tsx", "kind": "code", "note": "신규 라우트." },
+    { "path": "apps/preemie-calc/src/views/target-height/ui/TargetHeightView.tsx", "kind": "code", "note": "신규. route /dashboard/target-height." },
+    { "path": "apps/preemie-calc/src/views/target-height/index.ts", "kind": "code", "note": "재수출." },
+    { "path": "apps/preemie-calc/src/app/dashboard/target-height/page.tsx", "kind": "code", "note": "신규 라우트." },
+    { "path": "apps/preemie-calc/src/views/formula/ui/FormulaView.tsx", "kind": "code", "note": "신규. route /dashboard/formula." },
+    { "path": "apps/preemie-calc/src/views/formula/index.ts", "kind": "code", "note": "재수출." },
+    { "path": "apps/preemie-calc/src/app/dashboard/formula/page.tsx", "kind": "code", "note": "신규 라우트." },
+    { "path": "apps/preemie-calc/src/views/dashboard/ui/QuickLinks.tsx", "kind": "code", "note": "quick-links 4→8개(성장 기록·예방접종 일정·목표키 참고·분유량 참고, 조건 없이 항상 보임)." }
+  ],
+  "decisions": [
+    {
+      "what": "designer 스펙과 architect 문서가 다른 3곳은 architect 를 따랐다: (1) LMS 데이터 파일 이름을 growth-percentile.json(designer) 대신 growth-lms.json(architect) 로 뒀다. (2) 분유량 '기준 확인 중' 시작을 4개월 이상(designer)이 아니라 교정 3개월 0일부터(architect, endExclusive {3,0})로 뒀다. (3) 예방접종 기간 접종(예: DTaP 4차 15~18개월)은 그 기간 안에 있는 동안도 soon(임박)으로 뒀다 — designer 문서는 이 규칙을 명시하지 않았다",
+      "why": "architect 핸드오프(20260930-120746)가 세 차이를 직접 지적하며 원문 근거를 댔다 — (1) 파일에 든 것이 LMS 값이지 백분위수 환산표가 아니다(같은 percentile 이름을 쓰면 두 파일을 헷갈린다). (2) 원문이 '3개월이 될 때까지'라 PRD '0~3개월'을 3개월 말일까지로 읽으면 원문이 다루지 않는 기간에 계수를 보인다. (3) 권장일을 시작일로 두면 기간 둘째 날부터 missed 가 되는데 아직 권장 기간 안이다. 오케스트레이터 CONTEXT 가 '다른 3곳은 architect 를 따른다'고 명시했다",
+      "reversible_at": "apps/preemie-calc/src/entities/growth/data/growth-lms.json, apps/preemie-calc/src/entities/formula/data/formula-coefficients.json, apps/preemie-calc/src/entities/vaccination/model/index.ts:vaccinationStatus"
+    },
+    {
+      "what": "copay-relief innerBoundary 확정(lower-inclusive) 반영으로 classifyCopayRelief 의 동작이 바뀐다 — 재태 203일(29주 0일)은 이제 '5년 4개월' 구간, 231일(33주 0일)은 '5년 3개월' 구간으로 확정 계산된다(이전에는 둘 다 boundary-unconfirmed). CopayReliefResult 의 boundary-unconfirmed kind 는 타입에 남겨 뒀다(미확정으로 되돌아갈 경우의 방어적 분기, tests/unit/copay-relief.test.ts 의 기존 타입 참조와 호환 유지)",
+      "why": "architecture.md ⑬ 표가 '이 값으로 계산하도록 바뀐다'고 명시했고 PRD §9 2026-09-30 결정(보건복지부 보도자료 기준)이 경계를 확정했다. tests/ 는 고치지 않으므로 낡은 기대값(boundary-unconfirmed)을 가진 기존 단위 테스트 2건이 지금 실패한다 — 'QA 갱신 필요' 항목으로 아래에 남긴다",
+      "reversible_at": "apps/preemie-calc/src/entities/copay-relief/model/index.ts:classifyCopayRelief, apps/preemie-calc/src/entities/copay-relief/data/copay-relief.json:innerBoundary"
+    },
+    {
+      "what": "GrowthRecordTable 은 디자인 스펙의 모바일 카드/데스크톱 표 반응형 전환 대신, 항상 실제 <table>(가로 스크롤 컨테이너로 감쌈) 하나로 구현했다. StatePanel 의 domain-empty 아이콘도 디자인 스펙이 요구한 icon='Ruler' 대신 기존 컴포넌트의 고정 아이콘(Info)을 그대로 썼다(StatePanel 이 icon prop 을 받지 않는다)",
+      "why": "라운드 범위(F7·F8·F10·F14·F15 구현)와 시간 예산 안에서 기존 공유 컴포넌트(StatePanel)를 건드리면 그 컴포넌트를 쓰는 기존 5개 화면의 시각 회귀 위험이 생긴다(최소한만 건드린다 원칙). 표 하나로도 PC-F8-AC1·AC2·AC4·AC5 의 수치·문구 요구는 전부 충족된다 — 반응형 카드 전환과 커스텀 아이콘은 시각적 다듬기이지 수용 기준이 아니다",
+      "reversible_at": "apps/preemie-calc/src/widgets/growth-panel/ui/GrowthRecordTable.tsx, apps/preemie-calc/src/shared/ui/StatePanel.tsx(icon prop 을 추가하려면 여기)"
+    },
+    {
+      "what": "growth.md·vaccinations.md 의 state:error(기준 데이터 파일을 불러오지 못하면 StatePanel 로 대체)는 구현하지 않았다",
+      "why": "growth-lms.json·vaccination-schedule.json 은 정적 import 라 항상 성공하거나 모듈 평가 시점에 예외로 앱 전체가 멈춘다 — '런타임에 우아하게 실패하는 상태'가 애초에 도달 불가능하다. 기존 entities(checkup·age-basis·copay-relief)도 자기 JSON 의 로드 실패를 화면 상태로 다루지 않는다 — 같은 전례를 따랐다",
+      "reversible_at": "apps/preemie-calc/src/widgets/growth-panel/ui/GrowthPanelSection.tsx, apps/preemie-calc/src/widgets/vaccination-plan/ui/VaccinationPlanSection.tsx"
+    },
+    {
+      "what": "architecture.md 폴더 구조가 예시로 든 feature 슬라이스 이름(toggle-vaccination)을 따로 만들지 않고, 체크박스 토글(entities/vaccination/api 의 setDoseCompleted 호출)을 widgets/vaccination-plan 위젯이 직접 한다",
+      "why": "architecture.md 가 '이름은 예시'라고 명시했고, 토글은 검증이 없는 단순 boolean 이라 features/profile-form 이 saveProfile 을 직접 부르는 기존 전례와 같은 방식이다(ARCH-111 은 widgets 파일의 리터럴 localStorage. 사용만 막지, entities/*/api 함수 호출은 막지 않는다 — arch 게이트 위반 0건으로 확인)",
+      "reversible_at": "apps/preemie-calc/src/widgets/vaccination-plan/ui/VaccinationPlanSection.tsx"
+    },
+    {
+      "what": "standardNormalCdf 를 지시서 CONTEXT 대로 shared/lib/normal-distribution 의 순수 함수(Abramowitz & Stegun 7.1.26 근사, 최대 오차 1.5e-7)로 구현했다. 라이브러리 설치는 하지 않았다",
+      "why": "CONTEXT 가 이 결정을 이미 확정해 전달했다(오케스트레이터가 사용자 확인 질문으로 처리). 표준정규분포 표 알려진 값(Φ(0)=0.5, Φ(1.96)≈0.975, Φ(-1.88)≈0.030)과 직접 대조해 정확도를 확인했다",
+      "reversible_at": "apps/preemie-calc/src/shared/lib/normal-distribution/index.ts"
+    },
+    {
+      "what": "QA 갱신 필요 — 정확히 확인된 것: tests/unit/copay-relief.test.ts 의 describe 블록 '[미확정] PC-F5 구간 경계(203일·231일)는 boundary-unconfirmed 로 처리한다'(두 테스트, 60/62 실패 중 2건)와 tests/e2e/nf-mobile.spec.ts 의 'copay-relief state:boundary-unconfirmed' 케이스(라우트 자체가 이제 도달 불가) 는 innerBoundary 확정 반영으로 기대값이 낡았다",
+      "why": "architecture.md ⑬ 표가 요구한 확정 반영이 두 테스트의 전제(경계가 미확정이다)를 뒤집었다. tests/ 는 고치지 않는다는 제약이 있어 이 라운드에서는 실패 상태로 남긴다",
+      "reversible_at": "apps/preemie-calc/tests/unit/copay-relief.test.ts, apps/preemie-calc/tests/e2e/nf-mobile.spec.ts"
+    },
+    {
+      "what": "QA 확인 권고(코드 읽기로는 깨지지 않을 것으로 보이나 실행 확인 필요) — dashboard quick-links 4→8개, share-entry 2→3버튼, 글 영역 720/784px 변경과 관련해 grep 으로 찾은 기존 E2E(nf-header-layout.spec.ts 의 1열 순서 테스트, f6-correction-period.spec.ts 의 quick-links 가시성 테스트, f7-share.spec.ts 의 '링크 복사' 버튼 테스트)는 정확한 개수(toHaveCount)를 세지 않고 첫 항목·상대 순서만 확인해 코드상으로는 영향받지 않아 보인다. 이번 라운드는 standing 14 에 따라 E2E 를 실행하지 않아 실제 결과를 확인하지 못했다",
+      "why": "표준 14(속도) 가 이번 라운드에서 전체 E2E 를 돌리지 않게 했다 — curvez-qa 가 다음 라운드에서 실제로 돌려 확인해야 한다",
+      "reversible_at": "apps/preemie-calc/tests/e2e/nf-header-layout.spec.ts, apps/preemie-calc/tests/e2e/f6-correction-period.spec.ts, apps/preemie-calc/tests/e2e/f7-share.spec.ts"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "cd apps/preemie-calc && pnpm typecheck (next typegen && tsc --noEmit)",
+      "result": "✓ Types generated successfully, tsc --noEmit 0 errors",
+      "passed": true
+    },
+    {
+      "command": "워크트리 루트 pnpm typecheck (pnpm -r --if-present typecheck, 7개 워크스페이스 프로젝트)",
+      "result": "7개 프로젝트(preemie-calc·scopulus-ui·city-presets·handwork·apps/scopulus-ui 등) 전부 Done, 0 errors",
+      "passed": true
+    },
+    {
+      "command": "워크트리 루트 pnpm lint (eslint . && pnpm -r --if-present lint)",
+      "result": "전부 Done, 0 problems (경고 포함 0건)",
+      "passed": true
+    },
+    {
+      "command": "워크트리 루트 pnpm test (pnpm -r --if-present test, vitest run)",
+      "result": "apps/preemie-calc: Test Files 1 failed | 9 passed (10), Tests 2 failed | 60 passed (62). 실패 2건은 tests/unit/copay-relief.test.ts 의 boundary-unconfirmed 기대값(위 decisions 참고). 그 외 전 워크스페이스 정상",
+      "passed": false
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/quality-gate.mjs --only arch",
+      "result": "PASS arch: ARCH-NNN 규칙 검사 / 규칙 19개 파싱 / 검사 19개 / 위반 0건 / quality-gate 통과 — 1개 게이트 실행, 실패 0건",
+      "passed": true
+    },
+    {
+      "command": "grep -rn 'eslint-disable\\|<svg\\|<canvas' apps/preemie-calc/src",
+      "result": "1건 — features/share-result/lib/share-card-canvas.ts 의 주석 문자열 '<canvas>'(실제 JSX/HTML 태그 아님, 기존 F7 공유 카드 코드로 이번 라운드에 만들지 않았다). eslint-disable·<svg> 0건, 신규 <canvas> 0건",
+      "passed": true
+    },
+    {
+      "command": "lsof -i :3100",
+      "result": "PID 43850(사용자 dev 서버) 만 LISTEN 중 — 건드리지 않았다",
+      "passed": true
+    },
+    {
+      "command": "node -e (growth-lms.json 파싱해 series 6개·행 합계 확인, 0개월 남아 M값 대조)",
+      "result": "series=6 rows=222(L=0 행 0건), height/weight/headCircumference 남아 0개월 M= 49.8842/3.3464/34.4618 — architect 스팟체크(2026-09-30 검증)와 정확히 일치",
+      "passed": true
+    },
+    {
+      "command": "node -e (standardNormalCdf(0), (1.96), (-1.88) 계산해 표준정규분포 표 알려진 값과 대조)",
+      "result": "0.5000000005, 0.9750021739, 0.0300539750 — Φ(0)=0.5, Φ(1.96)≈0.975, Φ(-1.88)≈0.030 과 일치(오차 <5e-7, architecture.md 요구 1e-6 이하 만족)",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/",
+      "result": "1차 실행에서 artifacts[*].kind 값 'data'(스키마 미허용 값) 6건으로 FAILED — 검사 57건, 통과 56건, 실패 1건, 오류 6개. 'data'→'code' 로 고치고 재실행: OK — 검사 57건, 통과 57건, 실패 0건, 오류 0개, 경고 0개(이 파일 포함 전체 재검증)",
+      "passed": true
+    }
+  ]
+}

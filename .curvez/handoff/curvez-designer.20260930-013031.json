@@ -1,0 +1,76 @@
+{
+  "from": "curvez-designer",
+  "to": ["curvez-orchestrator"],
+  "status": "done",
+  "summary": "curvez-nextjs(curvez-nextjs.20260930-012225.json)가 캡처에서 찾은 시각 결함 5건을 코드에서 먼저 고쳤다. 이 라운드는 그 5건을 .curvez/design/preemie-calc 스펙에 그대로 반영해 문서와 코드를 다시 맞췄다(화면 구조·컴포넌트 prop 계약·요구 ID 매핑은 바꾸지 않았다). (1) ChildSwitcherTabs.md states(solo 행)에서 '+ 아이 추가' 버튼의 leading UserRoundPlus 아이콘 규정을 뺐다(라벨 '+' 와 겹쳐 더하기가 두 번 보였다). index.md 컴포넌트 목록·아이콘 목록에서도 UserRoundPlus 를 뺐다(다른 어디에도 쓰이지 않는다). (2) tokens.md 에 새 '## 줄바꿈 규칙 (전역)' 절을 더해 앱 전체 word-break:keep-all(body, 어절 단위 줄바꿈)을 명문화했다 — keep-all 이 숫자-한글 경계를 못 막는다는 한계와, 그 경우 컴포넌트가 조각 단위 nowrap 으로 보완해야 한다는 연결 규칙도 함께 적었다. (3) PageHeader.md '## 레이아웃'의 말줄임(단일 줄 ellipsis) 규칙을 지우고, 가운데 셀 justify-self 를 center→stretch 로, 제목을 최대 3줄 가운데 정렬 줄바꿈(-webkit-line-clamp:3)으로 바꿨다 — 360px correction-period('교정연령 적용 종료 안내')가 keep-all 뒤 2줄에도 못 들어가 잘리던 것을 실측 근거로 반영했다. 코드가 이미 guide 화면에서만 h2 를 쓰고 있었는데 스펙에 없던 headingLevel(1|2) prop 도 props 표·a11y:role 에 추가했고, guide.md 의 header/heading 리전에 headingLevel=2·h1 표시를 더했다. (4) AgeSummaryCard.md states(default 행)에 값 문구(숫자+단위, 날짜)를 공백 조각 단위 white-space:nowrap 으로 처리한다는 규칙을 추가했다(360px 2열 유지 규칙은 그대로 뒀다). (5) Button.md states(default 행)에 라벨은 항상 한 줄(white-space:nowrap, flex-shrink:0)이라는 규칙을 추가했고, ChildSwitcherTabs.md·dashboard.md 의 >=1280 responsive 절에 '+ 아이 추가' 행이 dashboard content 컨테이너와 같은 왼쪽 선에 오도록 좌우 여백을 맞추고, content 컨테이너 상단 패딩을 --space-8(64px)에서 --space-5(24px)로 줄인다는 값을 명문화했다. index.md 끝에 '## 2026-09-30 6차 라운드' 요약과 'decisions(6차 라운드분)' 표(5행, 5곳 1:1 대응)를 더했다. dashboard-1280.png·dashboard-correction-period-360.png·dashboard-2children-360.png 를 Read 로 직접 열어 스펙 문구가 실제 캡처와 일치하는지 육안으로 확인했다.",
+  "artifacts": [
+    { "path": ".curvez/design/preemie-calc/components/ChildSwitcherTabs.md", "kind": "doc", "note": "solo 상태 행에서 UserRoundPlus leading 아이콘 규정 제거. >=1280 responsive 절에 dashboard content 컨테이너와 같은 좌우 여백·상단 패딩 값 추가" },
+    { "path": ".curvez/design/preemie-calc/components/PageHeader.md", "kind": "doc", "note": "가운데 셀 justify-self:center→stretch. 말줄임 규칙을 3줄 가운데 정렬 줄바꿈(-webkit-line-clamp:3)으로 교체. headingLevel prop 추가(props 표, a11y:role)" },
+    { "path": ".curvez/design/preemie-calc/components/AgeSummaryCard.md", "kind": "doc", "note": "default 상태 행에 값 조각 단위 white-space:nowrap 규칙 추가(전역 keep-all 이 못 막는 숫자-한글 경계 보완)" },
+    { "path": ".curvez/design/preemie-calc/components/Button.md", "kind": "doc", "note": "default 상태 행에 라벨 항상 한 줄(nowrap, flex-shrink:0) 규칙 추가" },
+    { "path": ".curvez/design/preemie-calc/tokens.md", "kind": "doc", "note": "새 '## 줄바꿈 규칙 (전역)' 절 추가(글자 크기 절과 아이콘 절 사이). decisions 표에 6차 라운드 행 1개 추가" },
+    { "path": ".curvez/design/preemie-calc/index.md", "kind": "doc", "note": "컴포넌트 목록의 ChildSwitcherTabs 행·아이콘 목록의 UserRoundPlus 행 갱신/삭제. 끝에 '## 2026-09-30 6차 라운드' 요약 + 'decisions(6차 라운드분)' 표(5행) 추가" },
+    { "path": ".curvez/design/preemie-calc/screens/dashboard.md", "kind": "doc", "note": ">=1280px responsive 절에 child-switcher 좌측 정렬·content 상단 패딩 --space-5 값 추가" },
+    { "path": ".curvez/design/preemie-calc/screens/guide.md", "kind": "doc", "note": "header 리전에 headingLevel=2 명시, heading 리전에 h1 표시 추가" }
+  ],
+  "decisions": [
+    {
+      "what": "5곳 모두 '이미 코드에 반영된 값'을 스펙으로 그대로 옮겼다 — 코드를 스펙에 맞추는 대신 스펙을 코드에 맞췄다",
+      "why": "curvez-nextjs 가 오케스트레이터 지시로 캡처에서 결함을 확인하고 이미 고친 상태였다(핸드오프 done, typecheck/lint/test/build/e2e 전부 통과). 이 라운드의 목표 자체가 '구현이 스펙과 달라진 5곳을 스펙에 반영'이라 방향을 뒤집을 근거가 없었다",
+      "reversible_at": "위 artifacts 8개 파일"
+    },
+    {
+      "what": "PageHeader 의 headingLevel prop 을 이번에 처음 스펙에 문서화했다(코드에는 이미 있었다)",
+      "why": "5곳 중 3번(PageHeader 제목 3줄 규칙)을 반영하며 guide.md·PageHeader.tsx 를 같이 읽다가, 코드가 headingLevel(1|2) prop 으로 guide 화면만 h2 를 쓰고 있는데 PageHeader.md·guide.md 어디에도 이 prop 이 없는 것을 발견했다. GOAL 이 '가이드 화면은 헤더 제목이 h2, 조합 제목이 h1' 이라고 명시적으로 요구해 이번 5곳 중 3번 항목의 일부로 보고 반영했다(별도 6번째 항목으로 세지 않았다)",
+      "reversible_at": ".curvez/design/preemie-calc/components/PageHeader.md:## props, .curvez/design/preemie-calc/screens/guide.md:## layout"
+    },
+    {
+      "what": "5곳 외에 스펙-구현 불일치를 하나 더 발견했다 — 고치지 않고 여기 남긴다: ChildSwitcherTabs.md 의 props 표는 onAddChild:()=>void 를 필수 prop 으로 정의하지만, 실제 구현(ChildSwitcherTabs.tsx)은 이 prop 을 받지 않고 컴포넌트 내부에서 useRouter().push('/?new=1') 를 직접 호출한다",
+      "why": "지시서 CONTEXT 가 '스펙이 구현과 다른 부분이 더 보이면 고치지 말고 핸드오프 decisions 에 목록으로' 라고 명시했다. 이 항목은 GOAL 의 5곳(1~5)에 포함되지 않아 이번 라운드에서 스펙·코드 어느 쪽도 고치지 않았다 — 다음에 ChildSwitcherTabs 를 다룰 때 prop 계약을 실제 구현(내부 useRouter)에 맞춰 onAddChild 를 지우거나, 반대로 구현에 onAddChild prop 을 추가해 라우팅 책임을 분리할지 정해야 한다",
+      "reversible_at": ".curvez/design/preemie-calc/components/ChildSwitcherTabs.md:## props, apps/preemie-calc/src/features/switch-child/ui/ChildSwitcherTabs.tsx(읽기 전용 확인, 수정 안 함)"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "워크트리 루트에서: DESIGN=.curvez/design/preemie-calc; for f in \"$DESIGN/index.md\" \"$DESIGN/tokens.md\"; do test -f \"$f\" || echo MISSING-DOC $f; done; find \"$DESIGN/screens\" -name '*.md' | wc -l; find \"$DESIGN/components\" -name '*.md' | wc -l",
+      "result": "MISSING-DOC 출력 없음. screens=9, components=23(파일 목록 변화 없음, 기존 9개 화면·23개 컴포넌트 문서만 수정)",
+      "passed": true
+    },
+    {
+      "command": "화면 9종 필수 키(state:default/loading/empty/error, focus-order) 누락 검사(for-grep 루프, 지시서 VERIFY 2번 형식)",
+      "result": "screen-missing=0",
+      "passed": true
+    },
+    {
+      "command": "컴포넌트 23종 필수 키(a11y:label/focus/contrast/target/role, ## props/states/a11y/responsive) 누락 검사",
+      "result": "component-missing=0",
+      "passed": true
+    },
+    {
+      "command": "awk 로 tokens.md 토큰 표에서 라이트/다크 반쪽만 채워진 행 검출",
+      "result": "token-half-defined=1 로 나오지만 실제 확인 결과 거짓 양성이다 — grep -n '^| *--' tokens.md 로 매칭 줄을 특정하니 line 209(`|---|---|`, 2열)가 걸렸는데, 이 줄은 '## 대비 검증' 아래 '실측값' 표(열 이름 '쌍'/'값', 토큰 표가 아님)의 구분선이다. awk 스크립트가 모든 '|--...' 구분선을 토큰 행으로 오인하는 기존 스크립트의 한계이고, 이 표는 이번 라운드에서 손대지 않았다(원래부터 있던 내용, 20쌍 실측값 표). 실제 토큰 정의(## 색/간격/레이아웃/글자 크기/아이콘/그라디언트/반경/elevation)는 전부 라이트 값 한 칸(다크 범위 밖, tokens.md 머리말 decisions)으로 채워져 있다",
+      "passed": true
+    },
+    {
+      "command": "node -e (tokens.md '## 대비 검증' fg/bg/mode/min 줄 파싱해 WCAG 대비 실측)",
+      "result": "pairs=20 light=20 dark=0 contrast-fail=0(이번 라운드에서 색 토큰을 바꾸지 않아 이전 라운드 실측값 그대로 통과)",
+      "passed": true
+    },
+    {
+      "command": "find .curvez/design -name '*.tsx' -o -name '*.ts' -o -name '*.css'",
+      "result": "impl-files=0",
+      "passed": true
+    },
+    {
+      "command": "Read 로 .curvez/qa/preemie-calc/screens/after/dashboard-1280.png · dashboard-correction-period-360.png · dashboard-2children-360.png 육안 확인",
+      "result": "dashboard-1280: '+ 아이 추가' 버튼에 leading 아이콘 없이 '+' 하나만 보이고, 버튼 왼쪽 끝(x≈112)이 카드 행 왼쪽 끝과 같은 세로선에 있다(스펙 5번 일치). correction-period-360: 헤더 제목 '교정연령/적용 종료/안내' 3줄 가운데 정렬, 잘림 없음(스펙 3번 일치). dashboard-2children-360: 헤더 제목 2줄 어절 단위 줄바꿈(스펙 2번 일치), '생후 92일 · /3개월' 처럼 값이 조각 경계에서만 줄바꿈되고 2열 유지(스펙 4번 일치)",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/",
+      "result": "OK 핸드오프 검증 — 검사 42건, 통과 42건, 실패 0건, 오류 0개, 경고 0개",
+      "passed": true
+    }
+  ]
+}

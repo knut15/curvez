@@ -1,0 +1,107 @@
+{
+  "from": "curvez-designer",
+  "to": [
+    "curvez-orchestrator",
+    "curvez-nextjs",
+    "curvez-qa"
+  ],
+  "status": "done",
+  "summary": "PC-F8-AC3(기록이 2개 이상이면 측정일 순서로 추이 그래프)의 그래프 스펙을 더했다 — recharts(^3.10.1, 설치됨)로 구현할 수 있는 형태다. 새 컴포넌트 `GrowthTrendChart`(지표당 인스턴스 하나, 키·몸무게·머리둘레를 한 그래프에 섞지 않고 growth 화면에 3개를 세로로 쌓는다) 하나를 추가했다. x축=측정일(SPEC 원문 '측정일 순서로' 그대로), y축=지표 단위(cm/kg), 백분위 기준선(3·50·97)을 실측값 선과 함께 그린다 — LMS(L,M,S)에서 역산한 값만 쓴다. 기록이 1개 이하일 때(1개=안내 문구, 0개=화면 레벨 StatePanel 이 이미 설명해 이 영역은 그리지 않음)와 예정일 전 측정(percentileHidden, 백분위 선에 구간 끊김)을 모두 명시했다. 색은 기존 토큰 3개(accent-primary=실측값, text-muted=50백분위, accent-danger=3·97백분위)를 재사용했고, 카드 배경 위 실측값 선 조합 한 쌍만 새로 검증해(5.36, 기존 'CTA 라벨/primary' 쌍과 전경·배경만 바뀐 같은 값) tokens.md 대비 검증 표를 20쌍→21쌍으로 늘렸다. 점마다 색+모양(원/삼각형/빈 사각형)+캡션 텍스트 세 겹으로 의미를 구분해 색만으로 전달하지 않는다. 그래프 SVG 전체는 aria-hidden 처리하고 `GrowthRecordTable`(이미 행 단위로 모든 값을 설명)을 가리키는 한 줄짜리 스크린리더 안내문을 둬, 같은 데이터를 두 번 다른 말로 설명하지 않게 했다. 애니메이션은 모든 Line 에서 isAnimationActive=false 로 껐다. screens/growth.md 의 region 순서를 entry-form→record-list→disclaimer 에서 entry-form→trend(신규)→record-list→disclaimer 로 바꾸고, loading/empty/error 상태·focus-order 에 trend 영역을 포함시켰다. index.md 커버리지 표의 PC-F8-AC3 을 '보류'에서 '설계됨(9차 라운드)'으로 갱신했다. 구현에 필요한 새 순수 함수(LMS 역산용 inverseStandardNormalCdf 등)가 architecture.md ⑧에 아직 없다는 점은 GrowthTrendChart.md '## 데이터 전제'와 index.md 9차 decisions 에 명시했다 — architecture.md 자체는 읽기만 하고 고치지 않았다.",
+  "artifacts": [
+    {
+      "path": ".curvez/design/preemie-calc/components/GrowthTrendChart.md",
+      "kind": "doc",
+      "note": "신규. props(measure, points: GrowthTrendPoint[])·states(ready/insufficient-data/empty/loading/error/disabled)·recharts 매핑(LineChart/Line×4/XAxis/YAxis/CartesianGrid/Legend/Tooltip/ResponsiveContainer)·점 모양 3종·툴팁 포맷·a11y 5항목·360/768/1280 반응형 크기·decisions 5건을 전부 담았다. '## 데이터 전제' 절에 LMS 역산(p3/p50/p97) 계산식과 architecture.md 에 아직 없는 새 함수 필요성을 적었다"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/screens/growth.md",
+      "kind": "doc",
+      "note": "region: trend 신규 추가(priority 2, entry-form 과 record-list 사이). state:default/loading/empty/error 네 곳 모두 trend 영역의 동작을 반영. responsive 세 구간(360/768/1280)에 그래프 높이(200/220/240px) 명시. focus-order 에 trend(aria-hidden, 탭 순서 제외) 반영"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/GrowthRecordTable.md",
+      "kind": "doc",
+      "note": "purpose 첫 문단만 수정 — '추이 그래프의 대체 표현' → 'GrowthTrendChart 의 짝(그래프의 스크린리더 대체 표현이기도 하다)'. 8차 라운드 문구가 더는 사실이 아니라서 바로잡았다. props/states/a11y/responsive 는 손대지 않았다"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/tokens.md",
+      "kind": "doc",
+      "note": "대비 검증 쌍 1개 추가(fg=#0E7490 bg=#FFFFFF, 20쌍→21쌍, '생후 선/카드 배경(GrowthTrendChart, 9차)'=5.36). decisions 표에 선 색 재사용 근거 1행 추가"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/index.md",
+      "kind": "doc",
+      "note": "9차 라운드 섹션 + decisions(9차 라운드분) 신규 삽입(8차 라운드 섹션 바로 위). 컴포넌트 목록에 GrowthTrendChart 행 추가(27개로 갱신). 커버리지 표 PC-F8-AC3 '보류'→'설계됨'. 미결 질문 문단 갱신(F8-AC3 해소, 새 함수 필요성만 남김)"
+    }
+  ],
+  "decisions": [
+    {
+      "what": "지표 3개(키·몸무게·머리둘레)를 한 그래프에 섞지 않고 GrowthTrendChart 인스턴스 3개(세로로 쌓는 small multiples)로 설계한다. 지표 전환 탭은 쓰지 않는다",
+      "why": "y축 단위가 cm(키·머리둘레)와 kg(몸무게)로 갈려 한 축에 섞을 수 없다(지시서 CONTEXT 가 이미 금지). 탭 전환은 새 상호작용 상태를 추가하고 세 지표 동시 비교를 어렵게 한다 — growth 화면이 이미 1열 세로 스크롤이라 쌓아도 레이아웃 변경이 없다",
+      "reversible_at": ".curvez/design/preemie-calc/components/GrowthTrendChart.md:## decisions"
+    },
+    {
+      "what": "x축을 측정일(날짜)로 하고 나이(개월)로 하지 않는다",
+      "why": "PC-F8-AC3 SPEC 원문이 '측정일 순서로'다. 나이는 기록마다 기준(교정/생후)이 바뀔 수 있어 연속된 축으로 쓰면 왜곡된다. 측정일은 percentileHidden(예정일 이전) 기록에도 항상 있어 축이 끊기지 않는다",
+      "reversible_at": ".curvez/design/preemie-calc/components/GrowthTrendChart.md:## 레이아웃"
+    },
+    {
+      "what": "백분위 기준선(3·50·97)을 LMS 역산 값으로 함께 그린다",
+      "why": "성장 백분위 앱에서 실측값만 보여주면 '또래 대비 어디쯤인지'를 그래프가 답하지 못한다. 지시서가 '그린다면 LMS 데이터에서 계산할 수 있는 것만'이라고 허용 범위를 줬다",
+      "reversible_at": ".curvez/design/preemie-calc/components/GrowthTrendChart.md:## 데이터 전제"
+    },
+    {
+      "what": "백분위 역산에 필요한 inverseStandardNormalCdf(가칭)가 architecture.md ⑧에 아직 없다는 사실을 설계 문서에만 남기고 architecture.md 는 고치지 않는다",
+      "why": "지시서 SCOPE 가 architecture.md 를 읽기 전용으로 뒀다. 이 함수는 기존 entities/growth/model·shared/lib/normal-distribution 구조를 바꾸지 않고 함수 하나를 더하는 것이라 레이어 경계와 충돌하지 않는다",
+      "reversible_at": ".curvez/architecture.md:#### ⑧ 성장 기록과 백분위(다음 아키텍처 라운드에서 공식화할지는 오케스트레이터 판단)"
+    },
+    {
+      "what": "그래프 SVG 전체를 aria-hidden 처리하고, 점마다 개별 aria-label 을 넣는 완전 접근형 차트로 만들지 않는다",
+      "why": "GrowthRecordTable 이 이미 같은 데이터를 행 단위로 완전히 설명한다. 그래프까지 똑같이 설명하면 같은 정보가 두 번 다른 말로 나와 오히려 혼란이다 — 최소한의 코드 원칙과도 맞는다",
+      "reversible_at": ".curvez/design/preemie-calc/components/GrowthTrendChart.md:## a11y"
+    },
+    {
+      "what": "screens/growth.md 의 region 순서를 entry-form→record-list→disclaimer 에서 entry-form→trend→record-list→disclaimer 로 바꾼다(그래프를 표보다 앞에 둔다)",
+      "why": "추이(큰 그림)를 먼저 보여주고 정확한 값(표)은 그 다음에 확인하는 흐름이 '측정 기록을 남기고 바로 결과를 확인한다'는 화면 목표에 맞다",
+      "reversible_at": ".curvez/design/preemie-calc/screens/growth.md:## layout"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "export DESIGN=.curvez/design/preemie-calc; MISSING-DOC 검사(index.md·tokens.md 존재), screens/components 개수 집계",
+      "result": "MISSING-DOC 0줄. screens=13, components=27",
+      "passed": true
+    },
+    {
+      "command": "화면 스펙 5개 키(state:default/loading/empty/error, focus-order) 누락 검사, 13개 화면 전부",
+      "result": "screen-missing=0 (growth.md 포함 13개 전부 5개 키 보유)",
+      "passed": true
+    },
+    {
+      "command": "컴포넌트 스펙 9개 키(a11y:label/focus/contrast/target/role, ## props/states/a11y/responsive) 누락 검사, 27개 컴포넌트 전부",
+      "result": "component-missing=0 (GrowthTrendChart.md 포함 27개 전부 9개 키 보유)",
+      "passed": true
+    },
+    {
+      "command": "awk 로 tokens.md 토큰 표 라이트/다크 반쪽 정의 검사",
+      "result": "token-half-defined=0",
+      "passed": true
+    },
+    {
+      "command": "node 로 tokens.md `## 대비 검증` 블록의 fg/bg 쌍 WCAG 상대 명도 대비 실측(공식: (max(L1,L2)+0.05)/(min(L1,L2)+0.05))",
+      "result": "pairs=21 light=21 dark=0 contrast-fail=0 (신규 쌍 fg=#0E7490 bg=#FFFFFF 포함 21쌍 전부 통과, 최저 4.81, 최고 15.17)",
+      "passed": true
+    },
+    {
+      "command": "find .curvez/design/preemie-calc -name '*.tsx' -o -name '*.ts' -o -name '*.css' 로 구현 파일 침범 검사",
+      "result": "impl-files=0",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/",
+      "result": "OK 핸드오프 검증 — 검사 74건, 통과 74건, 실패 0건, 오류 0개, 경고 0개",
+      "passed": true
+    }
+  ]
+}

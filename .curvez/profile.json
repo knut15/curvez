@@ -3,7 +3,9 @@
   "packageManager": "pnpm",
   "architecture": "ddd",
   "paths": {
-    "web": "apps/handwork"
+    "web": "apps/handwork",
+    "preemieCalc": "apps/preemie-calc",
+    "preemieCalcTests": "apps/preemie-calc/tests"
   },
   "git": {
     "baseBranch": "main",

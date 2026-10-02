@@ -1,0 +1,138 @@
+{
+  "from": "curvez-nextjs",
+  "to": ["curvez-orchestrator", "curvez-qa", "curvez-reviewer"],
+  "status": "done",
+  "summary": "apps/preemie-calc 9개 화면(input, input-weeks, dashboard, age-basis, checkups, copay-relief, correction-period, share, guide) 의 본문 최대 폭을 --layout-content-max(720px) 하나로 통일하고, 대시보드를 main+sidebar 2열에서 1열(age-summary → quick-links → share-entry → disclaimer)로 바꿨다. tokens.md 7차 라운드 결정대로 폐기된 6개 폭 토큰(--layout-content-max-mobile/-tablet/-desktop-narrow, --layout-container-max-desktop, --layout-dashboard-sidebar-width, --layout-column-gap-desktop)을 globals.css:root 에서 지우고 --layout-content-max(720px) 하나만 남겼다. 좌우 패딩은 새 공용 유틸리티 클래스 두 개(.pc-content-max=max-width+margin auto, .pc-content-pad-x=좌우 패딩, <1280:--space-4/>=1280:--space-6)로 뽑아 9개 화면의 헤더 내부(.pc-header-grid)·본문 컨테이너(.pc-dashboard-content·.pc-content-narrow·.pc-content-guide·input/share 폼 컨테이너)·child-switcher 행이 전부 같은 두 클래스를 조합해 쓰게 했다 — 화면마다 같은 값을 따로 계산하지 않고 CSS 구조 자체로 좌우 기준선이 강제로 같아지게 했다(수치를 맞추는 게 아니라 같은 클래스를 쓰므로 구조적으로 같다). PageHeader.tsx 의 variant=dashboard 전용 --layout-container-max-desktop(1120px) 예외(.pc-header-inner--dashboard)도 없앴다 — 이제 dashboard 헤더도 나머지 8개 화면과 같은 720px 을 쓴다. DashboardView.tsx 에서 pc-dashboard-main/pc-dashboard-sidebar 2열 wrapper div 를 없애고 AgeSummaryCard·QuickLinks·ShareResultAction·ReferenceFooter 를 .pc-dashboard-content 안에 평평하게(flat) 나열해 CONTEXT 가 지정한 순서를 그대로 반영했다. 부수적으로 발견한 두 가지 baseline 불일치도 이번 폭 통일 범위 안에서 고쳤다: (1) ShareView.tsx 의 본문 컨테이너가 720px 이 아니라 인라인 maxWidth:420 을 쓰고 있었고 ReferenceFooter 가 그 컨테이너 밖(패딩 없는 위치)에 있었다 — 컨테이너를 .pc-content-max .pc-content-pad-x 로 바꾸고 ReferenceFooter 를 안으로 옮겨 스펙(screens/share.md region content > disclaimer)과 같은 트리로 맞췄다. (2) GuideView.tsx 도 같은 이유로 ReferenceFooter 를 .pc-content-guide 컨테이너 안으로 옮겼다. ValueCard(480/560px)·다이얼로그(400px)·버튼(320px) 등 '본문 안 요소 폭'은 CONTEXT 지시대로 그대로 뒀다(globals.css 의 .pc-value-card 등 미변경). 새 기능·eslint-disable·의존성 추가는 없다.",
+  "artifacts": [
+    {
+      "path": "apps/preemie-calc/src/app/globals.css",
+      "kind": "code",
+      "note": "폐기된 6개 --layout-content-max-* 계열 변수를 --layout-content-max(720px) 하나로 교체. 새 유틸리티 클래스 .pc-content-max(max-width+margin auto)·.pc-content-pad-x(좌우 패딩, 1280 분기) 추가. .pc-header-grid 에서 자체 좌우 패딩 제거(유틸리티로 이관). .pc-header-inner/.pc-header-inner--dashboard 삭제. .pc-dashboard-content 를 flex 1열(위/아래 패딩만 남김, max-width·좌우 패딩은 유틸리티로 이관)로 변경, .pc-dashboard-main/.pc-dashboard-sidebar 규칙 삭제(사용처 없어짐). .pc-child-switcher-row·.pc-content-narrow·.pc-content-guide 를 위/아래 패딩만 남기도록 축소"
+    },
+    {
+      "path": "apps/preemie-calc/src/shared/ui/PageHeader.tsx",
+      "kind": "code",
+      "note": "className 을 'pc-header-grid pc-header-inner(--dashboard)' 에서 'pc-header-grid pc-content-max pc-content-pad-x' 로 교체. variant=dashboard 전용 분기(isDashboard) 삭제 — 모든 variant 가 같은 720px 을 쓴다"
+    },
+    {
+      "path": "apps/preemie-calc/src/views/dashboard/ui/DashboardView.tsx",
+      "kind": "code",
+      "note": "pc-dashboard-main/pc-dashboard-sidebar 2열 wrapper 를 없애고 AgeSummaryCard→QuickLinks→ShareResultAction→ReferenceFooter 를 .pc-dashboard-content.pc-content-max.pc-content-pad-x 안에 1열로 나열. corrupted/unavailable 에러 상태의 StatePanel 래퍼도 같은 유틸리티 클래스로 통일(기존엔 폭 제약이 아예 없어 화면 전체 폭을 썼다)"
+    },
+    {
+      "path": "apps/preemie-calc/src/views/input/ui/InputView.tsx",
+      "kind": "code",
+      "note": "form-card 바깥 컨테이너의 인라인 maxWidth('var(--layout-content-max-mobile)', 400px 상당)를 .pc-content-max.pc-content-pad-x 로 교체, 위/아래 패딩(--space-6)은 인라인으로 유지"
+    },
+    {
+      "path": "apps/preemie-calc/src/views/share/ui/ShareView.tsx",
+      "kind": "code",
+      "note": "본문 컨테이너의 인라인 maxWidth:420 을 .pc-content-max.pc-content-pad-x(720px)로 교체. ReferenceFooter 를 그 컨테이너 밖(패딩 없음)에서 안으로 옮겨 스펙의 content>disclaimer 트리와 좌우 기준선을 맞췄다"
+    },
+    {
+      "path": "apps/preemie-calc/src/views/guide/ui/GuideView.tsx",
+      "kind": "code",
+      "note": "className 에 pc-content-max.pc-content-pad-x 추가. ReferenceFooter 를 .pc-content-guide 컨테이너 밖에서 안으로 옮겨 좌우 기준선을 맞췄다"
+    },
+    {
+      "path": "apps/preemie-calc/src/features/switch-child/ui/ChildSwitcherTabs.tsx",
+      "kind": "code",
+      "note": "className 에 pc-content-max.pc-content-pad-x 추가(dashboard content 와 같은 좌우 기준선)"
+    },
+    {
+      "path": "apps/preemie-calc/src/widgets/dashboard-subpage/ui/DashboardSubpageShell.tsx",
+      "kind": "code",
+      "note": "children 을 감싸는 .pc-content-narrow 에 pc-content-max.pc-content-pad-x 추가. corrupted/unavailable 에러 상태 StatePanel 래퍼도 같은 유틸리티 클래스로 통일"
+    }
+  ],
+  "decisions": [
+    {
+      "what": "9개 화면·헤더·child-switcher·에러 상태 래퍼가 폭·좌우 패딩을 각자 계산하지 않고 공용 유틸리티 클래스 두 개(.pc-content-max, .pc-content-pad-x)를 조합해 쓰게 했다(화면별 클래스는 위/아래 패딩만 남긴다)",
+      "why": "지시서 GOAL '화면을 옮겨도 콘텐츠 폭과 좌우 기준선이 바뀌지 않게' 를 수치 일치가 아니라 구조적 동일성으로 만족시킨다 — 값이 아니라 클래스가 같으므로 다음에 값이 또 바뀌어도(예: 720→다른 값) 한 곳만 고치면 9곳이 함께 바뀐다. tokens.md 의 '--layout-content-max 하나' 결정과 '좌우 패딩도 폭 구간별로 값 하나만 쓴다' 결정을 그대로 코드 구조에 반영했다",
+      "reversible_at": "apps/preemie-calc/src/app/globals.css:.pc-content-max, .pc-content-pad-x"
+    },
+    {
+      "what": "ShareView.tsx·GuideView.tsx 의 ReferenceFooter 를 폭 제약 컨테이너 밖에서 안으로 옮겼다(이번 라운드 지시서에 명시되진 않았으나 폭 통일 작업 중 발견)",
+      "why": "screens/share.md·screens/guide.md 의 layout 트리는 disclaimer 를 region content 의 하위(card-preview/heading 등과 형제)로 정의한다. 기존 코드는 ReferenceFooter 를 컨테이너 밖에 둬 좌우 패딩이 전혀 없었다 — 720px 통일 이후에는 이 차이가 더 두드러져(다른 8개 화면은 disclaimer 도 같은 기준선을 쓰는데 이 둘만 아니었다) GOAL의 '좌우 기준선이 바뀌지 않게' 를 어겼다. 스펙 트리에 맞춰 컨테이너 안으로 옮기는 것이 지시서 범위(폭 통일) 안의 최소 수정이라고 판단했다",
+      "reversible_at": "apps/preemie-calc/src/views/share/ui/ShareView.tsx, apps/preemie-calc/src/views/guide/ui/GuideView.tsx"
+    },
+    {
+      "what": "QA 갱신 필요 — tests/e2e/nf-header-layout.spec.ts 의 두 테스트(226행 '1280px 에서 대시보드는 main·sidebar 2열이다', 247행 '768px 에서 대시보드는 main·sidebar 가 같은 x(1열)로 쌓인다')가 .pc-dashboard-main/.pc-dashboard-sidebar locator 를 찾지 못해 30초 타임아웃으로 실패한다",
+      "why": "이 두 테스트는 이전 라운드(5차, 대시보드 main+sidebar 2열 리디자인)의 레이아웃 전제를 검사한다. 이번 7차 라운드는 그 2열 구조 자체를 없애고 1열로 통일했다(tokens.md 7차 라운드 결정, 사용자 원문 '가로사이즈는 메인과 서브가 동일하게'). 지시서가 명시한 대로 테스트 파일은 고치지 않았다 — 이전 기대(main·sidebar 가 서로 다른 x 를 갖는다 / 768px 에서 같은 x 로 쌓인다)가 새 레이아웃 사실(모든 폭에서 두 클래스 자체가 없다, flat 1열)과 어긋나 QA 가 이 두 테스트를 새 스펙에 맞게 다시 써야 한다",
+      "reversible_at": "apps/preemie-calc/tests/e2e/nf-header-layout.spec.ts:226, :247 (curvez-qa 소유)"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "lsof -i :3100 (작업 시작 전/후)",
+      "result": "node 43850 LISTEN *:3100 그대로 유지 — kill 하지 않았다",
+      "passed": true
+    },
+    {
+      "command": "lsof -i :3200 (작업 시작 전, test:e2e 실행 후)",
+      "result": "시작 전: 빈 출력(비어 있음). test:e2e 실행 후에도 playwright 가 자기 webServer 를 정리해 다시 빈 출력",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm typecheck",
+      "result": "exit 0. apps/preemie-calc: next typegen 성공 + tsc --noEmit 오류 0건. 나머지 6개 워크스페이스도 전부 Done",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm lint",
+      "result": "exit 0. apps/preemie-calc 포함 7개 워크스페이스 전부 eslint 출력 없음(0 problems)",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm test",
+      "result": "exit 0. apps/preemie-calc: Test Files 10 passed(10), Tests 62 passed(62). packages/scopulus-ui: 38 passed, 141 passed. 실패 0건",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm build",
+      "result": "exit 0. apps/preemie-calc: Compiled successfully, TypeScript 통과, 491개 정적 페이지(9개 라우트 + guide 481조합 + sitemap) 전부 생성 성공. 나머지 3개 Next 앱도 전부 Done",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) pnpm test:e2e",
+      "result": "185개 중 183 passed, 2 failed(44.4s). 실패 2건은 decisions 의 'QA 갱신 필요' 항목(nf-header-layout.spec.ts:226,:247, 폐기된 main/sidebar 2열 전제) — 그 외 실패 0건. 특히 nf-visual-defects-regression.spec.ts:229('+아이 추가' 버튼-첫 카드 좌측 정렬, 1280px)는 그대로 통과(diff ≤2px), nf-header-layout.spec.ts 의 헤더 제목 정중앙 정렬·겹침 없음 테스트도 9개 화면×360/390/768/1280px 전부 통과",
+      "passed": true
+    },
+    {
+      "command": "grep -rn '1120|layout-container-max-desktop|dashboard-sidebar' apps/preemie-calc/src",
+      "result": "0건",
+      "passed": true
+    },
+    {
+      "command": "grep -rnE ':\\s*any\\b|<any>|\\bas\\s+any\\b' (변경한 8개 파일)",
+      "result": "0건",
+      "passed": true
+    },
+    {
+      "command": "grep -rlE '^[\"\\']use client[\"\\']' src/app --include='page.tsx' --include='layout.tsx'",
+      "result": "0건",
+      "passed": true
+    },
+    {
+      "command": "grep -rnE 'from \"(next|react)' src/entities/*/model src/entities/*/api (ARCH-101~107 관련 예외 검사, 이번 라운드에 entities 를 건드리지 않았으나 재확인)",
+      "result": "0건",
+      "passed": true
+    },
+    {
+      "command": "grep -rnE 'new Date\\(|Date\\.now\\(' src/entities (ARCH-108)",
+      "result": "0건",
+      "passed": true
+    },
+    {
+      "command": "grep -rnE \"from ['\\\"]\\.\\./\\.\\./\" src (ARCH-105)",
+      "result": "0건",
+      "passed": true
+    },
+    {
+      "command": "구조적 좌우 기준선 계산(공식): W=360 → padX=16, contentWidth=min(360-32,720)=328, margin=0 → 컨텐츠 시작 x=16. W=768 → padX=16, contentWidth=min(768-32,720)=720, margin=(768-752)/2=8 → x=24. W=1280 → padX=32, contentWidth=min(1280-64,720)=720, margin=(1280-784)/2=248 → x=280. 9개 화면·헤더·child-switcher·dashboard 본문이 전부 같은 .pc-content-max/.pc-content-pad-x 클래스 조합을 쓰므로 이 x 값(16/24/280)이 화면과 무관하게 구조적으로 동일하다(같은 CSS 규칙을 참조하는 것이지 화면마다 값을 따로 맞춘 것이 아니다)",
+      "result": "W=360: x=16px, W=768: x=24px, W=1280: x=280px — 9개 화면 전부 동일(공용 클래스이므로 예외 없음)",
+      "passed": true
+    }
+  ]
+}

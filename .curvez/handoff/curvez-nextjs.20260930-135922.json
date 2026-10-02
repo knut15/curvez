@@ -1,0 +1,75 @@
+{
+  "from": "curvez-nextjs",
+  "to": ["curvez-orchestrator", "curvez-qa", "curvez-reviewer"],
+  "status": "done",
+  "summary": "v2 리뷰 6건(ACC-01 blocker, DSG-01~03, ERR-01~02)과 팀이 남긴 3건(계산기 링크 열린 리다이렉트 없는 왕복, F18 SPEC v5 5항목 잔재 문구, DateField aria-describedby + ProfileForm ref/effect 우회 제거)을 고치고, F16 경감 구간표 복제(copayReliefTierRows)를 entities/copay-relief 의 공개 API(copayReliefTiers)로 정리했다. 총 9건 + 정리 1건, 파일 17개(신규 1개) 변경. typecheck·lint·arch 게이트 모두 0건, target-height 단위 테스트 6/6 통과, apps/preemie-calc 단위 테스트 100/102(나머지 2건은 팀의 guide 라우트 증가로 f13-build-artifacts.test.ts 의 고정 기대값 481 이 어긋난 것으로 이번 라운드가 만든 결함이 아니다 — QA 가 이미 알던 것). target-height·formula·growth·f1-ac7·f5-copay-relief e2e 는 모두 통과(2건은 e2e 선택자가 여러 <p> 로 나뉜 값을 하나로 찾으려 해서 실패 — src 는 정확한 값을 그린다, QA 갱신 필요). f16/f18 자체 테스트 파일의 기존 8건 실패는 팀 소유 테스트라 이 라운드가 판정하지 않는다(오케스트레이터 GOAL 명시, footer role=contentinfo 부재·구식 '성장 백분위' 기대값 등 이미 있던 불일치다).",
+  "artifacts": [
+    { "path": "apps/preemie-calc/src/entities/target-height/model/index.ts", "kind": "code", "note": "ACC-01(blocker) 수정: 39행 rangeTenths 를 rangeCm*10(65) 에서 rangeCm*2*10(130) 으로 바꿔 목표키 범위가 ±6.5cm(±130/10) 가 되게 했다. PC-F14-AC1(175.0, 168.5~181.5)·AC2(162.0, 155.5~168.5) 를 jiti·단위 테스트·e2e 세 방식으로 확인했다" },
+    { "path": "apps/preemie-calc/src/features/target-height-form/ui/TargetHeightForm.tsx", "kind": "code", "note": "DSG-01: onInputChange prop 을 더해 아빠·엄마 키 입력이 바뀔 때마다(값 유효 여부와 무관) 패널에 알린다" },
+    { "path": "apps/preemie-calc/src/widgets/target-height-panel/ui/TargetHeightPanelSection.tsx", "kind": "code", "note": "DSG-01: onInputChange={() => setResult(null)} 로 연결해 입력을 고치는 중에는 이전 결과 카드가 남지 않게 했다(state:empty·state:error 모두 result 를 그리지 않는다)" },
+    { "path": "apps/preemie-calc/src/features/formula-form/ui/FormulaForm.tsx", "kind": "code", "note": "DSG-03: onInputChange prop 을 더해 체중 입력이 바뀔 때마다 패널에 알린다(TargetHeightForm 과 같은 패턴)" },
+    { "path": "apps/preemie-calc/src/widgets/formula-panel/ui/FormulaPanelSection.tsx", "kind": "code", "note": "DSG-03: onInputChange={() => setWeightGrams(null)} 로 이전 계산 결과(ValueCard·out-of-range·pending)가 새 입력에 남지 않게 했다. DSG-02: 의료진 안내 문구 조건을 `computed?.showMedicalTeamNotice` 에서 `ages.correctionApplies` 로 바꿔 계산 버튼을 누르기 전에도 재태 37주 미만이면 항상 보이게 했다(리뷰 수정 방향 그대로)" },
+    { "path": "apps/preemie-calc/src/entities/growth/api/index.ts", "kind": "code", "note": "ERR-01: isValidStore(전체 records.every 로 하나라도 틀리면 손상 판정)를 isValidStoreShape(최상위 모양만 검사) + records.filter(isValidRecord) 로 바꿨다. 형식이 틀린 기록만 걸러 내고 나머지는 보존한다(택한 방향: 필터링. '쓰지 않고 알림'이 아니라 이쪽을 골랐다 — 기존 loadGrowthRecords 의 상태 모양(ok/empty/corrupted/unavailable)을 안 바꾸고 saveGrowthRecord 의 데이터 유실만 없앤다)" },
+    { "path": "apps/preemie-calc/src/widgets/growth-panel/ui/GrowthRecordTable.tsx", "kind": "code", "note": "ERR-02: GrowthRecordRow 에 id 필드를 더하고 tr key 를 measurementDate 에서 r.id 로 바꿔 같은 날 기록이 여러 개일 때 key 충돌을 없앴다" },
+    { "path": "apps/preemie-calc/src/widgets/growth-panel/ui/GrowthPanelSection.tsx", "kind": "code", "note": "ERR-02: 두 갈래 row 생성 모두에 id: record.id 를 넣었다" },
+    { "path": "apps/preemie-calc/src/entities/copay-relief/model/index.ts", "kind": "code", "note": "구간표 복제 정리: copayReliefTiers(공개 API, data.tiers 그대로)를 새로 내보냈다. 값·경계 로직(classifyCopayRelief, innerBoundary)은 바꾸지 않았다" },
+    { "path": "apps/preemie-calc/src/views/guide-questions/ui/GuideQuestionView.tsx", "kind": "code", "note": "구간표 복제 정리: copayReliefTierRows() 가 classifyCopayRelief 를 표본 재태일수 3개로 호출해 구간을 역산하던 방식을 지우고 copayReliefTiers 공개 API 를 읽어 뒤집는 방식으로 바꿨다(표시 순서는 PC-F16-AC4 그대로: 33~37주 → 29~33주 → 29주 미만). SAMPLE_BIRTH_DATE·SAMPLE_GESTATION_DAYS·parseCalendarDate import·classifyCopayRelief import 를 지웠다" },
+    { "path": "apps/preemie-calc/src/app/guide/age-basis/page.tsx", "kind": "code", "note": "F18 SPEC v5 정리: metadata.description 에 남아 있던 SPEC v3 문구('성장 백분위')를 v5 의 5항목(예방접종, 영유아검진 방문, 문진표·발달선별검사지, 이유식, 발달 평가)으로 바꿨다. AgeBasisPublicView 자체는 이미 age-basis.json(development='발달 평가')을 그대로 읽고 있어 고치지 않았다 — 이 파일의 SEO 설명 문구만 낡아 있었다" },
+    { "path": "apps/preemie-calc/src/shared/ui/DateField.tsx", "kind": "code", "note": "describedBy?: string prop 을 더해 aria-describedby 를 입력칸에 직접 연결한다" },
+    { "path": "apps/preemie-calc/src/features/profile-form/ui/ProfileForm.tsx", "kind": "code", "note": "useRef+useEffect(querySelector 로 입력칸을 찾아 setAttribute)로 aria-describedby 를 붙이던 우회를 지우고 DateField 의 describedBy prop 으로 직접 연결했다(useEffect·useRef import 제거). PC-F1-AC7 라벨 '원래 출산 예정일'·도움말 문구는 requirements.md 원문과 이미 같아 바꾸지 않았다. returnTo prop 을 더해 저장 뒤 router.push('/dashboard') 대신 router.push(returnTo) 로 바꿨다(계산기 링크 왕복)" },
+    { "path": "apps/preemie-calc/src/shared/lib/return-path/index.ts", "kind": "code", "note": "신규. isAllowedReturnPath(path) 순수 함수 — '/'로 시작하고 '//'·역슬래시가 없고 '/dashboard' 또는 그 하위인 경로만 참. 열린 리다이렉트 방지. jiti 로 9개 케이스(//evil.com, https://evil.com, /\\evil 포함) 직접 확인했다" },
+    { "path": "apps/preemie-calc/src/views/guide-questions/ui/CalculatorLink.tsx", "kind": "code", "note": "PC-F16-EX1: 서버 컴포넌트에서 클라이언트 잎(use client)으로 바꿔 useProfileStore 로 프로필 유무를 확인한다. 프로필이 없으면 href 를 `/?next=<encodeURIComponent(원래 href)>` 로 바꿔 입력 화면을 거치게 한다" },
+    { "path": "apps/preemie-calc/src/views/age-basis-public/ui/MyChildCta.tsx", "kind": "code", "note": "F18-AC2: 프로필이 없을 때의 href 를 '/'에서 `/?next=<encodeURIComponent('/dashboard/age-basis')>` 로 바꿔, 입력 화면에서 저장한 뒤 F3 화면으로 바로 돌아가게 했다" },
+    { "path": "apps/preemie-calc/src/views/input/ui/InputView.tsx", "kind": "code", "note": "'next' 쿼리를 읽어 isAllowedReturnPath 로 검증한 뒤 returnTo 로 쓴다(기본값 '/dashboard'). 이미 프로필이 있어 즉시 넘어가는 경로와 ProfileForm 저장 뒤 경로 모두 returnTo 를 쓴다" }
+  ],
+  "decisions": [
+    {
+      "what": "ACC-01 은 architecture.md ⑩ 의 계산 순서(3단계: minCm/maxCm = Math.round((sum∓130)/2)/10, 130 = rangeCm*2*10)를 그대로 코드에 옮겼다. '130'이 sexOffsetCm*10 과 우연히 같은 값이라 원래 코드가 rangeCm*10 을 썼던 것으로 보인다",
+      "why": "curvez-reviewer(ACC-01)·curvez-qa 양쪽이 재현한 blocker 이고, architecture.md 의 worked example(175/162 → 168.5~181.5)과 정확히 일치하는 계산식이 이미 문서에 있어 추측 없이 그대로 따랐다",
+      "reversible_at": "apps/preemie-calc/src/entities/target-height/model/index.ts:39"
+    },
+    {
+      "what": "ERR-01 은 '손상 시 쓰지 않고 알림'이 아니라 '형식이 틀린 기록만 걸러 내고 나머지 보존'을 골랐다",
+      "why": "저장소가 하나의 아이가 아니라 여러 아이의 기록을 한 키에 담는 구조라, 알림으로 전체 저장을 막으면 다른 아이의 정상 기록까지 저장을 못 하게 된다. 걸러내기는 UI 를 바꾸지 않고 GrowthRecordsLoadResult 의 기존 상태 모양(ok/empty/corrupted/unavailable)도 그대로 둔다",
+      "reversible_at": "apps/preemie-calc/src/entities/growth/api/index.ts:39-46"
+    },
+    {
+      "what": "DSG-02 는 리뷰가 제안한 대로 안내 조건을 `ages.correctionApplies` 로 완전히 분리했다. formula.md 의 state:error 설명(체중이 비었거나 범위 밖이면 result·preemie-note 모두 그리지 않는다)과는 더 이상 정확히 맞지 않을 수 있다 — 체중을 잘못 입력한 상태에서도 이제는 재태 37주 미만이면 안내 문구가 보인다",
+      "why": "오케스트레이터 CONTEXT 가 '계산 전에도 항상(correctionApplies)'으로 명시했고 curvez-reviewer 의 수정 방향도 같다. 디자인 스펙의 state:error 세부 조건(오류 시에도 숨김)까지 동시에 만족시키려면 폼의 내부 유효성 상태를 패널로 새로 끌어올려야 해 이번 지시(선의 '항상' 규칙)보다 범위가 커진다",
+      "reversible_at": "apps/preemie-calc/src/widgets/formula-panel/ui/FormulaPanelSection.tsx:35"
+    },
+    {
+      "what": "계산기 링크 왕복(F16 EX1·F18 AC2)의 허용 목록을 '/dashboard'와 그 하위로만 좁혔다. '/'(입력 화면 자신)는 CalculatorLink·MyChildCta 가 직접 만들어 붙이는 접두이지 next 값 자체가 아니다",
+      "why": "지시서가 '/dashboard 와 그 하위만'이라고 못박았다. CALCULATOR_HREF·F3_HREF 값은 모두 소스 코드 상수(공격자가 못 바꾼다)라 생성 쪽에서는 isAllowedReturnPath 를 부르지 않았고, 검증은 next 쿼리(외부 입력)를 실제로 읽는 InputView 한 곳에서만 한다",
+      "reversible_at": "apps/preemie-calc/src/shared/lib/return-path/index.ts, apps/preemie-calc/src/views/input/ui/InputView.tsx:parseReturnTo"
+    },
+    {
+      "what": "PC-F16-AC4 문구('N주 이상 M주 미만')는 GuideQuestionView.tsx:66-73 의 copayReliefTierRows() 가 tiers 의 gestationDays 에서 자동 생성한다. classifyCopayRelief 의 innerBoundary=lower-inclusive 계산(경계 정각이 '더 긴 경감 구간', 즉 재태일수가 더 작은 쪽 tier 에 들어간다)과 이 자연어 문구('29주 이상 33주 미만'은 29주 정각을 29~33주 tier 로 읽게 한다)가 경계 정각에서 서로 다른 답을 준다",
+      "why": "curvez-reviewer 가 이미 이 어긋남을 blocked_on(사용자 질문, PRD §9 원문 문장과의 불일치)으로 올려 두었다. 계산 로직·경계값을 바꾸는 것은 이번 지시서의 FORBIDDEN('경감 경계 변경')이라 문구·로직 둘 다 손대지 않고 위치만 남긴다",
+      "reversible_at": "apps/preemie-calc/src/views/guide-questions/ui/GuideQuestionView.tsx:66-73, apps/preemie-calc/src/entities/copay-relief/data/copay-relief.json:49"
+    },
+    {
+      "what": "target-height e2e(PC-F14-AC1·AC2, tests/e2e/target-height.spec.ts:27,36)가 ACC-01 수정 뒤에도 여전히 실패한다. 원인은 src 가 아니라 선택자다 — getByText('목표키 참고 175.0cm (168.5~181.5cm)')가 실제로는 세 개의 서로 다른 <p>(라벨/값/범위)로 나뉘어 그려져 하나의 텍스트로 안 잡힌다. Error Context 로 실제 DOM(175.0cm, (168.5~181.5cm) 값이 정확히 그려짐)을 확인했다",
+      "why": "tests/ 는 이번 라운드가 고치지 않는다(FORBIDDEN). ValueCard 마크업 구조를 바꾸는 것도 지시서 범위 밖이라, 선택자를 group/역할 기반으로 바꾸는 QA 갱신이 필요하다는 사실만 남긴다",
+      "reversible_at": "apps/preemie-calc/tests/e2e/target-height.spec.ts:27,36 (QA 소유, 수정하지 않음)"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    { "command": "pnpm --filter preemie-calc exec tsc --noEmit (수정 도중 4회 반복)", "result": "매번 출력 없음 — exit 0, 오류 0건", "passed": true },
+    { "command": "pnpm typecheck (루트, profile.commands.typecheck)", "result": "exit 0. 7개 워크스페이스(apps/preemie-calc·city-presets·handwork·scopulus-ui, packages/scopulus-ui 등) 전부 Done, 오류 0건", "passed": true },
+    { "command": "pnpm lint (루트, profile.commands.lint)", "result": "exit 0. 전 워크스페이스 Done, 출력에 error·warning 없음(0 problems)", "passed": true },
+    { "command": "node .../quality-gate.mjs --only arch", "result": "PASS arch: 규칙 19개 파싱 / 검사 19개 / 위반 0건", "passed": true },
+    { "command": "grep -rn 'eslint-disable' apps/preemie-calc/src", "result": "0건(exit 1, 매치 없음)", "passed": true },
+    { "command": "jiti 스크립트로 isAllowedReturnPath 9개 케이스 직접 확인(/dashboard, /dashboard/vaccinations, /dashboard/age-basis → true; //evil.com, https://evil.com, /\\evil, /, /dashboardx, dashboard/vaccinations → false)", "result": "9/9 OK", "passed": true },
+    { "command": "(apps/preemie-calc) pnpm exec vitest run tests/unit/target-height.test.ts", "result": "1 file, 6 tests, 6 passed(ACC-01 수정 전 2건 실패 → 수정 후 6/6)", "passed": true },
+    { "command": "(apps/preemie-calc) pnpm exec vitest run tests/unit/target-height.test.ts tests/unit/formula.test.ts tests/unit/growth.test.ts tests/unit/copay-relief.test.ts", "result": "4 files, 31 tests, 31 passed", "passed": true },
+    { "command": "pnpm --filter preemie-calc test", "result": "Test Files 1 failed | 14 passed (15), Tests 2 failed | 100 passed (102). 실패 2건은 tests/unit/f13-build-artifacts.test.ts(팀의 guide 라우트 증가로 고정 기대값 481→487/488 어긋남, 이번 라운드가 만들지 않은 결함, tests/ 미수정 원칙상 그대로 둠)", "passed": false },
+    { "command": "(apps/preemie-calc) PORT=3200 pnpm exec playwright test tests/e2e/target-height.spec.ts tests/e2e/formula.spec.ts", "result": "13 tests, 11 passed, 2 failed(PC-F14-AC1·AC2 — src 값은 맞고 e2e 선택자가 여러 요소로 나뉜 텍스트를 못 찾음, decisions 참고)", "passed": false },
+    { "command": "(apps/preemie-calc) PORT=3200 pnpm exec playwright test tests/e2e/growth.spec.ts tests/e2e/f1-ac7-due-date-label.spec.ts tests/e2e/f16-question-guides.spec.ts tests/e2e/f18-age-basis-public.spec.ts", "result": "36 tests, 28 passed, 8 failed. growth·f1-ac7 는 전부 통과(ERR-01·ERR-02·describedBy 수정 확인). 실패 8건은 f16-question-guides.spec.ts(footer role=contentinfo 가 <main> 안 <footer> 에는 없음 6건, 미확정 표시가 copay-relief 의 endDateMethod 에도 정당하게 있음 1건)·f18-age-basis-public.spec.ts(구식 '성장 백분위' 기대값 1건) — 전부 팀 소유 테스트 파일이라 이 라운드가 판정하지 않는다(오케스트레이터 GOAL)", "passed": false },
+    { "command": "(apps/preemie-calc) PORT=3200 pnpm exec playwright test tests/e2e/f5-copay-relief.spec.ts", "result": "5 tests, 5 passed — copayReliefTiers 공개 API 추가·GuideQuestionView 리팩터 뒤에도 classifyCopayRelief 결과는 그대로", "passed": true },
+    { "command": "lsof -i :3100 (작업 전후, 모든 playwright 실행 전후)", "result": "node 43850 LISTEN *:opcon-xps(3100) 그대로 — kill 하지 않았다", "passed": true },
+    { "command": "lsof -i :3200 (각 playwright 실행 직후)", "result": "빈 출력 — playwright webServer 가 자체적으로 정리해 남은 프로세스 없음", "passed": true },
+    { "command": "node .../validate-handoff.mjs .curvez/handoff/", "result": "OK 핸드오프 검증 — 검사 63건, 통과 63건, 실패 0건, 오류 0개, 경고 0개", "passed": true }
+  ]
+}

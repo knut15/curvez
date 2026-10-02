@@ -1,0 +1,143 @@
+{
+  "from": "curvez-nextjs",
+  "to": ["curvez-orchestrator", "curvez-qa", "curvez-reviewer"],
+  "status": "done",
+  "summary": "apps/preemie-calc 의 lint 오류 6건·경고 2건(8 problems)을 동작을 바꾸지 않고 고쳤다. react-hooks/set-state-in-effect 5건은 모두 useSyncExternalStore(외부 값 읽기) 또는 조건부 마운트(폼 초기화)로 옮겼다. react/no-children-prop 1건은 ChildSwitcherTabs 의 데이터 prop 이름을 children→options 로 바꿨다(테스트가 이 prop 을 직접 참조하지 않는 것을 grep 으로 확인). no-unused-vars 경고 2건은 RequiredMark 의 미사용 label prop(+호출부 4곳)과 CheckupPlanSection 의 미사용 import 를 지웠다. pnpm --filter preemie-calc lint 는 오류 0·경고 0(eslint 출력 없음, exit 0)이다. 워크트리 루트 typecheck·lint·test·build 전부 통과했고, apps/preemie-calc 의 test:e2e 는 75/75 통과했다(첫 시도에서 use-profile-store.ts 를 모듈 전역 캐시로 잘못 짜 2건이 깨졌던 것을 훅 인스턴스별 useRef 캐시로 고쳐 재실행에서 전부 통과시켰다). quality-gate.mjs --no-stop 5/5 게이트 통과, eslint-disable 0건.",
+  "artifacts": [
+    {
+      "path": "apps/preemie-calc/src/entities/child/ui/use-profile-store.ts",
+      "kind": "code",
+      "note": "26:5 react-hooks/set-state-in-effect 수정. localStorage 읽기를 useSyncExternalStore 로 옮겼다. result 는 getServerSnapshot={status:'empty'}, getSnapshot 은 훅 인스턴스별 useRef 캐시(무효화 전까지 같은 참조를 돌려줘 무한 렌더를 막는다). hydrated 는 별도 useSyncExternalStore(client=true/server=false)로 하이드레이션 완료 시점을 얻는다. refresh() 는 캐시를 비우고 이 인스턴스의 리스너에 알린다. 모듈 전역 캐시로 처음 짰다가 '/'(InputView)·'/dashboard'(DashboardView)·'/dashboard/*'(DashboardSubpageShell) 세 화면이 클라이언트 라우팅으로 같은 모듈을 공유해 한 화면의 낡은 값이 다른 화면에 새겨지는 문제를 e2e(PC-F1-AC6, PC-NF-PRIV-1)로 잡아 인스턴스별 캐시로 고쳤다"
+    },
+    {
+      "path": "apps/preemie-calc/src/features/edit-profile/ui/EditProfileDialog.tsx",
+      "kind": "code",
+      "note": "36:5 react-hooks/set-state-in-effect 수정. '열리면 profile 값으로 폼을 되돌린다'는 useEffect(if(open){...}, [open, profile]) 를 없애고, name·weightText·saveError·저장 로직을 새 내부 컴포넌트 EditProfileForm 으로 옮긴 뒤 {open ? <EditProfileForm .../> : null} 로 조건부 마운트한다. open 이 false→true 로 바뀔 때마다 새 인스턴스가 마운트돼 profile 의 최신값으로 lazy useState 초기화가 다시 일어난다(마운트 기반 재초기화, effect 없음). dialog.showModal()/close() 와 열릴 때 첫 입력칸 포커스를 옮기는 effect(기존 그대로, setState 를 안 부르므로 위반 아님)는 outer 컴포넌트에 남겼다 — 같은 커밋에서 폼이 먼저 DOM 에 올라오므로 querySelector('input') 타이밍은 그대로다"
+    },
+    {
+      "path": "apps/preemie-calc/src/features/share-result/ui/ShareResultAction.tsx",
+      "kind": "code",
+      "note": "35:5 react-hooks/set-state-in-effect 수정. navigator.share 지원 여부(boolean, 외부 값)를 useSyncExternalStore(subscribe=no-op, getSnapshot=typeof navigator.share==='function', getServerSnapshot=false) 로 읽는다. boolean 은 원시값이라 캐시 없이 매번 재계산해도 Object.is 로 안전하다. 시간 경과에 따른 재검사는 원래도 없었다(subscribe 는 구독하지 않는다)"
+    },
+    {
+      "path": "apps/preemie-calc/src/shared/lib/calendar-date/use-today.ts",
+      "kind": "code",
+      "note": "13:5 react-hooks/set-state-in-effect 수정. todayInKst()(외부 값: 시계) 를 useSyncExternalStore(subscribe=no-op, getSnapshot=getServerSnapshot=todayInKst) 로 읽는다. CalendarDate 는 브랜드 문자열(원시값)이라 캐시가 불필요하다. 시계를 읽는 함수는 여전히 calendar.ts 의 todayInKst 하나뿐이다(ARCH-108, grep 'new Date(' src 결과 이 파일 밖 0건 — 아래 검증 참고)"
+    },
+    {
+      "path": "apps/preemie-calc/src/views/share/ui/ShareView.tsx",
+      "kind": "code",
+      "note": "27:5 react-hooks/set-state-in-effect 수정. window.location.hash 읽기+decodeShareFragment(hash)(객체, 외부 값)를 useSyncExternalStore 로 옮겼다. getServerSnapshot=undefined(원래 의미인 '아직 안 읽음' 그대로). getSnapshot 은 useRef 로 {hash, payload} 를 인스턴스별로 캐시해, 같은 hash 문자열이면 같은 payload 참조를 돌려준다(decodeShareFragment 가 호출마다 새 객체를 만들어 무캐시면 무한 렌더 위험). subscribe 는 no-op(원래도 hashchange 를 듣지 않았다)"
+    },
+    {
+      "path": "apps/preemie-calc/src/views/dashboard/ui/DashboardView.tsx",
+      "kind": "code",
+      "note": "75:9 react/no-children-prop 수정. <ChildSwitcherTabs children={...} .../> 의 children 은 React 자식이 아니라 탭 데이터 배열이라 prop 이름을 options 로 바꿨다"
+    },
+    {
+      "path": "apps/preemie-calc/src/features/switch-child/ui/ChildSwitcherTabs.tsx",
+      "kind": "code",
+      "note": "no-children-prop 의 원인 쪽. ChildSwitcherTabsProps.children → options 로 이름만 바꿨다(타입·내부 로직·렌더링은 동일). 이 export 를 직접 쓰는 테스트가 없음을 grep 으로 확인했다"
+    },
+    {
+      "path": "apps/preemie-calc/src/shared/ui/RequiredMark.tsx",
+      "kind": "code",
+      "note": "9:32 no-unused-vars 경고 수정. 쓰이지 않는 label prop 을 RequiredMarkProps 와 함수 시그니처에서 지웠다. sr-only 문구·주석은 그대로다(이미 ', 필수' 로 label 을 중복시키지 않게 돼 있었다)"
+    },
+    {
+      "path": "apps/preemie-calc/src/shared/ui/TextField.tsx",
+      "kind": "code",
+      "note": "RequiredMark 호출부. <RequiredMark label={label} required={required} /> → <RequiredMark required={required} />"
+    },
+    {
+      "path": "apps/preemie-calc/src/shared/ui/DateField.tsx",
+      "kind": "code",
+      "note": "RequiredMark 호출부. 위와 동일하게 label 인자를 뺐다"
+    },
+    {
+      "path": "apps/preemie-calc/src/shared/ui/GestationInput.tsx",
+      "kind": "code",
+      "note": "RequiredMark 호출부. 위와 동일하게 label 인자를 뺐다"
+    },
+    {
+      "path": "apps/preemie-calc/src/shared/ui/SegmentedControl.tsx",
+      "kind": "code",
+      "note": "RequiredMark 호출부. 위와 동일하게 label 인자를 뺐다"
+    },
+    {
+      "path": "apps/preemie-calc/src/widgets/checkup-plan/ui/CheckupPlanSection.tsx",
+      "kind": "code",
+      "note": "4:37 no-unused-vars 경고 수정. import { planCheckups, checkupMeta, questionnaireCorrection } 에서 이 파일 안에서 쓰지 않는 questionnaireCorrection 만 뺐다. entities/checkup 밖의 다른 사용처(model/index.ts 내부)는 그대로다"
+    }
+  ],
+  "decisions": [
+    {
+      "what": "5건의 set-state-in-effect 는 전부 useSyncExternalStore 로 옮기고, EditProfileDialog 한 건만 '열기 이벤트에서 초기화' 대신 '조건부 마운트로 다시 마운트'를 골랐다",
+      "why": "폼 초기화는 외부 시스템 값이 아니라 profile prop 에서 파생되는 로컬 상태라 useSyncExternalStore 대상이 아니다. dialog 는 항상 마운트돼 있어 key 로 전체를 리마운트하면 showModal/close 생명주기(HTML dialog 의 포커스 복귀)가 깨지므로, 폼 필드만 담은 하위 컴포넌트를 만들어 open 조건부로 마운트했다",
+      "reversible_at": "apps/preemie-calc/src/features/edit-profile/ui/EditProfileDialog.tsx"
+    },
+    {
+      "what": "use-profile-store 의 getSnapshot 캐시를 모듈 전역이 아니라 훅 인스턴스별 useRef 에 뒀다",
+      "why": "1차 시도에서 모듈 전역 캐시로 짰다가 test:e2e PC-F1-AC6·PC-NF-PRIV-1 2건이 깨졌다. '/'·'/dashboard' 는 클라이언트 라우팅으로 모듈을 다시 안 불러오므로, 전역 캐시는 한 화면에서 읽은 낡은 결과를 다른 화면(다른 인스턴스)의 첫 렌더에도 그대로 보여준다. 인스턴스별 캐시로 고치고 재실행해 75/75 로 확인했다",
+      "reversible_at": "apps/preemie-calc/src/entities/child/ui/use-profile-store.ts:39-73"
+    },
+    {
+      "what": "ChildSwitcherTabsProps.children 을 options 로 이름을 바꿨다(더 넓은 시그니처 변경은 하지 않았다)",
+      "why": "react/no-children-prop 은 JSX children 자리가 아닌데 children 이라는 prop 이름을 쓰는 것 자체를 지적한다. 규칙을 끄지 않고 근본 원인을 없애려면 이름을 바꾸는 것이 가장 작은 수정이다. 이 export 를 쓰는 테스트가 없음을 grep(tests/, apps/preemie-calc 전체)으로 확인해 시그니처 변경이 안전하다고 판단했다",
+      "reversible_at": "apps/preemie-calc/src/features/switch-child/ui/ChildSwitcherTabs.tsx:16-22"
+    },
+    {
+      "what": "RequiredMark 의 label prop 과 4개 호출부 인자를 제거만 하고 다른 접근성 문구는 건드리지 않았다",
+      "why": "CONTEXT 지시대로 쓰지 않는 prop 은 없애되, DSG-04(쉼표 앞 공백)는 이번 범위가 아니라고 명시돼 있어 그대로 뒀다",
+      "reversible_at": "apps/preemie-calc/src/shared/ui/RequiredMark.tsx"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "pnpm --filter preemie-calc lint",
+      "result": "eslint 출력 없음(대상 0건). `$ eslint` 만 찍히고 종료. 8 problems → 0 problems",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm typecheck",
+      "result": "8개 워크스페이스 프로젝트 중 preemie-calc 포함 7개 실행. apps/preemie-calc: 'Types generated successfully' + Done. 오류 0건, exit 0",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm lint",
+      "result": "eslint . && pnpm -r --if-present lint. apps/preemie-calc lint: Done. 전 워크스페이스 오류 0건, exit 0",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm test",
+      "result": "apps/preemie-calc test: Test Files 10 passed (10), Tests 62 passed (62). packages/scopulus-ui test: Test Files 38 passed (38), Tests 141 passed (141)",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm build",
+      "result": "apps/preemie-calc build: ✓ Compiled successfully, Generating static pages (491/491), 라우트 표 '┌ ○ /' 그대로. city-presets·handwork·scopulus-ui 도 전부 Done",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) pnpm test:e2e",
+      "result": "1차 시도: 73 passed, 2 failed(f1-profile PC-F1-AC6, nf-privacy PC-NF-PRIV-1) — use-profile-store 모듈 전역 캐시가 원인. 훅 인스턴스별 useRef 캐시로 고친 뒤 재실행: 75 passed (11.9s), 실패 0건",
+      "passed": true
+    },
+    {
+      "command": "node .../quality-gate.mjs --no-stop",
+      "result": "PASS arch(규칙 14개 파싱/검사 14개/위반 0건), PASS typecheck, PASS lint, PASS test, PASS build — quality-gate 통과, 5개 게이트 실행, 실패 0건",
+      "passed": true
+    },
+    {
+      "command": "grep -rn 'eslint-disable' apps/preemie-calc/src",
+      "result": "일치 없음(exit 1)",
+      "passed": true
+    },
+    {
+      "command": "grep -rn \"new Date(\" apps/preemie-calc/src | grep -v shared/lib/calendar-date/calendar.ts",
+      "result": "일치 없음 — 시계를 읽는 곳이 calendar.ts 한 곳이라는 규칙이 이번 수정으로도 유지된다",
+      "passed": true
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+$ pnpm -r --if-present typecheck
+Scope: 7 of 8 workspace projects
+apps/preemie-calc typecheck$ next typegen && tsc --noEmit
+packages/scopulus-ui typecheck$ tsc --noEmit
+apps/preemie-calc typecheck: Generating route types...
+apps/preemie-calc typecheck: ✓ Types generated successfully
+apps/preemie-calc typecheck: Done
+packages/scopulus-ui typecheck: Done
+apps/handwork typecheck$ next typegen && tsc --noEmit
+apps/city-presets typecheck$ next typegen && tsc --noEmit
+apps/scopulus-ui typecheck$ next typegen && tsc --noEmit
+apps/city-presets typecheck: Generating route types...
+apps/scopulus-ui typecheck: Generating route types...
+apps/handwork typecheck: Generating route types...
+apps/city-presets typecheck: ✓ Types generated successfully
+apps/scopulus-ui typecheck: ✓ Types generated successfully
+apps/handwork typecheck: ✓ Types generated successfully
+apps/city-presets typecheck: Done
+apps/handwork typecheck: Done
+apps/scopulus-ui typecheck: Done

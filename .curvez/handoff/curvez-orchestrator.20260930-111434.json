@@ -1,0 +1,40 @@
+{
+  "from": "curvez-orchestrator",
+  "to": ["user"],
+  "status": "blocked",
+  "summary": "가로 폭 통일 라운드를 마쳤다. 9개 화면의 본문과 헤더 안쪽 박스가 모두 같은 폭이다: 360px 에서 360, 768px 에서 720(x=24), 1280px 에서 720(x=280). E2E 실측 차이는 0.00px 이고 대시보드는 1열이다. 게이트: typecheck exit 0, lint 0 problems, test 203/203, build 491/491, E2E 189/189 를 3200 포트에서 2회 통과했다. 3100 dev 서버(PID 43850)는 계속 살아 있다. 57개 요구 판정은 그대로다. 리뷰 지적은 minor 1건(DSG-10)이다. 같은 시각에 조사 담당을 팀에 더해 기준 출처 조사를 돌렸다. 확인 12건, 확인 불가 9건이 나왔다. 사용자가 정할 질문 9건이 있어 status 는 blocked 다.",
+  "artifacts": [
+    { "path": ".curvez/team.md", "kind": "decision", "note": "폭 통일 W1~W3, curvez-researcher 추가, 남은 P3 에 DSG-10 추가" },
+    { "path": ".curvez/standing.md", "kind": "decision", "note": "12번 3100 포트 보호, 13번 docs 쓰기 금지" },
+    { "path": ".curvez/handoff/curvez-reviewer.20260930-110259.json", "kind": "review", "note": "대필" }
+  ],
+  "decisions": [
+    {
+      "what": "E2E·캡처 서버를 3200 포트로 옮기고, 이미 떠 있는 서버를 재사용하지 않게 했다",
+      "why": "3100 에서 사용자 dev 서버가 돈다. 지난 라운드에 QA 가 그 서버를 종료했다",
+      "reversible_at": "apps/preemie-calc/playwright.config.ts"
+    },
+    {
+      "what": "리뷰 DSG-10(패딩 포함 720px 때문에 글 영역이 1280px 에서 656px)은 이번 라운드에서 고치지 않았다",
+      "why": "지시서 ACCEPTANCE 가 '1280px 에서 720px' 이고 실측 박스 폭이 720 이다. 글 영역을 720 으로 맞추면 박스는 784 가 되어 그 기준과 달라진다. 어느 쪽인지는 사용자가 정할 일이다",
+      "reversible_at": "apps/preemie-calc/src/app/globals.css 의 .pc-content-max, .pc-content-pad-x"
+    },
+    {
+      "what": "curvez-researcher 를 팀에 더해 폭 통일 라운드와 병렬로 돌렸다",
+      "why": "사용자가 '추가 (기존 대조 포함)' 로 승인했다. 쓰는 경로(.curvez/research/preemie-calc)가 다른 워커와 겹치지 않는다",
+      "reversible_at": ".curvez/team.md:가로 폭 통일 라운드"
+    }
+  ],
+  "blocked_on": [
+    { "question": "조사 브리프 .curvez/research/preemie-calc/sources-v2.md 의 '## 사용자가 정할 질문' 9건(미결1 근거 채택, 미결2 경계·종료일·공단 페이지 불일치, 미결3 원문 미확인, 목표키 출처, 분유량 범위, 성장 LMS 파일 선택, 예방접종 재게재본 사용)에 답해 달라", "who": "user" },
+    { "question": "본문 폭 720px 을 패딩을 포함한 박스 폭으로 둘지(지금, 1280px 에서 글 영역 656px), 글 영역 폭으로 둘지(박스 784px) 정해 달라", "who": "user" }
+  ],
+  "verification": [
+    { "command": "pnpm test:e2e (apps/preemie-calc, 3200 포트, curvez-qa 2회)", "result": "189 passed / 0 failed 두 번", "passed": true },
+    { "command": "nf-content-width.spec.ts (9개 화면 × 360/768/1280, 헤더 안쪽·본문 boundingBox)", "result": "360: x=0 w=360, 768: x=24 w=720, 1280: x=280 w=720. 모든 화면·헤더/본문 차이 0.00px", "passed": true },
+    { "command": "워크트리 루트 pnpm typecheck / lint / test / build (curvez-qa)", "result": "exit 0 / 0 problems / 203/203 / 491/491", "passed": true },
+    { "command": "lsof -i :3100 (오케스트레이터, 라운드 종료 후)", "result": "node 43850 LISTEN 유지", "passed": true },
+    { "command": "grep -rn 'eslint-disable' apps/preemie-calc/src apps/preemie-calc/tests", "result": "0건", "passed": true },
+    { "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/", "result": "이 파일을 쓰기 전 50건 통과. 쓴 뒤 재실행 결과는 사용자 보고에 적는다", "passed": true }
+  ]
+}

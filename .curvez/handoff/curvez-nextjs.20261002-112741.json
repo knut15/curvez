@@ -1,0 +1,161 @@
+{
+  "from": "curvez-nextjs",
+  "to": ["curvez-orchestrator", "curvez-qa", "curvez-reviewer"],
+  "status": "partial",
+  "summary": "F8 AC3(기록이 2개 이상이면 측정일 순서로 추이 그래프)를 recharts(^3.10.1, 이미 설치됨, 재설치하지 않았다)로 구현했다. (1) shared/lib/normal-distribution 에 inverseStandardNormalCdf(p) 를 Peter Acklam 의 유리함수 근사(라이브러리 없음, standardNormalCdf 로 뉴턴 보정하지 않음 — architect 결정)로 추가했다. (2) entities/growth/model 에 lmsValueAtZ(row,z)·REFERENCE_PERCENTILES([3,50,97])·growthReferenceValues(input, measuredOn) 를 추가했다. growthPercentiles 의 시그니처·결과는 바꾸지 않고, 두 함수가 같은 '측정일→나이→LMS 월령' 판정을 공유하도록 비공개 함수 resolveAgeAtMeasurement 로 내부만 리팩터했다(동작은 그대로 — tests/unit/growth.test.ts 9/9 통과로 확인). (3) widgets/growth-panel/lib/build-growth-trend-points.ts 에 buildGrowthTrendPoints({records, age}) 를 순수 함수로 추가했다 — 측정일 오름차순 GrowthTrendPoint[](지표별), cautionNeeded 는 그 지표 하나의 consult(architect 결정, GrowthRecordTable 의 행 단위 OR 과 다름). (4) widgets/growth-panel/ui/GrowthTrendChart.tsx 를 새 'use client' 잎 컴포넌트로 추가했다 — recharts(LineChart·Line×4·XAxis·YAxis·CartesianGrid·Legend·Tooltip·ResponsiveContainer) 는 이 파일에서만 import 한다(ARCH-114~118, 아래 verification 에서 위반 0건 확인). 점 모양(원/삼각형/빈 사각형)·백분위 기준선 3종(connectNulls=false)·실측값 선(connectNulls=true)·커스텀 툴팁·isAnimationActive=false 전부 스펙(GrowthTrendChart.md) 그대로다. GrowthPanelSection.tsx 에 세 인스턴스(height/weight/headCircumference)를 entry-form 과 record-list 사이에 꽂았다 — 각 인스턴스가 points.length(0/1/2+)로 스스로 상태를 가르므로 부모는 따로 분기하지 않는다. (5) app/globals.css 에 .pc-growth-trend-chart·.pc-growth-trend-chart-canvas 클래스 2개를 기존 반응형 관례(className+@media, 인라인 JS 분기 아님)로 추가해 그래프 높이 200/220/240px·>=1280px 카드 패딩 --space-6 을 구현했다. 하이드레이션: 추가 게이트를 새로 만들지 않았다 — DashboardSubpageShell 의 기존 useProfileStore().hydrated(useSyncExternalStore, getServerSnapshot={status:'empty'}) 가 SSR·첫 클라이언트 페인트에서는 GrowthPanelSection 전체(차트 포함)를 렌더링하지 않고, 하이드레이션 커밋 뒤에야 처음 마운트되므로 recharts ResponsiveContainer 가 SSR 마크업과 맞춰볼 대상 자체가 없다. tests/e2e/growth.spec.ts 의 공용 fixture(모든 콘솔 error/warning·pageerror 를 자동 검사)가 포함된 7개 테스트 전부 통과해 하이드레이션 경고 0 을 실측으로 확인했다. 타입: any·as 단언은 recharts 의 타입이 부실한 경계(payload?: any, DotItemDotProps.payload: any) 한 곳(isGrowthTrendPoint 타입가드)에만 뒀고 바로 위에 이유 주석을 붙였다 — 그 밖의 웹 소스에는 any·as 가 0건이다(아래 verification). typecheck·lint·growth 단위 테스트·growth e2e 스펙·arch 게이트 전부 통과했다. status 를 partial 로 둔 유일한 이유는 tests/unit/copay-relief.test.ts 의 기존 2건 실패다 — 이번 작업(FORBIDDEN: copay-relief 수정 금지)과 무관하고, 이전 curvez-nextjs 핸드오프(.curvez/handoff/curvez-nextjs.20261002-105551.json)가 이미 같은 사실을 curvez-qa 에게 보고했으며 아직 반영되지 않아 이번 실행에도 그대로 남아 있다.",
+  "artifacts": [
+    {
+      "path": "apps/preemie-calc/src/shared/lib/normal-distribution/index.ts",
+      "kind": "code",
+      "note": "inverseStandardNormalCdf(p) 추가(Acklam 근사, 보정 없음). standardNormalCdf 는 그대로."
+    },
+    {
+      "path": "apps/preemie-calc/src/entities/growth/model/index.ts",
+      "kind": "code",
+      "note": "lmsValueAtZ·REFERENCE_PERCENTILES·GrowthReferenceRow·GrowthReferenceResult·growthReferenceValues 추가. resolveAgeAtMeasurement(비공개)로 나이 판정을 growthPercentiles 와 공유하도록 내부 리팩터(시그니처·결과 불변)."
+    },
+    {
+      "path": "apps/preemie-calc/src/widgets/growth-panel/lib/build-growth-trend-points.ts",
+      "kind": "code",
+      "note": "신규. buildGrowthTrendPoints({records, age}) → Record<GrowthMeasure, GrowthTrendPoint[]>. React 를 쓰지 않는 순수 함수."
+    },
+    {
+      "path": "apps/preemie-calc/src/widgets/growth-panel/ui/GrowthTrendChart.tsx",
+      "kind": "code",
+      "note": "신규. recharts 를 부르는 유일한 파일(ARCH-114~118). ready/insufficient-data/empty 세 상태, 커스텀 dot·tooltip, isAnimationActive=false."
+    },
+    {
+      "path": "apps/preemie-calc/src/widgets/growth-panel/ui/GrowthPanelSection.tsx",
+      "kind": "code",
+      "note": "GrowthTrendChart 3개 인스턴스를 entry-form→trend→record-list 순서로 추가. buildGrowthTrendPoints 호출 추가."
+    },
+    {
+      "path": "apps/preemie-calc/src/app/globals.css",
+      "kind": "code",
+      "note": ".pc-growth-trend-chart·.pc-growth-trend-chart-canvas 클래스 추가(그래프 높이 200/220/240px, >=1280px 패딩 --space-6)."
+    },
+    {
+      "path": ".curvez/handoff/curvez-nextjs.20261002-112741.json",
+      "kind": "doc",
+      "note": "이 핸드오프 파일."
+    }
+  ],
+  "decisions": [
+    {
+      "what": "inverseStandardNormalCdf 근사식으로 Peter Acklam 의 유리함수 근사(보정 없음)를 골랐다.",
+      "why": "architect 결정이 'standardNormalCdf 로 뉴턴 보정하지 않는다'를 정했다. Acklam 근사는 보정 없이도 전 구간 상대오차 약 1.15e-9 로 알려져 있고, 자기 확인(scratchpad, python NormalDist 기준)에서 0.001~0.999 구간 round-trip 최대 절대오차 6.884e-8 로 요구치(1e-6) 를 훨씬 밑돈다.",
+      "reversible_at": "apps/preemie-calc/src/shared/lib/normal-distribution/index.ts"
+    },
+    {
+      "what": "growthPercentiles 의 나이 판정(before-due/out-of-range/ok)을 resolveAgeAtMeasurement 비공개 함수로 추출해 growthReferenceValues 와 공유시켰다. 두 함수의 시그니처·외부 동작은 바꾸지 않았다.",
+      "why": "architect 결정 — 표의 percentileHidden 과 그래프 기준선 끊김이 같은 지점에서 갈려야 한다. growthPercentiles 의 결과 모양을 바꾸면 그 결과를 통째로 비교하는 기존 테스트가 깨질 위험이 있어 내부 구조만 바꿨다 — tests/unit/growth.test.ts 9/9 통과로 동작 불변을 확인했다.",
+      "reversible_at": "apps/preemie-calc/src/entities/growth/model/index.ts"
+    },
+    {
+      "what": "buildGrowthTrendPoints 의 점 cautionNeeded 를 그 지표 하나의 consult 로 뒀다. GrowthRecordTable.md 의 'GrowthRecordRow.cautionNeeded 그대로'(세 지표 OR) 와 다르다.",
+      "why": "architect 결정(curvez-architect.20261002-110444.json) 을 그대로 따랐다 — 지표별 그래프에 행 단위 OR 을 쓰면 다른 지표의 이상 때문에 이 지표 선에 주의 삼각형이 찍혀 그 지표 자체는 정상인데도 오해를 준다.",
+      "reversible_at": "apps/preemie-calc/src/widgets/growth-panel/lib/build-growth-trend-points.ts"
+    },
+    {
+      "what": "GrowthTrendChart 를 widgets/growth-panel/ui 의 별도 'use client' 잎 파일로 두고, recharts import 를 이 파일 하나로 가뒀다. GrowthPanelSection(부모)도 이미 'use client' 지만 그 파일에서 recharts 를 직접 쓰지 않았다.",
+      "why": "architect 결정(ARCH-114~118) — recharts 는 widgets/*/ui 의 'use client' 파일에서만 허용된다. 부모가 이미 클라이언트라 경계상 둘 다 허용되지만, CLAUDE.md 'use client 를 어느 층에 두는가' 원칙(잎에 둔다)과 '최소한만 건드린다' 를 같이 지키려고 차트 전용 잎 파일로 분리했다 — 다른 두 측정값 지표 추가/삭제 시 이 파일만 변경 범위에 든다.",
+      "reversible_at": "apps/preemie-calc/src/widgets/growth-panel/ui/GrowthTrendChart.tsx"
+    },
+    {
+      "what": "recharts ResponsiveContainer 를 위해 별도의 '하이드레이션 뒤에만 마운트' 게이트를 새로 만들지 않았다. 기존 DashboardSubpageShell 의 useProfileStore().hydrated 플래그에 의존한다.",
+      "why": "DashboardSubpageShell 은 hydrated=false(SSR·첫 클라이언트 페인트) 동안 children(= GrowthPanelSection 전체, 차트 포함)을 렌더링하지 않는다. hydrated=true 가 된 뒤에야 이 서브트리가 '처음' 마운트되므로 React 입장에서는 하이드레이션 리컨실리에이션이 아니라 하이드레이션 커밋 뒤의 일반 렌더다 — SSR 마크업과 맞춰볼 대상 자체가 없어 ResponsiveContainer 의 측정 전/후 불일치가 하이드레이션 경고로 이어질 수 없다. tests/e2e/growth.spec.ts(공용 fixture 가 모든 테스트에서 console error/warning·pageerror 를 자동 검사)가 7/7 통과해 실측으로 확인했다. 새 게이트를 추가하지 않은 것은 '최소한만 건드린다' — 이미 있는 패턴을 그대로 신뢰했다.",
+      "reversible_at": "apps/preemie-calc/src/widgets/growth-panel/ui/GrowthTrendChart.tsx (추가 게이트가 필요해지면 여기)"
+    },
+    {
+      "what": "recharts 의 타입이 부실한 경계(Payload.payload: any, DotItemDotProps.payload: any)에서만 단언 하나(isGrowthTrendPoint 안의 value as GrowthTrendPoint)를 썼다. 그 밖의 dot·tooltip 콜백은 라이브러리 제네릭(TooltipContentProps<V,N>) 을 그대로 받지 않고 실제로 읽는 필드(active·payload)만 모양으로 뽑은 자체 타입(TrendTooltipProps)을 썼다.",
+      "why": "TooltipContentProps<number,string> 을 그대로 쓰면 Tooltip.content 의 기본 제네릭(ValueType|NameType)과 맞물려 formatter 필드가 충돌해 타입 오류가 났다(실측 — 첫 typecheck 시도에서 TS2322). payload 필드의 any 는 라이브러리 경계라 어쩔 수 없고, 한 곳(헬퍼 함수 하나)에서만 단언해 틀렸을 때 볼 곳을 좁혔다.",
+      "reversible_at": "apps/preemie-calc/src/widgets/growth-panel/ui/GrowthTrendChart.tsx"
+    },
+    {
+      "what": "그래프 높이(200/220/240px)·>=1280px 패딩(--space-6)을 inline style breakpoint 분기가 아니라 globals.css 의 className+@media 로 구현했다(.pc-growth-trend-chart·.pc-growth-trend-chart-canvas).",
+      "why": "이 코드베이스의 기존 관례(이미 .pc-quick-links·.pc-round-list·.pc-value-card 등 9곳 이상이 이 패턴)를 그대로 따랐다 — 최소한만 건드리고 새 패턴을 만들지 않는다.",
+      "reversible_at": "apps/preemie-calc/src/app/globals.css"
+    }
+  ],
+  "blocked_on": [
+    {
+      "question": "QA 갱신 필요 (1/3) — tests/unit/growth.test.ts 에 이번에 추가한 순수 함수(inverseStandardNormalCdf, lmsValueAtZ, growthReferenceValues, buildGrowthTrendPoints)에 대한 단위 테스트가 없다. 자기 확인은 tests/ 를 건드리지 않는 임시 vitest config(resolve.alias 만 project src 로 맞춤, /private/tmp 스크래치패드)로 11건을 돌려 전부 통과(이 핸드오프 verification 참고)했지만 커버리지로 치지 않는다. 추가해 줄 수 있는가.",
+      "who": "curvez-qa"
+    },
+    {
+      "question": "QA 갱신 필요 (2/3) — tests/e2e/growth.spec.ts 에 PC-F8-AC3(추이 그래프) 케이스가 없다. (a) 기록 2개 이상일 때 GrowthTrendChart(ready, 3개 인스턴스)가 보이는지, (b) 기록 1개일 때 insufficient-data 안내 문구('측정 기록이 1개뿐이라 추이를 보여줄 수 없습니다...')가 보이는지, (c) 360px 뷰포트(현재 project 의 기본 viewport)에서 기록 2개 이상 상태로 가로 스크롤(scrollWidth>clientWidth)이 생기지 않는지 추가해 줄 수 있는가. standing 14(E2E 반복 실행 자제)에 따라 이번에는 growth.spec.ts 기존 7개만 한 번 돌렸다(7/7 통과, 하이드레이션 경고 0).",
+      "who": "curvez-qa"
+    },
+    {
+      "question": "참고(QA 갱신 필요 아님, 알림만) — tests/unit/copay-relief.test.ts 의 'PC-F5 구간 경계(203일·231일)는 lower-inclusive 로 확정됐다' describe 블록 2건이 이번 실행(pnpm --filter preemie-calc test)에서도 여전히 실패한다. 이전 curvez-nextjs 핸드오프(.curvez/handoff/curvez-nextjs.20261002-105551.json blocked_on)가 같은 요청을 이미 올렸고 아직 반영되지 않았다. 이번 작업(FORBIDDEN: copay-relief 수정 금지)과 무관해 다시 고치지 않았다.",
+      "who": "curvez-qa"
+    }
+  ],
+  "verification": [
+    {
+      "command": "pnpm --filter preemie-calc typecheck",
+      "result": "next typegen ✓ Types generated successfully / tsc --noEmit 오류 0건 / exit 0",
+      "passed": true
+    },
+    {
+      "command": "pnpm typecheck (워크스페이스 루트, pnpm -r --if-present typecheck)",
+      "result": "Scope: 7 of 8 workspace projects. apps/preemie-calc·packages/scopulus-ui·apps/handwork·apps/scopulus-ui·apps/city-presets 전부 Done, 오류 출력 0건, exit 0",
+      "passed": true
+    },
+    {
+      "command": "pnpm --filter preemie-calc lint",
+      "result": "eslint 출력 0줄, exit 0",
+      "passed": true
+    },
+    {
+      "command": "pnpm lint (워크스페이스 루트, eslint . && pnpm -r --if-present lint)",
+      "result": "루트 eslint 포함 5개 프로젝트 전부 Done, 출력 0줄, exit 0",
+      "passed": true
+    },
+    {
+      "command": "pnpm --filter preemie-calc test (vitest run)",
+      "result": "Test Files 1 failed | 14 passed (15) / Tests 2 failed | 101 passed (103). 실패 2건은 tests/unit/copay-relief.test.ts(이 작업 범위 밖, 위 blocked_on 3번 참고) 뿐이다. tests/unit/growth.test.ts 는 9/9 전부 통과 — growthPercentiles 리팩터가 기존 동작을 바꾸지 않았음을 확인했다.",
+      "passed": false
+    },
+    {
+      "command": "pnpm exec vitest run tests/unit/growth.test.ts (growth 만 단독)",
+      "result": "Test Files 1 passed (1) / Tests 9 passed (9)",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/quality-gate.mjs --only arch",
+      "result": "PASS arch: 규칙 24개 파싱 / 검사 24개 / 위반 0건 (ARCH-114~118 포함, recharts import 는 widgets/growth-panel/ui/GrowthTrendChart.tsx 한 곳뿐임을 포함해 확인됨)",
+      "passed": true
+    },
+    {
+      "command": "grep -rn 'eslint-disable' apps/preemie-calc/src | wc -l",
+      "result": "0",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) PORT=3200 pnpm exec playwright test tests/e2e/growth.spec.ts (chromium-mobile, viewport 360x800, next build && next start)",
+      "result": "7 passed (11.6s). 공용 fixture(모든 콘솔 error/warning·pageerror 를 각 테스트마다 자동 검사)가 7개 전부에서 위반 0건을 확인해 하이드레이션 경고 0 을 실측으로 확인했다.",
+      "passed": true
+    },
+    {
+      "command": "자기 확인 — tests/ 밖 임시 vitest config(/private/tmp/.../scratchpad/selfcheck.vitest.config.ts, resolve.alias '@'→project src, tests/ 미수정)로 /private/tmp/.../scratchpad/selfcheck.test.ts 11건 실행",
+      "result": "11 passed (11). inverseStandardNormalCdf(0.5)=0 / (0.975)=1.9599639861... (오차<1e-3) / (0.03)=-1.8807936060... (오차<1e-3). standardNormalCdf 왕복(p∈{0.001..0.999}) 최대 절대오차=6.884262526707374e-8(≤1e-6). lmsValueAtZ(height/male/month1 row, z=0)=54.7244=M. growthReferenceValues(ok).height.p50=54.7(=round(M,1)). buildGrowthTrendPoints 예시 기록 3개(2026-06-01·2026-04-25·2026-07-01, 입력은 섞은 순서) → 출력이 측정일 오름차순 ['2026-04-25','2026-06-01','2026-07-01'] 으로 정렬됨, before-due(2026-04-25) 점은 percentileHidden=true·ageBasisLabel=null·p3=p50=p97=null, M값 그대로인 두 점은 percentileValue=50·cautionNeeded=false·ageBasisLabel='교정 1개월 기준'/'교정 2개월 기준', 지표 3개 모두 점 개수 3, weight[1].value=4.4709(=4470.9g/1000, Math.round 경유)",
+      "passed": true
+    },
+    {
+      "command": "grep -rnE ':\\s*any\\b|<any>|\\bas\\s+any\\b' apps/preemie-calc/src --include='*.ts' --include='*.tsx' | wc -l",
+      "result": "0",
+      "passed": true
+    },
+    {
+      "command": "grep -rnE '\\bas\\s+[A-Z][A-Za-z0-9_]*' apps/preemie-calc/src/widgets/growth-panel apps/preemie-calc/src/entities/growth apps/preemie-calc/src/shared/lib/normal-distribution --include='*.ts' --include='*.tsx'",
+      "result": "3건 매치. 이번에 내가 쓴 코드는 1건뿐이다 — GrowthTrendChart.tsx:50 의 isGrowthTrendPoint 안 'value as GrowthTrendPoint'(recharts Payload.payload:any 경계 어댑터, 바로 위에 이유 주석, decisions 참고). 나머지 2건(entities/growth/api/index.ts:26,48 의 'value as Record<string, unknown>')은 이번 작업 전부터 있던 기존 코드로, 이번에 건드리지 않았다.",
+      "passed": true
+    },
+    {
+      "command": "grep -c \"'use client'\" apps/preemie-calc/src/app/dashboard/growth/page.tsx; grep -c '\"use client\"' apps/preemie-calc/src/app/dashboard/growth/page.tsx",
+      "result": "0 / 0 — growth/page.tsx 최상단에 'use client' 없음(서버 컴포넌트로 유지, 안의 GrowthView 만 'use client')",
+      "passed": true
+    }
+  ]
+}

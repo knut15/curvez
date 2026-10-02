@@ -1,0 +1,84 @@
+{
+  "from": "curvez-designer",
+  "to": [
+    "curvez-orchestrator",
+    "curvez-nextjs"
+  ],
+  "status": "done",
+  "summary": "오케스트레이터가 지난 라운드 산출물에서 찾은 어긋남 3건을 .curvez/design/preemie-calc/ 안에서만 고쳤다. ① input.md 의 기본 상태에서 TextField(이름)를 뺐다 — 첫 화면은 이제 출생일·출산예정일(또는 주수)·성별·버튼만 보인다(PC-F1-AC1). ② 이름·출생 체중(둘 다 SPEC §3 선택 항목)을 새 컴포넌트 EditProfileDialog(dashboard 모달)에 옮겨 레이블·단위·유효범위(이름 20자, 체중 0.2~6.0kg)까지 정했다(PC-F6-AC3, PC-F7-AC1). ③ ChildSwitcherTabs 에 '+ 아이 추가' 진입점을 상시 노출로 더하고, `/` 라우트를 `?new=1` 쿼리 상태로 재사용해 저장된 프로필이 있어도 두 번째 아이 입력 화면에 닿게 했다(PC-F1-AC5) — 새 아키텍처 라우트는 만들지 않았다. index.md 의 화면/컴포넌트/커버리지 표를 이 변경에 맞춰 갱신했다.",
+  "artifacts": [
+    { "path": ".curvez/design/preemie-calc/index.md", "kind": "spec" },
+    { "path": ".curvez/design/preemie-calc/screens/input.md", "kind": "spec" },
+    { "path": ".curvez/design/preemie-calc/screens/input-weeks.md", "kind": "spec" },
+    { "path": ".curvez/design/preemie-calc/screens/dashboard.md", "kind": "spec" },
+    { "path": ".curvez/design/preemie-calc/components/TextField.md", "kind": "spec" },
+    { "path": ".curvez/design/preemie-calc/components/PageHeader.md", "kind": "spec" },
+    { "path": ".curvez/design/preemie-calc/components/ChildSwitcherTabs.md", "kind": "spec" },
+    { "path": ".curvez/design/preemie-calc/components/EditProfileDialog.md", "kind": "spec" }
+  ],
+  "decisions": [
+    {
+      "what": "이름·출생 체중 입력을 첫 화면(input)에서 빼고 dashboard 의 새 컴포넌트 EditProfileDialog(모달)로 옮긴다. 새 라우트는 만들지 않는다",
+      "why": "PC-F1-AC1 은 첫 화면에 출생일·출산예정일·성별·버튼만 있어야 한다고 못 박았지만, SPEC §3 데이터 표는 이름·출생 체중을 둘 다 선택 항목으로 남겼고 PC-F6-AC3·PC-F7-AC1 은 이 값이 어딘가에 입력돼 있는 프로필을 전제한다. dashboard 는 이미 있는 라우트라 architecture.md 에 라우트를 더하지 않고 모달 상태로 해결했다",
+      "reversible_at": ".curvez/design/preemie-calc/screens/dashboard.md:header, .curvez/design/preemie-calc/components/EditProfileDialog.md"
+    },
+    {
+      "what": "두 번째 아이를 추가하는 진입점은 `/` 를 새 라우트로 만들지 않고 쿼리 `?new=1` 상태로 재사용한다(저장된 프로필이 있어도 자동 리다이렉트를 건너뛴다)",
+      "why": "같은 라우트를 쿼리로 다른 모드로 그리는 패턴이 `/?weeks=n`(input-weeks)에 이미 있어 일관성을 택했다. CONTEXT 지시가 '가능하면 기존 라우트 안의 상태로 해결한다'고 했고, architecture ⑥ 라우트 표에 새 행을 더할 필요가 없어졌다. 아이 정보는 여전히 URL에 들어가지 않는다(`new=1` 은 모드 플래그이지 아이 데이터가 아니다)",
+      "reversible_at": ".curvez/design/preemie-calc/screens/input.md:entry"
+    },
+    {
+      "what": "ChildSwitcherTabs 를 '아이가 1명이어도 항상 보이는 컴포넌트' 로 바꾸고 '+ 아이 추가' 버튼을 더한다(기존에는 2명 미만이면 영역 전체를 그리지 않았다)",
+      "why": "지난 라운드 스펙에는 두 번째 아이를 만들 진입점이 어디에도 없어 PC-F1-AC5 를 실행할 방법이 없었다. 전환과 추가는 같은 '아이 목록 관리' 개념 영역이라 같은 컴포넌트에 묶었다(tablist 밖의 독립 button 으로 분리해 a11y 패턴은 섞지 않았다)",
+      "reversible_at": ".curvez/design/preemie-calc/components/ChildSwitcherTabs.md"
+    },
+    {
+      "what": "출생 체중 입력의 sanity 유효 범위를 0.2~6.0kg 으로 둔다(F6 판정 경계인 1.5kg·28주와는 다른, 입력 오류만 거르는 값)",
+      "why": "SPEC·architecture 어디에도 입력 sanity 범위가 없었다. 임상적으로 있을 수 있는 출생 체중의 하한(초극소저체중아 약 0.2kg)과 상한(거대아 약 6.0kg)을 근거 순서 4번(기본값)으로 골랐다. F6 판정 자체의 경계(1.5kg, 28주=196일)는 entities 층 데이터 파일 값 그대로 두고 건드리지 않았다",
+      "reversible_at": ".curvez/design/preemie-calc/components/EditProfileDialog.md"
+    },
+    {
+      "what": "이름 입력 최대 길이를 20자로 둔다",
+      "why": "SPEC 이 길이를 정하지 않았다. 목록·카드·공유 카드에서 한 줄로 잘리지 않게 보이는 보수적인 값을 근거 순서 4번으로 골랐다",
+      "reversible_at": ".curvez/design/preemie-calc/components/EditProfileDialog.md"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "grep -n \"TextField|DateField|GestationInput|SegmentedControl\" .curvez/design/preemie-calc/screens/input.md",
+      "result": "기본 상태 필드 4줄만 나온다 — DateField(출생일), DateField(출산예정일, 예정일 모드), GestationInput(재태주수, 주수 모드), SegmentedControl(성별). TextField(이름) 없음. PC-F1-AC1 요구대로 '입력칸+버튼만'이 성립한다",
+      "passed": true
+    },
+    {
+      "command": "export DESIGN=.curvez/design/preemie-calc; for f in \"$DESIGN/index.md\" \"$DESIGN/tokens.md\"; do test -f \"$f\" || echo MISSING-DOC $f; done; find $DESIGN/screens -name '*.md' | wc -l; find $DESIGN/components -name '*.md' | wc -l",
+      "result": "MISSING-DOC 0줄. screens=9, components=19(EditProfileDialog 추가로 18→19)",
+      "passed": true
+    },
+    {
+      "command": "화면별 state:default/loading/empty/error + focus-order grep 누락 검사(수정한 3개 화면 + 나머지 6개 전부 재검사)",
+      "result": "screen-missing=0",
+      "passed": true
+    },
+    {
+      "command": "컴포넌트별 a11y:label/focus/contrast/target/role + ## props/states/a11y/responsive grep 누락 검사(수정한 4개 + 신규 1개 + 나머지 전부 재검사)",
+      "result": "component-missing=0",
+      "passed": true
+    },
+    {
+      "command": "find .curvez/design/preemie-calc \\( -name '*.tsx' -o -name '*.ts' -o -name '*.css' \\) | wc -l",
+      "result": "impl-files=0",
+      "passed": true
+    },
+    {
+      "command": "node 로 tokens.md 의 '## 대비 검증' 13쌍을 WCAG 상대 명도 대비 공식으로 재계산(토큰 값 자체는 이번 라운드에 바꾸지 않았다 — EditProfileDialog·PageHeader·ChildSwitcherTabs 는 기존 색 토큰만 재사용했다)",
+      "result": "pairs=13 light=13 dark=0 contrast-fail=0",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/",
+      "result": "OK 핸드오프 검증 — 검사 7건, 통과 7건, 실패 0건, 오류 0개, 경고 0개",
+      "passed": true
+    }
+  ]
+}

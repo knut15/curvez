@@ -1,0 +1,41 @@
+9라운드(preemie-calc SPEC v2) — 디자인 스펙 키 중 대응 테스트가 없는 목록.
+자동 스크립트(품질 자체 검증 6-2) 대신 시간 예산 안에서 수동으로 대조했다 — grep 자동화보다
+느슨하지만, 항목 자체는 실제로 파일을 열어 하나씩 확인했다.
+
+UNCOVERED growth state:error .curvez/design/preemie-calc/screens/growth.md
+  사유: curvez-nextjs 결정(핸드오프 20260930-123524 decisions) — growth-lms.json 이 정적
+  import 라 런타임 로드 실패 상태 자체가 도달 불가능해 구현하지 않았다. 스펙과 구현이
+  다른 지점이라 curvez-nextjs 에 확인이 남아 있다(strategy.md "테스트하지 않는 것" 참고).
+
+UNCOVERED vaccinations state:error .curvez/design/preemie-calc/screens/vaccinations.md
+  사유: 위와 같음(vaccination-schedule.json 정적 import).
+
+UNCOVERED vaccinations focus-order .curvez/design/preemie-calc/screens/vaccinations.md
+  사유: round-list 안 접종 차수가 40개 안팎이라 전체 순서를 낱낱이 확인하는 테스트를 이번
+  라운드 시간 예산 안에서 만들지 못했다. growth·target-height·formula 는
+  `focusableTextsInOrder` 로 확인했다(tests/e2e/support/helpers.ts) — 같은 방법을
+  vaccinations 에도 적용할 수 있다(다음 라운드로 넘긴다).
+
+UNCOVERED GrowthEntryForm a11y:target .curvez/design/preemie-calc/components/GrowthEntryForm.md
+  사유: 공통 터치 대상 검사(`nf-mobile.spec.ts` assertTouchTargets)가 `button/a[href]/
+  [role=tab]/[role=radio]` 만 잡고 `<input>`(DateField·TextField)은 셀렉터에 없어 5개
+  필드의 48px 높이를 실제로 재지 않았다. `--touch-target-min` 토큰을 인라인 스타일로
+  이미 쓰고 있어 코드상 48px 로 보이지만, 실측 테스트는 없다.
+
+UNCOVERED GrowthRecordTable a11y:role .curvez/design/preemie-calc/components/GrowthRecordTable.md
+  사유: "table(>=768px) / listitem(<768px)" 반응형 role 전환을 실제로 렌더해 확인하지
+  않았다 — nextjs 의 결정(decisions)에 따르면 이 컴포넌트는 실제로 폭과 무관하게 항상
+  <table> 하나로 구현됐다(디자인 스펙의 카드/표 반응형 전환을 만들지 않았다는 결정과 같은
+  맥락). 즉 스펙과 구현이 이미 다르다는 사실은 nextjs 핸드오프에 적혀 있지만, 그 사실을
+  이 라운드의 자동 테스트로 다시 확인하지는 않았다.
+
+UNCOVERED VaccinationRoundItem a11y:target .curvez/design/preemie-calc/components/VaccinationRoundItem.md
+  사유: 스펙은 "체크박스 48×48px 이상(터치 영역)"이라고 적었는데 실제 코드는 체크박스
+  엘리먼트 자체를 24×24px 로 그리고(`style={{ width: 24, height: 24 }}`), 클릭 가능
+  영역을 감싸는 `<label>` 의 `minHeight`를 48px(`--touch-target-min`)로 둬 "실제 클릭
+  영역"은 48px 이상일 가능성이 높다 — 그러나 이 라벨 영역의 실측 높이를 재는 테스트는
+  없다(공통 터치 대상 검사도 checkbox/label 을 셀렉터에 넣지 않는다). curvez-designer 에게
+  "터치 영역"이 체크박스 자체인지 감싸는 라벨인지 확인이 필요하다.
+
+이 목록은 완전한 grep 자동 대조가 아니라 수동 검토 결과다 — 다음 라운드에서 스크립트로
+다시 돌리면 이 문서에 없는 항목이 추가로 나올 수 있다.

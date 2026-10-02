@@ -1,0 +1,45 @@
+{
+  "from": "curvez-designer",
+  "to": [
+    "curvez-orchestrator"
+  ],
+  "status": "done",
+  "summary": "리뷰어 DSG-02(`curvez-reviewer.20260930-143021.json` blocked_on)가 지적한 `screens/formula.md` 의 자기 모순을 없앴다 — 20행 preemie-note region 은 '계산 성공 여부와 무관하게 항상' 이라 하고, 34행 state:error 는 'result·preemie-note 는 그리지 않는다' 라 해서 서로 어긋났다. 오케스트레이터 tie-break 결정(20행과 PC-F15-AC2 쪽을 따른다)대로 34행을 고쳤다 — state:error 에서 result 만 그리지 않고, preemie-note 는 20행 규칙대로 계산 성공 여부와 무관하게 그대로 남는다고 명시했다. 구현(`FormulaPanelSection.tsx:35`, `ages.correctionApplies` 로만 preemie-note 노출 여부를 결정하고 `computed` 계산 결과와 무관함)이 이미 이렇게 동작하므로 스펙을 구현에 맞췄다. index.md 의 '8차 라운드분' decisions 표에 이 수정 한 줄을 더했다. 화면 구조·컴포넌트·토큰은 손대지 않았다.",
+  "artifacts": [
+    {
+      "path": ".curvez/design/preemie-calc/screens/formula.md",
+      "kind": "doc",
+      "note": "34행 state:error 수정 — 'result·preemie-note 는 그리지 않는다' → 'result 는 그리지 않는다. preemie-note 는 20행 규칙대로 계산 성공 여부와 무관하게 그대로 남는다(재태 37주 미만이면 이 상태에서도 보인다) — 안전 문구라 값 계산 실패와 무관하게 항상 노출한다'. 이 한 줄 외 변경 없음"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/index.md",
+      "kind": "doc",
+      "note": "'decisions (8차 라운드분)' 표에 이번 DSG-02 수정 근거 1행 추가"
+    }
+  ],
+  "decisions": [
+    {
+      "what": "formula.md state:error 에서 preemie-note 를 계속 그리고, result 만 그리지 않는 쪽으로 모순을 없앤다",
+      "why": "오케스트레이터 tie-break 결정(20행 preemie-note 의 '항상' 규칙과 PC-F15-AC2 '결과보다 먼저 보인다' 쪽이 더 구체적이고 안전 문구)을 그대로 따랐다. 구현(FormulaPanelSection.tsx)이 이미 이렇게 동작해 되돌리는 비용도 없다",
+      "reversible_at": ".curvez/design/preemie-calc/screens/formula.md:state:error"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "grep -c 'state:default' / 'state:loading' / 'state:empty' / 'state:error' / 'focus-order' .curvez/design/preemie-calc/screens/formula.md (지시서 필수 섹션 누락 검사, 5개 키 각각 실행)",
+      "result": "5개 키 전부 1건씩 발견 — 필수 섹션 누락 0",
+      "passed": true
+    },
+    {
+      "command": "grep -n preemie-note .curvez/design/preemie-calc/screens/formula.md",
+      "result": "19행(region 정의), 34행(state:error 에서 유지 명시), 42행(focus-order, 기존 그대로) — 20행 '항상' 규칙과 34행이 더 이상 어긋나지 않는다",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/",
+      "result": "OK — 검사 67건, 통과 67건, 실패 0건, 오류 0개, 경고 0개",
+      "passed": true
+    }
+  ]
+}

@@ -1,0 +1,647 @@
+
+Running 261 tests using 5 workers
+
+  ✓    3 [chromium-mobile] › tests/e2e/err-handling.spec.ts:23:5 › [curvez-reviewer/ERR-02] localStorage 가 예외를 던지는 환경에서 /dashboard 는 예외 없이 '저장 공간을 사용할 수 없습니다'를 보인다 (404ms)
+  ✓    5 [chromium-mobile] › tests/e2e/err-handling.spec.ts:43:5 › [curvez-reviewer/ERR-02] 프로필이 이미 있어도 localStorage 읽기가 막히면 '저장 공간을 사용할 수 없습니다'를 보인다 (409ms)
+  ✓    2 [chromium-mobile] › tests/e2e/err-handling.spec.ts:9:5 › [curvez-reviewer/ERR-02] localStorage 가 예외를 던지는 환경에서도 첫 화면('/')이 깨지지 않는다 (415ms)
+  ✓    1 [chromium-mobile] › tests/e2e/f1-ac7-due-date-label.spec.ts:13:5 › PC-F1-AC7 — 예정일 칸의 라벨이 '원래 출산 예정일'이다 (416ms)
+  ✓    4 [chromium-mobile] › tests/e2e/f1-ac7-due-date-label.spec.ts:17:5 › PC-F1-AC7 — 칸 아래에 도움말이 보이고, 칸의 aria-describedby 가 그 도움말을 가리킨다 (450ms)
+  ✓    7 [chromium-mobile] › tests/e2e/f1-profile.spec.ts:35:7 › PC-F1-AC4 — 저장된 프로필이 있으면 입력 없이 대시보드로 간다 › `/` 진입 시 자동으로 /dashboard 로 리다이렉트된다 (231ms)
+  ✓   10 [chromium-mobile] › tests/e2e/f1-profile.spec.ts:91:5 › [curvez-reviewer/ACC-03] '주수로 입력' 전환이 출산 예정일 칸 아래에 있다(boundingBox y 비교) (233ms)
+  ✘    6 [chromium-mobile] › tests/e2e/f1-profile.spec.ts:11:7 › PC-F1-AC1 · PC-NF-MOBILE-4 — 첫 화면에는 입력칸과 버튼만 보인다 › 입력칸 3종(출생일·출산예정일·성별) + 주수전환 + 저장 버튼만 보이고, 그 외 버튼이 없다 (256ms)
+  ✓   11 [chromium-mobile] › tests/e2e/f1-profile.spec.ts:106:9 › [curvez-reviewer/ACC-05] 주수 입력 '일' 칸 범위 밖 값 → '날짜를 확인하세요' + 저장 비활성 › 일 칸에 9 를 입력하면 오류 문구가 보이고 저장 버튼이 비활성화된다 (301ms)
+  ✓   12 [chromium-mobile] › tests/e2e/f1-profile.spec.ts:106:9 › [curvez-reviewer/ACC-05] 주수 입력 '일' 칸 범위 밖 값 → '날짜를 확인하세요' + 저장 비활성 › 일 칸에 -3 를 입력하면 오류 문구가 보이고 저장 버튼이 비활성화된다 (284ms)
+  ✓    8 [chromium-mobile] › tests/e2e/f1-profile.spec.ts:45:7 › PC-F1-AC5 · PC-F1-EX3 — 아이가 2명 이상이면 전환 탭이 보이고, 이름이 없으면 번호로 보인다 › 탭에 '아이 1'·'아이 2'가 보이고, '+ 아이 추가'를 누르면 /?new=1 로 이동해 폼이 보인다(리다이렉트 없음) (595ms)
+  ✓   13 [chromium-mobile] › tests/e2e/f13-guide.spec.ts:6:5 › PC-F13-AC2 — '32주 출생 생후 3개월' 페이지에 '예정일보다 8주 일찍 태어남'과 교정 나이 설명이 보인다 (164ms)
+  ✓   15 [chromium-mobile] › tests/e2e/f13-guide.spec.ts:31:5 › PC-F13-EX1 — 1단계는 검진 안내만 넣고, 접종 안내는 없다 (171ms)
+  ✓   14 [chromium-mobile] › tests/e2e/f13-guide.spec.ts:16:5 › PC-F13-AC3 — 계산기로 가는 링크를 누르면 해당 주수(32주)가 채워진 입력 화면이 열린다 (245ms)
+  ✓   16 [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:15:7 › PC-F16-AC1 — /guide/questions/vaccination 는 200 으로 열리고 h1 이 질문 문장이다 (158ms)
+  ✓   18 [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:21:7 › PC-F16-AC2 — localStorage 가 빈 브라우저에서 vaccination 쪽을 열면 입력 화면으로 넘어가지 않고 본문이 보인다 (157ms)
+  ✓   20 [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:15:7 › PC-F16-AC1 — /guide/questions/checkup-questionnaire 는 200 으로 열리고 h1 이 질문 문장이다 (165ms)
+  ✓   21 [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:21:7 › PC-F16-AC2 — localStorage 가 빈 브라우저에서 checkup-questionnaire 쪽을 열면 입력 화면으로 넘어가지 않고 본문이 보인다 (174ms)
+  ✓    9 [chromium-mobile] › tests/e2e/f1-profile.spec.ts:71:7 › PC-F1-AC6 · PC-NF-PRIV-3 — 정보 전체 삭제 › 확인하면 저장된 프로필이 모두 사라지고 첫 화면으로 돌아간다 (1.2s)
+  ✓   17 [chromium-mobile] › tests/e2e/f1-profile.spec.ts:106:9 › [curvez-reviewer/ACC-05] 주수 입력 '일' 칸 범위 밖 값 → '날짜를 확인하세요' + 저장 비활성 › 일 칸에 1.5 를 입력하면 오류 문구가 보이고 저장 버튼이 비활성화된다 (350ms)
+  ✓   23 [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:15:7 › PC-F16-AC1 — /guide/questions/weaning 는 200 으로 열리고 h1 이 질문 문장이다 (154ms)
+  ✓   24 [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:21:7 › PC-F16-AC2 — localStorage 가 빈 브라우저에서 weaning 쪽을 열면 입력 화면으로 넘어가지 않고 본문이 보인다 (170ms)
+  ✓   26 [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:15:7 › PC-F16-AC1 — /guide/questions/corrected-age-until 는 200 으로 열리고 h1 이 질문 문장이다 (142ms)
+  ✓   27 [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:21:7 › PC-F16-AC2 — localStorage 가 빈 브라우저에서 corrected-age-until 쪽을 열면 입력 화면으로 넘어가지 않고 본문이 보인다 (144ms)
+  ✓   29 [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:15:7 › PC-F16-AC1 — /guide/questions/catch-up-growth 는 200 으로 열리고 h1 이 질문 문장이다 (133ms)
+  ✓   30 [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:21:7 › PC-F16-AC2 — localStorage 가 빈 브라우저에서 catch-up-growth 쪽을 열면 입력 화면으로 넘어가지 않고 본문이 보인다 (136ms)
+  ✘   19 [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:31:7 › PC-F16-AC6 — vaccination 쪽 아래에 근거 자료 이름·기준일, 면책 문구, 계산기 링크가 보인다 (5.2s)
+  ✘   22 [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:31:7 › PC-F16-AC6 — checkup-questionnaire 쪽 아래에 근거 자료 이름·기준일, 면책 문구, 계산기 링크가 보인다 (5.2s)
+  ✘   25 [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:31:7 › PC-F16-AC6 — weaning 쪽 아래에 근거 자료 이름·기준일, 면책 문구, 계산기 링크가 보인다 (5.2s)
+  ✘   28 [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:31:7 › PC-F16-AC6 — corrected-age-until 쪽 아래에 근거 자료 이름·기준일, 면책 문구, 계산기 링크가 보인다 (5.1s)
+  ✓   32 [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:15:7 › PC-F16-AC1 — /guide/questions/copay-relief 는 200 으로 열리고 h1 이 질문 문장이다 (174ms)
+  ✓   34 [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:53:5 › PC-F16-AC4 — 본인부담 경감 쪽에 재태기간 구간 3개와 기간이 보인다 (160ms)
+  ✓   33 [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:21:7 › PC-F16-AC2 — localStorage 가 빈 브라우저에서 copay-relief 쪽을 열면 입력 화면으로 넘어가지 않고 본문이 보인다 (186ms)
+  ✓   35 [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:63:5 › PC-F16-AC5 — '교정연령은 언제까지' 쪽에는 '미확정' 표시가 보인다 (PRD 미결 3) (147ms)
+  ✘   31 [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:31:7 › PC-F16-AC6 — catch-up-growth 쪽 아래에 근거 자료 이름·기준일, 면책 문구, 계산기 링크가 보인다 (5.2s)
+  ✓   38 [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:75:5 › PC-F16-AC7 — /sitemap.xml 에 질문형 가이드 6쪽이 모두 들어 있다 (121ms)
+  ✘   40 [chromium-mobile] › tests/e2e/f17-guide-index.spec.ts:22:5 › PC-F17-AC2 — 출생 주수 32주, 생후 3개월을 고르고 이동을 누르면 '32주 출생, 생후 3개월' 조합 페이지가 열린다 (178ms)
+  ✓   39 [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:44:5 › PC-F16-AC3 — 문진표 쪽에 '방문 날짜는 출생 기준, 문진표와 발달선별검사지는 교정 기준(24개월 검진까지)'이 보인다 (167ms)
+  ✓   42 [chromium-mobile] › tests/e2e/f17-guide-index.spec.ts:13:5 › PC-F17-AC1 — /guide 가 200 으로 열리고 질문형 가이드 6쪽 링크가 보인다 (174ms)
+  ✓   43 [chromium-mobile] › tests/e2e/f17-guide-index.spec.ts:34:5 › PC-F17-AC3 — /sitemap.xml 에 /guide 가 들어 있다 (89ms)
+  ✓   44 [chromium-mobile] › tests/e2e/f18-age-basis-public.spec.ts:25:5 › PC-F18-AC2 — 프로필이 없을 때 '내 아이로 계산하기'는 입력 화면(/)으로 간다 (199ms)
+  ✓   46 [chromium-mobile] › tests/e2e/f18-age-basis-public.spec.ts:41:5 › PC-F18-AC3 — 근거 자료 이름과 기준일이 보인다 (138ms)
+  ✓   45 [chromium-mobile] › tests/e2e/f18-age-basis-public.spec.ts:32:5 › PC-F18-AC2 — 프로필이 있을 때 '내 아이로 계산하기'는 F3 화면(/dashboard/age-basis)으로 간다 (232ms)
+  ✓   47 [chromium-mobile] › tests/e2e/f2-dashboard.spec.ts:10:5 › PC-F2-AC1 — 오늘 2026-06-01: '생후 92일 · 3개월'과 '교정 36일 · 1개월'이 나란히 보인다 (160ms)
+  ✓   48 [chromium-mobile] › tests/e2e/f2-dashboard.spec.ts:23:5 › PC-F2-AC2 — 오늘 2026-04-01: '교정 D-25'와 '재태 36주 3일'이 보인다 (175ms)
+  ✓   49 [chromium-mobile] › tests/e2e/f2-dashboard.spec.ts:33:5 › PC-F2-AC3 — 오늘 2026-06-01: 다음 월령일 '생후 4개월: 2026-07-01'과 '교정 2개월: 2026-06-26'이 보인다 (166ms)
+  ✓   50 [chromium-mobile] › tests/e2e/f2-dashboard.spec.ts:45:5 › PC-F2-AC4 — 재태 38주5일(37주 이상)이면 교정 칸이 보이지 않고 생후 나이만 보인다 (172ms)
+  ✓   51 [chromium-mobile] › tests/e2e/f2-dashboard.spec.ts:57:5 › PC-F2-AC5 — 나이 옆에 '생후: 출생일 기준 · 교정: 출산 예정일 기준'이 한 줄로 적혀 있다 (157ms)
+  ✓   52 [chromium-mobile] › tests/e2e/f2-dashboard.spec.ts:67:5 › [curvez-reviewer/ACC-02] 화면에 '교정 36일 · 1개월' 한 문구가 정확히 보인다(getByText exact) (153ms)
+  ✓   54 [chromium-mobile] › tests/e2e/f3-age-basis.spec.ts:13:5 › PC-F3-AC1 — '예방접종 — 출생 기준 — 생후 3개월'이 보인다 (135ms)
+  ✓   55 [chromium-mobile] › tests/e2e/f3-age-basis.spec.ts:22:5 › PC-F3-AC2 — '이유식 — 교정 기준 — 교정 1개월'이 보인다 (138ms)
+  ✓   56 [chromium-mobile] › tests/e2e/f3-age-basis.spec.ts:31:5 › PC-F3-AC3 — '영유아검진 방문 — 출생 기준', '문진표·발달선별검사지 — 교정 기준(24개월 검진까지)'이 보인다 (137ms)
+  ✓   57 [chromium-mobile] › tests/e2e/f3-age-basis.spec.ts:44:5 › PC-F3-AC4 — 항목마다 근거 자료 이름과 기준일이 보인다 (144ms)
+  ✓   58 [chromium-mobile] › tests/e2e/f3-age-basis.spec.ts:52:5 › PC-F3-AC5 — 재태 37주 이상 아이는 모든 항목이 '생후 나이 그대로'로 보인다 (146ms)
+  ✓   53 [chromium-mobile] › tests/e2e/f2-dashboard.spec.ts:77:5 › PC-F2-EX1 — 프로필이 없으면 F1 첫 화면으로 보낸다 (935ms)
+  ✓   59 [chromium-mobile] › tests/e2e/f3-age-basis.spec.ts:67:5 › [curvez-reviewer/ACC-01] 예정일 2026-03-10(재태 37주 이상) 아이의 F3 에 '교정 기준' 문구가 0개다 (149ms)
+  ✓   60 [chromium-mobile] › tests/e2e/f4-checkups.spec.ts:11:5 › PC-F4-AC2 — 오늘 2026-09-15(생후 6개월14일·교정 4개월20일)이면 '오늘은 교정 4개월 기준으로 문진표를 쓰세요'가 보인다 (166ms)
+  ✓   61 [chromium-mobile] › tests/e2e/f4-checkups.spec.ts:21:5 › PC-F4-AC4 — 오늘 날짜가 든 차수가 맨 위에 강조돼 보이고, 지난·예정 차수와 구분된다 (153ms)
+  ✓   62 [chromium-mobile] › tests/e2e/f4-checkups.spec.ts:38:5 › PC-F4-AC5 — 화면 아래에 데이터 출처와 기준일이 보인다 (147ms)
+  ✓   63 [chromium-mobile] › tests/e2e/f4-checkups.spec.ts:48:5 › [curvez-reviewer/ERR-01] 오늘이 출산 예정일 전(1차 검진 창 안)이어도 /dashboard/checkups 가 예외 없이 뜨고 '출산 예정일 전이라 교정 나이가 아직 없습니다'가 보인다 (141ms)
+  ✓   65 [chromium-mobile] › tests/e2e/f5-copay-relief.spec.ts:18:5 › PC-F5-AC2 — 재태 28주6일이면 '5년 4개월' 구간으로 분류된다 (134ms)
+  ✓   64 [chromium-mobile] › tests/e2e/f5-copay-relief.spec.ts:12:5 › PC-F5-AC1 — 재태 32주0일이면 '5년 3개월' 구간으로 분류된다 (142ms)
+  ✓   67 [chromium-mobile] › tests/e2e/f5-copay-relief.spec.ts:30:5 › PC-F5-AC4 — 재태 37주0일 이상이면 '경감 대상이 아닙니다'가 보인다 (141ms)
+  ✓   66 [chromium-mobile] › tests/e2e/f5-copay-relief.spec.ts:24:5 › PC-F5-AC3 — 재태 35주0일이면 '5년 2개월' 구간으로 분류된다 (144ms)
+  ✓   68 [chromium-mobile] › tests/e2e/f5-copay-relief.spec.ts:36:5 › PC-F5-AC5 — 종료 예정일과 '2026년 1월 시행 제도 기준' 문구가 함께 보인다 (140ms)
+  ✓   69 [chromium-mobile] › tests/e2e/f6-correction-period.spec.ts:12:5 › PC-F6-AC1 · PC-F6-AC4 — 재태 32주0일·체중 미입력이면 '24개월까지'와 연장 조건, '의료진과 상담해 정하세요'가 보인다 (138ms)
+  ✓   71 [chromium-mobile] › tests/e2e/f6-correction-period.spec.ts:25:5 › PC-F6-AC2 — 재태 27주6일이면 '36개월까지 쓸 수 있음'이 보인다 (139ms)
+  ✓   70 [chromium-mobile] › tests/e2e/f6-correction-period.spec.ts:31:5 › PC-F6-AC3 — 재태 32주0일·출생 체중 1.4kg이면 '36개월까지 쓸 수 있음'이 보인다 (141ms)
+  ✓   72 [chromium-mobile] › tests/e2e/f6-correction-period.spec.ts:39:5 › PC-F6-EX1 — 재태 37주 이상이면 대시보드 quick-links에 이 카드 자체가 없다 (153ms)
+  ✓   73 [chromium-mobile] › tests/e2e/f7-share.spec.ts:27:5 › PC-F7-AC1 · PC-NF-PRIV-2 — 이름 '하늘'로 저장한 프로필의 공유 링크와 카드 그리기 입력에 '하늘'이 없다 (290ms)
+  ✓   74 [chromium-mobile] › tests/e2e/f7-share.spec.ts:51:5 › PC-F7-AC3 — 공유 링크 fragment 키는 b·d 두 개뿐이다 (269ms)
+  ✓   76 [chromium-mobile] › tests/e2e/f7-share.spec.ts:94:5 › PC-F7-EX1 — navigator.share 를 쓸 수 없는 환경에서는 '링크 복사' 버튼이 보인다 (216ms)
+  ✓   75 [chromium-mobile] › tests/e2e/f7-share.spec.ts:66:5 › PC-F7-AC2 — 공유 링크를 다른 브라우저 컨텍스트(저장값 없음)에서 열면 같은 날짜 기준 같은 결과가 보인다 (451ms)
+  ✓   77 [chromium-mobile] › tests/e2e/f7-share.spec.ts:111:5 › PC-F7-AC5 · AC6 — '결과 문구 복사'를 누르면 클립보드에 생후·교정·공유 링크 문구가 들어가고 이름은 없다 (181ms)
+  ✓   78 [chromium-mobile] › tests/e2e/f7-share.spec.ts:129:5 › PC-F7-AC7 — 복사가 끝나면 '문구를 복사했어요'가 보인다 (190ms)
+  ✓   79 [chromium-mobile] › tests/e2e/f7-share.spec.ts:140:5 › [curvez-reviewer/ACC-06] navigator.share 가 있어도 '링크 복사' 버튼이 보인다 (166ms)
+  ✓   80 [chromium-mobile] › tests/e2e/f7-share.spec.ts:150:5 › [curvez-reviewer/DSG-01] before-due 카드의 fillText 줄 폭이 캔버스 사용 가능 폭(952px) 이하다 (248ms)
+  ✓   81 [chromium-mobile] › tests/e2e/formula.spec.ts:14:5 › PC-F15-AC1 · AC2 — 체중 4.0kg → 하루 600~720ml, 재태 37주 미만은 결과보다 먼저 의료진 안내가 보인다 (187ms)
+  ✓   83 [chromium-mobile] › tests/e2e/formula.spec.ts:33:5 › PC-F15-EX1 — 체중이 비었거나 범위 밖(0.5~15kg)이면 계산 버튼이 비활성화된다 (146ms)
+  ✓   82 [chromium-mobile] › tests/e2e/formula.spec.ts:25:5 › PC-F15-AC3 — 결과 아래에 계수 출처·기준일과 진단 대신 문구가 보인다 (175ms)
+  ✓   84 [chromium-mobile] › tests/e2e/formula.spec.ts:41:5 › state:empty(EX2) — 교정 나이가 예정일 이전(범위 밖)이면 '이 시기에는 일반 권장량을 보여주지 않습니다'다 (169ms)
+  ✓   85 [chromium-mobile] › tests/e2e/formula.spec.ts:51:5 › state:coefficient-unconfirmed(EX3) — 교정 나이가 3개월 이상이면 '기준 확인 중'이 보인다 (174ms)
+  ✘   36 [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:31:7 › PC-F16-AC6 — copay-relief 쪽 아래에 근거 자료 이름·기준일, 면책 문구, 계산기 링크가 보인다 (5.2s)
+  ✓   86 [chromium-mobile] › tests/e2e/formula.spec.ts:59:5 › focus-order — header.back → 체중 → 계산하기(값을 채워 활성화된 뒤) (152ms)
+  ✘   37 [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:68:5 › PC-F16-AC5 — 미확정 표시는 교정연령 쪽에만 붙는다(다른 5쪽에는 없다) (5.3s)
+  ✓   87 [chromium-mobile] › tests/e2e/growth.spec.ts:28:5 › state:empty — 기록이 없으면 '아직 기록이 없습니다'가 보이고 entry-form 은 그대로 보인다 (153ms)
+  ✓   89 [chromium-mobile] › tests/e2e/growth.spec.ts:77:5 › PC-NF-A11Y-3 — GrowthEntryForm 다섯 필드 모두 접근 가능한 이름(레이블)이 있다 (158ms)
+  ✓   88 [chromium-mobile] › tests/e2e/growth.spec.ts:47:5 › PC-F8-AC2 — 백분위이 3 미만이거나 97 초과면 '소아청소년과 상담을 권합니다'가 보인다 (249ms)
+  ✓   90 [chromium-mobile] › tests/e2e/growth.spec.ts:86:5 › focus-order — header.back → 측정일 → 키 → 몸무게 → 머리둘레 → 측정자세 → 저장 버튼 (127ms)
+  ✘   41 [chromium-mobile] › tests/e2e/f18-age-basis-public.spec.ts:6:5 › PC-F18-AC1 — localStorage 가 빈 브라우저에서 5개 항목과 각 기준(출생 또는 교정)이 보인다 (5.2s)
+  ✓   91 [chromium-mobile] › tests/e2e/growth.spec.ts:95:5 › PC-NF-MED-1 — 화면에 의료 면책 문구가 보인다 (156ms)
+  ✓   92 [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:20:5 › PC-NF-A11Y-1 — 검진 차수 상태(지남/오늘/예정)는 텍스트 라벨과 아이콘을 함께 쓴다 (178ms)
+  ✓   94 [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:52:5 › PC-NF-A11Y-1 — 성별 선택 항목은 선택되면 색뿐 아니라 아이콘으로도 구분된다 (237ms)
+  ✘   96 [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:63:5 › PC-NF-A11Y-3 — 입력칸마다 접근 가능한 이름(레이블)이 있다 (227ms)
+  ✓   93 [chromium-mobile] › tests/e2e/growth.spec.ts:34:5 › PC-F8-AC1 — 재태 32주 아이는 측정일의 교정 나이(교정 1개월 기준)로 계산된다 (352ms)
+  ✓   97 [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:82:5 › PC-NF-A11Y-3 — growth·target-height·formula 입력칸마다 접근 가능한 이름이 있다(8차 라운드) (256ms)
+  ✓   95 [chromium-mobile] › tests/e2e/growth.spec.ts:60:5 › PC-F8-AC5 · EX1 — 측정일이 예정일보다 앞서면 백분위 대신 안내 문구가 보이고, 기록은 저장된다 (382ms)
+  ✓   98 [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:169:7 › PC-NF-A11Y-2 — dashboard 화면의 주요 텍스트 대비가 4.5:1 이상이다 (186ms)
+  ✓   99 [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:169:7 › PC-NF-A11Y-2 — age-basis 화면의 주요 텍스트 대비가 4.5:1 이상이다 (191ms)
+  ✓  101 [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:169:7 › PC-NF-A11Y-2 — checkups 화면의 주요 텍스트 대비가 4.5:1 이상이다 (219ms)
+  ✓  103 [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:169:7 › PC-NF-A11Y-2 — correction-period 화면의 주요 텍스트 대비가 4.5:1 이상이다 (176ms)
+  ✓  102 [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:169:7 › PC-NF-A11Y-2 — copay-relief 화면의 주요 텍스트 대비가 4.5:1 이상이다 (181ms)
+  ✓  104 [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:169:7 › PC-NF-A11Y-2 — share 화면의 주요 텍스트 대비가 4.5:1 이상이다 (195ms)
+  ✓  100 [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:41:5 › PC-NF-A11Y-1 — 미확정 표시는 색이 아니라 아이콘 + '미확정' 라벨 + 텍스트로 구분된다 (264ms)
+  ✓  105 [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:169:7 › PC-NF-A11Y-2 — guide 화면의 주요 텍스트 대비가 4.5:1 이상이다 (155ms)
+  ✓  106 [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:169:7 › PC-NF-A11Y-2 — growth 화면의 주요 텍스트 대비가 4.5:1 이상이다 (164ms)
+  ✓  108 [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:169:7 › PC-NF-A11Y-2 — vaccinations 화면의 주요 텍스트 대비가 4.5:1 이상이다 (200ms)
+  ✓  109 [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:169:7 › PC-NF-A11Y-2 — target-height 화면의 주요 텍스트 대비가 4.5:1 이상이다 (184ms)
+  ✓  110 [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:169:7 › PC-NF-A11Y-2 — formula 화면의 주요 텍스트 대비가 4.5:1 이상이다 (172ms)
+  ✓  107 [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:169:7 › PC-NF-A11Y-2 — input 화면의 주요 텍스트 대비가 4.5:1 이상이다 (254ms)
+  ✓  114 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:137:9 › [디자인 재구성] 헤더 제목 가운데 정렬 — input @ 360px (270ms)
+  ✓  115 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:137:9 › [디자인 재구성] 헤더 제목 가운데 정렬 — input @ 768px (282ms)
+  ✓  116 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:137:9 › [디자인 재구성] 헤더 제목 가운데 정렬 — input @ 1280px (319ms)
+  ✓  117 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:137:9 › [디자인 재구성] 헤더 제목 가운데 정렬 — input-weeks @ 360px (262ms)
+  ✓  118 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:137:9 › [디자인 재구성] 헤더 제목 가운데 정렬 — input-weeks @ 768px (260ms)
+  ✓  119 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:137:9 › [디자인 재구성] 헤더 제목 가운데 정렬 — input-weeks @ 1280px (329ms)
+  ✓  120 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:137:9 › [디자인 재구성] 헤더 제목 가운데 정렬 — dashboard @ 360px (281ms)
+  ✓  121 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:137:9 › [디자인 재구성] 헤더 제목 가운데 정렬 — dashboard @ 768px (312ms)
+[nf-content-width] width=360px
+  input              header.x=0.00 header.box=360.00 header.content=328.00 body.x=0.00 body.box=360.00 body.content=328.00
+  input-weeks        header.x=0.00 header.box=360.00 header.content=328.00 body.x=0.00 body.box=360.00 body.content=328.00
+  dashboard          header.x=0.00 header.box=360.00 header.content=328.00 body.x=0.00 body.box=360.00 body.content=328.00
+  age-basis          header.x=0.00 header.box=360.00 header.content=328.00 body.x=0.00 body.box=360.00 body.content=328.00
+  checkups           header.x=0.00 header.box=360.00 header.content=328.00 body.x=0.00 body.box=360.00 body.content=328.00
+  copay-relief       header.x=0.00 header.box=360.00 header.content=328.00 body.x=0.00 body.box=360.00 body.content=328.00
+  correction-period  header.x=0.00 header.box=360.00 header.content=328.00 body.x=0.00 body.box=360.00 body.content=328.00
+  share              header.x=0.00 header.box=360.00 header.content=328.00 body.x=0.00 body.box=360.00 body.content=328.00
+  guide              header.x=0.00 header.box=360.00 header.content=328.00 body.x=0.00 body.box=360.00 body.content=328.00
+  growth             header.x=0.00 header.box=360.00 header.content=328.00 body.x=0.00 body.box=360.00 body.content=328.00
+  vaccinations       header.x=0.00 header.box=360.00 header.content=328.00 body.x=0.00 body.box=360.00 body.content=328.00
+  target-height      header.x=0.00 header.box=360.00 header.content=328.00 body.x=0.00 body.box=360.00 body.content=328.00
+  formula            header.x=0.00 header.box=360.00 header.content=328.00 body.x=0.00 body.box=360.00 body.content=328.00
+  ✓  122 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:137:9 › [디자인 재구성] 헤더 제목 가운데 정렬 — dashboard @ 1280px (295ms)
+[nf-content-width] width=768px
+  input              header.x=8.00 header.box=752.00 header.content=720.00 body.x=8.00 body.box=752.00 body.content=720.00
+  input-weeks        header.x=8.00 header.box=752.00 header.content=720.00 body.x=8.00 body.box=752.00 body.content=720.00
+  dashboard          header.x=8.00 header.box=752.00 header.content=720.00 body.x=8.00 body.box=752.00 body.content=720.00
+  age-basis          header.x=8.00 header.box=752.00 header.content=720.00 body.x=8.00 body.box=752.00 body.content=720.00
+  checkups           header.x=8.00 header.box=752.00 header.content=720.00 body.x=8.00 body.box=752.00 body.content=720.00
+  copay-relief       header.x=8.00 header.box=752.00 header.content=720.00 body.x=8.00 body.box=752.00 body.content=720.00
+  correction-period  header.x=8.00 header.box=752.00 header.content=720.00 body.x=8.00 body.box=752.00 body.content=720.00
+  share              header.x=8.00 header.box=752.00 header.content=720.00 body.x=8.00 body.box=752.00 body.content=720.00
+  guide              header.x=8.00 header.box=752.00 header.content=720.00 body.x=8.00 body.box=752.00 body.content=720.00
+  growth             header.x=8.00 header.box=752.00 header.content=720.00 body.x=8.00 body.box=752.00 body.content=720.00
+  vaccinations       header.x=8.00 header.box=752.00 header.content=720.00 body.x=8.00 body.box=752.00 body.content=720.00
+  target-height      header.x=8.00 header.box=752.00 header.content=720.00 body.x=8.00 body.box=752.00 body.content=720.00
+  formula            header.x=8.00 header.box=752.00 header.content=720.00 body.x=8.00 body.box=752.00 body.content=720.00
+  ✓  111 [chromium-mobile] › tests/e2e/nf-content-width.spec.ts:209:7 › [디자인 재구성 8차] 360px 에서 13개 화면의 본문·헤더 글 영역 폭이 모두 같다 (1.7s)
+[nf-content-width] width=1280px
+  input              header.x=248.00 header.box=784.00 header.content=720.00 body.x=248.00 body.box=784.00 body.content=720.00
+  input-weeks        header.x=248.00 header.box=784.00 header.content=720.00 body.x=248.00 body.box=784.00 body.content=720.00
+  dashboard          header.x=248.00 header.box=784.00 header.content=720.00 body.x=248.00 body.box=784.00 body.content=720.00
+  age-basis          header.x=248.00 header.box=784.00 header.content=720.00 body.x=248.00 body.box=784.00 body.content=720.00
+  checkups           header.x=248.00 header.box=784.00 header.content=720.00 body.x=248.00 body.box=784.00 body.content=720.00
+  copay-relief       header.x=248.00 header.box=784.00 header.content=720.00 body.x=248.00 body.box=784.00 body.content=720.00
+  correction-period  header.x=248.00 header.box=784.00 header.content=720.00 body.x=248.00 body.box=784.00 body.content=720.00
+  share              header.x=248.00 header.box=784.00 header.content=720.00 body.x=248.00 body.box=784.00 body.content=720.00
+  guide              header.x=248.00 header.box=784.00 header.content=720.00 body.x=248.00 body.box=784.00 body.content=720.00
+  growth             header.x=248.00 header.box=784.00 header.content=720.00 body.x=248.00 body.box=784.00 body.content=720.00
+  vaccinations       header.x=248.00 header.box=784.00 header.content=720.00 body.x=248.00 body.box=784.00 body.content=720.00
+  target-height      header.x=248.00 header.box=784.00 header.content=720.00 body.x=248.00 body.box=784.00 body.content=720.00
+  formula            header.x=248.00 header.box=784.00 header.content=720.00 body.x=248.00 body.box=784.00 body.content=720.00
+  ✓  112 [chromium-mobile] › tests/e2e/nf-content-width.spec.ts:209:7 › [디자인 재구성 8차] 768px 에서 13개 화면의 본문·헤더 글 영역 폭이 모두 같다 (1.6s)
+  ✓  113 [chromium-mobile] › tests/e2e/nf-content-width.spec.ts:209:7 › [디자인 재구성 8차] 1280px 에서 13개 화면의 본문·헤더 글 영역 폭이 모두 같다 (1.7s)
+  ✓  123 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:137:9 › [디자인 재구성] 헤더 제목 가운데 정렬 — age-basis @ 360px (233ms)
+  ✓  124 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:137:9 › [디자인 재구성] 헤더 제목 가운데 정렬 — age-basis @ 768px (206ms)
+  ✓  125 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:137:9 › [디자인 재구성] 헤더 제목 가운데 정렬 — age-basis @ 1280px (210ms)
+  ✓  126 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:137:9 › [디자인 재구성] 헤더 제목 가운데 정렬 — checkups @ 360px (222ms)
+  ✓  127 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:137:9 › [디자인 재구성] 헤더 제목 가운데 정렬 — checkups @ 768px (234ms)
+  ✓  128 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:137:9 › [디자인 재구성] 헤더 제목 가운데 정렬 — checkups @ 1280px (236ms)
+  ✓  129 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:137:9 › [디자인 재구성] 헤더 제목 가운데 정렬 — copay-relief @ 360px (220ms)
+  ✓  130 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:137:9 › [디자인 재구성] 헤더 제목 가운데 정렬 — copay-relief @ 768px (231ms)
+  ✓  131 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:137:9 › [디자인 재구성] 헤더 제목 가운데 정렬 — copay-relief @ 1280px (206ms)
+  ✓  132 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:137:9 › [디자인 재구성] 헤더 제목 가운데 정렬 — correction-period @ 360px (220ms)
+  ✓  133 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:137:9 › [디자인 재구성] 헤더 제목 가운데 정렬 — correction-period @ 768px (238ms)
+  ✓  134 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:137:9 › [디자인 재구성] 헤더 제목 가운데 정렬 — correction-period @ 1280px (242ms)
+  ✓  135 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:137:9 › [디자인 재구성] 헤더 제목 가운데 정렬 — share @ 360px (217ms)
+  ✓  136 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:137:9 › [디자인 재구성] 헤더 제목 가운데 정렬 — share @ 768px (212ms)
+  ✓  137 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:137:9 › [디자인 재구성] 헤더 제목 가운데 정렬 — share @ 1280px (212ms)
+  ✓  138 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:137:9 › [디자인 재구성] 헤더 제목 가운데 정렬 — guide @ 360px (257ms)
+  ✓  139 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:137:9 › [디자인 재구성] 헤더 제목 가운데 정렬 — guide @ 768px (259ms)
+  ✓  141 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:137:9 › [디자인 재구성] 헤더 제목 가운데 정렬 — guide @ 1280px (237ms)
+  ✓  140 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — input @ 360px (255ms)
+  ✓  142 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — input @ 390px (252ms)
+  ✓  143 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — input @ 768px (263ms)
+  ✓  145 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — input-weeks @ 360px (228ms)
+  ✓  144 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — input @ 1280px (229ms)
+  ✓  146 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — input-weeks @ 390px (213ms)
+  ✓  147 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — input-weeks @ 768px (285ms)
+  ✓  148 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — input-weeks @ 1280px (224ms)
+  ✓  150 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — dashboard @ 390px (238ms)
+  ✓  149 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — dashboard @ 360px (239ms)
+  ✓  151 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — dashboard @ 768px (241ms)
+  ✓  152 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — dashboard @ 1280px (275ms)
+  ✓  153 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — age-basis @ 360px (268ms)
+  ✓  155 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — age-basis @ 768px (245ms)
+  ✓  154 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — age-basis @ 390px (247ms)
+  ✓  156 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — age-basis @ 1280px (259ms)
+  ✓  157 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — checkups @ 360px (267ms)
+  ✓  158 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — checkups @ 390px (241ms)
+  ✓  159 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — checkups @ 768px (225ms)
+  ✓  160 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — checkups @ 1280px (229ms)
+  ✓  161 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — copay-relief @ 360px (228ms)
+  ✓  162 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — copay-relief @ 390px (257ms)
+  ✓  163 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — copay-relief @ 768px (258ms)
+  ✓  164 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — copay-relief @ 1280px (251ms)
+  ✓  165 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — correction-period @ 360px (262ms)
+  ✓  166 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — correction-period @ 390px (267ms)
+  ✓  168 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — share @ 360px (243ms)
+  ✓  170 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — share @ 390px (232ms)
+  ✓  169 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — correction-period @ 768px (250ms)
+  ✓  167 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — correction-period @ 1280px (256ms)
+  ✓  171 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — share @ 768px (233ms)
+  ✓  173 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — guide @ 360px (236ms)
+  ✓  172 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — share @ 1280px (238ms)
+  ✓  174 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — guide @ 390px (239ms)
+  ✓  175 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — guide @ 768px (231ms)
+  ✓  176 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:172:9 › [디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음 — guide @ 1280px (233ms)
+  ✓  181 [chromium-mobile] › tests/e2e/nf-med.spec.ts:26:7 › PC-NF-MED-1 — age-basis 화면에 의료 면책 문구가 보인다 (199ms)
+  ✓  180 [chromium-mobile] › tests/e2e/nf-med.spec.ts:26:7 › PC-NF-MED-1 — dashboard 화면에 의료 면책 문구가 보인다 (211ms)
+  ✓  177 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:238:7 › [디자인 재구성 8차] 360px 에서 대시보드는 1열이다(나이 카드·바로가기·공유·면책의 왼쪽 x 가 같고 세로 순서가 지켜진다) (262ms)
+  ✓  178 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:238:7 › [디자인 재구성 8차] 768px 에서 대시보드는 1열이다(나이 카드·바로가기·공유·면책의 왼쪽 x 가 같고 세로 순서가 지켜진다) (259ms)
+  ✓  179 [chromium-mobile] › tests/e2e/nf-header-layout.spec.ts:238:7 › [디자인 재구성 8차] 1280px 에서 대시보드는 1열이다(나이 카드·바로가기·공유·면책의 왼쪽 x 가 같고 세로 순서가 지켜진다) (261ms)
+  ✓  183 [chromium-mobile] › tests/e2e/nf-med.spec.ts:26:7 › PC-NF-MED-1 — copay-relief 화면에 의료 면책 문구가 보인다 (213ms)
+  ✓  182 [chromium-mobile] › tests/e2e/nf-med.spec.ts:26:7 › PC-NF-MED-1 — checkups 화면에 의료 면책 문구가 보인다 (226ms)
+  ✓  186 [chromium-mobile] › tests/e2e/nf-med.spec.ts:26:7 › PC-NF-MED-1 — guide 화면에 의료 면책 문구가 보인다 (182ms)
+  ✓  184 [chromium-mobile] › tests/e2e/nf-med.spec.ts:26:7 › PC-NF-MED-1 — share 화면에 의료 면책 문구가 보인다 (190ms)
+  ✓  185 [chromium-mobile] › tests/e2e/nf-med.spec.ts:26:7 › PC-NF-MED-1 — correction-period 화면에 의료 면책 문구가 보인다 (202ms)
+  ✓  189 [chromium-mobile] › tests/e2e/nf-med.spec.ts:26:7 › PC-NF-MED-1 — target-height 화면에 의료 면책 문구가 보인다 (200ms)
+  ✓  190 [chromium-mobile] › tests/e2e/nf-med.spec.ts:26:7 › PC-NF-MED-1 — formula 화면에 의료 면책 문구가 보인다 (201ms)
+  ✓  187 [chromium-mobile] › tests/e2e/nf-med.spec.ts:26:7 › PC-NF-MED-1 — growth 화면에 의료 면책 문구가 보인다 (224ms)
+  ✓  188 [chromium-mobile] › tests/e2e/nf-med.spec.ts:26:7 › PC-NF-MED-1 — vaccinations 화면에 의료 면책 문구가 보인다 (218ms)
+  ✓  191 [chromium-mobile] › tests/e2e/nf-mobile.spec.ts:75:7 › PC-NF-MOBILE-1·2·3 — input 화면 (236ms)
+  ✓  193 [chromium-mobile] › tests/e2e/nf-mobile.spec.ts:75:7 › PC-NF-MOBILE-1·2·3 — age-basis 화면 (221ms)
+  ✓  194 [chromium-mobile] › tests/e2e/nf-mobile.spec.ts:75:7 › PC-NF-MOBILE-1·2·3 — checkups 화면 (223ms)
+  ✓  195 [chromium-mobile] › tests/e2e/nf-mobile.spec.ts:75:7 › PC-NF-MOBILE-1·2·3 — copay-relief 화면 (221ms)
+  ✓  196 [chromium-mobile] › tests/e2e/nf-mobile.spec.ts:75:7 › PC-NF-MOBILE-1·2·3 — correction-period 화면 (241ms)
+  ✓  192 [chromium-mobile] › tests/e2e/nf-mobile.spec.ts:75:7 › PC-NF-MOBILE-1·2·3 — dashboard 화면 (299ms)
+  ✓  198 [chromium-mobile] › tests/e2e/nf-mobile.spec.ts:75:7 › PC-NF-MOBILE-1·2·3 — guide 화면 (210ms)
+  ✓  197 [chromium-mobile] › tests/e2e/nf-mobile.spec.ts:75:7 › PC-NF-MOBILE-1·2·3 — share 화면 (224ms)
+  ✓  199 [chromium-mobile] › tests/e2e/nf-mobile.spec.ts:75:7 › PC-NF-MOBILE-1·2·3 — growth 화면 (237ms)
+  ✓  201 [chromium-mobile] › tests/e2e/nf-mobile.spec.ts:75:7 › PC-NF-MOBILE-1·2·3 — target-height 화면 (222ms)
+  ✓  200 [chromium-mobile] › tests/e2e/nf-mobile.spec.ts:75:7 › PC-NF-MOBILE-1·2·3 — vaccinations 화면 (250ms)
+  ✓  203 [chromium-mobile] › tests/e2e/nf-mobile.spec.ts:90:5 › PC-NF-MOBILE-1·2·3 — copay-relief 경계값(재태일수 203일, 5년 4개월 확정) (230ms)
+  ✓  202 [chromium-mobile] › tests/e2e/nf-mobile.spec.ts:75:7 › PC-NF-MOBILE-1·2·3 — formula 화면 (247ms)
+  ✓  205 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — input @ 360px (194ms)
+  ✓  206 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — input @ 390px (227ms)
+  ✓  207 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — input @ 768px (215ms)
+  ✓  208 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — input @ 1280px (219ms)
+  ✓  209 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — input-weeks @ 360px (198ms)
+  ✓  204 [chromium-mobile] › tests/e2e/nf-privacy.spec.ts:12:5 › PC-NF-PRIV-1 — 프로필 입력·저장·대시보드 조회·프로필 편집 동안 나가는 요청에 이름·출생일·예정일 값이 없다 (504ms)
+  ✓  210 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — input-weeks @ 390px (264ms)
+  ✓  211 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — input-weeks @ 768px (208ms)
+  ✓  212 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — input-weeks @ 1280px (200ms)
+  ✓  213 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — dashboard @ 360px (189ms)
+  ✓  214 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — dashboard @ 390px (284ms)
+  ✓  215 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — dashboard @ 768px (256ms)
+  ✓  217 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — age-basis @ 360px (202ms)
+  ✓  216 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — dashboard @ 1280px (223ms)
+  ✓  218 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — age-basis @ 390px (223ms)
+  ✓  219 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — age-basis @ 768px (230ms)
+  ✓  220 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — age-basis @ 1280px (204ms)
+  ✓  221 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — checkups @ 360px (208ms)
+  ✓  222 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — checkups @ 390px (204ms)
+  ✓  223 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — checkups @ 768px (227ms)
+  ✓  224 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — checkups @ 1280px (194ms)
+  ✓  225 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — copay-relief @ 360px (206ms)
+  ✓  226 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — copay-relief @ 390px (205ms)
+  ✓  227 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — copay-relief @ 768px (201ms)
+  ✓  228 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — copay-relief @ 1280px (209ms)
+  ✓  229 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — correction-period @ 360px (192ms)
+  ✓  230 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — correction-period @ 390px (207ms)
+  ✓  231 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — correction-period @ 768px (191ms)
+  ✓  232 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — correction-period @ 1280px (196ms)
+  ✓  233 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — share @ 360px (206ms)
+  ✓  235 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — share @ 768px (187ms)
+  ✓  234 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — share @ 390px (235ms)
+  ✓  236 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — share @ 1280px (204ms)
+  ✓  237 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — guide @ 360px (207ms)
+  ✓  238 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — guide @ 390px (203ms)
+  ✓  240 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — guide @ 1280px (222ms)
+  ✓  239 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:120:9 › [시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄 — guide @ 768px (220ms)
+  ✓  242 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:179:9 › [시각 결함 회귀] 나이 카드 값 조각 줄바꿈 없음 — dashboard @ 390px (267ms)
+  ✓  241 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:179:9 › [시각 결함 회귀] 나이 카드 값 조각 줄바꿈 없음 — dashboard @ 360px (280ms)
+  ✓  243 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:179:9 › [시각 결함 회귀] 나이 카드 값 조각 줄바꿈 없음 — dashboard @ 768px (308ms)
+  ✓  244 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:179:9 › [시각 결함 회귀] 나이 카드 값 조각 줄바꿈 없음 — dashboard @ 1280px (279ms)
+  ✓  245 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:179:9 › [시각 결함 회귀] 나이 카드 값 조각 줄바꿈 없음 — share @ 360px (280ms)
+  ✓  246 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:179:9 › [시각 결함 회귀] 나이 카드 값 조각 줄바꿈 없음 — share @ 390px (250ms)
+  ✓  247 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:179:9 › [시각 결함 회귀] 나이 카드 값 조각 줄바꿈 없음 — share @ 768px (268ms)
+  ✓  248 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:179:9 › [시각 결함 회귀] 나이 카드 값 조각 줄바꿈 없음 — share @ 1280px (259ms)
+  ✓  250 [chromium-mobile] › tests/e2e/target-height.spec.ts:14:5 › state:empty — 계산 전(초기)에는 result 영역이 그려지지 않는다 (180ms)
+  ✓  249 [chromium-mobile] › tests/e2e/nf-visual-defects-regression.spec.ts:229:5 › [시각 결함 회귀] 1280px 대시보드에서 "+ 아이 추가" 버튼이 카드와 같은 왼쪽 선에 있다 (234ms)
+  ✓  253 [chromium-mobile] › tests/e2e/target-height.spec.ts:39:5 › PC-F14-AC3 — 결과 아래에 고정 문구와 계산식 출처가 보인다 (249ms)
+  ✓  254 [chromium-mobile] › tests/e2e/target-height.spec.ts:49:5 › PC-F14-EX1 — 부모 키가 비었거나 범위 밖이면 계산 버튼이 비활성화되고 에러 문구가 보인다 (217ms)
+  ✓  255 [chromium-mobile] › tests/e2e/target-height.spec.ts:58:5 › focus-order — header.back → 아빠키 → 엄마키 → 계산하기(값을 채워 활성화된 뒤) (179ms)
+  ✓  256 [chromium-mobile] › tests/e2e/target-height.spec.ts:67:5 › PC-NF-MED-1 — 화면에 의료 면책 문구가 보인다 (174ms)
+  ✓  257 [chromium-mobile] › tests/e2e/vaccinations.spec.ts:19:5 › PC-F10-AC1 — 생후 2개월 접종(DTaP 1차)은 2026-05-01 로 표시되고 '교정 5일'이 보인다 (179ms)
+  ✓  258 [chromium-mobile] › tests/e2e/vaccinations.spec.ts:27:5 › PC-F10-AC2 — 완료 체크한 접종은 완료, 7일 이내 남은 접종은 임박, 지나고 미체크면 놓침이다 (219ms)
+  ✓  260 [chromium-mobile] › tests/e2e/vaccinations.spec.ts:56:5 › a11y:label — 체크박스 접근 이름이 '{백신명} {차수} 완료로 표시' 형식이다 (156ms)
+  ✓  261 [chromium-mobile] › tests/e2e/vaccinations.spec.ts:63:5 › PC-NF-MED-1 — 화면에 의료 면책 문구가 보인다 (161ms)
+  ✓  259 [chromium-mobile] › tests/e2e/vaccinations.spec.ts:43:5 › PC-F10-AC3 — 완료 체크는 새로 열어도 유지된다 (260ms)
+  ✘  251 [chromium-mobile] › tests/e2e/target-height.spec.ts:21:5 › PC-F14-AC1 — 아빠 175cm, 엄마 162cm, 남아 → '목표키 참고 175.0cm (168.5~181.5cm)' (5.2s)
+  ✘  252 [chromium-mobile] › tests/e2e/target-height.spec.ts:30:5 › PC-F14-AC2 — 같은 부모 키, 여아 → '목표키 참고 162.0cm (155.5~168.5cm)' (5.3s)
+
+
+  1) [chromium-mobile] › tests/e2e/f1-profile.spec.ts:11:7 › PC-F1-AC1 · PC-NF-MOBILE-4 — 첫 화면에는 입력칸과 버튼만 보인다 › 입력칸 3종(출생일·출산예정일·성별) + 주수전환 + 저장 버튼만 보이고, 그 외 버튼이 없다 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('주수로 입력')
+    Expected: visible
+    Error: strict mode violation: getByText('주수로 입력') resolved to 2 elements:
+        1) <p id="_r_0_">임신 중 병원에서 안내받은 날짜예요. 모르면 '주수로 입력'을 눌러 주세요.</p> aka getByText('임신 중 병원에서 안내받은 날짜예요. 모르면 \'주수로 입력\'을 눌러 주세요')
+        2) <button type="button">주수로 입력</button> aka getByRole('button', { name: '주수로 입력' })
+
+    Call log:
+      - Expect "toBeVisible" getByText('주수로 입력') with timeout 5000ms
+      - waiting for getByText('주수로 입력')
+
+
+      16 |
+      17 |     await expect(page.getByLabel("출생일")).toBeVisible();
+    > 18 |     await expect(page.getByText("주수로 입력")).toBeVisible();
+         |                                            ^
+      19 |     await expect(page.getByLabel("출산 예정일")).toBeVisible();
+      20 |     await expect(page.getByRole("radiogroup", { name: "성별" })).toBeVisible();
+      21 |     await expect(page.getByRole("radio", { name: "남아" })).toBeVisible();
+        at /Users/kim/Workspace/curvez/.claude/worktrees/preemie-calc/apps/preemie-calc/tests/e2e/f1-profile.spec.ts:18:44
+
+    Error Context: test-results/f1-profile-PC-F1-AC1-·-PC--0ffe6--주수전환-저장-버튼만-보이고-그-외-버튼이-없다-chromium-mobile/error-context.md
+
+  2) [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:31:7 › PC-F16-AC6 — vaccination 쪽 아래에 근거 자료 이름·기준일, 면책 문구, 계산기 링크가 보인다 
+
+    Error: expect(locator).toBeAttached() failed
+
+    Locator: getByRole('contentinfo').last()
+    Expected: attached
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeAttached" getByRole('contentinfo').last() with timeout 5000ms
+      - waiting for getByRole('contentinfo').last()
+
+
+      38 |     await expect(calcLink).toBeVisible();
+      39 |     await expect(calcLink).toHaveAttribute("href", /^\/(dashboard.*)?(\?.*)?$/);
+    > 40 |     await expect(footer).toBeAttached();
+         |                          ^
+      41 |   });
+      42 | }
+      43 |
+        at /Users/kim/Workspace/curvez/.claude/worktrees/preemie-calc/apps/preemie-calc/tests/e2e/f16-question-guides.spec.ts:40:26
+
+    Error Context: test-results/f16-question-guides-PC-F16-380be-자료-이름·기준일-면책-문구-계산기-링크가-보인다-chromium-mobile/error-context.md
+
+  3) [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:31:7 › PC-F16-AC6 — checkup-questionnaire 쪽 아래에 근거 자료 이름·기준일, 면책 문구, 계산기 링크가 보인다 
+
+    Error: expect(locator).toBeAttached() failed
+
+    Locator: getByRole('contentinfo').last()
+    Expected: attached
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeAttached" getByRole('contentinfo').last() with timeout 5000ms
+      - waiting for getByRole('contentinfo').last()
+
+
+      38 |     await expect(calcLink).toBeVisible();
+      39 |     await expect(calcLink).toHaveAttribute("href", /^\/(dashboard.*)?(\?.*)?$/);
+    > 40 |     await expect(footer).toBeAttached();
+         |                          ^
+      41 |   });
+      42 | }
+      43 |
+        at /Users/kim/Workspace/curvez/.claude/worktrees/preemie-calc/apps/preemie-calc/tests/e2e/f16-question-guides.spec.ts:40:26
+
+    Error Context: test-results/f16-question-guides-PC-F16-6f654-자료-이름·기준일-면책-문구-계산기-링크가-보인다-chromium-mobile/error-context.md
+
+  4) [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:31:7 › PC-F16-AC6 — weaning 쪽 아래에 근거 자료 이름·기준일, 면책 문구, 계산기 링크가 보인다 
+
+    Error: expect(locator).toBeAttached() failed
+
+    Locator: getByRole('contentinfo').last()
+    Expected: attached
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeAttached" getByRole('contentinfo').last() with timeout 5000ms
+      - waiting for getByRole('contentinfo').last()
+
+
+      38 |     await expect(calcLink).toBeVisible();
+      39 |     await expect(calcLink).toHaveAttribute("href", /^\/(dashboard.*)?(\?.*)?$/);
+    > 40 |     await expect(footer).toBeAttached();
+         |                          ^
+      41 |   });
+      42 | }
+      43 |
+        at /Users/kim/Workspace/curvez/.claude/worktrees/preemie-calc/apps/preemie-calc/tests/e2e/f16-question-guides.spec.ts:40:26
+
+    Error Context: test-results/f16-question-guides-PC-F16-7d0cb-자료-이름·기준일-면책-문구-계산기-링크가-보인다-chromium-mobile/error-context.md
+
+  5) [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:31:7 › PC-F16-AC6 — corrected-age-until 쪽 아래에 근거 자료 이름·기준일, 면책 문구, 계산기 링크가 보인다 
+
+    Error: expect(locator).toBeAttached() failed
+
+    Locator: getByRole('contentinfo').last()
+    Expected: attached
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeAttached" getByRole('contentinfo').last() with timeout 5000ms
+      - waiting for getByRole('contentinfo').last()
+
+
+      38 |     await expect(calcLink).toBeVisible();
+      39 |     await expect(calcLink).toHaveAttribute("href", /^\/(dashboard.*)?(\?.*)?$/);
+    > 40 |     await expect(footer).toBeAttached();
+         |                          ^
+      41 |   });
+      42 | }
+      43 |
+        at /Users/kim/Workspace/curvez/.claude/worktrees/preemie-calc/apps/preemie-calc/tests/e2e/f16-question-guides.spec.ts:40:26
+
+    Error Context: test-results/f16-question-guides-PC-F16-8ac34-자료-이름·기준일-면책-문구-계산기-링크가-보인다-chromium-mobile/error-context.md
+
+  6) [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:31:7 › PC-F16-AC6 — catch-up-growth 쪽 아래에 근거 자료 이름·기준일, 면책 문구, 계산기 링크가 보인다 
+
+    Error: expect(locator).toBeAttached() failed
+
+    Locator: getByRole('contentinfo').last()
+    Expected: attached
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeAttached" getByRole('contentinfo').last() with timeout 5000ms
+      - waiting for getByRole('contentinfo').last()
+
+
+      38 |     await expect(calcLink).toBeVisible();
+      39 |     await expect(calcLink).toHaveAttribute("href", /^\/(dashboard.*)?(\?.*)?$/);
+    > 40 |     await expect(footer).toBeAttached();
+         |                          ^
+      41 |   });
+      42 | }
+      43 |
+        at /Users/kim/Workspace/curvez/.claude/worktrees/preemie-calc/apps/preemie-calc/tests/e2e/f16-question-guides.spec.ts:40:26
+
+    Error Context: test-results/f16-question-guides-PC-F16-36401-자료-이름·기준일-면책-문구-계산기-링크가-보인다-chromium-mobile/error-context.md
+
+  7) [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:31:7 › PC-F16-AC6 — copay-relief 쪽 아래에 근거 자료 이름·기준일, 면책 문구, 계산기 링크가 보인다 
+
+    Error: expect(locator).toBeAttached() failed
+
+    Locator: getByRole('contentinfo').last()
+    Expected: attached
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeAttached" getByRole('contentinfo').last() with timeout 5000ms
+      - waiting for getByRole('contentinfo').last()
+
+
+      38 |     await expect(calcLink).toBeVisible();
+      39 |     await expect(calcLink).toHaveAttribute("href", /^\/(dashboard.*)?(\?.*)?$/);
+    > 40 |     await expect(footer).toBeAttached();
+         |                          ^
+      41 |   });
+      42 | }
+      43 |
+        at /Users/kim/Workspace/curvez/.claude/worktrees/preemie-calc/apps/preemie-calc/tests/e2e/f16-question-guides.spec.ts:40:26
+
+    Error Context: test-results/f16-question-guides-PC-F16-0253e-자료-이름·기준일-면책-문구-계산기-링크가-보인다-chromium-mobile/error-context.md
+
+  8) [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:68:5 › PC-F16-AC5 — 미확정 표시는 교정연령 쪽에만 붙는다(다른 5쪽에는 없다) 
+
+    Error: copay-relief 쪽
+
+    expect(locator).toHaveCount(expected) failed
+
+    Locator:  getByText(/미확정/)
+    Expected: 0
+    Received: 1
+    Timeout:  5000ms
+
+    Call log:
+      - copay-relief 쪽 getByText(/미확정/) with timeout 5000ms
+      - waiting for getByText(/미확정/)
+        14 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      69 |   for (const slug of ["vaccination", "checkup-questionnaire", "weaning", "catch-up-growth", "copay-relief"]) {
+      70 |     await page.goto(`/guide/questions/${slug}`);
+    > 71 |     await expect(page.getByText(/미확정/), `${slug} 쪽`).toHaveCount(0);
+         |                                                      ^
+      72 |   }
+      73 | });
+      74 |
+        at /Users/kim/Workspace/curvez/.claude/worktrees/preemie-calc/apps/preemie-calc/tests/e2e/f16-question-guides.spec.ts:71:54
+
+    Error Context: test-results/f16-question-guides-PC-F16-ef396-시는-교정연령-쪽에만-붙는다-다른-5쪽에는-없다--chromium-mobile/error-context.md
+
+  9) [chromium-mobile] › tests/e2e/f17-guide-index.spec.ts:22:5 › PC-F17-AC2 — 출생 주수 32주, 생후 3개월을 고르고 이동을 누르면 '32주 출생, 생후 3개월' 조합 페이지가 열린다 
+
+    Error: locator.selectOption: Error: strict mode violation: getByLabel(/출생 주수/) resolved to 2 elements:
+        1) <section aria-labelledby="guide-combo">…</section> aka getByRole('region', { name: '출생 주수와 생후 개월로 찾기' })
+        2) <select id="_R_74lubrb_">…</select> aka getByLabel('출생 주수', { exact: true })
+
+    Call log:
+      - waiting for getByLabel(/출생 주수/)
+
+
+      24 | }) => {
+      25 |   await page.goto("/guide");
+    > 26 |   await page.getByLabel(/출생 주수/).selectOption("32");
+         |                                  ^
+      27 |   await page.getByLabel(/생후/).selectOption("3");
+      28 |   await page.getByRole("button", { name: "이동" }).click();
+      29 |
+        at /Users/kim/Workspace/curvez/.claude/worktrees/preemie-calc/apps/preemie-calc/tests/e2e/f17-guide-index.spec.ts:26:34
+
+    Error Context: test-results/f17-guide-index-PC-F17-AC2-14fd4-면-32주-출생-생후-3개월-조합-페이지가-열린다-chromium-mobile/error-context.md
+
+  10) [chromium-mobile] › tests/e2e/f18-age-basis-public.spec.ts:6:5 › PC-F18-AC1 — localStorage 가 빈 브라우저에서 5개 항목과 각 기준(출생 또는 교정)이 보인다 
+
+    Error: 성장 백분위
+
+    expect(locator).toBeVisible() failed
+
+    Locator: getByRole('listitem').filter({ hasText: '성장 백분위' })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - 성장 백분위 getByRole('listitem').filter({ hasText: '성장 백분위' }) with timeout 5000ms
+      - waiting for getByRole('listitem').filter({ hasText: '성장 백분위' })
+
+
+      18 |   for (const { label, basis } of expected) {
+      19 |     const row = page.getByRole("listitem").filter({ hasText: label });
+    > 20 |     await expect(row, label).toBeVisible();
+         |                              ^
+      21 |     await expect(row, label).toContainText(basis);
+      22 |   }
+      23 | });
+        at /Users/kim/Workspace/curvez/.claude/worktrees/preemie-calc/apps/preemie-calc/tests/e2e/f18-age-basis-public.spec.ts:20:30
+
+    Error Context: test-results/f18-age-basis-public-PC-F1-c6110--5개-항목과-각-기준-출생-또는-교정-이-보인다-chromium-mobile/error-context.md
+
+  11) [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:63:5 › PC-NF-A11Y-3 — 입력칸마다 접근 가능한 이름(레이블)이 있다 ─
+
+    Error: locator.click: Error: strict mode violation: getByText('주수로 입력') resolved to 2 elements:
+        1) <p id="_r_0_">임신 중 병원에서 안내받은 날짜예요. 모르면 '주수로 입력'을 눌러 주세요.</p> aka getByText('임신 중 병원에서 안내받은 날짜예요. 모르면 \'주수로 입력\'을 눌러 주세요')
+        2) <button type="button">주수로 입력</button> aka getByRole('button', { name: '주수로 입력' })
+
+    Call log:
+      - waiting for getByText('주수로 입력')
+
+
+      67 |   await expect(page.getByRole("radiogroup", { name: "성별" })).toBeVisible();
+      68 |
+    > 69 |   await page.getByText("주수로 입력").click();
+         |                                  ^
+      70 |   await expect(page.getByLabel("주", { exact: true })).toBeVisible();
+      71 |   await expect(page.getByRole("spinbutton", { name: "일" })).toBeVisible();
+      72 |
+        at /Users/kim/Workspace/curvez/.claude/worktrees/preemie-calc/apps/preemie-calc/tests/e2e/nf-a11y.spec.ts:69:34
+
+    Error Context: test-results/nf-a11y-PC-NF-A11Y-3-—-입력칸마다-접근-가능한-이름-레이블-이-있다-chromium-mobile/error-context.md
+
+  12) [chromium-mobile] › tests/e2e/target-height.spec.ts:21:5 › PC-F14-AC1 — 아빠 175cm, 엄마 162cm, 남아 → '목표키 참고 175.0cm (168.5~181.5cm)' 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('목표키 참고 175.0cm (168.5~181.5cm)')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('목표키 참고 175.0cm (168.5~181.5cm)') with timeout 5000ms
+      - waiting for getByText('목표키 참고 175.0cm (168.5~181.5cm)')
+
+
+      25 |   await page.getByLabel("엄마 키").fill("162");
+      26 |   await page.getByRole("button", { name: "계산하기" }).click();
+    > 27 |   await expect(page.getByText("목표키 참고 175.0cm (168.5~181.5cm)")).toBeVisible();
+         |                                                                  ^
+      28 | });
+      29 |
+      30 | test("PC-F14-AC2 — 같은 부모 키, 여아 → '목표키 참고 162.0cm (155.5~168.5cm)'", async ({ page }) => {
+        at /Users/kim/Workspace/curvez/.claude/worktrees/preemie-calc/apps/preemie-calc/tests/e2e/target-height.spec.ts:27:66
+
+    Error Context: test-results/target-height-PC-F14-AC1-—-b5d31-키-참고-175-0cm-168-5-181-5cm--chromium-mobile/error-context.md
+
+  13) [chromium-mobile] › tests/e2e/target-height.spec.ts:30:5 › PC-F14-AC2 — 같은 부모 키, 여아 → '목표키 참고 162.0cm (155.5~168.5cm)' 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('목표키 참고 162.0cm (155.5~168.5cm)')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('목표키 참고 162.0cm (155.5~168.5cm)') with timeout 5000ms
+      - waiting for getByText('목표키 참고 162.0cm (155.5~168.5cm)')
+
+
+      34 |   await page.getByLabel("엄마 키").fill("162");
+      35 |   await page.getByRole("button", { name: "계산하기" }).click();
+    > 36 |   await expect(page.getByText("목표키 참고 162.0cm (155.5~168.5cm)")).toBeVisible();
+         |                                                                  ^
+      37 | });
+      38 |
+      39 | test("PC-F14-AC3 — 결과 아래에 고정 문구와 계산식 출처가 보인다", async ({ page }) => {
+        at /Users/kim/Workspace/curvez/.claude/worktrees/preemie-calc/apps/preemie-calc/tests/e2e/target-height.spec.ts:36:66
+
+    Error Context: test-results/target-height-PC-F14-AC2-—-46253-키-참고-162-0cm-155-5-168-5cm--chromium-mobile/error-context.md
+
+  13 failed
+    [chromium-mobile] › tests/e2e/f1-profile.spec.ts:11:7 › PC-F1-AC1 · PC-NF-MOBILE-4 — 첫 화면에는 입력칸과 버튼만 보인다 › 입력칸 3종(출생일·출산예정일·성별) + 주수전환 + 저장 버튼만 보이고, 그 외 버튼이 없다 
+    [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:31:7 › PC-F16-AC6 — vaccination 쪽 아래에 근거 자료 이름·기준일, 면책 문구, 계산기 링크가 보인다 
+    [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:31:7 › PC-F16-AC6 — checkup-questionnaire 쪽 아래에 근거 자료 이름·기준일, 면책 문구, 계산기 링크가 보인다 
+    [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:31:7 › PC-F16-AC6 — weaning 쪽 아래에 근거 자료 이름·기준일, 면책 문구, 계산기 링크가 보인다 
+    [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:31:7 › PC-F16-AC6 — corrected-age-until 쪽 아래에 근거 자료 이름·기준일, 면책 문구, 계산기 링크가 보인다 
+    [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:31:7 › PC-F16-AC6 — catch-up-growth 쪽 아래에 근거 자료 이름·기준일, 면책 문구, 계산기 링크가 보인다 
+    [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:31:7 › PC-F16-AC6 — copay-relief 쪽 아래에 근거 자료 이름·기준일, 면책 문구, 계산기 링크가 보인다 
+    [chromium-mobile] › tests/e2e/f16-question-guides.spec.ts:68:5 › PC-F16-AC5 — 미확정 표시는 교정연령 쪽에만 붙는다(다른 5쪽에는 없다) 
+    [chromium-mobile] › tests/e2e/f17-guide-index.spec.ts:22:5 › PC-F17-AC2 — 출생 주수 32주, 생후 3개월을 고르고 이동을 누르면 '32주 출생, 생후 3개월' 조합 페이지가 열린다 
+    [chromium-mobile] › tests/e2e/f18-age-basis-public.spec.ts:6:5 › PC-F18-AC1 — localStorage 가 빈 브라우저에서 5개 항목과 각 기준(출생 또는 교정)이 보인다 
+    [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:63:5 › PC-NF-A11Y-3 — 입력칸마다 접근 가능한 이름(레이블)이 있다 ───
+    [chromium-mobile] › tests/e2e/target-height.spec.ts:21:5 › PC-F14-AC1 — 아빠 175cm, 엄마 162cm, 남아 → '목표키 참고 175.0cm (168.5~181.5cm)' 
+    [chromium-mobile] › tests/e2e/target-height.spec.ts:30:5 › PC-F14-AC2 — 같은 부모 키, 여아 → '목표키 참고 162.0cm (155.5~168.5cm)' 
+  248 passed (35.3s)

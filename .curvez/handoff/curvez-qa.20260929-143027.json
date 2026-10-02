@@ -1,0 +1,61 @@
+{
+  "from": "curvez-qa",
+  "to": ["curvez-orchestrator", "curvez-nextjs"],
+  "status": "done",
+  "summary": "curvez-nextjs 수정 1회차(curvez-nextjs.20260929-141505.json) 뒤 테스트를 새 결정(architect 결정 1, ACC-04)에 맞춰 갱신하고, 코드 리뷰만으로 지적됐던 결함 7건에 회귀 테스트를 더했다. (1) blocked_on 응답: tests/unit/reference-data.test.ts·age-basis.test.ts 를 '둘 다 날짜 또는 둘 다 null, 한쪽만 null 이면 오류' 계약으로 갱신했다 — 단순 null 허용이 아니라 resolveReferenceMeta 가 한쪽만 null 인 입력에 실제로 오류를 던지는지까지 검증하는 테스트 4건을 새로 추가했다. (2) 회귀 테스트: ERR-01(단위 2건 — planCheckups 120일 반복 예외 0건 확인 + currentBeforeDue 단언, e2e 1건 — /dashboard/checkups pageerror 0건+문구 노출), ACC-01(e2e 1건 — 37주 이상 아이 F3에 '교정 기준' 0건), ACC-02(e2e 1건 — '교정 36일 · 1개월' exact 일치), ACC-03(e2e 1건 — boundingBox y로 DOM 순서 확인), ACC-05(단위 4건 + e2e 3건 — 일 칸 9/-3/1.5 각각), ACC-06(e2e 1건 — navigator.share 있어도 링크 복사 버튼), ERR-02(e2e 3건 — localStorage 예외 환경에서 '/'·'/dashboard' 무결), DSG-01(e2e 1건 — measureText로 fillText 폭이 952px 이하인지 실측). (3) PC-F3-AC4·PC-F4-AC5 판정: '자동 통과(조건부: 원문 대조 전)'로 판정하고 근거를 ac-matrix.md에 남겼다 — AC 원문은 '기준일' 이름표 노출을 요구하고 화면은 그것을 항상 보이지만 지금 값 자체는 '확인 전'이라 조건부임을 숨기지 않았다. 실행 결과: (워크트리 루트) pnpm test 203개 중 203개 통과(apps/preemie-calc 62 + scopulus-ui 141), 0개 실패, 3회 연속 동일. (apps/preemie-calc) pnpm test:e2e 75개 중 75개 통과(직전 63 + 신규 12), 0개 실패, 3회 연속 동일 — 플래키 아님. typecheck 오류 0건. skip/only/todo 0건. 57개 수용 기준 ID 전부 대응(미커버 0개). status 를 done 으로 올리는 이유: 실패 0건, 0개 실행 없음, 플래키 없음, 커버 100%, 자체 검증 전부 통과, 남은 조건부 2개(PC-F3-AC4·PC-F4-AC5)와 수동 1개(PC-F7-AC4)는 결함이 아니라 'PRD 미결(원문 대조)'과 '사람 시지각 확인'이라는 이번 라운드 범위 밖 전제라 ac-matrix.md·strategy.md 에 근거를 남기고 done 판정에 포함했다.",
+  "artifacts": [
+    { "path": "apps/preemie-calc/tests/unit/reference-data.test.ts", "kind": "code", "note": "ACC-04 blocked_on 응답: '둘 다 날짜 또는 둘 다 null' 쌍 검사 + resolveReferenceMeta 한쪽만 null 오류 검증 4건 추가" },
+    { "path": "apps/preemie-calc/tests/unit/age-basis.test.ts", "kind": "code", "note": "line 54-55 known-failure 를 같은 쌍 검사로 갱신" },
+    { "path": "apps/preemie-calc/tests/unit/checkup.test.ts", "kind": "code", "note": "[curvez-reviewer/ERR-01] 120일 반복 예외 0건 + currentBeforeDue 단언 2건 추가" },
+    { "path": "apps/preemie-calc/tests/unit/child-profile.test.ts", "kind": "code", "note": "[curvez-reviewer/ACC-05] validateProfileDraft 일 칸 9/-3/1.5 invalid-date + 0·6 경계 통과 4건 추가" },
+    { "path": "apps/preemie-calc/tests/e2e/f1-profile.spec.ts", "kind": "code", "note": "[curvez-reviewer/ACC-03] boundingBox y 비교 1건, [curvez-reviewer/ACC-05] 화면 회귀 3건(9/-3/1.5) 추가" },
+    { "path": "apps/preemie-calc/tests/e2e/f2-dashboard.spec.ts", "kind": "code", "note": "[curvez-reviewer/ACC-02] '교정 36일 · 1개월' exact 일치 1건 추가" },
+    { "path": "apps/preemie-calc/tests/e2e/f3-age-basis.spec.ts", "kind": "code", "note": "[curvez-reviewer/ACC-01] 37주 이상 아이 '교정 기준' 0건 1건 추가" },
+    { "path": "apps/preemie-calc/tests/e2e/f4-checkups.spec.ts", "kind": "code", "note": "[curvez-reviewer/ERR-01] pageerror 0건 + 문구 노출 1건 추가" },
+    { "path": "apps/preemie-calc/tests/e2e/f7-share.spec.ts", "kind": "code", "note": "[curvez-reviewer/ACC-06] 링크 복사 버튼 상시 노출 1건, [curvez-reviewer/DSG-01] fillText 폭 실측 1건 추가" },
+    { "path": "apps/preemie-calc/tests/e2e/err-handling.spec.ts", "kind": "code", "note": "신규 파일. [curvez-reviewer/ERR-02] localStorage 예외 환경 3건(첫 화면, /dashboard 무시드, /dashboard 프로필 있음+읽기 차단)" },
+    { "path": "apps/preemie-calc/tests/e2e/support/helpers.ts", "kind": "code", "note": "installFillTextWidthSpy·getFillTextWidths(DSG-01용 measureText 가로채기), simulateLocalStorageUnavailable(ERR-02용) 추가" },
+    { "path": ".curvez/qa/preemie-calc/ac-matrix.md", "kind": "doc", "note": "PC-F3-AC4·PC-F4-AC5 를 '자동 통과(조건부: 원문 대조 전)'로 갱신, PC-NF-MOBILE-3 를 해소로 갱신, '회귀 테스트 ID 목록' 절 신규, 실행 결과 갱신" },
+    { "path": ".curvez/qa/preemie-calc/strategy.md", "kind": "doc", "note": "3라운드 절 추가: 층 배분·근거, PC-F3-AC4/AC-F4-AC5 재검토, 테스트하지 않는 것(구조 리팩터링 3건 무회귀 근거), 실행 결과" },
+    { "path": ".curvez/qa/preemie-calc/last-run-unit.log", "kind": "doc" },
+    { "path": ".curvez/qa/preemie-calc/last-run-root-3.log", "kind": "doc" },
+    { "path": ".curvez/qa/preemie-calc/last-run-e2e-3.log", "kind": "doc" },
+    { "path": ".curvez/qa/preemie-calc/ac-all.txt", "kind": "doc" },
+    { "path": ".curvez/qa/preemie-calc/ac-covered.txt", "kind": "doc" }
+  ],
+  "decisions": [
+    {
+      "what": "reference-data.test.ts·age-basis.test.ts 를 'null 을 허용하도록' 느슨하게 고치지 않고, ReferenceMeta 의 유니온 계약(둘 다 날짜 또는 둘 다 null)을 그대로 검사하는 테스트로 바꿨다. 추가로 resolveReferenceMeta 에 한쪽만 null 인 입력을 직접 넣어 오류가 나는지 검증하는 테스트 4건(both-null 통과, both-date 통과, effectiveDate만 null 오류, lastVerified만 null 오류)을 새로 만들었다.",
+      "why": "curvez-nextjs 의 blocked_on 요청 문구('null 을 허용하도록')를 그대로 따르면 한쪽만 null 인 깨진 상태까지 통과시키는 테스트가 될 위험이 있었다. architect 결정 1 이 실제로 정한 것은 '느슨한 null 허용'이 아니라 '쌍(pair) 불변식'이라 그 불변식 자체를 테스트 대상으로 삼았다.",
+      "reversible_at": "apps/preemie-calc/tests/unit/reference-data.test.ts"
+    },
+    {
+      "what": "PC-F3-AC4·PC-F4-AC5 를 '자동 통과'가 아니라 '자동 통과(조건부: 원문 대조 전)'로 표기했다.",
+      "why": "AC 원문 문장('기준일이 보인다')만 보면 통과지만, 실제 값은 날짜가 아니라 '확인 전'이라는 사실을 감추면 다음 라운드에 기준일이 채워졌을 때 이 판정이 조용히 뒤바뀐 것처럼 보인다. 조건부 표시는 원문 대조가 끝나기 전까지 이 판정이 잠정임을 드러낸다(오케스트레이터 CONTEXT 의 명시적 지시).",
+      "reversible_at": ".curvez/qa/preemie-calc/ac-matrix.md:PC-F3-AC4"
+    },
+    {
+      "what": "ERR-02 e2e 는 새 파일(tests/e2e/err-handling.spec.ts)에 뒀다. 기존 F-번호 파일에 넣지 않았다.",
+      "why": "ERR-02 는 특정 F 기능이 아니라 localStorage 읽기 실패라는 교차 관심사(InputView·DashboardView 둘 다 관련)라 어느 한 F 파일에 넣으면 다른 파일을 찾을 때 놓치기 쉽다.",
+      "reversible_at": "apps/preemie-calc/tests/e2e/err-handling.spec.ts"
+    },
+    {
+      "what": "curvez-structure-reviewer 의 blocked_on 질문(P1 대상 DUP-01·PLC-02·PLC-05 회귀 테스트 유무)에는 새 전용 테스트를 추가하지 않고, 기존 테스트가 그 공개 계약을 이미 지나간다는 근거를 ac-matrix.md·strategy.md 에 남기는 것으로 답했다.",
+      "why": "세 리팩터링 모두 공개 API(props·반환값·export 목록)가 그대로다 — curvez-nextjs 의 decisions 원문이 그렇게 명시했다. 이번 라운드 62개 단위 + 75개 e2e 테스트가 typecheck 와 함께 그대로 통과한 사실 자체가 회귀 없음의 실행 증거다. 새 테스트를 추가하면 구현 세부(내부 파일 분리)를 검증하는 것이 되어 판단 기준의 '테스트하지 않을 것 — private 함수·내부 구현 세부'에 걸린다.",
+      "reversible_at": ".curvez/qa/preemie-calc/strategy.md:회귀 테스트 ID 목록 다음 문단"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    { "command": "(워크트리 루트) pnpm test (= pnpm -r --if-present test), 1회차", "result": "exit 0. apps/preemie-calc 10개 파일 62개 테스트 62개 통과, packages/scopulus-ui 38개 파일 141개 테스트 141개 통과. 총 203개 중 203개 통과, 0개 실패", "passed": true },
+    { "command": "(워크트리 루트) pnpm test, 2회차(플래키 판정용)", "result": "exit 0. 동일하게 203/203 — .curvez/qa/preemie-calc/last-run-root-3.log", "passed": true },
+    { "command": "(apps/preemie-calc) pnpm test:e2e --reporter=line, 1회차", "result": "75 tests, 75 passed, 0 failed", "passed": true },
+    { "command": "(apps/preemie-calc) pnpm test:e2e --reporter=line, 2회차", "result": "75 tests, 75 passed, 0 failed — 1회차와 동일", "passed": true },
+    { "command": "(apps/preemie-calc) pnpm test:e2e --reporter=line, 3회차(최종 로그)", "result": "75 tests, 75 passed, 0 failed — 3회 연속 동일, 플래키 아님. .curvez/qa/preemie-calc/last-run-e2e-3.log", "passed": true },
+    { "command": "(apps/preemie-calc) pnpm exec playwright test tests/e2e/f7-share.spec.ts -g \"DSG-01\" --reporter=line (단독 재확인)", "result": "1 test, 1 passed", "passed": true },
+    { "command": "(apps/preemie-calc) pnpm --filter preemie-calc typecheck (= next typegen && tsc --noEmit)", "result": "Types generated successfully. tsc 오류 0건, exit 0", "passed": true },
+    { "command": "grep -rnE '\\.(skip|only|todo)\\(|\\bx(it|describe)\\(' apps/preemie-calc/tests/", "result": "0건", "passed": true },
+    { "command": "grep -ohE 'PC-F[0-9]+-(AC|EX)[0-9]+|PC-NF-[A-Z0-9]+-[0-9]+' apps/preemie-calc/tests/e2e/*.ts apps/preemie-calc/tests/unit/*.ts | sort -u | wc -l ; comm -23 .curvez/qa/preemie-calc/ac-all.txt .curvez/qa/preemie-calc/ac-covered.txt", "result": "57 (요구 57개와 일치). comm 출력 0줄 — 미커버 0개", "passed": true },
+    { "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/ (이 핸드오프 작성 전, 기존 21건 검증)", "result": "OK 핸드오프 검증 — 검사 21건, 통과 21건, 실패 0건, 오류 0개, 경고 0개", "passed": true }
+  ]
+}

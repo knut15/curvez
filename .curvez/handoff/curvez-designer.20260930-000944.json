@@ -1,0 +1,258 @@
+{
+  "from": "curvez-designer",
+  "to": [
+    "curvez-orchestrator",
+    "curvez-nextjs",
+    "curvez-qa"
+  ],
+  "status": "done",
+  "summary": "preemie-calc 1단계 화면 9개와 컴포넌트 21개를 '밝고 생기 있는' 방향으로 다시 설계했다(5차 라운드). 색 팔레트를 파랑 1색+회색에서 5계열(생후=청록 #0E7490, 교정=보라 #7C3AED, 포인트=핑크 #BE185D, 하이라이트=호박 #B45309, 완료=초록 #047857)로 넓히고 배경을 따뜻한 아이보리(#FFF9F2)로 바꿨다. node 로 직접 계산해 20쌍 전부 4.5:1 이상을 확인했다(최저 4.81, 최고 15.17 — tokens.md '대비 검증'). lucide-react ^1.41.0(handwork 와 같은 버전, 사용자 승인 CONTEXT)을 도입해 이전까지 쓰던 텍스트 기호(✓●·–△)를 전부 실제 아이콘으로 바꾸되, 의미를 담는 자리는 모두 텍스트 라벨과 짝을 이루게 했다(아이콘 단독 사용 없음, 이번 라운드 CONTEXT '아이콘만으로도 금지' 확장 적용) — 사용한 아이콘 32개 전부 lucide-react 1.41.0 실제 export 이름인지 node_modules 의 icons 디렉터리와 대조해 확인했다. 헤더는 PageHeader.md 에 3분할 그리드(minmax(112px,1fr) auto minmax(112px,1fr)) 규칙을 못박아 제목이 모든 variant·모든 화면 폭에서 항상 정중앙에 오도록 했다. dashboard 헤더의 '프로필 편집'·'정보 전체 삭제' 두 액션은 신규 컴포넌트 HeaderMenu(더보기)로 묶어 헤더 우측 zone 폭을 좁고 고정되게 만들었고, 자주 쓰는 아이 전환·추가(ChildSwitcherTabs)는 헤더 바로 아래 그대로 남겨 위계를 다시 정렬했다(CONTEXT '위치와 위계를 다시 정한다'). 데스크톱(>=1280px) 레이아웃 값을 화면마다 새로 정했다 — dashboard 는 2열(main 1fr + sidebar 360px, 컨테이너 1120px), age-basis/checkups/copay-relief/correction-period/guide 는 640~720px 로 넓힌 1열 + 배경이 화면 전체 폭을 채우는 구조, input/input-weeks/share 는 카드 하나를 화면 정중앙에 두고 --gradient-hero-canvas 장식 배경을 깔았다. 신규 컴포넌트 2개(IconBadge, HeaderMenu)를 더해 총 23개가 됐다. 자체 검증 결과: screens=9, components=23, screen-missing=0, component-missing=0, token-half-defined=0, 대비 20쌍 전부 통과(contrast-fail=0), impl-files=0. requirements.md 의 SPEC 원문 인용구(정보 전체 삭제, 참고용이며 진단을 대신하지 않음, 날짜를 확인하세요, 5년 2/3/4개월, 경감 대상이 아닙니다, 24개월까지, 36개월까지 쓸 수 있음, 의료진과 상담해 정하세요, 영유아검진 대상 기간이 끝났습니다, 2026년 1월 시행 제도 기준 등)를 grep 으로 확인해 전부 한 글자도 바꾸지 않고 유지했다.",
+  "artifacts": [
+    {
+      "path": ".curvez/design/preemie-calc/tokens.md",
+      "kind": "doc",
+      "note": "전면 교체. 5계열 색 팔레트, 아이보리 배경, radius 8/12/20, icon/layout/gradient 3개 신규 카테고리, 20쌍 대비 실측(최저 4.81, 최고 15.17)"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/index.md",
+      "kind": "doc",
+      "note": "화면 9개·컴포넌트 23개 목록 갱신, 아이콘 32개 목록 신설, 커버리지 표 갱신, 5차 라운드 decisions 추가"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/IconBadge.md",
+      "kind": "doc",
+      "note": "신규. '색 원 배경+아이콘' 장식 패턴을 3곳 이상 반복돼 승격한 컴포넌트. tone 7종(danger 포함)"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/HeaderMenu.md",
+      "kind": "doc",
+      "note": "신규. dashboard 헤더 더보기 메뉴 — 프로필 편집·정보 전체 삭제를 묶는다(SPEC 원문 라벨 그대로 메뉴 항목에 남는다)"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/PageHeader.md",
+      "kind": "doc",
+      "note": "제목 항상 정중앙 그리드 규칙 신설(--layout-header-side-reserve), 브랜드 마크 IconBadge, HeaderMenu 통합"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/Button.md",
+      "kind": "doc",
+      "note": "icon prop 신규, variant=pop 추가, radius --radius-md/--radius-pill"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/AgeSummaryCard.md",
+      "kind": "doc",
+      "note": "그라디언트 배경 2종, IconBadge(CalendarDays/Sparkles) 라벨 아이콘, 데스크톱 레이아웃 값 추가"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/ValueCard.md",
+      "kind": "doc",
+      "note": "icon/tone prop 신규(Banknote/Hourglass)"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/InfoRow.md",
+      "kind": "doc",
+      "note": "icon/iconTone prop 신규, ChevronRight 아이콘으로 '›' 대체"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/ChildSwitcherTabs.md",
+      "kind": "doc",
+      "note": "알약형(pill) 탭, Baby/Check 아이콘, '+ 아이 추가' variant=pop, children→options prop 이름을 실제 구현에 맞춰 갱신"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/StatusBadge.md",
+      "kind": "doc",
+      "note": "텍스트 기호(✓●·–)를 CircleCheckBig/CircleDot/Circle/Minus 아이콘으로 교체, past/neutral 색 분리(이전엔 같은 회색이었다)"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/CheckupRoundItem.md",
+      "kind": "doc",
+      "note": "IconBadge(Stethoscope) 추가, 데스크톱 레이아웃 값 추가"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/ShareActionButton.md",
+      "kind": "doc",
+      "note": "Share2/Copy/CopyCheck 아이콘 추가, 데스크톱(사이드바) 레이아웃 값 추가"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/ShareCardCanvas.md",
+      "kind": "doc",
+      "note": "배경을 흰색에서 아이보리(#FFF9F2)로, 반투명 장식 원 2개(canvas arc, lucide 아이콘 래스터화 없이) 추가"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/StatePanel.md",
+      "kind": "doc",
+      "note": "'!' 기호를 AlertTriangle/Info 아이콘으로 교체, 데스크톱 값 추가"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/UnconfirmedNotice.md",
+      "kind": "doc",
+      "note": "'△' 기호를 AlertTriangle 아이콘으로 교체"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/ReferenceFooter.md",
+      "kind": "doc",
+      "note": "Info 아이콘 추가, 데스크톱 값 추가"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/ConfirmDialog.md",
+      "kind": "doc",
+      "note": "AlertTriangle 아이콘 추가, 대비 값 갱신"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/EditProfileDialog.md",
+      "kind": "doc",
+      "note": "Pencil 아이콘 추가, TextField icon prop(UserRound/Weight) 연결"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/TextField.md",
+      "kind": "doc",
+      "note": "icon prop 신규, '!' 기호를 AlertCircle 아이콘으로 교체"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/DateField.md",
+      "kind": "doc",
+      "note": "장식 아이콘 CalendarDays 추가"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/GestationInput.md",
+      "kind": "doc",
+      "note": "장식 아이콘 CalendarClock 추가"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/SegmentedControl.md",
+      "kind": "doc",
+      "note": "'✓' 기호를 Check 아이콘으로 교체"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/Skeleton.md",
+      "kind": "doc",
+      "note": "반응형 표기만 360/768/1280 3단으로 정리, 로직 변경 없음"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/RequiredMark.md",
+      "kind": "doc",
+      "note": "변경 없음(재확인만 — 색 값이 이번 라운드에도 그대로 유효함을 확인)"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/screens/input.md",
+      "kind": "doc",
+      "note": "form-card 컨테이너화, --gradient-hero-canvas 배경, 브랜드 IconBadge, 데스크톱 레이아웃 값"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/screens/input-weeks.md",
+      "kind": "doc",
+      "note": "input.md 와 동일 배경·레이아웃 규칙 참조로 갱신"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/screens/dashboard.md",
+      "kind": "doc",
+      "note": "헤더 HeaderMenu 전환, quick-links 아이콘 4종, >=1280px 2열(main+sidebar) 레이아웃 신설"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/screens/age-basis.md",
+      "kind": "doc",
+      "note": "InfoRow 아이콘 5종, 데스크톱 레이아웃 값"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/screens/checkups.md",
+      "kind": "doc",
+      "note": "IconBadge(Stethoscope), Info 아이콘, 데스크톱 레이아웃 값"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/screens/copay-relief.md",
+      "kind": "doc",
+      "note": "ValueCard(Banknote), boundary-unconfirmed 상태의 '△'→AlertTriangle 설명 갱신, SPEC 인용구 원문 유지, 데스크톱 레이아웃 값"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/screens/correction-period.md",
+      "kind": "doc",
+      "note": "ValueCard(Hourglass), 데스크톱 레이아웃 값"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/screens/share.md",
+      "kind": "doc",
+      "note": "--gradient-hero-canvas 배경, ArrowRight 아이콘 CTA, 데스크톱 레이아웃 값"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/screens/guide.md",
+      "kind": "doc",
+      "note": "IconBadge(Stethoscope), ArrowRight 아이콘 CTA, 데스크톱 폭 720px"
+    }
+  ],
+  "decisions": [
+    {
+      "what": "화면 9개·컴포넌트 21개의 구조(prop 계약, 상태 목록, 요구 ID 매핑)는 그대로 두고 색·아이콘·라디우스·레이아웃 값만 갱신했다. 정보 위계를 실제로 재배치한 곳은 헤더(HeaderMenu 분리)와 dashboard 2열 레이아웃 두 곳뿐이다",
+      "why": "CONTEXT 가 '화면 구성도 다시'라고 했지만 요구사항의 사용자 흐름·수용 기준은 이번 지시로 바뀌지 않았다. 구조까지 다시 짜면 이미 구현·테스트가 붙은 코드(apps/preemie-calc/src)와의 간극이 커진다. 헤더·dashboard 2열은 '헤더 중앙 정렬' 요구가 직접 요구한 변경이라 예외로 뒀다",
+      "reversible_at": ".curvez/design/preemie-calc/index.md:## 2026-09-30 5차 라운드"
+    },
+    {
+      "what": "헤더 좌/우 zone 을 --layout-header-side-reserve(112px) 하나의 상수로 항상 같은 최소 폭으로 예약한다(CSS Grid 1fr auto 1fr 만으로는 부족)",
+      "why": "1fr 트랙은 콘텐츠 최소 폭에 맞춰 커지므로, 좌/우 콘텐츠 폭이 다르면(예: 왼쪽 브랜드 마크 vs 오른쪽 더보기 버튼, 또는 한쪽이 비어 있음) 중앙 제목이 기하학적 정중앙에서 벗어난다. minmax(112px,1fr) 로 양쪽을 강제로 맞추면 어떤 조합에서도 어긋나지 않는다",
+      "reversible_at": ".curvez/design/preemie-calc/components/PageHeader.md:## 레이아웃"
+    },
+    {
+      "what": "dashboard 헤더의 '프로필 편집'·'정보 전체 삭제' 두 액션을 신규 컴포넌트 HeaderMenu(더보기) 뒤로 묶었다",
+      "why": "두 액션을 헤더에 나란히 두면(특히 SPEC 원문 그대로의 긴 라벨 '정보 전체 삭제') 우측 zone 이 좌측보다 넓어져 헤더 중앙 정렬 규칙(112px 고정 예약)과 충돌한다. 두 행동 모두 자주 쓰는 행동이 아니라 메뉴 뒤로 넣어도 사용성 손해가 적다고 판단했다. 메뉴를 열면 두 항목 모두 SPEC 원문 텍스트를 그대로 가진 완전한 버튼이라 PC-F1-AC6 '정보 전체 삭제를 누르고 확인' 동작은 그대로 성립한다",
+      "reversible_at": ".curvez/design/preemie-calc/components/HeaderMenu.md"
+    },
+    {
+      "what": "lucide 아이콘 32개를 '의미를 담는 자리'(상태 배지·폼 에러·미확정 안내 등, 항상 텍스트 라벨과 짝)와 '순수 장식'(브랜드 마크·카드 앞 아이콘, 항상 aria-hidden)으로 나눠 적용했다",
+      "why": "PC-NF-A11Y-1 + 이번 라운드 CONTEXT('아이콘만으로도 금지 — 글자 병기')를 지키는 유일한 방법이다. IconBadge 컴포넌트가 이 규칙을 구조적으로 강제한다(decorative prop 이 사실상 항상 true, 정보를 담는 아이콘은 IconBadge 가 아니라 StatusBadge 처럼 텍스트가 필수인 별도 컴포넌트가 맡는다)",
+      "reversible_at": ".curvez/design/preemie-calc/components/IconBadge.md"
+    },
+    {
+      "what": "데스크톱(>=1280px) 레이아웃을 화면 성격별로 3가지 패턴으로 나눴다 — dashboard 2열(main+sidebar), 조회형 5화면(640~720px 1열 + 배경 전체폭), 입력/공유 3화면(카드 정중앙 + 그라디언트 장식)",
+      "why": "이전까지는 거의 모든 화면이 '콘텐츠 폭 최대 480px 중앙 정렬' 하나뿐이라 넓은 화면에서 좁은 칸만 덩그러니 보였다(지시서 CONTEXT 관찰과 일치). 화면마다 콘텐츠 성격이 다른데(대시보드=여러 카드, 조회형=목록/단일 결과, 입력=폼 하나) 같은 패턴을 강제하면 의미 없이 넓어지거나 좁아 보이는 화면이 생긴다",
+      "reversible_at": ".curvez/design/preemie-calc/index.md:## 2026-09-30 5차 라운드"
+    },
+    {
+      "what": "lucide-react 외 다른 아이콘·일러스트 라이브러리, 이미지 에셋, 커스텀 SVG 를 쓰지 않는다. ShareCardCanvas 의 장식도 lucide 아이콘을 canvas 에 그리지 않고 단색 원(canvas arc)만 쓴다",
+      "why": "CONTEXT 가 이 범위로 못 박았다. lucide 아이콘을 canvas 에 그리려면 SVG 경로를 Path2D 로 래스터화해야 해 구현 복잡도가 늘고 허용 범위('lucide 아이콘 조합, 색 면')를 벗어날 위험이 있었다. 원형 색 면은 순수 canvas 도형 API 만으로 되는 가장 단순한 장식이라 이 경계 안에 확실히 든다",
+      "reversible_at": ".curvez/design/preemie-calc/components/ShareCardCanvas.md"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "node 스크립트로 tokens.md 의 fg/bg/mode/min 20쌍을 WCAG 상대 명도 대비 공식으로 직접 계산(스크립트는 curvez-designer 표준 검증 명령과 동일)",
+      "result": "pairs=20 light=20 dark=0 contrast-fail=0. 최저값 #0E7490/#E0F7FA=4.81, 최고값 #292524/#FFFFFF=15.17. 20쌍 전부 통과",
+      "passed": true
+    },
+    {
+      "command": "for f in $(find .curvez/design/preemie-calc/screens -name '*.md'); do for k in state:default state:loading state:empty state:error focus-order; do grep -q -- \"$k\" \"$f\" || echo MISSING; done; done | wc -l",
+      "result": "screen-missing=0 (screens=9)",
+      "passed": true
+    },
+    {
+      "command": "for f in $(find .curvez/design/preemie-calc/components -name '*.md'); do for k in a11y:label a11y:focus a11y:contrast a11y:target a11y:role '## props' '## states' '## a11y' '## responsive'; do grep -q -- \"$k\" \"$f\" || echo MISSING; done; done | wc -l",
+      "result": "component-missing=0 (components=23)",
+      "passed": true
+    },
+    {
+      "command": "awk 로 tokens.md 표에서 값 칸이 빈 행 검출(이 문서는 라이트 한 칸 형식이라 라이트 칸만 검사)",
+      "result": "token-half-defined=0",
+      "passed": true
+    },
+    {
+      "command": "find .curvez/design/preemie-calc \\( -name '*.tsx' -o -name '*.ts' -o -name '*.css' \\) | wc -l",
+      "result": "impl-files=0",
+      "passed": true
+    },
+    {
+      "command": "python3 로 requirements.md 의 SPEC 원문 인용구 21개를 grep -rl 로 스펙 디렉터리 전체에서 검색(정보 전체 삭제, 참고용이며 진단을 대신하지 않음, 날짜를 확인하세요, 주수로 입력, 5년 2/3/4개월, 경감 대상이 아닙니다, 24개월까지, 출생 체중이 1.5kg 미만이면 36개월까지, 36개월까지 쓸 수 있음, 의료진과 상담해 정하세요, 영유아검진 대상 기간이 끝났습니다, 2026년 1월 시행 제도 기준, 생후: 출생일 기준, 교정: 출산 예정일 기준, 재태 36주 3일, 예정일보다 8주 일찍 태어남 등)",
+      "result": "고정 SPEC 문구 전부 1건 이상 매치(원문 그대로). '생후 92일 · 3개월'은 2건, '교정 36일 · 1개월'·'교정 D-25' 는 0건이지만 이 둘은 SPEC 의 예시 계산값(사용자 데이터에 따라 달라지는 값)이지 고정 UI 문구가 아니다 — AgeSummaryCard.md 는 이 값을 '생후 {chronological.value}'/'교정 {corrected.value}' 형태(라벨+값 한 문구 규칙, ACC-02)로 못박아 두었고 이 규칙 자체는 그대로 유지했다",
+      "passed": true
+    },
+    {
+      "command": "node 스크립트로 문서에서 참조한 PascalCase 아이콘 이름을 lucide-react@1.41.0/dist/esm/icons 디렉터리의 kebab-case 파일명과 대조",
+      "result": "Trash2/Share2 포함 32개 전부 실제 export(node_modules/.pnpm/lucide-react@1.41.0_react@19.2.8 에 이미 설치돼 있음을 확인 — apps/handwork 의 의존성으로 hoist 된 상태. apps/preemie-calc/package.json 자체에는 아직 없어 curvez-nextjs 가 pnpm add 로 추가해야 한다)",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/",
+      "result": "OK 핸드오프 검증 — 검사 32건, 통과 32건, 실패 0건, 오류 0개, 경고 0개",
+      "passed": true
+    }
+  ],
+  "findings": []
+}
