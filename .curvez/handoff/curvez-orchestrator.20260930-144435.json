@@ -1,0 +1,32 @@
+{
+  "from": "curvez-orchestrator",
+  "to": ["user"],
+  "status": "blocked",
+  "summary": "통합 수정 라운드(13:37~14:46)를 마쳤다. SPEC v5 의 F1 AC7, F16~F18 과 앞 라운드(v2) 기능을 합쳐 최종 게이트를 통과했다. 오케스트레이터가 마지막 수정 뒤 직접 돌린 결과: typecheck exit 0, lint 0 problems, test 103/103 + 141/141, build 503쪽, E2E 263/263(3200). 요구 94개 ID 가운데 91개가 자동 통과이고, 조건부 1(PC-F8-AC4), 보류 1(PC-F8-AC3 그래프), 사용자 확인 대기 1(경감 경계 TEAM-01)이다. 재리뷰 2회를 모두 썼다. 마지막 리뷰의 blocker·major 는 0건이고 minor 2건(ERR-07·08)이 남았다. 사용자 질문 3건이 남아 status 는 blocked 다.",
+  "artifacts": [
+    { "path": ".curvez/team.md", "kind": "decision", "note": "V1~V4, C1~C6 라운드와 남은 지적" },
+    { "path": ".curvez/standing.md", "kind": "decision", "note": "15번 팀 소유 경로(13:37 해제)" },
+    { "path": ".curvez/handoff/curvez-reviewer.20260930-135018.json", "kind": "review", "note": "대필(팀 파일 리뷰)" },
+    { "path": ".curvez/handoff/curvez-reviewer.20260930-143021.json", "kind": "review", "note": "대필(재리뷰 1/2)" },
+    { "path": ".curvez/handoff/curvez-reviewer.20260930-144416.json", "kind": "review", "note": "대필(재리뷰 2/2)" }
+  ],
+  "decisions": [
+    { "what": "앞 라운드 게이트를 통합 라운드 끝으로 미뤄 한 번으로 합쳤다. 다만 QA 최종 게이트 뒤에 ERR-05·06 수정이 들어가서, 오케스트레이터가 build·전체 E2E·typecheck·lint·test 를 한 번 더 돌렸다", "why": "코드가 바뀐 뒤의 재판정이다. 안정성 확인용 반복이 아니다(standing 14)", "reversible_at": ".curvez/team.md:SPEC v2 기능 라운드" },
+    { "what": "열린 리다이렉트 방지를 new URL 해석 + /dashboard 허용 목록으로 바꿨다(normalizeReturnPath)", "why": "재리뷰가 점 경로 우회(/dashboard/..//evil.com)를 찾았다. 수정 뒤 리뷰어가 31개 경우를 돌려 전부 안전하다고 판정했다", "reversible_at": "apps/preemie-calc/src/shared/lib/return-path/index.ts" },
+    { "what": "formula.md 의 모순은 안전 문구(37주 미만 안내)를 항상 보이는 쪽으로 풀었다", "why": "리뷰어 권고와 PC-F15-AC2 를 따랐다. 구현이 이미 이렇게 동작한다", "reversible_at": ".curvez/design/preemie-calc/screens/formula.md" },
+    { "what": "이유식 '교정 6개월 전후' 문구는 유지하고, 출처 표시만 바로잡았다", "why": "PRD §1 표와 SPEC F12 에 있는 문구다. 아이사랑 안내가 뒷받침하는 범위는 '교정 나이를 따른다' 까지다", "reversible_at": "apps/preemie-calc/src/views/guide-questions/ui/GuideQuestionView.tsx Weaning" }
+  ],
+  "blocked_on": [
+    { "question": "경감 구간 경계: PRD 결정 2('33주·29주 정각은 더 긴 경감 구간')가 원문('29주 이상~33주 미만 5년 3개월', '29주 미만 5년 4개월')과 반대다. 지금 계산기는 29주 0일을 5년 4개월로, 공개 가이드 문구는 원문대로 '29주 이상'을 5년 3개월로 보여 줘서 서로 어긋난다. 원문대로(정각은 '이상' 쪽, 즉 더 짧은 경감) 고칠지 정해 달라. 오케스트레이터가 앞서 올린 질문의 괄호 설명이 틀려서 생긴 결정이다", "who": "user" },
+    { "question": "F8 AC3 추이 그래프에 차트 라이브러리(예: recharts)를 설치해도 되는가", "who": "user" },
+    { "question": "백분위 계산의 표준정규분포 함수를 라이브러리 없이 순수 함수로 둔 것(최대 오차 6.95e-8 실측)을 그대로 둘지", "who": "user" }
+  ],
+  "verification": [
+    { "command": "pnpm build (워크트리 루트, 오케스트레이터, 마지막 수정 뒤 1회)", "result": "exit 0. apps/preemie-calc Generating static pages (503/503)", "passed": true },
+    { "command": "PORT=3200 pnpm test:e2e (apps/preemie-calc, 오케스트레이터, 1회)", "result": "263 passed (24.5s), exit 0", "passed": true },
+    { "command": "pnpm typecheck / pnpm lint / pnpm test (워크트리 루트, 오케스트레이터)", "result": "exit 0 / exit 0 / preemie-calc 103 passed, scopulus-ui 141 passed", "passed": true },
+    { "command": "grep -rn 'eslint-disable' apps/preemie-calc/src apps/preemie-calc/tests", "result": "0건", "passed": true },
+    { "command": "lsof -i :3100", "result": "PID 43850 LISTEN 유지", "passed": true },
+    { "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/", "result": "이 파일을 쓰기 전 69건 통과. 쓴 뒤 재실행 결과는 사용자 보고에 적는다", "passed": true }
+  ]
+}

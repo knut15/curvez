@@ -1,0 +1,136 @@
+{
+  "from": "curvez-qa",
+  "to": ["curvez-orchestrator", "curvez-nextjs"],
+  "status": "done",
+  "summary": "curvez-nextjs.20260930-010104.json 이 DSG-05(360px 헤더 제목-뒤로가기 20.5px 겹침, major)와 5라운드가 넘긴 guide h1 중복을 같은 커밋에서 고쳤다. 이 수정으로 apps/preemie-calc/tests/e2e/nf-header-layout.spec.ts 의 guide@360/768/1280 3건이 getByRole('banner').getByRole('heading',{level:1}) 로 못 찾아 깨졌다(nextjs decisions 'QA 갱신 필요'). 이번 라운드는 (1) 그 3건을 포함한 기존 27개 '헤더 제목 가운데 정렬' 테스트의 로케이터를 'banner 안의 heading(레벨 무관)'으로 바꾸고, 대신 27곳 전부에 '페이지의 h1 개수=1' 새 단언을 더해 guide h1 중복 재발을 직접 잡을 수 있게 했다(판정을 약하게 하지 않음 — 레벨 무관화로 느슨해진 만큼을 더 엄격한 새 단언이 메운다). (2) 신규 테스트 36개('[디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음', 9개 화면×360/390/768/1280px)를 추가했다 — 5라운드 가운데 정렬 테스트는 제목 box 의 중심 좌표만 재서 DSG-05(중심은 정중앙이어도 박스가 넓어 좌우로 침범)를 놓쳤는데, 이 테스트는 제목 boundingBox 와 banner 안 button/a[href](back 버튼, HeaderMenu '더보기' 트리거 — 장식 아이콘 제외) boundingBox 의 가로 겹침을 직접 재 0px(허용 0.5px)인지 확인한다. 같은 테스트 안에서 scrollHeight≤clientHeight+1(line-clamp:2 잘림 없음)도 함께 확인했다. DSG-05 재현 조건(correction-period·copay-relief @360px)을 포함해 버튼/링크가 있는 5개 화면×4개 폭=20개 조합 전부 겹침 0px, 줄바꿈 잘림 없음 확인(임시 console.log 로 1회 실측 후 즉시 제거, 5라운드와 같은 방법). title-only 4개 화면(input/input-weeks/share/guide)은 banner 에 버튼·링크가 없어 반복문이 0회 도는 채로 통과한다(정상). 워크트리 루트 typecheck(exit 0, 7개 워크스페이스)·lint(exit 0, 0 problems)·test(exit 0, 203/203: preemie-calc 62/62+scopulus-ui 141/141)·build(exit 0, preemie-calc 491/491 정적 페이지) 전부 통과, quality-gate.mjs --no-stop 5/5 PASS(arch 14규칙 위반 0). apps/preemie-calc pnpm test:e2e 는 2회 연속 실행 모두 140개 통과, 0개 실패(exit 0, 완전히 동일 — 플래키 아님). 140 = 5라운드 104개 + 이번 라운드 신규 36개(깨졌던 guide 3건 포함 27개는 통과로 복귀, 삭제·skip 없음). skip/only/todo 0건. 수용 기준 커버 57/57(미커버 0, 5라운드와 동일 — 이번 라운드는 요구사항이 아니라 DSG-05 관련 테스트만 갱신·추가했다). 57개 ID 판정은 5라운드와 완전히 동일(자동 통과 55·자동 실패 0·수동 1, 조건부 2건 유지) — 상세는 ac-matrix.md '6라운드' 절. after 캡처 20장을 .curvez/qa/preemie-calc/screens/after/ 에 다시 찍어 덮어썼다(20 passed, mtime 갱신 확인). dashboard-correction-period-360.png 를 육안으로 확인해 제목이 2줄('교정연령 적\\n용 종료 안내')로 줄바꿈되고 '‹ 대시보드' 버튼과 겹치지 않음을 재확인했다(DSG-05 시각적 재확인). 포트 3100 은 이번 세션 내내 모든 명령 실행 전마다 lsof 로 비어 있음을 확인했고, run_in_background·직접 dev 서버 기동은 하지 않았다(Playwright webServer 만 사용). src·package.json 은 전혀 건드리지 않았다.",
+  "artifacts": [
+    { "path": "apps/preemie-calc/tests/e2e/nf-header-layout.spec.ts", "kind": "code", "note": "기존 27개 '헤더 제목 가운데 정렬' 테스트: 로케이터를 getByRole('heading',{level:1})→getByRole('heading')(레벨 무관)으로 바꾸고 '페이지 h1 개수=1' 단언을 추가. 신규 36개 '[디자인 재구성, DSG-05 회귀] 헤더 제목-좌우 버튼 겹침 없음'(9화면×4폭) 추가. 삭제 없음(총 65개 = 27+36+대시보드 2열/1열 대조 2개)" },
+    { "path": ".curvez/qa/preemie-calc/ac-matrix.md", "kind": "doc", "note": "'6라운드' 절 추가 — 바뀐 테스트 표, 겹침 실측표(px, 20개 조합 전부 0), h1 개수 재확인(27개 조합 전부 1), 57개 ID 판정 재확인, 실행 결과 수치, 직접 고친 것" },
+    { "path": ".curvez/qa/preemie-calc/test-changes-redesign.md", "kind": "doc", "note": "'E. 6라운드' 절 추가 — guide 3건 이전→이후 대응표(#7), 신규 겹침 회귀 테스트 설명(#8), '발견했지만 고치지 않은 것'의 guide h1 항목에 '[6라운드에서 고쳐짐]' 표시" },
+    { "path": ".curvez/qa/preemie-calc/strategy.md", "kind": "doc", "note": "'6라운드' 절 추가 — 층 배분과 근거(전부 e2e), 디자인 스펙 키 대응표, 테스트하지 않는 것(임의 긴 문자열·3줄 이상 케이스), 실행 결과, 직접 고친 것" },
+    { "path": ".curvez/qa/preemie-calc/screens/after/", "kind": "doc", "note": "PNG 20장 재촬영(파일명 동일, mtime 이번 실행 시각으로 갱신)" },
+    { "path": ".curvez/qa/preemie-calc/last-run-typecheck.log", "kind": "doc", "note": "워크트리 루트 pnpm typecheck 원문(exit 0)" },
+    { "path": ".curvez/qa/preemie-calc/last-run-lint.log", "kind": "doc", "note": "워크트리 루트 pnpm lint 원문(exit 0, 0 problems)" },
+    { "path": ".curvez/qa/preemie-calc/last-run-root.log", "kind": "doc", "note": "워크트리 루트 pnpm test 원문(203/203)" },
+    { "path": ".curvez/qa/preemie-calc/last-run-build.log", "kind": "doc", "note": "워크트리 루트 pnpm build 원문(preemie-calc 491/491 정적 페이지)" },
+    { "path": ".curvez/qa/preemie-calc/last-run-quality-gate.log", "kind": "doc", "note": "quality-gate.mjs --no-stop 원문(5/5 PASS)" },
+    { "path": ".curvez/qa/preemie-calc/last-run-e2e-r1.log", "kind": "doc", "note": "pnpm test:e2e 1회차 원문(140 passed, 0 failed)" },
+    { "path": ".curvez/qa/preemie-calc/last-run-e2e-r2.log", "kind": "doc", "note": "pnpm test:e2e 2회차 원문(140 passed, 0 failed — 1회차와 동일, 플래키 아님)" },
+    { "path": ".curvez/qa/preemie-calc/screens/last-run-capture-after.log", "kind": "doc", "note": "after 캡처 원문(20 passed, 0 failed)" }
+  ],
+  "decisions": [
+    {
+      "what": "헤더 제목 로케이터를 getByRole('banner').getByRole('heading',{level:1})에서 getByRole('banner').getByRole('heading')(레벨 무관)으로 바꾸고, 그 대신 27개 조합 전부에 expect(await page.locator('h1').count()).toBe(1) 을 새 단언으로 더했다.",
+      "why": "PageHeader.md 스펙은 헤더 '제목'이라고만 하지 h1 이라고 못박지 않는다. guide 는 이번 수정으로 헤더 제목이 h2 가 됐으므로(본문 SEO 조합 제목을 유일한 h1 로 남기기 위해) 레벨을 못박은 로케이터는 guide 에서 구조적으로 깨질 수밖에 없다. 레벨 무관화만으로 끝내면 판정이 약해지므로, '페이지에 h1 이 정확히 1개'라는 시맨틱 헤딩 구조 단언을 모든 화면·모든 폭에 새로 추가해 guide h1 중복(5라운드가 발견한 결함, 이번에 고쳐짐)의 재발을 이 테스트가 직접 잡게 했다 — 완화가 아니라 검증 범위 확대다.",
+      "reversible_at": "apps/preemie-calc/tests/e2e/nf-header-layout.spec.ts:144-162"
+    },
+    {
+      "what": "새 겹침 회귀 테스트는 banner 안의 button, a[href] 요소만 대상으로 하고, 장식 아이콘(IconBadge, aria-hidden span)은 대상에서 제외했다.",
+      "why": "DSG-05 는 제목이 '상호작용 가능한 뒤로가기 버튼'과 겹친다는 지적이었다. 장식 아이콘은 aria-hidden 이라 스크린리더에 노출되지 않고 클릭 대상도 아니므로, 시각적으로 겹치더라도 DSG-05 가 지적한 문제(버튼의 눌리는 영역이 줄어듦)와는 다른 종류다. GOAL 문구 '좌우 버튼·링크 box' 도 이 범위와 일치한다. title-only 4개 화면(input/input-weeks/share/guide)은 banner 에 버튼·링크가 없어 이 테스트의 반복문이 0회 도는 채로 통과하는데, 이는 겹칠 대상 자체가 없다는 뜻이라 정상이다.",
+      "reversible_at": "apps/preemie-calc/tests/e2e/nf-header-layout.spec.ts:188"
+    },
+    {
+      "what": "제목 잘림 확인(scrollHeight≤clientHeight+1)을 '2줄이 되는 화면'만 골라 조건부로 넣지 않고, 9개 화면×4개 폭 36개 조합 전부에 무조건 넣었다.",
+      "why": "GOAL 은 '제목이 2줄이 되는 화면(예: correction-period 360px)에서'라고 예시를 들었지만, 이 단언은 1줄일 때도 scrollHeight≈clientHeight 라 항상 성립하는 일반 규칙이다. 어떤 화면·폭이 2줄인지 미리 분류해 그 경우만 검사하면 분류 로직 자체가 틀렸을 때 검사가 빠질 위험이 있다 — 모든 조합에 넣는 쪽이 더 엄격하고 실수 여지가 없다. 실측 결과 360/390px 9개 화면 전부 60px(2줄), 768/1280px 전부 30px(1줄)이었고 36개 조합 전부 scrollHeight===clientHeight(잘림 없음)를 확인했다.",
+      "reversible_at": "apps/preemie-calc/tests/e2e/nf-header-layout.spec.ts:212-223"
+    },
+    {
+      "what": "겹침 실측값(px)과 scrollHeight/clientHeight 실측값을 얻기 위해 console.log 두 줄을 순서대로 임시로 넣어 각 1회 실행한 뒤 즉시 되돌렸다(정식 테스트 파일에는 assertion 만 남는다, diff 로 원본과 동일함을 확인).",
+      "why": "5라운드가 헤더 중심 차이 실측표를 채울 때 쓴 것과 같은 패턴이다. assert 실패 메시지에는 실측값이 포함되지만 36개 전부 통과하는 상황에서 ACCEPTANCE 가 요구한 '겹침 실측 표'를 채우려면 통과해도 값을 봐야 했다. 정식 테스트 코드에는 디버그용 console.log 를 남기지 않는다.",
+      "reversible_at": "apps/preemie-calc/tests/e2e/nf-header-layout.spec.ts(현재 파일에는 남아 있지 않음 — 측정값은 ac-matrix.md '6라운드' 절 '겹침 실측 표'에 기록)"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "lsof -i :3100 (작업 시작 전 및 모든 test:e2e/build/capture 실행 전마다)",
+      "result": "매번 빈 출력(다른 프로세스 없음). run_in_background·직접 dev 서버 기동 안 함 — Playwright webServer(next build && next start -p 3100)만 사용, 실행 뒤 자동 종료",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) pnpm exec playwright test nf-header-layout.spec.ts (고친/추가한 파일만 먼저 격리 실행)",
+      "result": "65 passed (12.3s), 0 failed",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm typecheck",
+      "result": "exit 0. 7개 워크스페이스 전부 'Types generated successfully' + Done, 오류 0건 — .curvez/qa/preemie-calc/last-run-typecheck.log",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm lint",
+      "result": "exit 0. eslint . && pnpm -r --if-present lint — 전 워크스페이스 Done, 출력 없음(0 problems) — .curvez/qa/preemie-calc/last-run-lint.log",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm test",
+      "result": "exit 0. apps/preemie-calc 10개 파일 62개 테스트 62개 통과, packages/scopulus-ui 38개 파일 141개 테스트 141개 통과. 총 203개 중 203개 통과, 0개 실패 — .curvez/qa/preemie-calc/last-run-root.log",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm build",
+      "result": "exit 0. apps/preemie-calc next build 성공, 491/491 정적 페이지 생성. city-presets·scopulus-ui·handwork 도 전부 Done — .curvez/qa/preemie-calc/last-run-build.log",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/quality-gate.mjs --no-stop",
+      "result": "PASS arch(규칙 14개 파싱/검사 14개/위반 0건), PASS typecheck, PASS lint, PASS test, PASS build — quality-gate 통과, 5개 게이트 실행, 실패 0건 — .curvez/qa/preemie-calc/last-run-quality-gate.log",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) pnpm test:e2e — 1회차",
+      "result": "140 tests, 140 passed, 0 failed (15.0s) — .curvez/qa/preemie-calc/last-run-e2e-r1.log",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) pnpm test:e2e — 2회차",
+      "result": "140 tests, 140 passed, 0 failed (15.1s) — 1회차와 완전히 동일, 플래키 아님 — .curvez/qa/preemie-calc/last-run-e2e-r2.log",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) grep -rnE '\\.(skip|only|todo)\\(|\\bx(it|describe)\\(' tests/",
+      "result": "0건",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) grep -ohE 'PC-F[0-9]+-(AC|EX)[0-9]+|PC-NF-[A-Z0-9]+-[0-9]+' tests/e2e/*.ts tests/unit/*.ts | sort -u | wc -l",
+      "result": "57(요구 57개와 정확히 일치, 미커버 0개 — 5라운드와 동일)",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) grep -n 'level: 1\\|level:1' tests/e2e/nf-header-layout.spec.ts",
+      "result": "1건 — 6라운드 배경을 설명하는 상단 주석 안의 인용뿐(코드에는 level:1 로케이터가 남아 있지 않음)",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) 임시 console.log 로 DSG-05 회귀 테스트 36개 중 버튼/링크가 있는 20개 조합의 겹침(overlap)을 실측",
+      "result": "20개 조합(dashboard·age-basis·checkups·copay-relief·correction-period × 360/390/768/1280px) 전부 overlap=0px. correction-period@360px(이전 20.5px 겹침)·copay-relief@360px(이전 9.5px 겹침) 포함",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) 임시 console.log 로 36개 조합 전부의 scrollHeight/clientHeight 를 실측",
+      "result": "36개 조합 전부 scrollHeight===clientHeight(잘림 없음). 360/390px 9개 화면 전부 60px(2줄), 768/1280px 전부 30px(1줄)",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) CURVEZ_CAPTURE=1 CURVEZ_CAPTURE_DIR=after pnpm exec playwright test --project=capture",
+      "result": "20 passed (8.8s), 0 failed",
+      "passed": true
+    },
+    {
+      "command": "ls .curvez/qa/preemie-calc/screens/after | wc -l",
+      "result": "20(before 와 동일 10개 slug × 2폭 파일명, mtime 이번 실행 시각)",
+      "passed": true
+    },
+    {
+      "command": "Read .curvez/qa/preemie-calc/screens/after/dashboard-correction-period-360.png (육안 확인)",
+      "result": "제목이 '교정연령 적/용 종료 안내' 2줄로 줄바꿈되고 '‹ 대시보드' 뒤로가기 버튼과 겹치지 않음 — DSG-05 시각적 재확인",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/",
+      "result": "OK 핸드오프 검증 — 검사 38건, 통과 38건, 실패 0건, 오류 0개, 경고 0개",
+      "passed": true
+    }
+  ]
+}

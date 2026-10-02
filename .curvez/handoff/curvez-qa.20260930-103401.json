@@ -1,0 +1,84 @@
+{
+  "from": "curvez-qa",
+  "to": ["curvez-orchestrator", "curvez-nextjs"],
+  "status": "done",
+  "summary": "apps/preemie-calc 의 Playwright E2E·캡처 웹서버 포트를 3100(사용자 확인용 dev, PID 43850)에서 3200 으로 옮겼다. apps/preemie-calc 전체가 git 미추적 신규 디렉터리라 git diff 는 비교 대상이 없어 빈 출력이다(git status 로 확인) — 변경은 Edit 도구 기록 기준으로 아래 두 파일이다. (1) apps/preemie-calc/playwright.config.ts: PORT 상수를 고정 3100 에서 `Number(process.env.PORT) || 3200` 으로 바꿔 환경변수로 덮어쓸 수 있게 했고, webServer.reuseExistingServer 를 `!process.env.CI` 에서 `false` 로 고정해 다른 프로세스의 서버를 잘못 재사용하지 않게 했다(GOAL 지시대로). (2) .curvez/qa/preemie-calc/screens/README.md: 캡처 실행 방법 설명의 `next build && next start -p 3100` 문구를 3200 으로 고치고 '포트 3100 은 사용자 확인용 dev 서버가 쓰므로 건드리지 않는다' 한 줄을 덧붙였다. apps/preemie-calc/tests/** 전체를 grep 했으나 3100·localhost 하드코딩은 0건이었다(baseURL 을 playwright.config.ts 에서만 참조). 충돌 위험 사전 확인: Next 16.3.4 는 `next dev` 가 `.next/dev/`(dev/lock·dev/server·dev/build·dev/cache 등) 하위에만 쓰고, `next build`/`next start` 는 `.next` 최상위(BUILD_ID·server·static 등)에 쓴다 — 실제로 현재 워크트리의 `.next/dev/lock` 파일이 `{\"pid\":43850,\"port\":3100,...}` 을 담고 있고 최상위 BUILD_ID(mtime 01:31)와 dev 하위 파일(최근 갱신)의 mtime 이 서로 다른 시점을 가리켜 두 경로가 실제로 분리돼 쓰이고 있음을 확인했다(node_modules/next/dist/docs/01-app/02-guides/ai-agents.md:119 도 `.next/dev/lock` 을 문서로 확인해 준다). 이 분리 덕분에 `pnpm test:e2e`(webServer 가 3200 에서 next build && next start 를 실행)가 돌아도 3100 dev 서버의 파일을 건드리지 않는다 — 실측으로도 재확인했다(아래 verification). apps/preemie-calc pnpm test:e2e 를 두 차례 연속 실행해 185개 중 185개 통과, 0개 실패, 0개 skip/only/todo. 두 실행 모두 매 실행 전후 lsof -i :3100 에 PID 43850 이 LISTEN 상태였고 curl http://localhost:3100/ 은 200, .next/dev/lock 의 pid 도 43850 그대로였다. 실행 도중·이후 lsof -i :3200 은 playwright 가 자기 webServer 를 정리해 빈 상태로 돌아왔다(테스트 사이에는 next start 가 3200 에서 LISTEN 하는 것을 별도로 확인하지는 않았으나 webServer.url 로 헬스체크가 걸려 있어 통과 자체가 3200 기동의 증거다). typecheck·lint 도 0건 오류로 통과했다. 이번 라운드는 포트 변경뿐이라 수용 기준·디자인 스펙 커버 매트릭스는 다시 만들지 않았다(직전 라운드 ac-matrix.md·strategy.md 의 57/57·design-uncovered 0 이 그대로 유효 — 테스트 기대값·화면 코드를 전혀 건드리지 않았다).",
+  "artifacts": [
+    {
+      "path": "apps/preemie-calc/playwright.config.ts",
+      "kind": "code",
+      "note": "PORT 를 3100 고정에서 `Number(process.env.PORT) || 3200` 으로, webServer.reuseExistingServer 를 `!process.env.CI` 에서 `false` 로 변경. 주석도 3100→3200 전환과 kill 금지 취지를 남기도록 갱신"
+    },
+    {
+      "path": ".curvez/qa/preemie-calc/screens/README.md",
+      "kind": "doc",
+      "note": "캡처 실행 설명의 웹서버 포트 문구를 3100→3200 으로 갱신, 3100 은 건드리지 않는다는 문장 추가"
+    },
+    { "path": ".curvez/qa/preemie-calc/last-run-e2e-port3200.log", "kind": "doc", "note": "포트 변경 직후 첫 pnpm test:e2e 원문(185 passed, 0 failed, 19.0s)" },
+    { "path": ".curvez/qa/preemie-calc/last-run-e2e-port3200-final.log", "kind": "doc", "note": "최종 확인용 pnpm test:e2e 재실행 원문(185 passed, 0 failed, 18.5s) — 1회차와 결과 동일, 플래키 아님" }
+  ],
+  "decisions": [],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "lsof -i :3100 (작업 시작 전)",
+      "result": "node 43850 LISTEN *:3100 — 사용자 dev 서버 확인, kill 하지 않음",
+      "passed": true
+    },
+    {
+      "command": "lsof -i :3200 (작업 시작 전)",
+      "result": "빈 출력 — 포트 비어 있음",
+      "passed": true
+    },
+    {
+      "command": "grep -rn 3100 apps/preemie-calc/tests apps/preemie-calc/playwright.config.ts .curvez/qa/preemie-calc",
+      "result": "수정 전: playwright.config.ts 주석 2줄 + ac-matrix.md/strategy.md 의 과거 세션 로그 문구(그대로 둠, 지난 라운드 기록이라 수정 대상 아님) + screens/README.md 1줄(수정함). tests/** 안에는 3100 하드코딩 0건",
+      "passed": true
+    },
+    {
+      "command": "cat apps/preemie-calc/.next/dev/lock",
+      "result": "{\"pid\":43850,\"port\":3100,\"hostname\":\"localhost\",\"appUrl\":\"http://localhost:3100\",\"startedAt\":1790699832851} — next dev 전용 하위 디렉터리, next build 가 쓰는 최상위 .next/BUILD_ID 등과 분리돼 있음을 mtime 비교로 확인",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) pnpm test:e2e — 1회차 (포트 변경 후)",
+      "result": "185 tests, 185 passed, 0 failed (19.0s) — .curvez/qa/preemie-calc/last-run-e2e-port3200.log",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) pnpm test:e2e — 2회차 (최종 확인)",
+      "result": "185 tests, 185 passed, 0 failed (18.5s) — 1회차와 동일 결과, 플래키 아님 — .curvez/qa/preemie-calc/last-run-e2e-port3200-final.log",
+      "passed": true
+    },
+    {
+      "command": "lsof -i :3100 (매 test:e2e 실행 전/후 4회 모두)",
+      "result": "PID 43850 LISTEN 그대로, 변화 없음",
+      "passed": true
+    },
+    {
+      "command": "curl -s -o /dev/null -w '%{http_code}' http://localhost:3100/ (매 실행 전/후)",
+      "result": "200 (모든 시점 동일)",
+      "passed": true
+    },
+    {
+      "command": "lsof -i :3200 (test:e2e 실행 완료 후)",
+      "result": "빈 출력 — playwright 가 자기 webServer(next start -p 3200)를 종료해 포트가 반환됨",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) pnpm typecheck",
+      "result": "exit 0. next typegen 성공 + tsc --noEmit 오류 0건",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) pnpm lint",
+      "result": "exit 0. eslint 출력 없음(0 problems)",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/",
+      "result": "OK 핸드오프 검증 — 검사 45건, 통과 45건, 실패 0건, 오류 0개, 경고 0개(이 핸드오프 파일 포함)",
+      "passed": true
+    }
+  ]
+}

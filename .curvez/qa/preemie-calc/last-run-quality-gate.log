@@ -1,0 +1,12 @@
+PASS  arch: ARCH-NNN 규칙 검사
+      규칙 14개 파싱 / 검사 14개 / 위반 0건
+PASS  pnpm typecheck
+      apps/scopulus-ui typecheck: Done
+PASS  pnpm lint
+      apps/handwork lint: Done
+PASS  pnpm test
+      test: (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become th
+PASS  pnpm build
+      apps/handwork build: Done
+
+quality-gate 통과 — 5개 게이트 실행, 실패 0건

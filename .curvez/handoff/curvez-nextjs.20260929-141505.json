@@ -1,0 +1,158 @@
+{
+  "from": "curvez-nextjs",
+  "to": ["curvez-orchestrator", "curvez-qa", "curvez-reviewer", "curvez-structure-reviewer"],
+  "status": "partial",
+  "summary": "리뷰 1회차 지적 16건(curvez-reviewer 10건 중 9건 P0~P3, curvez-structure-reviewer 6건, curvez-qa E2E 실패 1건)을 architecture.md·design 문서의 새 결정에 맞춰 apps/preemie-calc 에 반영했다. blocker(ERR-01, ACC-01) 2건 모두 고쳤고, E2E 실패였던 PC-NF-MOBILE-3(주수 전환 버튼 25.5px)도 48px 이상으로 고쳐 63/63 통과로 만들었다. status 를 partial 로 낮춘 유일한 이유는 eslint 크래시(사용자 질문 대기, standing.md 기존 이슈)다 — 그 밖의 모든 검증은 통과했다. 단위 테스트는 architect 결정 1(ReferenceMeta effectiveDate·lastVerified 둘 다 null 허용)로 인해 예정대로 5건 실패한다(reference-data.test.ts 의 메타 4개 × 1개 테스트 블록 + age-basis.test.ts 1개 테스트 블록, 전부 '${meta}.effectiveDate 가 날짜다' 라는 낡은 전제 하나가 4개 파일에 반복돼 5건으로 세어진다 — 코드 위치는 지시서가 준 두 곳 그대로다). 테스트 파일은 쓰기 범위 밖이라 고치지 않았다.",
+  "artifacts": [
+    { "path": "apps/preemie-calc/src/entities/checkup/model/index.ts", "kind": "code", "note": "ERR-01: CheckupPlan 에 currentBeforeDue 필드 추가, calendarSpan 예외를 던지던 경로를 그 전에 분기해 막았다" },
+    { "path": "apps/preemie-calc/src/widgets/checkup-plan/ui/CheckupPlanSection.tsx", "kind": "code", "note": "ERR-01: currentBeforeDue 일 때 현재 요약 줄과 해당 차수의 검사지 칸에 '출산 예정일 전이라 교정 나이가 아직 없습니다'를 보이고 UnconfirmedNotice 재사용" },
+    { "path": "apps/preemie-calc/src/widgets/age-basis-list/ui/AgeBasisSection.tsx", "kind": "code", "note": "ACC-01: basisText 가 row.basis 를 먼저 보게 순서를 바꿈. ACC-04: sourceLabel 의 effectiveDate null 분기" },
+    { "path": "apps/preemie-calc/src/widgets/age-summary/lib/format.ts", "kind": "code", "note": "ACC-02: corrected.value 에서 '교정' 접두어를 뺌(컴포넌트가 붙인다). DSG-01: before-due 를 value/subValue 로 분리" },
+    { "path": "apps/preemie-calc/src/widgets/age-summary/ui/AgeSummaryCard.tsx", "kind": "code", "note": "ACC-02: 두 칸 모두 '{라벨} {값}' 한 문구로 통일, subValue 줄 추가. PLC-02: variant=single 분기 제거" },
+    { "path": "apps/preemie-calc/src/features/profile-form/ui/ProfileForm.tsx", "kind": "code", "note": "ACC-03: 필드 순서를 출생일→예정일/주수→전환→성별 로 변경. PC-NF-MOBILE-3: 전환을 shared/ui Button(variant=text)으로 교체(48px 이상). ERR-02: saveProfile 쓰기 실패를 폼 오류로 표시" },
+    { "path": "apps/preemie-calc/src/shared/lib/reference/index.ts", "kind": "code", "note": "ACC-04(architect 이의 1): ReferenceMeta 를 '둘 다 날짜' | '둘 다 null' 유니온으로, resolveReferenceMeta 가 한쪽만 null 이면 오류" },
+    { "path": "apps/preemie-calc/src/entities/age-basis/data/age-basis.json", "kind": "code", "note": "ACC-04: meta.effectiveDate 를 null 로" },
+    { "path": "apps/preemie-calc/src/entities/checkup/data/checkup-rounds.json", "kind": "code", "note": "ACC-04: meta.effectiveDate 를 null 로" },
+    { "path": "apps/preemie-calc/src/entities/copay-relief/data/copay-relief.json", "kind": "code", "note": "ACC-04: meta.effectiveDate 를 null 로(2026-01-01 포함). policyLabel 은 그대로 둬 PC-F5-AC5 유지" },
+    { "path": "apps/preemie-calc/src/entities/correction-period/data/correction-period.json", "kind": "code", "note": "ACC-04: meta.effectiveDate 를 null 로" },
+    { "path": "apps/preemie-calc/src/shared/ui/ReferenceFooter.tsx", "kind": "code", "note": "ACC-04: effectiveDate null 이면 '기준일 확인 전'(architect 문구, designer 스펙에 null 문구 없어 채택)" },
+    { "path": "apps/preemie-calc/src/shared/ui/RequiredMark.tsx", "kind": "code", "note": "DUP-01: 신규. 필수 표시(별표+sr-only '{label}, 필수') 통일 컴포넌트(designer RequiredMark.md)" },
+    { "path": "apps/preemie-calc/src/shared/ui/DateField.tsx", "kind": "code", "note": "DUP-01: 필수 표시를 RequiredMark 로 교체" },
+    { "path": "apps/preemie-calc/src/shared/ui/GestationInput.tsx", "kind": "code", "note": "DUP-01: 필수 표시를 RequiredMark 로 교체" },
+    { "path": "apps/preemie-calc/src/shared/ui/SegmentedControl.tsx", "kind": "code", "note": "DUP-01: 필수 표시를 RequiredMark 로 교체" },
+    { "path": "apps/preemie-calc/src/shared/ui/TextField.tsx", "kind": "code", "note": "DUP-01: 필수 표시를 RequiredMark 로 교체(sr-only 문구를 '{label}, 필수' 로 통일)" },
+    { "path": "apps/preemie-calc/src/shared/ui/ValueCard.tsx", "kind": "code", "note": "PLC-02: 신규. AgeSummaryCard(variant=single) 을 대체하는 shared 층 표시 카드(designer ValueCard.md)" },
+    { "path": "apps/preemie-calc/src/shared/ui/index.ts", "kind": "code", "note": "RequiredMark·ValueCard 공개 API 추가" },
+    { "path": "apps/preemie-calc/src/widgets/copay-relief-result/ui/CopayReliefSection.tsx", "kind": "code", "note": "PLC-02: AgeSummaryCard(variant=single) → shared/ui ValueCard 로 교체(widgets 간 런타임 import 제거)" },
+    { "path": "apps/preemie-calc/src/widgets/correction-period-result/ui/CorrectionPeriodSection.tsx", "kind": "code", "note": "PLC-02: 위와 동일" },
+    { "path": "apps/preemie-calc/src/entities/child/model/profile.ts", "kind": "code", "note": "PLC-05: model/index.ts 분리 조각(프로필·검증). ACC-05: 주수 입력 days 가 0~6 정수 아니면 invalid-date" },
+    { "path": "apps/preemie-calc/src/entities/child/model/gestation.ts", "kind": "code", "note": "PLC-05: 분리 조각(재태기간·validateGestationDates)" },
+    { "path": "apps/preemie-calc/src/entities/child/model/ages.ts", "kind": "code", "note": "PLC-05: 분리 조각(생후·교정 나이)" },
+    { "path": "apps/preemie-calc/src/entities/child/model/combo.ts", "kind": "code", "note": "PLC-05: 분리 조각(F13 조합). PLC-04: weeksEarlyMonths 필드를 결과에 추가해 환산 규칙을 한 곳에 둠" },
+    { "path": "apps/preemie-calc/src/entities/child/model/share.ts", "kind": "code", "note": "PLC-05: 분리 조각(공유 링크)" },
+    { "path": "apps/preemie-calc/src/entities/child/model/index.ts", "kind": "code", "note": "PLC-05: re-export 바렐로 재작성. 슬라이스 공개 API(entities/child/index.ts)는 그대로라 바깥 import 안 바뀜" },
+    { "path": "apps/preemie-calc/src/entities/age-basis/model/index.ts", "kind": "code", "note": "PLC-01(architect 이의 2): entities/child import type 제거, AgeBasisCorrectedInput 자체 선언" },
+    { "path": "apps/preemie-calc/src/entities/copay-relief/model/index.ts", "kind": "code", "note": "PLC-01: CopayReliefGestationInput({totalDays}) 자체 선언" },
+    { "path": "apps/preemie-calc/src/entities/correction-period/model/index.ts", "kind": "code", "note": "PLC-01: CorrectionPeriodGestationInput({totalDays}) 자체 선언" },
+    { "path": "apps/preemie-calc/src/widgets/guide-content/lib/build-guide-content.ts", "kind": "code", "note": "PLC-03/04(architect 이의 3): views/guide/lib 에서 이동. weeksEarlyMonths 재계산 제거, describeCombo 결과 필드 사용" },
+    { "path": "apps/preemie-calc/src/widgets/guide-content/index.ts", "kind": "code", "note": "PLC-03: 신규 공개 API" },
+    { "path": "apps/preemie-calc/src/views/guide/index.ts", "kind": "code", "note": "PLC-03: buildGuideContent 재수출 제거(GuideView 만)" },
+    { "path": "apps/preemie-calc/src/views/guide/ui/GuideView.tsx", "kind": "code", "note": "PLC-03: import 을 @/widgets/guide-content 로" },
+    { "path": "apps/preemie-calc/src/app/guide/[weeks]/[months]/page.tsx", "kind": "code", "note": "PLC-03: buildGuideContent import 을 @/widgets/guide-content 로" },
+    { "path": "apps/preemie-calc/src/views/dashboard/ui/QuickLinks.tsx", "kind": "code", "note": "PLC-03: widgets/nav-links 에서 이동(views/dashboard 한 곳에서만 쓰고 shared 만 부른다)" },
+    { "path": "apps/preemie-calc/src/views/dashboard/ui/DashboardView.tsx", "kind": "code", "note": "PLC-03: QuickLinks import 을 './QuickLinks' 로. ERR-02: localStorage 'unavailable' 상태 처리 추가" },
+    { "path": "apps/preemie-calc/src/widgets/nav-links", "kind": "code", "note": "PLC-03: 삭제(views/dashboard/ui/QuickLinks.tsx 로 이동)" },
+    { "path": "apps/preemie-calc/src/app/page.tsx", "kind": "code", "note": "BND-01: 정적 서버 컴포넌트로. searchParams 를 읽지 않고 InputView 를 Suspense 로 감싼다" },
+    { "path": "apps/preemie-calc/src/views/input/ui/InputView.tsx", "kind": "code", "note": "BND-01: useSearchParams 로 쿼리(weeks·new)를 클라이언트에서 읽음" },
+    { "path": "apps/preemie-calc/src/views/input/index.ts", "kind": "code", "note": "BND-01: InputViewProps 재수출 제거(props 없어짐)" },
+    { "path": "apps/preemie-calc/src/entities/child/api/index.ts", "kind": "code", "note": "ERR-02: loadProfileStore 가 getItem 예외를 'unavailable' 상태로, writeStore/saveProfile/selectProfile 이 boolean 반환, deleteAllChildData 가 예외를 삼킴" },
+    { "path": "apps/preemie-calc/src/features/edit-profile/ui/EditProfileDialog.tsx", "kind": "code", "note": "ERR-02: saveProfile 실패 시 폼 오류 문구 표시" },
+    { "path": "apps/preemie-calc/src/widgets/dashboard-subpage/ui/DashboardSubpageShell.tsx", "kind": "code", "note": "ERR-02: 'unavailable' 상태를 'corrupted' 와 다른 문구로 처리" },
+    { "path": "apps/preemie-calc/src/features/share-result/lib/share-card-canvas.ts", "kind": "code", "note": "DSG-01(designer 이의 반영): corrected.subValue 를 96px value 와 별도 40px 줄로 그림, shareCardAltText 도 반영" },
+    { "path": "apps/preemie-calc/src/features/share-result/ui/ShareResultAction.tsx", "kind": "code", "note": "DSG-01: corrected 타입에 subValue 추가" },
+    { "path": "apps/preemie-calc/src/features/share-result/ui/ShareActionButton.tsx", "kind": "code", "note": "ACC-06: 링크 복사 버튼 항상 렌더, navigator.share 지원 시 공유 버튼을 위에 추가로 렌더" }
+  ],
+  "decisions": [
+    {
+      "what": "[ERR-01] 오늘이 출산 예정일 전이고 문진표가 교정 기준인 차수는 CheckupPlan.currentBeforeDue=true 로 표시하고, planCheckups 는 그 경우 calendarSpan(correctedFrom, today) 를 부르지 않는다. 화면은 그 차수의 검사지 칸과 현재 요약 줄에 '출산 예정일 전이라 교정 나이가 아직 없습니다'를 보인다(UnconfirmedNotice 컴포넌트 재사용)",
+      "why": "규칙을 새로 정하지 않고 사실만 보인다는 오케스트레이터 tie-break 를 따랐다. 이 동작은 entities/checkup/model/index.ts:planCheckups 가 결정하고, 표시는 widgets/checkup-plan/ui/CheckupPlanSection.tsx 가 한다",
+      "reversible_at": "apps/preemie-calc/src/entities/checkup/model/index.ts:planCheckups"
+    },
+    {
+      "what": "[ACC-01] widgets/age-basis-list/ui/AgeBasisSection.tsx:basisText 가 row.id 보다 row.basis 를 먼저 본다 — basis!=='corrected' 이면 항목이 무엇이든 '출생 기준'",
+      "why": "PC-F3-AC5(37주 이상은 모든 항목이 생후 나이 그대로)를 지키려면 고정 문구가 아니라 모델이 이미 계산한 basis 를 따라야 한다",
+      "reversible_at": "apps/preemie-calc/src/widgets/age-basis-list/ui/AgeBasisSection.tsx:12"
+    },
+    {
+      "what": "[ACC-02] format.ts 는 corrected.value 에 '교정' 접두어를 더 이상 넣지 않고, AgeSummaryCard.tsx 가 두 칸 모두 '{라벨} {값}'을 같은 방식으로 그린다(전에는 생후 칸만 라벨을 값에 붙였다)",
+      "why": "designer 가 AgeSummaryCard.md states 를 '두 칸 모두 라벨+값을 하나의 문구로 그린다'로 못박았다. 렌더링 규칙을 하나로 합쳐 두 칸이 다시 갈라질 여지를 없앴다",
+      "reversible_at": "apps/preemie-calc/src/widgets/age-summary/ui/AgeSummaryCard.tsx"
+    },
+    {
+      "what": "[ACC-03] ProfileForm.tsx 필드 순서를 출생일 → 출산예정일/주수 → '주수로 입력' 전환 → 성별 로 바꿨다",
+      "why": "designer 가 SPEC 원문(PC-F1-AC1 '출산 예정일 칸 아래에 전환이 있다')에 맞춰 input.md 필드 순서를 고쳤다. 그 순서를 그대로 구현했다",
+      "reversible_at": "apps/preemie-calc/src/features/profile-form/ui/ProfileForm.tsx"
+    },
+    {
+      "what": "[PC-NF-MOBILE-3] 전환 버튼을 독립 <button> 대신 shared/ui Button(variant=\"text\")으로 바꿨다. Button 은 size=md 기준 height:48px·minHeight:var(--touch-target-min) 을 이미 갖고 있다",
+      "why": "기존 버튼은 padding:0, height 미지정이라 실제 렌더 높이가 25.5px 였다(qa 실측). 새 값을 만들지 않고 이미 있는 shared Button 을 재사용해 48px 를 보장했다",
+      "reversible_at": "apps/preemie-calc/src/features/profile-form/ui/ProfileForm.tsx"
+    },
+    {
+      "what": "[ACC-04] architect 결정대로 ReferenceMeta.effectiveDate·lastVerified 를 '둘 다 CalendarDate' 또는 '둘 다 null(원문 대조 전)' 유니온으로 바꾸고, JSON 4개(copay-relief 포함)의 effectiveDate 를 null 로 채웠다. 화면은 null 이면 '기준일 확인 전'을 보인다. PC-F5-AC5 의 '2026년 1월 시행 제도 기준' 문구는 policyLabel 이 그대로 낸다(건드리지 않았다)",
+      "why": "기준일은 원문과 대조해야 얻는 값이라 대조 전에 지어낸 날짜를 넣지 않는다(architecture.md 결정 로그). designer 스펙(ReferenceFooter.md)에 null 전용 문구가 없어 architect 문구를 그대로 썼다",
+      "reversible_at": "apps/preemie-calc/src/shared/lib/reference/index.ts:resolveReferenceMeta"
+    },
+    {
+      "what": "[DUP-01] shared/ui/RequiredMark.tsx 를 신규로 만들어 DateField·GestationInput·SegmentedControl·TextField 4곳의 필수 표시(별표+sr-only)를 이 컴포넌트 하나로 합쳤다. sr-only 문구는 designer 결정대로 '{label}, 필수' 로 통일했다(TextField 의 '필수' 단독 문구를 버렸다)",
+      "why": "네 컴포넌트가 각자 복사해 TextField 만 sr-only 문구를 갖고 있던 것을 하나로 합쳐, 다음 수정이 한쪽에만 들어가는 문제를 없앴다",
+      "reversible_at": "apps/preemie-calc/src/shared/ui/RequiredMark.tsx"
+    },
+    {
+      "what": "[PLC-02] AgeSummaryCard 의 variant=\"single\" 분기를 없애고 shared/ui/ValueCard.tsx(신규) 로 뗐다. CopayReliefSection·CorrectionPeriodSection 은 이제 widgets/age-summary 를 전혀 import 하지 않는다",
+      "why": "widgets 끼리(age-summary → copay-relief-result, correction-period-result) 런타임 간선이 있으면 age-summary 를 고칠 때 두 결과 화면이 함께 깨질 수 있다는 구조 리뷰 지적을 따랐다. designer 가 ValueCard.md 를 새로 정의했다",
+      "reversible_at": "apps/preemie-calc/src/shared/ui/ValueCard.tsx"
+    },
+    {
+      "what": "[PLC-05] entities/child/model/index.ts(283줄)를 profile·gestation·ages·combo·share 5개 파일로 나누고 index.ts 는 재수출만 한다. entities/child(슬라이스 공개 API)의 export 목록은 분리 전과 정확히 같다",
+      "why": "index.ts 하나에 다섯 개념이 섞여 있으면 이후 측정 기록·접종 체크(2·3단계)가 더해질 때 있는 함수를 못 찾고 옆에 새로 만들게 된다. 공개 API 를 그대로 둬 QA 단위 테스트의 import 경로(@/entities/child)가 깨지지 않는다",
+      "reversible_at": "apps/preemie-calc/src/entities/child/model/index.ts"
+    },
+    {
+      "what": "[PLC-01] entities/age-basis·copay-relief·correction-period 의 model 에서 entities/child 타입 import 를 지우고, 각자 읽는 필드만 담은 입력 타입(AgeBasisCorrectedInput, CopayReliefGestationInput, CorrectionPeriodGestationInput)을 선언했다. widgets 쪽(각 Section 컴포넌트)은 child 값을 구조적으로 그대로 넘길 수 있어 고칠 곳이 없다",
+      "why": "architect 이의 2 결정(선택지 3)을 그대로 구현했다. 같은 층 슬라이스 import 를 예외 없이 금지하는 규칙과, child 타입을 시그니처로 쓰던 옛 데이터 모양 절 사이의 모순을 이 결정으로 해소했다",
+      "reversible_at": ".curvez/architecture.md:preemie-calc 의존 방향"
+    },
+    {
+      "what": "[PLC-03] widgets/nav-links(파일 2개)를 views/dashboard/ui/QuickLinks.tsx 로 내렸다. views/guide/lib/build-guide-content.ts 는 entities/child·entities/checkup 을 묶으므로 widgets/guide-content/lib 로 올렸다(파일 이동, 로직 변경 없음)",
+      "why": "architect 이의 3(새 판정 순서: entities·features import 하면 widgets, 아니면 쓰는 view 수와 무관하게 그 view 의 views/<route>/ui)을 그대로 따랐다. QuickLinks 는 shared/ui 만 쓰고 view 하나에서만 쓰여 (c) 에 해당하고, build-guide-content 는 child+checkup 을 묶어 (a) 에 해당한다",
+      "reversible_at": ".curvez/architecture.md:preemie-calc 레이어 정의"
+    },
+    {
+      "what": "[PLC-04] describeCombo(entities/child/model/combo.ts)의 반환값에 weeksEarlyMonths(1개월=4주 환산값)를 필드로 추가했다. widgets/guide-content/lib/build-guide-content.ts 는 이 필드를 그대로 쓰고 Math.round(weeksEarly/4) 를 다시 계산하지 않는다",
+      "why": "같은 환산 규칙(1개월=4주)이 entities 와 view 두 곳에 흩어져 있던 것을 한 곳(describeCombo 결과)으로 모았다",
+      "reversible_at": "apps/preemie-calc/src/entities/child/model/combo.ts:describeCombo"
+    },
+    {
+      "what": "[ACC-05] validateProfileDraft(entities/child/model/profile.ts) 가 주수 모드에서 draft.gestation.days 가 0~6 정수가 아니면 invalid-date 오류를 낸다(계속 진행해 gestation-out-of-range 로 흘러가지 않는다)",
+      "why": "일 칸에 9·-3·1.5 같은 값을 넣으면 저장되는 재태가 사용자가 본 값과 달라져 PC-F1-AC3 의 '주수 입력 = 같은 프로필' 전제가 흔들린다는 리뷰 지적을 따랐다",
+      "reversible_at": "apps/preemie-calc/src/entities/child/model/profile.ts:validateProfileDraft"
+    },
+    {
+      "what": "[BND-01] app/page.tsx 를 async 서버 컴포넌트(searchParams await)에서 정적 컴포넌트로 바꾸고 InputView 를 Suspense 로 감쌌다. InputView(클라이언트)가 useSearchParams 로 weeks·new 쿼리를 읽는다",
+      "why": "architecture.md ⑥ 이 '/' 를 정적으로 정했다. 서버에서 searchParams 를 읽으면 요청마다 동적 렌더링된다(빌드 결과로 확인: 수정 전 'ƒ /', 수정 후 '○ /')",
+      "reversible_at": "apps/preemie-calc/src/app/page.tsx"
+    },
+    {
+      "what": "[ERR-02] localStorage 읽기 예외는 ProfileStoreLoadResult 에 'unavailable' 상태를 더해 'corrupted'(형태 오류)와 다른 문구로 보인다. 쓰기(saveProfile 등)는 boolean 을 돌려주고, ProfileForm·EditProfileDialog 는 실패 시 폼 오류 문구('저장하지 못했습니다. 저장 공간을 확인해 주세요')를 보인다. deleteAllChildData 는 예외를 삼킨다(지울 것도 없다고 본다)",
+      "why": "읽기 실패와 형태 오류는 서로 다른 사실이라 같은 문구로 뭉개지 않는다. 쓰기 실패는 네트워크가 아니라 브라우저 저장소 문제라 폼 재시도가 자연스러운 대응이다",
+      "reversible_at": "apps/preemie-calc/src/entities/child/api/index.ts"
+    },
+    {
+      "what": "[DSG-01] ShareCardCanvas 그리기 함수가 corrected.subValue 를 받으면(before-due 일 때만) value(96px, 짧은 D-day)와 별도로 40px 보통 굵기 줄로 그린다(간격 12px). shareCardAltText 도 subValue 를 ' · ' 로 이어 붙인다",
+      "why": "before-due 값을 'D-25 · 재태 36주 3일' 처럼 한 문자열로 96px 에 그리면 952px 사용 가능 폭을 넘을 수 있다는 지적을, designer 가 정한 subValue 분리 규칙대로 구현했다",
+      "reversible_at": "apps/preemie-calc/src/features/share-result/lib/share-card-canvas.ts:drawShareCard"
+    },
+    {
+      "what": "[ACC-06] ShareActionButton.tsx 를 다시 써서 '링크 복사' 버튼을 shareSupported 값과 무관하게 항상 렌더하고, navigator.share 를 쓸 수 있으면 그 위에 '결과 카드 공유하기' 버튼을 추가로 렌더한다. 로딩·오류 상태는 공유 버튼에만 붙는다",
+      "why": "designer 가 ShareActionButton.md 를 PC-F7-EX1 원문('카카오톡을 쓸 수 없는 환경에서는 링크 복사 버튼이 보인다', 1단계는 카카오 SDK 미사용이라 실질은 '항상 보인다')에 맞춰 고쳤다",
+      "reversible_at": "apps/preemie-calc/src/features/share-result/ui/ShareActionButton.tsx"
+    }
+  ],
+  "blocked_on": [
+    {
+      "who": "curvez-qa",
+      "question": "tests/unit/reference-data.test.ts:28-29(4개 파일 × 1개 테스트 블록 = 4건 실패)와 tests/unit/age-basis.test.ts:54-55(1건 실패)는 meta.effectiveDate 가 날짜 문자열이라고 기대한다. architect 결정(ACC-04)으로 원문 대조 전 effectiveDate 는 null 이 정상이라 이 5건은 지시서에서 이미 예상된 실패다. 테스트가 QA 소유(apps/preemie-calc/tests/**)라 고치지 않았다. null 을 허용하도록(예: '\\d{4}-\\d{2}-\\d{2}$' 매치 또는 null 허용) 갱신해 달라"
+    }
+  ],
+  "verification": [
+    { "command": "(워크트리 루트) pnpm typecheck", "result": "apps/preemie-calc 포함 7개 워크스페이스 전부 'Types generated successfully' + Done. tsc 오류 0건", "passed": true },
+    { "command": "(워크트리 루트) pnpm build", "result": "apps/preemie-calc 포함 4개 Next 앱 전부 빌드 성공. apps/preemie-calc 라우트 표: '/' 가 ○(Static)로 바뀜(수정 전 ƒ Dynamic, BND-01 확인). /guide 481쪽 그대로", "passed": true },
+    { "command": "(워크트리 루트) pnpm --filter preemie-calc test", "result": "Test Files 2 failed | 8 passed (10). Tests 5 failed | 51 passed (56). 실패 5건은 전부 지시서가 예고한 effectiveDate 관련 known-failure(reference-data.test.ts 4건 + age-basis.test.ts 1건). 그 외 회귀 0건", "passed": false },
+    { "command": "(apps/preemie-calc) pnpm test:e2e --reporter=line", "result": "63 tests, 63 passed, 0 failed. QA 가 보고했던 PC-NF-MOBILE-3(input 화면 25.5px) 실패 포함 전부 통과", "passed": true },
+    { "command": "(apps/preemie-calc) pnpm lint", "result": "ESLint 10.9.1 크래시(TypeError: contextOrFilename.getFilename is not a function, react/display-name 규칙 로딩 중). 기존에 알려진 이슈(사용자 질문 대기)라 지시대로 출력만 기록하고 status 를 partial 로 낮췄다", "passed": false },
+    { "command": "node .../quality-gate.mjs --only arch", "result": "PASS arch: 규칙 14개 파싱 / 검사 14개 / 위반 0건", "passed": true },
+    { "command": "grep -rnE \"from ['\\\"]@/entities/child\" apps/preemie-calc/src/entities", "result": "0건(PLC-01 적용 후)", "passed": true },
+    { "command": "grep -rnE \"from ['\\\"]@/widgets/\" apps/preemie-calc/src/widgets", "result": "0건(PLC-02 적용 후)", "passed": true }
+  ]
+}

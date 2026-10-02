@@ -1,0 +1,78 @@
+{
+  "from": "curvez-requirements",
+  "to": [
+    "curvez-orchestrator",
+    "curvez-nextjs",
+    "curvez-qa",
+    "curvez-reviewer"
+  ],
+  "status": "done",
+  "summary": "SPEC 버전 6·PRD 버전 4 의 변경을 .curvez/requirements.md '## preemie-calc' 절에 반영했다. 고친 ID: PC-F5-AC6(새로 추가, '재태 33주 0일이면 \"5년 2개월\" 구간으로 분류된다. (버전 6)'), PC-F5-AC7(새로 추가, '재태 29주 0일이면 \"5년 3개월\" 구간으로 분류된다. (버전 6)'). 나머지 AC 69·EX 14·NF 11 은 v6 와 문장이 같아 고치지 않았다(PC-F8-AC3 포함). F5 의 SPEC 확인 방법 줄을 v6 문장으로 바꾸고 v5 문장은 설명으로 남겼다. PRD 미결 연결 표의 미결 2 상태 칸을 PRD 버전 4 §9 '미결 2 경감 구간 경계' 행 원문으로 바꾸고, 버전 2·3 문장('33주·29주 정각은 더 긴 경감 구간에 넣어 확정한다')은 표 아래 '미결 2 경계 정정' 표에 버전·상태와 함께 남겼다. 결정 기록의 'F5 에 경계 수용 기준을 더하지 않는다' 행은 지우지 않고 'SPEC 버전 6 에서 뒤집힘' 표시를 붙였다. 헤딩과 기존 ID 는 그대로다. 미결 3 은 확정하지 않았다. 구현 쪽 참고(읽기만 했다): apps/preemie-calc/src/entities/copay-relief/data/copay-relief.json 의 innerBoundary 가 'lower-inclusive'(정각을 더 긴 구간에 넣음, 옛 결정)이고, model/index.ts 규칙상 231일(33주 0일)이 5년 3개월, 203일(29주 0일)이 5년 4개월로 분류된다. 그대로면 PC-F5-AC6·AC7 이 통과하지 않는다. curvez-nextjs 는 이 값을, curvez-qa 는 F5 단위·E2E 테스트의 경계 기대값을 확인해야 한다.",
+  "artifacts": [
+    {
+      "path": ".curvez/requirements.md",
+      "kind": "spec",
+      "note": "## preemie-calc 절. PC-F5-AC6·AC7 행 추가, F5 확인 방법 줄·미결 연결 문장 갱신, PRD 미결 연결의 미결 2 칸을 PRD v4 원문으로 교체하고 v2·3 문장은 '미결 2 경계 정정' 표로 남김, 머리말 버전(SPEC 6, PRD 4)·AC 개수 69→71·대조 결과 한 줄·결정 기록 3행 추가, 기존 결정 행 1개에 '뒤집힘' 표시. 헤딩·기존 ID 변경 없음"
+    }
+  ],
+  "decisions": [
+    {
+      "what": "PC-F5-AC6·AC7 의 SPEC 원문 칸에 끝의 '(버전 6)' 까지 그대로 옮겼다",
+      "why": "SPEC 줄에 붙은 글자다. 빼면 원문과 글자 단위로 달라진다. PC-F1-AC7 과 같은 방식이다",
+      "reversible_at": ".curvez/requirements.md:#### F5. 본인부담 경감 종료일"
+    },
+    {
+      "what": "PC-F5-AC6·AC7 의 확인 방법 칸을 '자동 테스트' 로 두었다",
+      "why": "SPEC 버전 6 F5 확인 방법 줄의 종류가 '자동 테스트' 하나뿐이다",
+      "reversible_at": ".curvez/requirements.md:#### F5. 본인부담 경감 종료일"
+    },
+    {
+      "what": "미결 2 상태 칸은 PRD 버전 4 문장으로 바꾸고, 버전 2·3 문장은 표 아래 '미결 2 경계 정정' 표에 남겼다",
+      "why": "지시가 이전 결정을 지우지 말고 정정 사실이 드러나게 옮기라고 했다. 한 칸에 반대되는 두 문장을 두면 어느 쪽이 정본인지 헷갈린다",
+      "reversible_at": ".curvez/requirements.md:### PRD 미결 연결"
+    },
+    {
+      "what": "기존 결정 기록 'F5 에 경계(33주 0일·29주 0일) 수용 기준을 더하지 않는다' 행을 지우지 않고 앞에 '(SPEC 버전 6 에서 뒤집힘…)' 표시를 붙였다",
+      "why": "결정 기록은 지우지 않고 이어서 유지한다. 그 결정의 근거(SPEC 에 AC 가 없음)가 v6 에서 사라졌다",
+      "reversible_at": ".curvez/requirements.md:### 결정 기록"
+    },
+    {
+      "what": "핸드오프 to 에 curvez-nextjs·curvez-reviewer 를 넣었다",
+      "why": "에이전트 정의는 구현 에이전트에 직접 보내지 않게 하지만 이번 지시서 REPORT 가 to 목록을 명시했다",
+      "reversible_at": ".curvez/handoff/curvez-requirements.20261002-104939.json"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "node scratchpad/cmp.mjs (SPEC.md 1단계 F1~F8, F10, F13~F18 의 '- [ ] AC<n>.' 줄과 '- 예외' 줄을 뽑아 requirements.md 의 PC-F<n>-AC/EX 표 원문 칸과 문자열 비교)",
+      "result": "작업 전: SPEC AC 71 EX 14 / REQ 행 83 / 다름 0 누락 2(PC-F5-AC6, PC-F5-AC7) 여분 0. 작업 후: SPEC AC 71 EX 14 / REQ 행 85 / 다름 0 누락 0 여분 0",
+      "passed": true
+    },
+    {
+      "command": "node scratchpad/nf.mjs (PC-NF 원문 칸이 SPEC v6 §6 안에 글자 그대로 있는지)",
+      "result": "NF 11건 / §6 원문에 없는 것 0건",
+      "passed": true
+    },
+    {
+      "command": "SPEC '- 확인 방법:' 줄과 requirements 'SPEC 확인 방법 줄:' diff",
+      "result": "작업 전 1단계 차이 1건(F5). 작업 후 F5 는 v6 문장으로 바뀜. 남은 차이는 F9·F11·F12(2·3단계, 옮기지 않음) 3줄",
+      "passed": true
+    },
+    {
+      "command": "PRD.md 의 '| 미결 2 경감 구간 경계 |' 행 결정 칸을 뽑아 grep -cF 로 requirements.md 에서 찾기",
+      "result": "2곳에서 글자 그대로 일치(미결 2 상태 칸, 정정 표 버전 4 행). 옛 문장 '정각은 더 긴' 은 4곳에 남아 있음(정정 표 버전 2·3 행 포함)",
+      "passed": true
+    },
+    {
+      "command": "grep -cE '^\\| PC-F[0-9]+-AC[0-9]+ \\|' / '^\\| PC-F[0-9]+-EX[0-9]+ \\|' / '^\\| PC-NF-[A-Z0-9]+-[0-9]+ \\|' .curvez/requirements.md",
+      "result": "AC=71 EX=14 NF=11",
+      "passed": true
+    },
+    {
+      "command": "필수 6섹션 grep, '^#{2,4} ' 헤딩 수, AC 행 칸 검사 awk, 판정 불가 표현 grep, 단독 금지 글자 grep, 범위 밖 항목 수 awk",
+      "result": "섹션 누락 0줄, 헤딩 25(새 헤딩 없음), 칸 부족 0줄, 금지 표현 0줄, 금지 글자 0줄, 범위 밖 5건",
+      "passed": true
+    }
+  ]
+}

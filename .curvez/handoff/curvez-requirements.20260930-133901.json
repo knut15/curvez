@@ -1,0 +1,63 @@
+{
+  "from": "curvez-requirements",
+  "to": [
+    "curvez-orchestrator",
+    "curvez-nextjs",
+    "curvez-qa",
+    "curvez-reviewer"
+  ],
+  "status": "done",
+  "summary": "SPEC 버전 5 와 .curvez/requirements.md '## preemie-calc' 절의 1단계 AC·EX·NF 전체를 스크립트로 다시 대조해 달라진 것만 고쳤다. 고친 ID: PC-F1-AC7(새로 추가, SPEC 버전 4), PC-F18-AC1(문장은 그대로, 이 AC 가 가리키는 표 위 5개 항목 목록을 v5 원문 '예방접종, 영유아검진 방문, 문진표·발달선별검사지, 이유식, 발달 평가' 로 정정. 지난 라운드 목록의 '성장 백분위' 가 빠지고 '발달 평가' 가 들어감). 나머지 AC 68·EX 14·NF 11 은 v5 와 문장이 같아 고치지 않았다(F16 AC1~7, F17 AC1~3, F18 AC2~3, PC-F16-EX1 포함). 절 구조(### 24개 헤딩)와 기존 ID 는 그대로다. 그 밖에 바꾼 것은 설명 문장뿐이다: 머리말 출처를 SPEC 버전 5 로, 개수 안내 AC 68→69, 대조 결과 한 줄 추가, 비기능·PRD 미결 연결·미결 질문 설명의 '버전 3' 을 '버전 5' 로 고쳤고, 결정 기록 2행을 더했다. PRD 는 여전히 버전 3 이라 PRD 에서 옮긴 표는 건드리지 않았다. 미결 3 은 확정하지 않았다. curvez-qa·curvez-nextjs 는 PC-F1-AC7 과 F18 공개판의 '발달 평가' 항목을 확인하면 된다.",
+  "artifacts": [
+    {
+      "path": ".curvez/requirements.md",
+      "kind": "spec",
+      "note": "## preemie-calc 절. PC-F1-AC7 행 추가, #### F18 표 위 5개 항목 목록 정정, 버전 표기·개수·결정 기록 2행 갱신. 헤딩과 기존 ID 변경 없음"
+    }
+  ],
+  "decisions": [
+    {
+      "what": "PC-F1-AC7 의 확인 방법 칸을 '자동 테스트' 로 두었다",
+      "why": "SPEC F1 확인 방법 줄이 AC2·AC3(단위 테스트), AC4~AC6(E2E)만 나눴고 AC7 은 적지 않았다. 같은 처지인 PC-F1-AC1 과 같게 두고 종류는 curvez-qa 가 정한다",
+      "reversible_at": ".curvez/requirements.md:#### F1. 아이 프로필"
+    },
+    {
+      "what": "PC-F1-AC7 의 SPEC 원문 칸에 괄호 속 '(버전 4, 사용자 요청: 출생 뒤에 예정일을 묻는 뜻이 화면에서 드러나지 않음)' 까지 그대로 옮겼다",
+      "why": "SPEC AC7 줄에 붙은 문장이라 빼면 원문과 글자 단위로 달라진다. 화면에 보일 문구는 따옴표 안 두 문장뿐이다",
+      "reversible_at": ".curvez/requirements.md:#### F1. 아이 프로필"
+    },
+    {
+      "what": "핸드오프 to 에 curvez-nextjs·curvez-reviewer 를 넣었다",
+      "why": "에이전트 정의는 구현 에이전트에 직접 보내지 않게 하지만 이번 지시서 REPORT 가 to 목록을 명시했다",
+      "reversible_at": ".curvez/handoff/curvez-requirements.20260930-133901.json"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "node scratchpad/cmp.mjs (SPEC.md '### F<n>.' 절별 '  - [ ] AC<n>. ' 줄과 '- 예외' 줄을 뽑아 requirements.md 표 원문 칸과 문자열 비교. 1단계 F1~F8, F10, F13~F18. NF 원문 칸이 SPEC §6 안에 있는지, F18 5개 항목 목록과 F16 질문 목록 비교)",
+      "result": "작업 전: SPEC AC 69 EX 14 | REQ AC 68 EX 14 | 다름 0 누락 1(PC-F1-AC7) 여분 0, NF 11 중 §6 에 없음 0, F18 목록 같음 false(REQ '성장 백분위, 이유식' / SPEC '이유식, 발달 평가'), F16 질문 6/6 같음. 작업 후: SPEC AC 69 EX 14 | REQ AC 69 EX 14 | 다름 0 누락 0 여분 0, NF 11 중 §6 에 없음 0, F18 목록 같음 true, F16 질문 6/6 같음",
+      "passed": true
+    },
+    {
+      "command": "grep -cE '^\\| PC-F[0-9]+-AC[0-9]+ \\|' / '^\\| PC-F[0-9]+-EX[0-9]+ \\|' / '^\\| PC-NF-[A-Z0-9]+-[0-9]+ \\|' .curvez/requirements.md",
+      "result": "AC=69 EX=14 NF=11",
+      "passed": true
+    },
+    {
+      "command": "grep '^### \\|^#### ' 개수 작업 전후 비교, diff 작업 전 사본 대비",
+      "result": "헤딩 24 → 24. diff 변경 줄 17줄(추가·삭제 합)",
+      "passed": true
+    },
+    {
+      "command": "AC 행 칸 검사 awk, 판정 불가 표현 grep, 단독 금지 글자 grep, 범위 밖 항목 수 awk",
+      "result": "칸 부족 0줄(처음 2줄은 새 결정 기록 행이 'PC-F1-AC7' 로 시작해 걸려서 'F1 AC7(PC-F1-AC7)' 로 고침), 금지 표현 0줄, 금지 글자 0줄, 범위 밖 5건",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/",
+      "result": "검사 59건, 통과 59건, 실패 0건, 오류 0개, 경고 0개 (이 파일 포함)",
+      "passed": true
+    }
+  ]
+}

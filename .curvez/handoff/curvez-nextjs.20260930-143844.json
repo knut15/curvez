@@ -1,0 +1,77 @@
+{
+  "from": "curvez-nextjs",
+  "to": ["curvez-orchestrator", "curvez-qa", "curvez-reviewer"],
+  "status": "done",
+  "summary": "재리뷰(1/2)의 ERR-05·ERR-06 과 같은 패턴인 vaccination 저장소를 고쳤다. (1) ERR-05: shared/lib/return-path 의 isAllowedReturnPath(문자열 접두 검사, boolean 반환)를 normalizeReturnPath(new URL 해석, 정규화된 경로 또는 null 반환)로 바꿨다. 제어 문자(탭·개행 등) 거부, 해석된 origin 이 고정 내부 origin 과 같은지, 해석된 pathname 이 '//'로 시작하지 않는지, pathname 이 '/dashboard' 이거나 '/dashboard/'로 시작하는지를 보고, 원문이 아니라 해석된 pathname+search 를 돌려준다(hash 는 버린다). 호출부 InputView.tsx 의 parseReturnTo 를 이 시그니처에 맞춰 고쳤다(ProfileForm.tsx 는 정규화된 문자열을 그대로 받는 prop 이라 고칠 게 없었다). jiti 로 리뷰어의 25개 경우(원래 15개 명시 거부 사례 + 정상 경로들)와 점 경로 6개 경우(원문 그대로, %2e%2e, .%2e, 탭 섞인 경우, 개행 섞인 경우, 허용목록 밖 /dashboard/../guide, /dashboard/../../evil.com)를 전부 돌려 26개 전부 기대대로임을 확인했다(verification 참고). 다만 '/dashboard?x=//evil.com'과 '/dashboard#//evil.com' 두 경우는 예전 구현에서는 우연히 거부됐지만(문자열이 '/dashboard/'로 시작하지 않아서 걸린 부작용이었을 뿐, 의도된 보안 규칙이 아니었다), 새 구현에서는 해석된 pathname 이 정확히 '/dashboard'이고 이동 목적지가 그대로 내부에 머물러 있어 안전하다고 판단해 허용으로 바꿨다(hash 는 버리므로 '#//evil.com'은 애초에 목적지에 영향을 주지 못한다). decisions 에 근거를 남겼다. (2) ERR-06: entities/growth/api 의 saveGrowthRecord 를 readStore()가 null(JSON 깨짐·최상위 모양이 버전 1과 다름)이면 쓰지 않고 false 를 돌려주도록 고쳤다(기존에는 null 을 빈 저장소로 되돌려 써서 다른 아이의 정상 기록까지 통째로 덮어썼다). isValidStoreShape 주석에 '개별 기록 필터링은 다음 저장 시점에 실제로 반영되어 틀린 기록이 저장소에서 사라진다'는 기존 동작(ERR-01 수정의 부작용)을 명시했다. (3) 같은 패턴: entities/vaccination/api/index.ts 의 isValidStore(every 로 항목 하나만 틀려도 저장소 전체를 손상 처리)를 growth 와 같은 모양으로 바꿨다 — isValidStoreShape(최상위 모양만 검사)와 isValidEntry 필터(개별 항목 필터링)로 분리하고, setDoseCompleted 도 readStore()가 null 이면 쓰지 않고 false 를 돌려주도록 고쳤다. every 방식은 항목 하나만 틀려도 그 손상이 남아 있는 한 이후 모든 저장이 영구히 실패하는 문제가 있어, growth 와 같은 필터링 방식이 더 안전하다고 판단했다. (4) 화면(ProfileForm.tsx)은 저장 실패를 기존 문구('저장하지 못했습니다. 저장 공간을 확인해 주세요')로 그대로 알린다 — 이 부분은 이미 있던 동작이라 고치지 않았다. TEAM-01·PC-F5 경계는 지시대로 건드리지 않았다.",
+  "artifacts": [
+    { "path": "apps/preemie-calc/src/shared/lib/return-path/index.ts", "kind": "code" },
+    { "path": "apps/preemie-calc/src/views/input/ui/InputView.tsx", "kind": "code" },
+    { "path": "apps/preemie-calc/src/entities/growth/api/index.ts", "kind": "code" },
+    { "path": "apps/preemie-calc/src/entities/vaccination/api/index.ts", "kind": "code" }
+  ],
+  "decisions": [
+    {
+      "what": "isAllowedReturnPath(path: string): boolean 를 normalizeReturnPath(raw: string): string | null 로 바꿨다(ERR-05). 문자열 접두 검사 대신 new URL(raw, 고정 내부 origin) 으로 해석한 뒤 origin·pathname 을 검사하고, 원문이 아니라 해석된 pathname+search 를 돌려준다",
+      "why": "리뷰어 수정 방향 그대로다. 문자열 접두 검사는 '.. / %2e%2e / .%2e'가 dashboard 세그먼트를 지운 뒤 남는 실제 내비게이션 경로('//evil.com')를 보지 못했다. new URL 이 점 세그먼트를 해석해 주므로, 해석된 pathname 이 '//'로 시작하는지만 추가로 보면 이 우회를 전부 막는다. jiti 로 26개 경우(리뷰어 15개 거부 사례 + 정상 경로 4개 + 새 점 경로/탭/개행/허용목록 밖 7개)를 실행해 전부 기대대로임을 확인했다",
+      "reversible_at": "apps/preemie-calc/src/shared/lib/return-path/index.ts"
+    },
+    {
+      "what": "'/dashboard?x=//evil.com'과 '/dashboard#//evil.com'을 새 구현에서는 허용(정규화된 경로를 돌려줌)으로 바꿨다. 예전 구현은 이 두 경우를 거부했지만, 그건 '/dashboard' 뒤에 즉시 '/'가 오지 않으면 무조건 거부하는 문자열 검사의 부작용이었다",
+      "why": "new URL 로 해석하면 이 두 경우의 pathname 은 정확히 '/dashboard'이고(쿼리·해시는 목적지 경로에 영향을 주지 못한다), 반환값도 hash 를 버리므로 실제 이동 목적지는 항상 내부 '/dashboard'(+안전한 쿼리)로 유지된다. 문자열 구조상 우연히 걸렸던 거부를 그대로 복제하려면 안전과 무관한 특례를 추가해야 했다 — 그건 리뷰어가 지시한 수정 방향(해석된 pathname 기준 판정)에 어긋난다고 판단해 정직하게 허용으로 바꾸고 여기 남긴다",
+      "reversible_at": "apps/preemie-calc/src/shared/lib/return-path/index.ts 의 normalizeReturnPath, url.pathname === ALLOWED_RETURN_PREFIX 분기"
+    },
+    {
+      "what": "entities/growth/api/index.ts 의 saveGrowthRecord: readStore()가 null 이면 쓰지 않고 false 를 돌려준다(ERR-06)",
+      "why": "readStore()가 null 인 경우는 JSON 파싱 실패 또는 최상위 모양이 버전 1 과 다른 경우뿐이다. 기존 코드는 이때 빈 저장소로 되돌려 썼고, 그 결과 저장소가 손상되기 전에 있던 다른 아이의 정상 기록까지 새 기록 하나로 덮어썼다. jiti + 가짜 localStorage 로 JSON 깨짐·version 불일치 두 경우 모두 저장소가 그대로 남고 saveGrowthRecord()가 false 를 돌려주는 것을 확인했다",
+      "reversible_at": "apps/preemie-calc/src/entities/growth/api/index.ts:122-131"
+    },
+    {
+      "what": "개별 기록이 형식에 안 맞으면(isValidRecord 실패) 저장 시점에 저장소에서 사라진다는 기존 동작(ERR-01 수정의 부작용)을 isValidStoreShape 주석에 명시했다",
+      "why": "이전 라운드 리뷰(ERR-06)가 이 사실이 주석에도 decisions 에도 적혀 있지 않다고 지적했다. 동작 자체는 이번 라운드에서 바꾸지 않았고(개별 기록 필터링은 저장소 전체 덮어쓰기와 다른 문제라 유지한다), 문서화만 더했다",
+      "reversible_at": "apps/preemie-calc/src/entities/growth/api/index.ts:39-45"
+    },
+    {
+      "what": "entities/vaccination/api/index.ts 의 isValidStore(every 로 항목 하나만 틀려도 저장소 전체 무효화)를 isValidStoreShape(최상위 모양만 검사) + isValidEntry 개별 필터로 분리했다. setDoseCompleted 도 growth 와 같은 규칙으로 readStore()가 null 이면 쓰지 않고 false 를 돌려준다",
+      "why": "GOAL 이 지목한 같은 패턴이다(index.ts:23 의 every, :87 의 덮어쓰기). every 방식은 항목 하나만 형식에 안 맞아도(예: 앱이 스스로는 안 만들지만 스키마가 바뀌면 생길 수 있는 값) 저장소 전체를 손상으로 보고, readStore()가 null 을 돌려주는 한 이후 모든 저장이 영구히 거부된다(한 번 손상되면 영영 복구되지 않는다). growth 와 같은 필터 방식으로 바꾸면 개별 항목만 걸러지고 저장 기능은 계속 동작한다. jiti + 가짜 localStorage 로 JSON 깨짐·version 불일치·정상 저장소+틀린 항목 1개·저장소 없음(첫 저장) 네 경우 모두 기대대로 동작함을 확인했다(verification 참고)",
+      "reversible_at": "apps/preemie-calc/src/entities/vaccination/api/index.ts:14-32,40-56,96-114"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "jiti 로 normalizeReturnPath 26개 경우(정상 4 + 리뷰어 거부 15 + 새 점 경로/허용목록 밖 7) 실행 — /private/tmp/.../test-return-path.mjs",
+      "result": "26개 전부 기대대로. 정상 허용: /dashboard→/dashboard, /dashboard/→/dashboard/, /dashboard/vaccinations→그대로, /dashboard/growth?x=1→그대로. 거부(null): //evil.com, /\\evil.com, https://evil.com, /dashboardx, /DASHBOARD, /Dashboard/x, %2F%2Fevil.com(선행슬래시 없음), /%2F/evil.com, /%5Cevil.com, ' /dashboard', '/dashboard\\t', '/\\t/evil.com', '/dash\\tboard', /dashboard/..//evil.com, /dashboard/%2e%2e//evil.com, /dashboard/.%2e//evil.com, '/dashboard/../\\t/evil.com', '/dashboard/..\\n//evil.com', /dashboard/../guide, /dashboard/../../evil.com. 허용(예전과 달라짐, decisions 참고): /dashboard?x=//evil.com→'/dashboard?x=//evil.com', /dashboard#//evil.com→'/dashboard'(hash 버림)",
+      "passed": true
+    },
+    {
+      "command": "jiti + 가짜 window.localStorage 로 growth·vaccination 저장소 손상 시 쓰기 거부 확인 — /private/tmp/.../test-store-corruption.mjs",
+      "result": "growth: JSON 깨짐→saveGrowthRecord()=false, 저장소 변경 없음=true. version!=1→false, 변경 없음=true. 정상 저장소+틀린 기록 1개→true, 저장 후 ids=[a, o1, new3](틀린 기록만 사라짐, 다른 아이 기록 보존). 저장소 없음(첫 저장)→true, ids=[first]. vaccination: JSON 깨짐→setDoseCompleted()=false, 변경 없음=true. version!=1→false, 변경 없음=true. 정상 저장소+틀린 항목 1개→true, 저장 후=[{c1,dtap-1},{c2,bcg},{c1,dtap-2}](틀린 항목만 사라짐). 저장소 없음(첫 저장)→true",
+      "passed": true
+    },
+    {
+      "command": "pnpm typecheck (profile.commands.typecheck)",
+      "result": "exit 0. 'Generating route types... ✓ Types generated successfully' 후 7개 워크스페이스 전부 Done, 'error TS' 0건",
+      "passed": true
+    },
+    {
+      "command": "pnpm lint (profile.commands.lint)",
+      "result": "exit 0. 7개 워크스페이스 전부 Done, error·warning 0건",
+      "passed": true
+    },
+    {
+      "command": "pnpm --filter preemie-calc test (vitest)",
+      "result": "Test Files 15 passed (15), Tests 103 passed (103), exit 0",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) PORT=3200 pnpm exec playwright test tests/e2e/f16-question-guides.spec.ts tests/e2e/f18-age-basis-public.spec.ts tests/e2e/growth.spec.ts tests/e2e/vaccinations.spec.ts",
+      "result": "41 passed (11.4s), 실패 0건. ERR-05 재현 케이스인 'PC-F16-EX1 — next 쿼리가 외부 경로면 거부하고 기본 화면(/dashboard)으로 돌아간다(열린 리다이렉트 방지)' 포함 통과",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/quality-gate.mjs --only arch",
+      "result": "PASS arch: ARCH-NNN 규칙 검사 — 규칙 19개 파싱 / 검사 19개 / 위반 0건",
+      "passed": true
+    }
+  ]
+}

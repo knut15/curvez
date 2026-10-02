@@ -1,0 +1,135 @@
+{
+  "from": "curvez-qa",
+  "to": ["curvez-orchestrator", "curvez-nextjs"],
+  "status": "partial",
+  "summary": "curvez-nextjs.20260930-123524.json(SPEC v2 신규 기능: F7 AC5~7 결과 문구 복사, F8 성장 백분위+기록, F10 예방접종 일정, F14 목표키, F15 분유량, 본문 폭 CSS 결함 수정) 대응. 새 AC 17개+새 EX 5개(총 22개 ID)에 단위 테스트 5개 파일(growth·vaccination·target-height·formula·share-text.test.ts, 33개 테스트)과 e2e 4개 신규 파일(growth·vaccinations·target-height·formula.spec.ts)+기존 f7-share.spec.ts 확장을 더했다. PRD §9 2026-09-30 결정(경감 구간 경계 확정)으로 낡은 기대값 2건(단위)·1건(e2e)을 고쳤다(완화 아님 — 미확정→확정된 특정 구간으로 더 엄격해졌다, test-changes-v2.md). 글 영역 720px(박스 784px) 통일에 새 화면 4개(growth·vaccinations·target-height·formula)를 nf-content-width·nf-mobile·nf-a11y·nf-med 네 공통 검사 파일에 추가했고, box-sizing:content-box 반영으로 nf-content-width.spec.ts 의 측정 방식을 '박스 폭'과 '글 영역 폭'(패딩을 뺀 content-box 콘텐츠 폭)으로 분리했다 — 13개 화면 × 360/768/1280px 전부에서 글 영역 720(360px 은 328)·박스 360/752/784 를 정확히 확인했다. **핵심 발견 2건**: (1) entities/target-height 의 목표키 범위 계산이 로직 버그다 — architecture.md ⑩ 예시·PC-F14-AC1·AC2 원문 값(168.5~181.5cm, 155.5~168.5cm)과 다른 값(171.8~178.3cm, 158.8~165.3cm)이 나온다(단위+e2e 양쪽에서 재현 확인, 자동 실패 2건). 로직 버그라 '사소한 수정 예외'에 들지 않아 고치지 않고 blocked_on 으로 돌린다. (2) 팀(tmux) F16~F18 라운드가 만들고 있는 파일 때문에 기존 테스트 3건이 흔들렸다 — ProfileForm.tsx(팀 소유)에 새 도움말 문단이 추가돼 f1-profile.spec.ts·nf-a11y.spec.ts 의 getByText('주수로 입력') 이 strict mode 충돌로 실패했고, guide/ 디렉터리·sitemap.ts(팀 소유)에 F16~F18 라우트가 늘면서 f13-build-artifacts.test.ts 의 481개 고정 기대값이 487/488 로 어긋났다 — standing 15 에 따라 고치지 않고 그대로 남겼다. F16~F18·F1-AC7 자체의 테스트 파일(f16/f17/f18/f1-ac7 spec, 9건 실패)은 팀 소유라 읽기만 했고 이 라운드가 판정하지 않는다(오케스트레이터 GOAL 명시). F8-AC3(추이 그래프)은 차트 라이브러리 미정으로 '보류' 판정 — 지어내지 않았다. 라운드 마지막 게이트(typecheck·lint·test·build·전체 e2e)를 각 1회씩 돌렸다: typecheck 0 errors(7 워크스페이스), lint 0 problems, test(root) apps/preemie-calc 98/102(4 실패 — 2건 src 결함, 2건 팀 파일 원인, pnpm -r 이 첫 실패에서 나머지 워크스페이스 실행을 중단해 그 결과는 확인 못함), build exit 0(4앱, preemie-calc 503개 정적 페이지), test:e2e(전체, 1회) 248 passed/13 failed(2건 src 결함, 2건 팀 파일 원인, 9건 팀 소유 테스트라 판정 제외). 포트 3100(PID 43850) 유지, kill 없음, 3200 은 실행 전후 빈 상태. src·package.json 은 전부 읽기만 했다(수정 0건). ac-matrix.md(F7/F8/F10/F14/F15 절 신규 + 9라운드 절), strategy.md(9라운드 절), test-changes-v2.md, design-uncovered.txt 를 남겼다.",
+  "artifacts": [
+    { "path": "apps/preemie-calc/tests/unit/growth.test.ts", "kind": "code", "note": "신규. PC-F8-AC1(basis=corrected, span.months=1)·AC2(consult, Z=±2.0)·AC4(M값→50.0 회귀 + 공공데이터포털 percentile-Z 구간표와 ±1 이내 대조)·AC5·EX1(before-due) — 13개 테스트" },
+    { "path": "apps/preemie-calc/tests/unit/vaccination.test.ts", "kind": "code", "note": "신규. PC-F10-AC1(dtap-1, 2026-05-01, 교정 0개월5일)·AC2(architecture.md ⑨ 예시 날짜 그대로 upcoming/soon/missed/done)·대체 백신(RV1/RV5) 필터링 — 8개 테스트" },
+    { "path": "apps/preemie-calc/tests/unit/target-height.test.ts", "kind": "code", "note": "신규. PC-F14-AC1·AC2·AC3·EX1 — 6개 테스트 중 2개(AC1·AC2) 자동 실패(src 결함, 아래 decisions 참고). 기대값은 architecture.md ⑩ 예시·SPEC 원문 그대로이고 약화하지 않았다" },
+    { "path": "apps/preemie-calc/tests/unit/formula.test.ts", "kind": "code", "note": "신규. PC-F15-AC1·AC2·EX1·EX2(before-due→out-of-range)·EX3(교정 3개월0일 정각부터 pending, 2개월29일까지 ok 경계 확인) — 8개 테스트" },
+    { "path": "apps/preemie-calc/tests/unit/share-text.test.ts", "kind": "code", "note": "신규. PC-F7-AC5(architecture.md ⑫ 예시와 줄 단위 일치, before-due·hidden·null 분기 포함) — 4개 테스트. AC6(이름 미포함)은 ShareTextInput 타입에 필드가 없어 타입이 막는 것이라 화면 e2e 로만 확인" },
+    { "path": "apps/preemie-calc/tests/unit/copay-relief.test.ts", "kind": "code", "note": "수정. '[미확정] 경계' describe 2건 → PRD §9 결정(lower-inclusive) 반영해 203일=5년4개월, 231일=5년3개월 확정 기대값으로 교체(완화 아님, test-changes-v2.md)" },
+    { "path": "apps/preemie-calc/tests/unit/reference-data.test.ts", "kind": "code", "note": "수정. growth-lms·vaccination-schedule·formula-coefficients 3건의 meta(출처 URL·effectiveDate·lastVerified)를 검사 대상에 추가(값 변경 아니라 커버리지 확장)" },
+    { "path": "apps/preemie-calc/tests/fixtures/nhis-growth-percentile-20240731.csv", "kind": "code", "note": "신규. .curvez/research/preemie-calc/raw/ 원본을 그대로 복사한 fixture(PC-F8-AC4 교차 검증용, architecture.md ⑧ 지시대로 tests/ 아래 둠)" },
+    { "path": "apps/preemie-calc/tests/e2e/growth.spec.ts", "kind": "code", "note": "신규. state:empty·PC-F8-AC1·AC2·AC5+EX1(폼 제출→reload 로 저장 확인)·PC-NF-A11Y-3(5필드 레이블)·focus-order·PC-NF-MED-1 — 7개 테스트" },
+    { "path": "apps/preemie-calc/tests/e2e/vaccinations.spec.ts", "kind": "code", "note": "신규. PC-F10-AC1·AC2·AC3(체크→reload 로 영속 확인)·a11y:label·PC-NF-MED-1 — 5개 테스트. state:empty·state:error 는 스펙 자체가 '없음'/nextjs 미구현이라 테스트하지 않는다(design-uncovered.txt)" },
+    { "path": "apps/preemie-calc/tests/e2e/target-height.spec.ts", "kind": "code", "note": "신규. state:empty·PC-F14-AC1·AC2(자동 실패, src 결함 재현)·AC3·EX1·focus-order·PC-NF-MED-1 — 7개 테스트" },
+    { "path": "apps/preemie-calc/tests/e2e/formula.spec.ts", "kind": "code", "note": "신규. PC-F15-AC1·AC2(결합)·AC3·EX1·state:empty(EX2, before-due)·state:coefficient-unconfirmed(EX3, 교정 3개월 정각)·focus-order — 6개 테스트" },
+    { "path": "apps/preemie-calc/tests/e2e/f7-share.spec.ts", "kind": "code", "note": "수정. PC-F7-AC5·AC6(클립보드 문구+이름 없음)·AC7('문구를 복사했어요') 2개 테스트 추가" },
+    { "path": "apps/preemie-calc/tests/e2e/nf-mobile.spec.ts", "kind": "code", "note": "수정. growth·vaccinations·target-height·formula 4개 화면 추가(9→13개). 'copay-relief state:boundary-unconfirmed' 테스트를 확정된 경계값(5년4개월) 케이스로 교체(innerBoundary 확정으로 이전 상태 도달 불가, test-changes-v2.md)" },
+    { "path": "apps/preemie-calc/tests/e2e/nf-content-width.spec.ts", "kind": "code", "note": "수정. 새 화면 4개 추가(9→13개) + box-sizing:content-box 반영해 measureBox 를 '박스 폭'과 'padding 을 뺀 글 영역 폭'으로 분리 측정하도록 재작성. 13개 화면 × 360/768/1280px 전부 글 영역 720(360px=328)·박스 360/752/784 확인(tokens.md 8차 라운드 결정과 정확히 일치)" },
+    { "path": "apps/preemie-calc/tests/e2e/nf-a11y.spec.ts", "kind": "code", "note": "수정. contrastScreens 에 새 화면 4개 추가 + growth·target-height·formula 입력칸 레이블 테스트 1개 추가" },
+    { "path": "apps/preemie-calc/tests/e2e/nf-med.spec.ts", "kind": "code", "note": "수정. 새 화면 4개 추가(7→11개)" },
+    { "path": "apps/preemie-calc/tests/e2e/support/helpers.ts", "kind": "code", "note": "수정. focusableTextsInOrder 헬퍼 추가 — <input type=date> 의 브라우저별 내부 세그먼트 Tab 이동 횟수 차이(프레임워크 자체 동작이라 재현 불가)를 피해 DOM 순서+tabindex 로 논리적 focus-order 를 구한다" },
+    { "path": ".curvez/qa/preemie-calc/test-changes-v2.md", "kind": "doc", "note": "낡은 기대값을 고친 테스트 2건의 이전→이후·근거(경감 구간 경계 확정)" },
+    { "path": ".curvez/qa/design-uncovered.txt", "kind": "doc", "note": "디자인 스펙 키 중 대응 테스트가 없는 6개 항목(growth/vaccinations state:error, vaccinations focus-order, GrowthEntryForm/VaccinationRoundItem a11y:target, GrowthRecordTable a11y:role)과 사유" },
+    { "path": ".curvez/qa/preemie-calc/ac-matrix.md", "kind": "doc", "note": "F7(AC5~7 행 추가)·F8·F10·F14·F15(신규 절) + '9라운드' 절 추가. 총 개수 57→79로 갱신" },
+    { "path": ".curvez/qa/preemie-calc/strategy.md", "kind": "doc", "note": "'9라운드' 절 추가 — 층 배분, 디자인 스펙 키 대응표, 테스트하지 않는 것, src 결함 재현, 실행 결과 수치, 글 영역 실측표, 발견했지만 고치지 않은 것 3건" },
+    { "path": ".curvez/qa/preemie-calc/last-run-typecheck-round9.log", "kind": "doc", "note": "(워크트리 루트) pnpm typecheck 원문, exit 0, 오류 0건(7 워크스페이스)" },
+    { "path": ".curvez/qa/preemie-calc/last-run-lint-round9.log", "kind": "doc", "note": "(워크트리 루트) pnpm lint 원문, exit 0, 0 problems" },
+    { "path": ".curvez/qa/preemie-calc/last-run-root-round9.log", "kind": "doc", "note": "(워크트리 루트) pnpm test 원문. apps/preemie-calc 98/102(4실패), pnpm -r 이 첫 실패에서 중단해 scopulus-ui 등 나머지 워크스페이스 결과는 못 얻음" },
+    { "path": ".curvez/qa/preemie-calc/last-run-build-round9.log", "kind": "doc", "note": "(워크트리 루트) pnpm build 원문, exit 0, 4앱 전부 Done, preemie-calc 503개 정적 페이지" },
+    { "path": ".curvez/qa/preemie-calc/last-run-e2e-round9.log", "kind": "doc", "note": "(apps/preemie-calc) pnpm test:e2e 전체 1회 원문. 248 passed, 13 failed(분해는 summary·strategy.md 참고)" }
+  ],
+  "decisions": [
+    {
+      "what": "PC-F14-AC1·AC2 단위·e2e 테스트의 기대값을 architecture.md ⑩ 예시·SPEC 원문(168.5~181.5cm, 155.5~168.5cm) 그대로 두고, 실제 구현이 다른 값(171.8~178.3cm, 158.8~165.3cm)을 내는 것을 자동 실패로 판정했다 — 기대값을 실제 출력에 맞춰 낮추지 않았다",
+      "why": "QA 하지 않을 것 표의 '요구 판정을 약하게 하는 기대값 변경 금지'와 '실패를 숨기지 않는다' 원칙. 구현 버그(entities/target-height/model/index.ts:47~48 의 minCm·maxCm 계산이 (sum-rangeTenths)/2 를 써서 범위를 절반만 적용)를 직접 고치는 것은 '사소한 수정 예외' 4조건 중 (2)(명백한 오타·오기)에 들지 않는 로직 버그라 curvez-nextjs 에 blocked_on 으로 돌린다",
+      "reversible_at": "apps/preemie-calc/tests/unit/target-height.test.ts:9,16, apps/preemie-calc/tests/e2e/target-height.spec.ts:21,30"
+    },
+    {
+      "what": "f1-profile.spec.ts·nf-a11y.spec.ts·f13-build-artifacts.test.ts 에서 팀(tmux) F16~F18 라운드의 파일 변경 때문에 생긴 실패 3건을 고치지 않고 그대로 남겼다(테스트 코드 수정 권한이 있음에도)",
+      "why": "standing.md 15번이 '팀 파일 때문에 test 가 깨지면 고치지 말고 파일과 오류 원문을 핸드오프에 적는다'고 명시했다. 원인이 ProfileForm.tsx(팀 소유, standing 15 목록)의 신규 도움말 문단과 sitemap.ts/guide 라우트(팀 소유) 증가라 이 라운드가 손대면 팀 작업이 끝난 뒤 또 어긋난다 — 지금 시점의 값(487/488)은 팀 작업이 아직 진행 중이라 확정값이 아니다",
+      "reversible_at": "apps/preemie-calc/tests/e2e/f1-profile.spec.ts:18, apps/preemie-calc/tests/e2e/nf-a11y.spec.ts:69, apps/preemie-calc/tests/unit/f13-build-artifacts.test.ts:38,50"
+    },
+    {
+      "what": "PC-F8-AC3(추이 그래프)을 테스트 없이 '보류: 차트 라이브러리 미정'으로 판정했다",
+      "why": "designer·nextjs 핸드오프 모두 이번에 만들지 않기로 결정했고(차트 라이브러리가 지시서 의존성 목록에 없다), standing 3(라이브러리가 없으면 물어본다)에 걸리는 사안이라 QA 가 대체 구현이나 가짜 테스트를 지어내지 않는다",
+      "reversible_at": ".curvez/qa/preemie-calc/ac-matrix.md:F8 절"
+    },
+    {
+      "what": "nf-content-width.spec.ts 의 측정 대상을 '박스 폭'(boundingBox 그대로)과 '글 영역 폭'(box - 좌우 padding)으로 나눠 재작성했다 — 이전 라운드(8라운드)는 border-box 가정 하에 boundingBox 를 그대로 720 으로 봤지만, 이번 nextjs 수정이 .pc-content-max 를 content-box 로 바꿔 그 가정이 깨졌다",
+      "why": "tokens.md 8차 라운드 결정(글 영역 720px·박스 784px 명문화)과 nextjs 의 CSS 수정 노트를 그대로 따랐다. 실측으로 360/768/1280px 전부 글 영역 720(360은 328)·박스 360/752/784 를 확인해 tokens.md 표와 정확히 일치함을 검증했다",
+      "reversible_at": "apps/preemie-calc/tests/e2e/nf-content-width.spec.ts:measureBox"
+    }
+  ],
+  "blocked_on": [
+    {
+      "who": "curvez-nextjs",
+      "question": "entities/target-height/model/index.ts:47~48 의 minCm·maxCm 계산(`Math.round((sum - rangeTenths) / 2) / 10`, rangeTenths=rangeCm*10=65)이 architecture.md ⑩ 예시·PC-F14-AC1·AC2 원문 값(아빠175·엄마162·남아→175.0cm (168.5~181.5cm), 여아→162.0cm (155.5~168.5cm))과 다른 값(171.8~178.3cm, 158.8~165.3cm)을 낸다. 재현: `cd apps/preemie-calc && pnpm exec vitest run tests/unit/target-height.test.ts`(2건 실패) 또는 `PORT=3200 pnpm exec playwright test tests/e2e/target-height.spec.ts:21`. 의도한 공식이 `minCm/maxCm = midCm ∓ rangeCm`(즉 빼는 값이 `rangeTenths`가 아니라 `2*rangeTenths`)가 맞는지, 아니면 architecture.md ⑩ 의 worked example 자체가 잘못 적힌 것인지 확인 후 코드나 architecture.md 중 하나를 고쳐 달라"
+    }
+  ],
+  "verification": [
+    {
+      "command": "lsof -i :3100 (작업 시작 전/후, 모든 test:e2e 실행 전후)",
+      "result": "node 43850 LISTEN *:3100 그대로 유지 — kill 하지 않았다",
+      "passed": true
+    },
+    {
+      "command": "lsof -i :3200 (실행 전)",
+      "result": "빈 출력 — 포트 비어 있음",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) pnpm exec vitest run (작성 중 확인, 개별)",
+      "result": "15 test files, 13 passed | 2 failed(target-height.test.ts, PC-F14-AC1·AC2), 100 passed | 2 failed(전체 15개 파일 기준 102개 중)",
+      "passed": false
+    },
+    {
+      "command": "(apps/preemie-calc) PORT=3200 pnpm exec playwright test tests/e2e/growth.spec.ts tests/e2e/vaccinations.spec.ts tests/e2e/target-height.spec.ts tests/e2e/formula.spec.ts tests/e2e/f7-share.spec.ts (작성 중 확인, 1차 시도)",
+      "result": "27 passed, 6 failed — formula AC1 텍스트 셀렉터 오류 1건, focus-order 3건(네이티브 date input 세그먼트 Tab 이동 브라우저 동작), target-height AC1·AC2 2건(src 결함)",
+      "passed": false
+    },
+    {
+      "command": "(apps/preemie-calc) PORT=3200 pnpm exec playwright test tests/e2e/growth.spec.ts tests/e2e/vaccinations.spec.ts tests/e2e/target-height.spec.ts tests/e2e/formula.spec.ts tests/e2e/f7-share.spec.ts (텍스트 셀렉터·focus-order 를 DOM 순서 기반 focusableTextsInOrder 로 고친 뒤 재실행)",
+      "result": "31 passed, 2 failed(target-height AC1·AC2, src 결함 그대로 재현 — 이 2건은 테스트 수정으로 해결할 문제가 아니다)",
+      "passed": false
+    },
+    {
+      "command": "(apps/preemie-calc) PORT=3200 pnpm exec playwright test tests/e2e/nf-mobile.spec.ts tests/e2e/nf-a11y.spec.ts tests/e2e/nf-med.spec.ts (작성 중 확인)",
+      "result": "40 passed, 1 failed(nf-a11y.spec.ts:63, 팀 파일 ProfileForm.tsx 원인 — standing 15 에 따라 고치지 않음)",
+      "passed": false
+    },
+    {
+      "command": "(apps/preemie-calc) PORT=3200 pnpm exec playwright test tests/e2e/nf-content-width.spec.ts (작성 중 확인)",
+      "result": "3 passed, 0 failed. 13개 화면 × 360/768/1280px 전부 글 영역 720(360=328)·박스 360/752/784 — tokens.md 8차 라운드 결정과 정확히 일치",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm typecheck",
+      "result": "exit 0. 7개 워크스페이스 전부 오류 0건 — last-run-typecheck-round9.log",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm lint",
+      "result": "exit 0, 전 워크스페이스 0 problems — last-run-lint-round9.log",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm test",
+      "result": "apps/preemie-calc: Test Files 2 failed | 13 passed (15), Tests 4 failed | 98 passed (102). 실패 4건: target-height.test.ts 2건(src 결함), f13-build-artifacts.test.ts 2건(팀 F16~F18 라우트로 guide 481개 고정 기대값이 487/488 로 어긋남, 팀 파일 원인). pnpm -r 이 이 실패에서 중단해 packages/scopulus-ui 등 나머지 워크스페이스 결과는 확인하지 못했다(재실행하지 않음, standing 14) — last-run-root-round9.log",
+      "passed": false
+    },
+    {
+      "command": "(워크트리 루트) pnpm build",
+      "result": "exit 0. apps/preemie-calc·city-presets·handwork·scopulus-ui 4개 앱 전부 Done. preemie-calc 503개 정적 페이지(481개 조합 + F16 6쪽 + /guide·/guide/age-basis + 기존 라우트) — last-run-build-round9.log",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) PORT=3200 pnpm exec playwright test (전체, 1회)",
+      "result": "248 passed, 13 failed(35.3s). 실패 분해 — 2건 target-height(src 결함), 2건 f1-profile·nf-a11y(팀 파일 ProfileForm.tsx 원인), 9건 f16/f17/f18(팀 소유 테스트 파일, 이 라운드가 판정하지 않는다) — last-run-e2e-round9.log",
+      "passed": false
+    },
+    {
+      "command": "grep -rnE '\\.(skip|only|todo)\\(|\\bx(it|describe)\\(' apps/preemie-calc/tests/",
+      "result": "0건",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/",
+      "result": "OK 핸드오프 검증 — 검사 60건, 통과 60건, 실패 0건, 오류 0개, 경고 0개(이 파일 포함 전체 재검증)",
+      "passed": true
+    }
+  ]
+}

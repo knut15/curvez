@@ -1,0 +1,192 @@
+{
+  "from": "curvez-designer",
+  "to": [
+    "curvez-orchestrator",
+    "curvez-nextjs"
+  ],
+  "status": "done",
+  "summary": "이른둥이 육아 계산기 1단계 화면 9개(라우트 10행 중 sitemap 제외)의 와이어프레임, 디자인 토큰(라이트 한 벌), 컴포넌트 18개 스펙을 360px 모바일 기준으로 확정해 .curvez/design/preemie-calc/ 에 남겼다. 공유 카드(F7) 캔버스 크기·글자 크기·들어가는/빠지는 값을 정했고, 색 대비 13쌍을 node 로 실측해 전부 4.5 이상을 확인했다. PRD §9 미결(1·2·3)에 걸린 값은 UnconfirmedNotice 컴포넌트 하나로 '미확정' 표시 방법만 정의했다.",
+  "artifacts": [
+    {
+      "path": ".curvez/design/preemie-calc/index.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/tokens.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/screens/input.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/screens/input-weeks.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/screens/dashboard.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/screens/age-basis.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/screens/checkups.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/screens/copay-relief.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/screens/correction-period.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/screens/share.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/screens/guide.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/Button.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/TextField.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/DateField.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/GestationInput.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/SegmentedControl.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/PageHeader.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/AgeSummaryCard.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/InfoRow.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/CheckupRoundItem.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/StatusBadge.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/ReferenceFooter.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/UnconfirmedNotice.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/ChildSwitcherTabs.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/ConfirmDialog.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/ShareActionButton.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/ShareCardCanvas.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/Skeleton.md",
+      "kind": "spec"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/StatePanel.md",
+      "kind": "spec"
+    }
+  ],
+  "decisions": [
+    {
+      "what": "tokens.md 를 curvez-designer 기본 형식(라이트/다크 동시 표)이 아니라 라이트 한 칸으로 쓴다",
+      "why": "지시서 CONTEXT 가 '다크 모드는 이번 범위가 아니다(라이트 한 벌)' 라고 명시했다. 이번 작업의 구체적 지시가 에이전트 기본 형식보다 우선한다고 판단했다. 나중에 다크를 붙일 때는 이 표에 다크 칸을 더하고 대비를 다시 검증한다",
+      "reversible_at": ".curvez/design/preemie-calc/tokens.md:decisions"
+    },
+    {
+      "what": "`--font-size-meta`(14px) 하나만 '본문 아님' 으로 두고 PC-NF-MOBILE-2(본문 17px 이상)에서 열외한다",
+      "why": "출처·기준일 캡션은 참고 정보이지 본문 설명이 아니다. 모든 텍스트를 17px 로 올리면 캡션이 본문과 같은 위계로 읽혀 정보 밀도가 무너진다",
+      "reversible_at": ".curvez/design/preemie-calc/tokens.md:## 글자 크기"
+    },
+    {
+      "what": "`/?weeks=n` 을 `input` 과 별도 화면 파일(`input-weeks.md`)로 만들되 차이점만 적는다",
+      "why": "ACCEPTANCE 가 '화면 9개 각각의 와이어프레임' 을 요구했고 architecture ⑥ 라우트 표가 이를 별도 행으로 뒀다. 같은 컴포넌트 트리를 전부 복제해 쓰면 두 문서가 시간이 지나며 어긋날 여지가 생겨, 차이점만 적고 나머지는 input.md 를 참조하게 했다",
+      "reversible_at": ".curvez/design/preemie-calc/screens/input-weeks.md"
+    },
+    {
+      "what": "검진 차수 상태(지남/오늘/예정)와 '대상 아님'을 StatusBadge 컴포넌트 하나로 묶는다",
+      "why": "같은 '색+텍스트+기호로 상태를 구분' 패턴이 checkups·copay-relief·correction-period 세 화면 이상에서 반복돼 컴포넌트로 승격했다(PC-NF-A11Y-1)",
+      "reversible_at": ".curvez/design/preemie-calc/components/StatusBadge.md"
+    },
+    {
+      "what": "공유 카드는 1080×1350 고정 캔버스 하나만 만든다(기기별 크기를 만들지 않는다)",
+      "why": "PC-F7-AC4 는 받는 쪽 화면(360px) 기준이지 만드는 쪽 해상도 기준이 아니다. 하나의 고해상도 이미지를 축소 표시하는 편이 다양한 수신 환경에서 더 안전하다",
+      "reversible_at": ".curvez/design/preemie-calc/components/ShareCardCanvas.md"
+    },
+    {
+      "what": "PRD §9 미결(1·2·3)에 걸린 값은 색을 확정하지 않고 UnconfirmedNotice 컴포넌트로 '미확정' 표시 방법만 정의한다. 값 자체(구간 경계·교정 규칙 등)는 추측하지 않는다",
+      "why": "standing.md 5번, architecture.md 의 Settled<T> 설계와 짝을 이룬다. 확정되면 데이터 파일의 status 만 바뀌고 이 컴포넌트는 화면에서 자동으로 빠진다",
+      "reversible_at": ".curvez/design/preemie-calc/components/UnconfirmedNotice.md"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "for f in index.md tokens.md; do test -f; done && find screens -name '*.md' | wc -l && find components -name '*.md' | wc -l",
+      "result": "MISSING-DOC 0줄, screens=9, components=18",
+      "passed": true
+    },
+    {
+      "command": "화면별 state:default/loading/empty/error + focus-order grep 누락 검사",
+      "result": "screen-missing=0",
+      "passed": true
+    },
+    {
+      "command": "컴포넌트별 a11y:label/focus/contrast/target/role + ## props/states/a11y/responsive grep 누락 검사",
+      "result": "component-missing=0",
+      "passed": true
+    },
+    {
+      "command": "find .curvez/design/preemie-calc \\( -name '*.tsx' -o -name '*.ts' -o -name '*.css' \\) | wc -l",
+      "result": "impl-files=0",
+      "passed": true
+    },
+    {
+      "command": "node 로 tokens.md 의 '## 대비 검증' 13쌍을 WCAG 상대 명도 대비 공식으로 직접 계산(라이트만, CONTEXT 지시로 다크 범위 밖)",
+      "result": "pairs=13 light=13 dark=0 contrast-fail=0. 최저값 #FFFFFF/#2563EB=5.17, 최고값 #14181F/#FFFFFF=17.79. 문서에 적은 수치와 스크립트 실측값이 일치했다",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/",
+      "result": "OK 핸드오프 검증 — 검사 6건, 통과 6건, 실패 0건, 오류 0개, 경고 0개",
+      "passed": true
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "from": "curvez-orchestrator",
+  "to": ["user"],
+  "status": "partial",
+  "summary": "경감 구간 경계를 보건복지부 원문대로 고쳤고(203일 → 5년 3개월, 231일 → 5년 2개월), F8 AC3 추이 그래프를 recharts 로 구현했다. 리뷰에서 blocker·major 는 남지 않았다. 다만 QA 워커가 두 번 모두 600초 무출력으로 멈췄다. 그래서 경계 테스트 기대값 갱신, PC-F5-AC6·AC7·PC-F8-AC3 테스트 추가, 판정표 갱신을 하지 못했다. 오케스트레이터가 게이트를 한 번씩 돌린 결과: typecheck 0, lint 0, build 503쪽 통과. 단위 테스트는 115/117, E2E 는 262/263 이다. 실패 3건은 모두 옛 경계(203일 → 5년 4개월)를 기대하는 테스트이고 코드 결함은 아니다. 걸린 시간은 10:47~13:55 이다.",
+  "artifacts": [
+    { "path": ".curvez/team.md", "kind": "decision", "note": "G1~G7 라운드와 남은 지적" },
+    { "path": ".curvez/handoff/curvez-reviewer.20261002-111022.json", "kind": "review", "note": "대필(경계 리뷰)" },
+    { "path": ".curvez/handoff/curvez-reviewer.20261002-131232.json", "kind": "review", "note": "대필(그래프 리뷰)" }
+  ],
+  "decisions": [
+    { "what": "QA 를 세 번째로 띄우지 않았다", "why": "같은 단위가 두 번 연속 나아지지 않으면 멈춘다(retry-twice-then-partial). 두 번 모두 같은 방식(600초 무출력)으로 멈췄다", "reversible_at": ".curvez/team.md:G6" },
+    { "what": "내부 정정 경위 문장을 화면용 sourceNotes 에서 지웠다(DSG-01)", "why": "부모가 보는 화면에 PRD·SPEC 버전과 AC 번호가 노출됐다. 정정 근거는 architecture 결정 로그와 requirements 정정 표에 있다", "reversible_at": "apps/preemie-calc/src/entities/copay-relief/data/copay-relief.json sourceNotes" },
+    { "what": "그래프 점의 주의 표시는 그 지표 하나의 상담 판정으로 했다(디자인 스펙의 세 지표 OR 과 다름)", "why": "architect 결정. 몸무게 때문에 키 그래프에 주의 모양이 찍히는 것을 막는다", "reversible_at": ".curvez/architecture.md ⑧ 추이 그래프 '기록 → 그래프 점'" }
+  ],
+  "blocked_on": [
+    { "question": "QA 워커가 이 라운드에서 두 번 연속 600초 무출력으로 멈췄다. 남은 테스트 일(경계 기대값 3건 갱신, PC-F5-AC6·AC7 테스트, PC-F8-AC3 E2E, 판정표)을 다음 라운드에서 QA 를 범위를 잘게 나눠 다시 띄울지 정해 달라", "who": "user" }
+  ],
+  "verification": [
+    { "command": "pnpm typecheck (워크트리 루트, 오케스트레이터)", "result": "exit 0", "passed": true },
+    { "command": "pnpm lint (워크트리 루트, 오케스트레이터)", "result": "exit 0, 0 problems", "passed": true },
+    { "command": "pnpm --filter preemie-calc test", "result": "Test Files 1 failed | 15 passed (16), Tests 2 failed | 115 passed (117). 실패 2건: copay-relief.test.ts 의 옛 경계 기대(203일 → 5년 4개월, 231일 → 5년 3개월)", "passed": false },
+    { "command": "pnpm build (워크트리 루트)", "result": "exit 0, preemie-calc 503/503 정적 페이지", "passed": true },
+    { "command": "PORT=3200 pnpm test:e2e (apps/preemie-calc, 1회)", "result": "262 passed, 1 failed. 실패: nf-mobile.spec.ts:90 '재태일수 203일, 5년 4개월 확정'(옛 경계 기대)", "passed": false },
+    { "command": "curvez-reviewer jiti 실측 (curvez-reviewer.20261002-111022.json, 131232.json)", "result": "202→5년 4개월, 203→5년 3개월, 231→5년 2개월, 259→대상 아님. 가이드 문구와 계산 일치. Φ⁻¹ 최대 오차 2.9e-9, LMS 5개 행 p3·p50·p97 손계산 일치, connectNulls=false 끊김 확인", "passed": true },
+    { "command": "lsof -i :3100", "result": "PID 43850 LISTEN 유지", "passed": true }
+  ]
+}

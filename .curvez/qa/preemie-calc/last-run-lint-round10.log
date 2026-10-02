@@ -1,0 +1,12 @@
+$ eslint . && pnpm -r --if-present lint
+Scope: 7 of 8 workspace projects
+apps/preemie-calc lint$ eslint
+packages/scopulus-ui lint$ eslint
+packages/scopulus-ui lint: Done
+apps/preemie-calc lint: Done
+apps/city-presets lint$ eslint
+apps/scopulus-ui lint$ eslint
+apps/handwork lint$ eslint
+apps/city-presets lint: Done
+apps/scopulus-ui lint: Done
+apps/handwork lint: Done

@@ -1,0 +1,36 @@
+{
+  "from": "curvez-designer",
+  "to": ["curvez-orchestrator", "curvez-nextjs"],
+  "status": "done",
+  "summary": "curvez-nextjs 의 blocked_on 질문(copay-relief.json 의 재태일수가 정확히 203일=29주 0일·231일=33주 0일인 경계 케이스의 화면 상태 미정의)에 답해, .curvez/design/preemie-calc/screens/copay-relief.md 에 state:boundary-unconfirmed 를 추가했다. result·policy-note 는 그리지 않고(구간 라벨·종료일이 아직 없다), UnconfirmedNotice 로 두 후보 구간명을 같은 글자 크기·굵기·색으로 나란히 적어 어느 쪽도 단정·강조하지 않는 문구 원문 둘(boundaryDays=203/231)을 확정했다. disclaimer(ReferenceFooter)는 그대로 유지해 PC-NF-MED-1(의료 면책 문구)과 기준 자료·기준일이 이 상태에서도 보인다. 구간 소속(PRD §9 미결 2)은 여전히 확정하지 않았다 — 이 상태의 존재 자체가 '아직 못 정했다' 는 뜻이다.",
+  "artifacts": [
+    { "path": ".curvez/design/preemie-calc/screens/copay-relief.md", "kind": "doc", "note": "## states 에 state:boundary-unconfirmed 추가. 기존 4개 state(default/loading/empty/error)와 layout·responsive·a11y 섹션은 손대지 않았다(a11y:focus-order 줄에 이 상태 한정 보충 설명만 덧붙였다)" }
+  ],
+  "decisions": [
+    {
+      "what": "state:boundary-unconfirmed 에서 result(AgeSummaryCard)와 policy-note 는 그리지 않고, UnconfirmedNotice + ReferenceFooter 두 컴포넌트만으로 이 상태를 구성했다. 새 컴포넌트나 새 props 를 만들지 않았다.",
+      "why": "구간 라벨과 종료일이 아직 정해지지 않아 AgeSummaryCard 에 채울 확정값이 없다. policy-note(PC-F5-AC5)는 '종료 예정일과 함께' 보이는 문구인데 이 상태엔 종료 예정일이 없어 그 짝을 억지로 만들지 않았다 — 대신 정책 기준 자체는 ReferenceFooter 의 extraNote 로 유지해 문구를 감추지 않았다. 기존 컴포넌트(UnconfirmedNotice.text 는 화면마다 덮어쓸 수 있음, ReferenceFooter.extraNote 는 이미 copay-relief 예시로 문서화돼 있음)만으로 표현 가능해 새 컴포넌트를 만들지 않았다",
+      "reversible_at": ".curvez/design/preemie-calc/screens/copay-relief.md"
+    },
+    {
+      "what": "두 후보 구간명(예: '5년 4개월'과 '5년 3개월')을 한 문장 안에 같은 글자 크기·굵기·색으로 나란히 적고, 등장 순서는 tiers 배열 순서(원문 그대로)일 뿐 우선순위가 아니라고 명시했다. 배지·색 구분을 쓰지 않았다.",
+      "why": "PC-NF-A11Y-1(색만으로 의미를 전달하지 않음)과 지시서의 '두 구간 소속을 단정하지 않는다' 를 동시에 지키는 가장 단순한 방법이다. 색으로 두 후보를 구분하면(예: 파랑/회색) 그 자체가 하나를 더 강조하는 신호로 읽힐 수 있어 아예 시각적 차등을 두지 않았다",
+      "reversible_at": ".curvez/design/preemie-calc/screens/copay-relief.md"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "for k in state:default state:loading state:empty state:error focus-order; do grep -q -- \"$k\" .curvez/design/preemie-calc/screens/copay-relief.md || echo MISSING $k; done",
+      "result": "MISSING 출력 0줄 — state:default/state:loading/state:empty/state:error/focus-order 5개 키 전부 존재 확인"
+    },
+    {
+      "command": "find .curvez/design \\( -name '*.tsx' -o -name '*.ts' -o -name '*.css' \\) | wc -l",
+      "result": "0 — 디자인 경로에 구현 파일 없음"
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/",
+      "result": "OK 핸드오프 검증 — 검사 11건, 통과 11건, 실패 0건, 오류 0개, 경고 0개(.curvez/handoff/ 안 핸드오프 11개, 이 파일 포함 — 이전 라운드 10건에서 이 파일이 더해져 11건)"
+    }
+  ]
+}

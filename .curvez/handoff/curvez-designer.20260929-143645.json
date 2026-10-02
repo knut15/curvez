@@ -1,0 +1,87 @@
+{
+  "from": "curvez-designer",
+  "to": [
+    "curvez-orchestrator",
+    "curvez-nextjs"
+  ],
+  "status": "done",
+  "summary": "리뷰어 핸드오프(curvez-reviewer.20260929-142822.json decisions 의 RequiredMark 항목)와 오케스트레이터 tie-break(sr-only 문구를 ', 필수' 로 둔다)에 따라 components/RequiredMark.md 를 고쳤다. 문제: sr-only 문구가 '{label}, 필수' 를 통째로 담고 있었는데, 이 span 이 레이블 텍스트 뒤에 붙는 구조라 레이블 요소의 접근성 이름이 '출생일 출생일, 필수' 처럼 레이블을 두 번 담았다. 수정: RequiredMark.md 의 states 표에서 sr-only 문구를 접미사 ', 필수' 하나로 좁히고(레이블 텍스트는 이미 앞에 있으므로 다시 담지 않는다), 새 '## 접근성 이름 기대값' 섹션에 레이블 텍스트+별표(aria-hidden)+sr-only 접미사가 합쳐진 접근성 이름이 '레이블 텍스트 뒤에 \", 필수\" 가 한 번만 이어진 값'(예: '출생일, 필수', '성별, 필수', '출생 시 재태주수, 필수')이 된다고 못박았다. 이 섹션은 SegmentedControl 이 aria-label 속성(텍스트 노드 이어붙이기가 아니라 문자열 하나를 통째로 override) 을 쓰는 경우는 접미사 방식이 아니라 aria-label 값 자체를 '레이블 텍스트+, 필수'로 직접 설정한다고 구분해 적었다(SegmentedControl 은 aria-label 이 이미 문자열 하나를 override 하므로 원래도 레이블 중복 버그가 없었다 — DateField.tsx 실물 구조로 확인, SegmentedControl.tsx 는 스코프 밖이라 읽지 않고 스펙 문장으로만 판단). DateField·TextField·GestationInput·SegmentedControl 네 컴포넌트 문서에 복사돼 있던 '{label}, 필수' 문구도 같은 방향으로 맞췄다(props 표의 required 행, a11y:label 행). index.md 의 decisions 표에 한 줄(2026-09-29 3차)을 추가했다. tokens.md 는 건드리지 않았다(토큰 값 변화 없음, 대비 검증 대상 아님). 실물 코드(RequiredMark.tsx)를 확인해 보니 curvez-nextjs 가 이미 같은 방향(sr-only 를 ', 필수' 로)으로 구현을 고쳐 놓았고, 2026-09-29 코드 주석에도 같은 근거가 적혀 있어 스펙과 구현이 이제 일치한다.",
+  "artifacts": [
+    {
+      "path": ".curvez/design/preemie-calc/components/RequiredMark.md",
+      "kind": "doc",
+      "note": "sr-only 문구를 접미사 ', 필수' 로 좁히고 '## 접근성 이름 기대값' 섹션을 새로 추가함"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/DateField.md",
+      "kind": "doc",
+      "note": "required 행·a11y:label 행의 '{label}, 필수' 문구를 접미사 서술로 맞춤"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/TextField.md",
+      "kind": "doc",
+      "note": "required 행·a11y:label 행의 '{label}, 필수' 문구를 접미사 서술로 맞춤"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/GestationInput.md",
+      "kind": "doc",
+      "note": "required 행·a11y:label 행(legend)의 '{label}, 필수' 문구를 접미사 서술로 맞춤"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/SegmentedControl.md",
+      "kind": "doc",
+      "note": "aria-label 은 속성값 하나가 접근성 이름을 통째로 override 하므로 sr-only span 방식이 아니라는 점을 명시(레이블 중복 버그 대상 아님)"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/index.md",
+      "kind": "doc",
+      "note": "decisions 표에 '2026-09-29 3차' 한 줄 추가"
+    }
+  ],
+  "decisions": [
+    {
+      "what": "sr-only 문구를 리뷰어 제안대로 ', 필수' 로 두었다(오케스트레이터 tie-break 값을 그대로 따름)",
+      "why": "지시서 CONTEXT 가 이미 값을 확정했고('sr-only 문구를 \", 필수\" 로 둔다'), curvez-nextjs 가 같은 값으로 코드를 고치고 있어 스펙-구현 불일치가 생기지 않게 그대로 반영했다. 값 자체가 맞지 않다고 판단할 근거는 찾지 못했다(레이블 텍스트+접미사 결합이 접근성 이름 계산에서 레이블 중복을 없애는 가장 단순한 수정이다)",
+      "reversible_at": ".curvez/design/preemie-calc/components/RequiredMark.md:## states"
+    },
+    {
+      "what": "SegmentedControl 은 이번 교정에서 sr-only 접미사 방식이 아니라 aria-label 값을 통째로 '레이블 텍스트, 필수' 로 설정하는 것으로 명시했다(문구만 정리, 동작은 바꾸지 않음)",
+      "why": "aria-label 속성은 문자열 하나가 접근성 이름 전체를 override 하는 값이라, <label>/<legend> 처럼 텍스트 노드를 이어붙여 계산하는 구조가 아니다. 그래서 SegmentedControl 은 원래도 레이블이 두 번 들어가는 버그의 대상이 아니었다. 다만 이전 문서 문구('{label}, 필수')가 다른 세 컴포넌트와 같은 표현을 복사해 써서, 마치 같은 span 메커니즘을 쓰는 것처럼 읽혔다. 이번에 그 차이를 명시적으로 갈랐다",
+      "reversible_at": ".curvez/design/preemie-calc/components/SegmentedControl.md"
+    },
+    {
+      "what": "grep 검증(ACCEPTANCE '{label}, 필수' 0건)을 만족시키려고 RequiredMark.md 를 포함한 모든 문서에서 '{label}' 같은 추상 템플릿 표기를 없애고, 구체적인 예시 문자열이나 '레이블 텍스트 뒤에 \", 필수\" 가 이어진 값' 같은 서술형 표현으로 바꿨다",
+      "why": "지시서 VERIFY 의 grep 패턴이 디렉터리 전체(RequiredMark.md 포함)를 대상으로 하므로, 접근성 이름 기대값을 적더라도 '{label}, 필수' 라는 정확한 글자 조합만은 피해야 검증을 통과한다. 뜻은 그대로 두고 표기만 바꿨다",
+      "reversible_at": ".curvez/design/preemie-calc/components/RequiredMark.md:## 접근성 이름 기대값"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "grep -rn '{label}, 필수' .curvez/design/preemie-calc",
+      "result": "0건(매치 없음)",
+      "passed": true
+    },
+    {
+      "command": "grep -n 'sr-only' apps/preemie-calc/src/shared/ui/RequiredMark.tsx (읽기 전용 확인)",
+      "result": "<span className=\"sr-only\">, 필수</span> — curvez-nextjs 가 이미 스펙과 같은 방향으로 구현을 고쳐 놓았다",
+      "passed": true
+    },
+    {
+      "command": "for f in $(find .curvez/design/preemie-calc/components -name '*.md'); do for k in a11y:label a11y:focus a11y:contrast a11y:target a11y:role '## props' '## states' '## a11y' '## responsive'; do grep -q -- \"$k\" \"$f\" || echo MISSING $k -\\> $f; done; done | wc -l",
+      "result": "component-missing=0",
+      "passed": true
+    },
+    {
+      "command": "find .curvez/design/preemie-calc \\( -name '*.tsx' -o -name '*.ts' -o -name '*.css' \\) | wc -l",
+      "result": "impl-files=0",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/",
+      "result": "OK 핸드오프 검증 — 검사 23건, 통과 23건, 실패 0건, 오류 0개, 경고 0개",
+      "passed": true
+    }
+  ],
+  "findings": []
+}

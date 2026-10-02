@@ -1,0 +1,19 @@
+$ pnpm -r --if-present test
+Scope: 7 of 8 workspace projects
+apps/preemie-calc test$ vitest run
+packages/scopulus-ui test$ vitest --project storybook --run
+apps/preemie-calc test: (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+apps/preemie-calc test:   - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+apps/preemie-calc test: Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+apps/preemie-calc test:  RUN  v4.1.11 /Users/kim/Workspace/curvez/.claude/worktrees/preemie-calc/apps/preemie-calc
+apps/preemie-calc test:  Test Files  10 passed (10)
+apps/preemie-calc test:       Tests  56 passed (56)
+apps/preemie-calc test:    Start at  13:45:15
+apps/preemie-calc test:    Duration  399ms (transform 510ms, setup 0ms, import 755ms, tests 41ms, environment 1ms)
+apps/preemie-calc test: Done
+packages/scopulus-ui test:  RUN  v4.1.11 /Users/kim/Workspace/curvez/.claude/worktrees/preemie-calc/packages/scopulus-ui
+packages/scopulus-ui test:  Test Files  38 passed (38)
+packages/scopulus-ui test:       Tests  141 passed (141)
+packages/scopulus-ui test:    Start at  13:45:16
+packages/scopulus-ui test:    Duration  8.99s (transform 0ms, setup 24.26s, import 11.03s, tests 15.10s, environment 0ms)
+packages/scopulus-ui test: Done
