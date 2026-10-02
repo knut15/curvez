@@ -1,0 +1,25 @@
+{
+  "meta": {
+    "id": "correction-period",
+    "title": "교정연령 적용 종료 기준",
+    "sources": [
+      {
+        "id": "source-childcare",
+        "name": "아이사랑 이른둥이 안내",
+        "url": "https://www.childcare.go.kr/?menuno=287"
+      }
+    ],
+    "effectiveDate": null,
+    "lastVerified": null,
+    "schemaVersion": 1
+  },
+  "appliesBelowGestationDays": 259,
+  "defaultUntilMonths": 24,
+  "extended": { "untilMonths": 36, "gestationDaysBelow": 196, "birthWeightGramsBelow": 1500 },
+  "ageBasis": {
+    "status": "미확정",
+    "value": null,
+    "openQuestion": "PRD-9-3",
+    "provisionalBasis": "정해질 때까지 F6 은 '24개월까지' 같은 개월 문구만 보이고 종료 날짜는 계산하지 않는다 (PC-F6-AC1~4 는 날짜를 요구하지 않는다)"
+  }
+}

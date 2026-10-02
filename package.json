@@ -5,6 +5,7 @@
   "packageManager": "pnpm@11.20.0",
   "scripts": {
     "dev:handwork": "pnpm --filter handwork dev",
+    "dev:preemie-calc": "pnpm --filter preemie-calc dev",
     "dev:scopulus-ui": "pnpm --filter scopulus-ui-site dev",
     "dev:city-presets": "pnpm --filter city-presets dev",
     "dev:storybook": "pnpm --filter @scopulus/ui storybook",

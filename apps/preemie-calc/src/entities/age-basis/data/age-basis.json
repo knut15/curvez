@@ -1,0 +1,58 @@
+{
+  "meta": {
+    "id": "age-basis",
+    "title": "어느 나이를 쓰나 기준표",
+    "sources": [
+      {
+        "id": "source-nip",
+        "name": "질병관리청 표준 예방접종 일정표",
+        "url": "https://nip.kdca.go.kr/irhp/infm/goVcntInfo.do?menuLv=1&menuCd=115"
+      },
+      {
+        "id": "source-nhimc",
+        "name": "일산병원 영유아검진 안내(국민건강보험공단 기준)",
+        "url": "https://www.nhimc.or.kr/health/conts/104003000000000.do"
+      },
+      {
+        "id": "source-childcare",
+        "name": "아이사랑 이른둥이 안내",
+        "url": "https://www.childcare.go.kr/?menuno=287"
+      }
+    ],
+    "effectiveDate": "2026-09-30",
+    "lastVerified": "2026-09-30",
+    "schemaVersion": 1
+  },
+  "items": [
+    {
+      "id": "vaccination",
+      "label": "예방접종",
+      "basis": "chronological",
+      "sourceId": "source-nip"
+    },
+    {
+      "id": "checkup-visit",
+      "label": "영유아검진 방문",
+      "basis": "chronological",
+      "sourceId": "source-nhimc"
+    },
+    {
+      "id": "checkup-questionnaire",
+      "label": "문진표·발달선별검사지",
+      "basis": "corrected-until-checkup",
+      "sourceId": "source-nhimc"
+    },
+    {
+      "id": "solid-food",
+      "label": "이유식",
+      "basis": "corrected",
+      "sourceId": "source-childcare"
+    },
+    {
+      "id": "development",
+      "label": "발달 평가",
+      "basis": "corrected",
+      "sourceId": "source-childcare"
+    }
+  ]
+}
