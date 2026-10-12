@@ -1,0 +1,782 @@
+{
+  "meta": {
+    "id": "vaccination-schedule",
+    "title": "어린이 국가예방접종 표준일정(질병관리청, 2026)",
+    "sources": [
+      {
+        "id": "source-kdca-nip-2026",
+        "name": "질병관리청 표준예방접종일정표(2026)",
+        "url": "https://nip.kdca.go.kr/irhp/images/egovframework/rte/infm/Immunization_Schedule_for_Children_2026.jpg"
+      }
+    ],
+    "effectiveDate": "2026-09-30",
+    "lastVerified": "2026-09-30",
+    "schemaVersion": 1
+  },
+  "series": [
+    {
+      "id": "bcg",
+      "label": "BCG",
+      "alternativeGroup": null,
+      "doses": [
+        {
+          "id": "bcg-1",
+          "order": 1,
+          "label": "1차",
+          "sourceTimingText": "4주이내",
+          "window": {
+            "start": {
+              "months": 0,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 0,
+              "days": 29
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "hepb",
+      "label": "B형간염",
+      "alternativeGroup": null,
+      "doses": [
+        {
+          "id": "hepb-1",
+          "order": 1,
+          "label": "1차",
+          "sourceTimingText": "출생시",
+          "window": {
+            "start": {
+              "months": 0,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 0,
+              "days": 1
+            }
+          }
+        },
+        {
+          "id": "hepb-2",
+          "order": 2,
+          "label": "2차",
+          "sourceTimingText": "1개월",
+          "window": {
+            "start": {
+              "months": 1,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 1,
+              "days": 1
+            }
+          }
+        },
+        {
+          "id": "hepb-3",
+          "order": 3,
+          "label": "3차",
+          "sourceTimingText": "6개월",
+          "window": {
+            "start": {
+              "months": 6,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 6,
+              "days": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "dtap",
+      "label": "DTaP",
+      "alternativeGroup": null,
+      "doses": [
+        {
+          "id": "dtap-1",
+          "order": 1,
+          "label": "1차",
+          "sourceTimingText": "2개월",
+          "window": {
+            "start": {
+              "months": 2,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 2,
+              "days": 1
+            }
+          }
+        },
+        {
+          "id": "dtap-2",
+          "order": 2,
+          "label": "2차",
+          "sourceTimingText": "4개월",
+          "window": {
+            "start": {
+              "months": 4,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 4,
+              "days": 1
+            }
+          }
+        },
+        {
+          "id": "dtap-3",
+          "order": 3,
+          "label": "3차",
+          "sourceTimingText": "6개월",
+          "window": {
+            "start": {
+              "months": 6,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 6,
+              "days": 1
+            }
+          }
+        },
+        {
+          "id": "dtap-4",
+          "order": 4,
+          "label": "4차",
+          "sourceTimingText": "15~18개월",
+          "window": {
+            "start": {
+              "months": 15,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 19,
+              "days": 0
+            }
+          }
+        },
+        {
+          "id": "dtap-5",
+          "order": 5,
+          "label": "5차",
+          "sourceTimingText": "4세",
+          "window": {
+            "start": {
+              "months": 48,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 60,
+              "days": 0
+            }
+          }
+        },
+        {
+          "id": "dtap-6",
+          "order": 6,
+          "label": "6차",
+          "sourceTimingText": "11~12세",
+          "window": {
+            "start": {
+              "months": 132,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 156,
+              "days": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ipv",
+      "label": "IPV(폴리오)",
+      "alternativeGroup": null,
+      "doses": [
+        {
+          "id": "ipv-1",
+          "order": 1,
+          "label": "1차",
+          "sourceTimingText": "2개월",
+          "window": {
+            "start": {
+              "months": 2,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 2,
+              "days": 1
+            }
+          }
+        },
+        {
+          "id": "ipv-2",
+          "order": 2,
+          "label": "2차",
+          "sourceTimingText": "4개월",
+          "window": {
+            "start": {
+              "months": 4,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 4,
+              "days": 1
+            }
+          }
+        },
+        {
+          "id": "ipv-3",
+          "order": 3,
+          "label": "3차",
+          "sourceTimingText": "6~12개월",
+          "window": {
+            "start": {
+              "months": 6,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 13,
+              "days": 0
+            }
+          }
+        },
+        {
+          "id": "ipv-4",
+          "order": 4,
+          "label": "4차",
+          "sourceTimingText": "4세",
+          "window": {
+            "start": {
+              "months": 48,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 60,
+              "days": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "hib",
+      "label": "Hib",
+      "alternativeGroup": null,
+      "doses": [
+        {
+          "id": "hib-1",
+          "order": 1,
+          "label": "1차",
+          "sourceTimingText": "2개월",
+          "window": {
+            "start": {
+              "months": 2,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 2,
+              "days": 1
+            }
+          }
+        },
+        {
+          "id": "hib-2",
+          "order": 2,
+          "label": "2차",
+          "sourceTimingText": "4개월",
+          "window": {
+            "start": {
+              "months": 4,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 4,
+              "days": 1
+            }
+          }
+        },
+        {
+          "id": "hib-3",
+          "order": 3,
+          "label": "3차",
+          "sourceTimingText": "6개월",
+          "window": {
+            "start": {
+              "months": 6,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 6,
+              "days": 1
+            }
+          }
+        },
+        {
+          "id": "hib-4",
+          "order": 4,
+          "label": "4차",
+          "sourceTimingText": "12~15개월",
+          "window": {
+            "start": {
+              "months": 12,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 16,
+              "days": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "pcv",
+      "label": "PCV(폐렴구균)",
+      "alternativeGroup": null,
+      "doses": [
+        {
+          "id": "pcv-1",
+          "order": 1,
+          "label": "1차",
+          "sourceTimingText": "2개월",
+          "window": {
+            "start": {
+              "months": 2,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 2,
+              "days": 1
+            }
+          }
+        },
+        {
+          "id": "pcv-2",
+          "order": 2,
+          "label": "2차",
+          "sourceTimingText": "4개월",
+          "window": {
+            "start": {
+              "months": 4,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 4,
+              "days": 1
+            }
+          }
+        },
+        {
+          "id": "pcv-3",
+          "order": 3,
+          "label": "3차",
+          "sourceTimingText": "6개월",
+          "window": {
+            "start": {
+              "months": 6,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 6,
+              "days": 1
+            }
+          }
+        },
+        {
+          "id": "pcv-4",
+          "order": 4,
+          "label": "4차",
+          "sourceTimingText": "12~15개월",
+          "window": {
+            "start": {
+              "months": 12,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 16,
+              "days": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "rv1",
+      "label": "로타바이러스(RV1)",
+      "alternativeGroup": "rotavirus",
+      "doses": [
+        {
+          "id": "rv1-1",
+          "order": 1,
+          "label": "1차",
+          "sourceTimingText": "2개월",
+          "window": {
+            "start": {
+              "months": 2,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 2,
+              "days": 1
+            }
+          }
+        },
+        {
+          "id": "rv1-2",
+          "order": 2,
+          "label": "2차",
+          "sourceTimingText": "4개월",
+          "window": {
+            "start": {
+              "months": 4,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 4,
+              "days": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "rv5",
+      "label": "로타바이러스(RV5)",
+      "alternativeGroup": "rotavirus",
+      "doses": [
+        {
+          "id": "rv5-1",
+          "order": 1,
+          "label": "1차",
+          "sourceTimingText": "2개월",
+          "window": {
+            "start": {
+              "months": 2,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 2,
+              "days": 1
+            }
+          }
+        },
+        {
+          "id": "rv5-2",
+          "order": 2,
+          "label": "2차",
+          "sourceTimingText": "4개월",
+          "window": {
+            "start": {
+              "months": 4,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 4,
+              "days": 1
+            }
+          }
+        },
+        {
+          "id": "rv5-3",
+          "order": 3,
+          "label": "3차",
+          "sourceTimingText": "6개월",
+          "window": {
+            "start": {
+              "months": 6,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 6,
+              "days": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "mmr",
+      "label": "MMR",
+      "alternativeGroup": null,
+      "doses": [
+        {
+          "id": "mmr-1",
+          "order": 1,
+          "label": "1차",
+          "sourceTimingText": "12개월",
+          "window": {
+            "start": {
+              "months": 12,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 12,
+              "days": 1
+            }
+          }
+        },
+        {
+          "id": "mmr-2",
+          "order": 2,
+          "label": "2차",
+          "sourceTimingText": "4~6세",
+          "window": {
+            "start": {
+              "months": 48,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 84,
+              "days": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "var",
+      "label": "수두",
+      "alternativeGroup": null,
+      "doses": [
+        {
+          "id": "var-1",
+          "order": 1,
+          "label": "1회",
+          "sourceTimingText": "12~15개월",
+          "window": {
+            "start": {
+              "months": 12,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 16,
+              "days": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "hepa",
+      "label": "A형간염",
+      "alternativeGroup": null,
+      "doses": [
+        {
+          "id": "hepa-1",
+          "order": 1,
+          "label": "1차",
+          "sourceTimingText": "12개월~24~35개월",
+          "window": {
+            "start": {
+              "months": 12,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 36,
+              "days": 0
+            }
+          }
+        },
+        {
+          "id": "hepa-2",
+          "order": 2,
+          "label": "2차",
+          "sourceTimingText": "12개월~24~35개월",
+          "window": {
+            "start": {
+              "months": 12,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 36,
+              "days": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "je-inactivated",
+      "label": "일본뇌염(불활성화)",
+      "alternativeGroup": "japanese-encephalitis",
+      "doses": [
+        {
+          "id": "je-inactivated-1",
+          "order": 1,
+          "label": "1차",
+          "sourceTimingText": "12~18개월",
+          "window": {
+            "start": {
+              "months": 12,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 19,
+              "days": 0
+            }
+          }
+        },
+        {
+          "id": "je-inactivated-2",
+          "order": 2,
+          "label": "2차",
+          "sourceTimingText": "12~18개월",
+          "window": {
+            "start": {
+              "months": 12,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 19,
+              "days": 0
+            }
+          }
+        },
+        {
+          "id": "je-inactivated-3",
+          "order": 3,
+          "label": "3차",
+          "sourceTimingText": "24~35개월",
+          "window": {
+            "start": {
+              "months": 24,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 36,
+              "days": 0
+            }
+          }
+        },
+        {
+          "id": "je-inactivated-4",
+          "order": 4,
+          "label": "4차",
+          "sourceTimingText": "6세",
+          "window": {
+            "start": {
+              "months": 72,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 84,
+              "days": 0
+            }
+          }
+        },
+        {
+          "id": "je-inactivated-5",
+          "order": 5,
+          "label": "5차",
+          "sourceTimingText": "12세",
+          "window": {
+            "start": {
+              "months": 144,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 156,
+              "days": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "je-live",
+      "label": "일본뇌염(약독화)",
+      "alternativeGroup": "japanese-encephalitis",
+      "doses": [
+        {
+          "id": "je-live-1",
+          "order": 1,
+          "label": "1차",
+          "sourceTimingText": "12~18개월",
+          "window": {
+            "start": {
+              "months": 12,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 19,
+              "days": 0
+            }
+          }
+        },
+        {
+          "id": "je-live-2",
+          "order": 2,
+          "label": "2차",
+          "sourceTimingText": "24~35개월",
+          "window": {
+            "start": {
+              "months": 24,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 36,
+              "days": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "hpv",
+      "label": "HPV",
+      "alternativeGroup": null,
+      "doses": [
+        {
+          "id": "hpv-1",
+          "order": 1,
+          "label": "1차",
+          "sourceTimingText": "11~12세",
+          "window": {
+            "start": {
+              "months": 132,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 156,
+              "days": 0
+            }
+          }
+        },
+        {
+          "id": "hpv-2",
+          "order": 2,
+          "label": "2차",
+          "sourceTimingText": "11~12세",
+          "window": {
+            "start": {
+              "months": 132,
+              "days": 0
+            },
+            "endExclusive": {
+              "months": 156,
+              "days": 0
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "notes": [
+    {
+      "id": "pcv-high-risk",
+      "text": "PCV(폐렴구균) 24~35개월은 고위험군에 한해 별도 접종"
+    },
+    {
+      "id": "influenza-annual",
+      "text": "인플루엔자는 생후 6개월부터 매년 접종"
+    }
+  ]
+}

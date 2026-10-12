@@ -1,0 +1,79 @@
+{
+  "from": "curvez-requirements",
+  "to": ["curvez-orchestrator", "curvez-architect", "curvez-designer", "curvez-nextjs", "curvez-qa"],
+  "status": "done",
+  "summary": "SPEC 버전 2 의 1단계 수용 기준을 .curvez/requirements.md '## preemie-calc' 절에 반영했다. 새 AC 17건(PC-F7-AC5~7, PC-F8-AC1~5, PC-F10-AC1~3, PC-F14-AC1~3, PC-F15-AC1~3)과 새 예외 5건(PC-F8-EX1, PC-F14-EX1, PC-F15-EX1~3)을 더했다. 기존 57개 ID(AC 38, EX 8, NF 11) 가운데 SPEC v2 와 달라진 것은 PC-F13-EX1 문장 하나이고 SPEC v2 원문으로 바꿨다. F7 제목과 확인 방법 줄('AC1\\~AC3, AC5\\~AC7 자동 테스트, AC4 수동 확인')도 SPEC v2 대로 고쳤다. 합계는 AC 55, EX 13, NF 11 이다. 스크립트로 대조한 결과 AC·EX 68건이 전부 일치하고 다름·누락·여분은 0건이다. PRD §9 의 2026-09-30 결정을 'PRD 미결 연결' 에 원문 그대로 옮겼다(미결 1 결정, 미결 2 경계 결정·종료일 미확정, 미결 3 미결 유지, 목표키·분유량 결정, 쌍둥이·사이트 이름은 결정 표에 행이 없어 미결). PRD §8 의 새 가정 6행은 새 '### 가정' 절에 옮겼다. F8·F10·F14·F15 는 범위 밖 목록에서 뺐고 F9·F11·F12 는 남겼다. 글 영역 720px 는 지시대로 옮기지 않고 범위 밖에 사유를 적었다. 알릴 것 하나: SPEC F5 확인 방법 줄은 여전히 'PRD 미결 2번이 정해지면 수용 기준을 더한다' 인데, PRD 가 경계를 정했는데도 SPEC v2 에는 경계 AC 가 없다. 이 절은 SPEC 을 옮기기만 하므로 더하지 않았다.",
+  "artifacts": [
+    { "path": ".curvez/requirements.md", "kind": "spec", "note": "## preemie-calc 절 전문 재작성. 1단계 F1~F8, F10, F13~F15. ### 가정 절 새로 추가" }
+  ],
+  "decisions": [
+    {
+      "what": "SPEC 파일의 '\\~' 마크다운 이스케이프를 그대로 옮긴다 (PC-F15-AC1, F7 확인 방법 줄, 가정·미결 연결 표의 원문)",
+      "why": "이번 라운드 기준이 'SPEC v2 원문과 글자 단위로 같다' 이다. 렌더링된 화면 글자는 '~' 로 같다. 구현·테스트에서 문구를 단언할 때는 '\\' 를 빼고 '~' 로 쓴다",
+      "reversible_at": ".curvez/requirements.md:#### F15. 분유량 참고"
+    },
+    {
+      "what": "F8 AC5 는 SPEC 에서 '확인 방법' 줄 아래에 있지만 F8 수용 기준 PC-F8-AC5 로 옮기고 확인 방법은 '자동 테스트' 로 둔다",
+      "why": "'  - [ ] AC5.' 형식이고 F8 의 확인 방법 줄은 '자동 테스트' 하나뿐이다",
+      "reversible_at": ".curvez/requirements.md:#### F8. 성장 백분위 + 기록"
+    },
+    {
+      "what": "F15 처럼 여러 줄로 된 예외는 줄마다 EX 번호를 준다 (PC-F15-EX1~3)",
+      "why": "지난 라운드 F1 예외와 같은 방식이다",
+      "reversible_at": ".curvez/requirements.md:#### F15. 분유량 참고"
+    },
+    {
+      "what": "PRD 미결 표기는 버전 1 번호(미결 1·2·3·5·6)를 유지하고 'PRD v2 행' 칸을 더했다. 새 두 행은 '목표키 출처', '분유량 계수' 로 이름을 붙였다",
+      "why": "버전 2 에서 버전 1 의 4번 행(28주 미만 백분위)이 결정돼 빠져, v2 표 행 순서로는 쌍둥이 4, 사이트 이름 5 가 된다. 기존 문서와 코드(src 의 '미결 2', '미결 6')가 v1 번호를 쓰므로 번호를 바꾸면 같은 번호가 다른 질문을 가리킨다. SPEC F11 도 캘린더를 v1 번호 '미결 7번' 으로 부른다",
+      "reversible_at": ".curvez/requirements.md:### PRD 미결 연결"
+    },
+    {
+      "what": "F5 에 구간 경계(33주 0일·29주 0일) 수용 기준을 더하지 않았다",
+      "why": "PRD §9 결정이 경계를 정했지만 SPEC v2 F5 에는 해당 AC 가 없다. 새 요구를 지어내지 않는다. 더하려면 SPEC 을 먼저 고쳐야 한다",
+      "reversible_at": ".curvez/requirements.md:#### F5. 본인부담 경감 종료일"
+    },
+    {
+      "what": "가정 절에 PRD §8 v2 의 새 행 6개를 옮겼다. 지시 목록 5개에 'F14·F15 우선순위는 필수' 를 더했다",
+      "why": "그 행도 §8 에 v2 에서 새로 생긴 행이고 원문 그대로 옮기는 것이라 해석이 들어가지 않는다",
+      "reversible_at": ".curvez/requirements.md:### 가정"
+    },
+    {
+      "what": "PRD §9 결정 표의 '성장 백분위 데이터', '예방접종 일정' 행도 PRD 미결 연결 아래 별도 표로 옮겼다. '본문 폭' 행은 옮기지 않았다",
+      "why": "앞의 두 행은 1단계 F8·F10 의 데이터 선택이다. 본문 폭은 지시에서 요구가 아니라 디자인 결정으로 보고 옮기지 말라고 했다",
+      "reversible_at": ".curvez/requirements.md:### PRD 미결 연결"
+    },
+    {
+      "what": "핸드오프 to 에 curvez-nextjs 를 넣었다",
+      "why": "에이전트 정의는 구현 에이전트에 직접 보내지 않게 하지만, 이번 지시서 REPORT 가 to 목록에 curvez-nextjs 를 명시했다",
+      "reversible_at": ".curvez/handoff/curvez-requirements.20260930-114040.json"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "node scratchpad/cmp.mjs (SPEC.md 의 '### F<n>.' 절별 '  - [ ] AC<n>. ' 줄과 '- 예외' 줄을 뽑아 requirements.md 표 원문 칸과 문자열 비교. 1단계 F1~F8, F10, F13~F15 만)",
+      "result": "AC: SPEC 1단계 55건, requirements 55건 | 일치 55 다름 0 누락 0 여분 0. EX: SPEC 1단계 13건, requirements 13건 | 일치 13 다름 0 누락 0 여분 0. 1단계 밖 SPEC AC(옮기지 않음): PC-F9-AC1 PC-F9-AC2 PC-F11-AC1 PC-F11-AC2 PC-F12-AC1 PC-F12-AC2",
+      "passed": true
+    },
+    {
+      "command": "같은 스크립트의 NF 검사 (PC-NF-* 원문 칸이 SPEC v2 §6 본문 안에 글자 그대로 있는지)",
+      "result": "NF: 11건 중 SPEC §6 원문 포함 11건",
+      "passed": true
+    },
+    {
+      "command": "grep -cE '^\\| PC-F[0-9]+-AC[0-9]+ \\|' / '^\\| PC-F[0-9]+-EX[0-9]+ \\|' / '^\\| PC-NF-[A-Z0-9]+-[0-9]+ \\|' .curvez/requirements.md",
+      "result": "AC=55 EX=13 NF=11. 새 AC 17 = F7 3 + F8 5 + F10 3 + F14 3 + F15 3. 새 EX 5 = F8 1 + F14 1 + F15 3",
+      "passed": true
+    },
+    {
+      "command": "필수 섹션 grep (### 목표/사용자 흐름/수용 기준/범위 밖/미결 질문/결정 기록/가정/PRD 미결 연결), AC 행 칸 검사 awk, 판정 불가 표현 grep, 단독 글자 금지어 grep, 범위 밖 항목 수 awk",
+      "result": "누락 0줄, 칸 부족 0줄, 금지 표현 0줄, 금지 글자 0줄, 범위 밖 4건",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/",
+      "result": "검사 52건, 통과 52건, 실패 0건, 오류 0개, 경고 0개 (이 파일 포함)",
+      "passed": true
+    }
+  ]
+}

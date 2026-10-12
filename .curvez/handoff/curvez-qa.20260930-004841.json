@@ -1,0 +1,124 @@
+{
+  "from": "curvez-qa",
+  "to": ["curvez-orchestrator", "curvez-nextjs"],
+  "status": "done",
+  "summary": "curvez-nextjs 의 5차 디자인 재구성(HeaderMenu 도입 + 텍스트 기호→lucide 아이콘, curvez-nextjs.20260930-003549.json)이 깨뜨린 e2e 6건을 선택자·조작 순서만 바꿔 고쳤다(판정하는 사실은 그대로 유지 — 이전/이후/근거 대응표는 .curvez/qa/preemie-calc/test-changes-redesign.md). HeaderMenu 3건(f1-profile.spec.ts:정보 전체 삭제, nf-a11y.spec.ts:프로필 편집, nf-privacy.spec.ts:프로필 편집)은 새 헬퍼 openHeaderMenu(page)(tests/e2e/support/helpers.ts)로 '더보기' 버튼을 먼저 열고 role=menuitem 을 누르도록 바꿨다. 기호→아이콘 3건(nf-a11y.spec.ts, PC-NF-A11Y-1)은 getByText('●'/'✓'/'△',exact) 를 라벨 텍스트로 좁힌 요소의 svg 존재 확인(locator('svg'))으로 바꿔, '색만으로 의미를 전달하지 않는다'는 같은 사실을 텍스트 라벨+아이콘 두 비색 수단으로 재확인했다. 새 파일 tests/e2e/nf-header-layout.spec.ts(29개 테스트)를 추가해 GOAL이 새로 요구한 두 가지를 검증했다 — (1) 디자인 스펙 9개 화면 × 360/768/1280px = 27개 조합에서 헤더 제목(getByRole('banner').getByRole('heading',{level:1})) boundingBox 중심 x 와 뷰포트 중심 x 의 차이를 재 27개 전부 0~0.01px(기준 ≤2px, 임시 console.log 로 1회 실측 후 제거)를 확인했다. (2) 1280px 에서 .pc-dashboard-main·.pc-dashboard-sidebar 의 x 좌표가 서로 다름(2열)을, 768px 에서는 같음(1열, 오탐 방지 대조군)을 확인했다. PC-NF-A11Y-2(대비)는 코드를 건드리지 않았다 — 이 테스트가 애초에 하드코딩 색값이 아니라 매 실행 getComputedStyle 로 실제 색을 다시 계산하는 구조라 새 색 토큰으로도 그대로 통과했다(8개 화면 위반 0건). 워크트리 루트 typecheck(exit 0, 7개 워크스페이스)·lint(exit 0, 0 problems)·test(exit 0, 203/203: preemie-calc 62/62 + scopulus-ui 141/141)·build(exit 0, preemie-calc 491/491 정적 페이지) 전부 통과했고 quality-gate.mjs --no-stop 5/5 PASS(arch 14규칙 위반 0). apps/preemie-calc 의 pnpm test:e2e 는 2회 연속 실행 모두 104개 통과, 0개 실패(exit 0, 완전히 동일 — 플래키 아님). 104 = 4라운드 75개 + 이번 라운드 신규 29개(6건은 고쳐서 다시 포함, 삭제·skip 없음). skip/only/todo 0건. 수용 기준 커버 57/57(미커버 0, 4라운드와 동일 — 이번 라운드는 요구사항이 아니라 테스트 코드만 갱신했다). 57개 ID 판정은 4라운드와 완전히 동일(자동 통과 55·자동 실패 0·수동 1, 조건부 2건 유지) — 상세는 ac-matrix.md '5라운드' 절. after 캡처 20장을 .curvez/qa/preemie-calc/screens/after/ 에 남겼다(20 passed, before 와 동일 파일명, ls 로 20개 확인). 포트 3100 은 이번 세션 내내 모든 명령 실행 전마다 lsof 로 비어 있음을 확인했고, run_in_background·직접 dev 서버 기동은 하지 않았다(Playwright webServer 만 사용). src·package.json 은 전혀 건드리지 않았다. 5차 라운드가 발견했지만 고치지 않은 것 하나: /guide/[weeks]/[months] 페이지에 <h1> 이 2개(PageHeader 의 제목 h1 + GuideView 콘텐츠 제목 h1) — 헤더 정렬 테스트는 getByRole('banner') 로 범위를 좁혀 우회했고, 결함 자체는 to 에 curvez-nextjs 를 포함해 참고용으로 알린다(blocked 는 아니다 — 이번 검증을 막지 않았다).",
+  "artifacts": [
+    { "path": "apps/preemie-calc/tests/e2e/nf-header-layout.spec.ts", "kind": "code", "note": "신규 파일. 헤더 제목 가운데 정렬 27개(9화면×3폭) + 대시보드 1280px 2열/768px 1열 대조 2개, 총 29개 테스트" },
+    { "path": "apps/preemie-calc/tests/e2e/support/helpers.ts", "kind": "code", "note": "openHeaderMenu(page) 헬퍼 추가 — dashboard 헤더 '더보기' 버튼 클릭 한 줄, 3개 스펙 파일이 공유" },
+    { "path": "apps/preemie-calc/tests/e2e/f1-profile.spec.ts", "kind": "code", "note": "PC-F1-AC6 테스트: '정보 전체 삭제' 직접 클릭 → openHeaderMenu + menuitem 클릭으로 변경" },
+    { "path": "apps/preemie-calc/tests/e2e/nf-privacy.spec.ts", "kind": "code", "note": "PC-NF-PRIV-1 테스트: '프로필 편집' 직접 클릭 → openHeaderMenu + menuitem 클릭으로 변경" },
+    { "path": "apps/preemie-calc/tests/e2e/nf-a11y.spec.ts", "kind": "code", "note": "PC-NF-A11Y-3(HeaderMenu 대응) + PC-NF-A11Y-1 3개 테스트(기호 getByText → 라벨 scoped svg 존재 확인) 갱신. import 에 openHeaderMenu 추가" },
+    { "path": ".curvez/qa/preemie-calc/test-changes-redesign.md", "kind": "doc", "note": "신규. 깨진 6건의 이전→이후 선택자·조작, '판정하는 사실이 같은 이유'를 표로 정리. 새 헤더 레이아웃 테스트 설계 근거와, 발견했지만 고치지 않은 guide 페이지 h1 2개 문제도 기록" },
+    { "path": ".curvez/qa/preemie-calc/ac-matrix.md", "kind": "doc", "note": "'5라운드' 절 추가 — 57개 ID 판정 4라운드와 동일함을 재확인, 헤더 중심 차이 실측값 표(27개 조합, 0~0.01px), 디자인 스펙 키 대응표, 실행 결과 수치, 5라운드에서 직접 고친 것/발견했지만 고치지 않은 것" },
+    { "path": ".curvez/qa/preemie-calc/strategy.md", "kind": "doc", "note": "'5라운드' 절 추가 — 층 배분과 근거(전부 e2e, 새 분기 로직이 없어 단위 계층에 내릴 것이 없음), 테스트하지 않는 것(HeaderMenu 키보드 세부, 아이콘 이름 매핑, IconBadge 폭별 미전환, guide h1 2개를 실패 테스트로 만들지 않은 이유)" },
+    { "path": ".curvez/qa/preemie-calc/screens/after/", "kind": "doc", "note": "PNG 20장(before 와 동일 파일명: root, root-weeks-32, dashboard, dashboard-age-basis, dashboard-checkups, dashboard-copay-relief, dashboard-correction-period, share, guide-32-3, dashboard-2children × 360/1280px)" },
+    { "path": ".curvez/qa/preemie-calc/last-run-typecheck.log", "kind": "doc", "note": "워크트리 루트 pnpm typecheck 원문(exit 0)" },
+    { "path": ".curvez/qa/preemie-calc/last-run-lint.log", "kind": "doc", "note": "워크트리 루트 pnpm lint 원문(exit 0, 0 problems)" },
+    { "path": ".curvez/qa/preemie-calc/last-run-unit.log", "kind": "doc", "note": "워크트리 루트 pnpm test 원문(203/203)" },
+    { "path": ".curvez/qa/preemie-calc/last-run-build.log", "kind": "doc", "note": "워크트리 루트 pnpm build 원문(preemie-calc 491/491 정적 페이지)" },
+    { "path": ".curvez/qa/preemie-calc/last-run-quality-gate.log", "kind": "doc", "note": "quality-gate.mjs --no-stop 원문(5/5 PASS)" },
+    { "path": ".curvez/qa/preemie-calc/last-run-e2e-r1.log", "kind": "doc", "note": "pnpm test:e2e 1회차 원문(104 passed, 0 failed)" },
+    { "path": ".curvez/qa/preemie-calc/last-run-e2e-r2.log", "kind": "doc", "note": "pnpm test:e2e 2회차 원문(104 passed, 0 failed — 1회차와 동일, 플래키 아님)" }
+  ],
+  "decisions": [
+    {
+      "what": "HeaderMenu·기호→아이콘 대응 6건은 선택자·조작 순서만 바꾸고, 새로 확인해야 할 사실을 assertion 에 추가했을 뿐 기존 assertion 을 지우거나 완화하지 않았다(예: 성별 선택 아이콘 테스트는 '선택 전 아이콘 없음 → 클릭 → aria-checked=true(기존 유지) → 선택 후 아이콘 있음' 으로 전/후 대조까지 더했다 — 완화가 아니라 더 엄격해졌다).",
+      "why": "curvez-nextjs 의 decisions 가 '기호 문자는 사라졌지만 라벨 텍스트는 하나도 지워지지 않았다'고 명시했고, 스펙(tokens.md decisions)도 '색+아이콘+텍스트 라벨 세 겹 규칙은 유지한다'고 못박았다. 판정 대상 사실(PC-NF-A11Y-1: 색만으로 의미를 전달하지 않음)이 실제로 유지되고 있는지를 새 표시(svg)로 확인하는 것이 옳지, 실패를 피하려 assertion 을 약화하는 것과는 다르다.",
+      "reversible_at": "apps/preemie-calc/tests/e2e/nf-a11y.spec.ts, apps/preemie-calc/tests/e2e/f1-profile.spec.ts, apps/preemie-calc/tests/e2e/nf-privacy.spec.ts, apps/preemie-calc/tests/e2e/support/helpers.ts"
+    },
+    {
+      "what": "헤더 가운데 정렬 테스트는 page.getByRole('heading',{level:1}) 을 페이지 전체가 아니라 page.getByRole('banner') 안으로 좁혔다.",
+      "why": "/guide/[weeks]/[months] 페이지는 PageHeader 의 제목 h1 과 GuideView 콘텐츠 제목 h1 이 공존해 페이지 전체에서 heading level:1 을 찾으면 strict mode violation(2개 매치)이 난다. banner 로 좁히면 PageHeader 의 h1 만 정확히 집는다 — 이 h1 2개 구조 자체는 src 결함이라 고치지 않고 test-changes-redesign.md 에 재현 방법과 함께 남겨 curvez-nextjs 에 전달했다(blocked 는 아니다, 우회로 검증 자체는 막히지 않았다).",
+      "reversible_at": "apps/preemie-calc/tests/e2e/nf-header-layout.spec.ts:123"
+    },
+    {
+      "what": "헤더 중심 차이 실측(px)을 얻기 위해 console.log 한 줄을 임시로 넣어 1회 실행한 뒤 즉시 되돌렸다(정식 테스트 파일에는 assertion 만 남는다).",
+      "why": "assert 실패 메시지에는 실측값이 이미 포함돼 있어(diff 를 message 로 넘김) 실패 시에는 값을 알 수 있지만, 27개가 전부 통과하는 상황에서 '헤더 중심 차이 실측값 표'(ACCEPTANCE 요구)를 채우려면 통과해도 값을 봐야 했다. 4라운드가 하이드레이션 감시를 검증할 때 쓴 것과 같은 패턴(임시 스펙/로그로 확인 후 삭제)이다 — 정식 테스트 코드에 디버그용 console.log 를 남기지 않는다.",
+      "reversible_at": "apps/preemie-calc/tests/e2e/nf-header-layout.spec.ts(현재 파일에는 남아 있지 않음 — 측정값은 ac-matrix.md '헤더 중심 차이 실측값' 표에 기록)"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "lsof -i :3100 (작업 시작 전 및 모든 test:e2e/build 실행 전마다)",
+      "result": "매번 빈 출력(다른 프로세스 없음). run_in_background·직접 dev 서버 기동 안 함 — Playwright webServer(next build && next start -p 3100)만 사용, 실행 뒤 자동 종료",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) pnpm exec playwright test nf-header-layout.spec.ts nf-a11y.spec.ts f1-profile.spec.ts nf-privacy.spec.ts (고친/추가한 파일만 먼저 격리 실행)",
+      "result": "50 passed (11.0s), 0 failed",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm typecheck",
+      "result": "exit 0. 7개 워크스페이스(1개는 typecheck 스크립트 없음) 전부 'Types generated successfully' + Done, 오류 0건 — .curvez/qa/preemie-calc/last-run-typecheck.log",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm lint",
+      "result": "exit 0. eslint . && pnpm -r --if-present lint — 전 워크스페이스 Done, 출력 없음(0 problems) — .curvez/qa/preemie-calc/last-run-lint.log",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm test",
+      "result": "exit 0. apps/preemie-calc 10개 파일 62개 테스트 62개 통과, packages/scopulus-ui 38개 파일 141개 테스트 141개 통과. 총 203개 중 203개 통과, 0개 실패 — .curvez/qa/preemie-calc/last-run-unit.log",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm build",
+      "result": "exit 0. apps/preemie-calc next build 성공, 491/491 정적 페이지 생성(라우트 표 동일). city-presets·scopulus-ui·handwork 도 전부 Done — .curvez/qa/preemie-calc/last-run-build.log",
+      "passed": true
+    },
+    {
+      "command": "node plugins/curvez/scripts/quality-gate.mjs --no-stop",
+      "result": "PASS arch(규칙 14개 파싱/검사 14개/위반 0건), PASS typecheck, PASS lint, PASS test, PASS build — quality-gate 통과, 5개 게이트 실행, 실패 0건 — .curvez/qa/preemie-calc/last-run-quality-gate.log",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) pnpm test:e2e — 1회차",
+      "result": "104 tests, 104 passed, 0 failed (13.3s) — .curvez/qa/preemie-calc/last-run-e2e-r1.log",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) pnpm test:e2e — 2회차",
+      "result": "104 tests, 104 passed, 0 failed (13.1s) — 1회차와 완전히 동일, 플래키 아님 — .curvez/qa/preemie-calc/last-run-e2e-r2.log",
+      "passed": true
+    },
+    {
+      "command": "grep -nE '\\.(skip|only|todo)\\(|\\bx(it|describe)\\(' apps/preemie-calc/tests/e2e/*.ts apps/preemie-calc/tests/unit/*.ts apps/preemie-calc/tests/capture/*.ts",
+      "result": "0건",
+      "passed": true
+    },
+    {
+      "command": "grep -ohE 'PC-F[0-9]+-(AC|EX)[0-9]+|PC-NF-[A-Z0-9]+-[0-9]+' apps/preemie-calc/tests/e2e/*.ts apps/preemie-calc/tests/unit/*.ts | sort -u | wc -l",
+      "result": "57(요구 57개와 정확히 일치, 미커버 0개 — 4라운드와 동일)",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) CURVEZ_CAPTURE=1 CURVEZ_CAPTURE_DIR=after pnpm exec playwright test --project=capture",
+      "result": "20 passed (8.9s), 0 failed",
+      "passed": true
+    },
+    {
+      "command": "ls .curvez/qa/preemie-calc/screens/after | wc -l",
+      "result": "20(before 와 동일 10개 slug × 2폭 파일명)",
+      "passed": true
+    },
+    {
+      "command": "grep -rn 'getByRole(\"button\", { name: \"프로필 편집\"\\|getByRole(\"button\", { name: \"정보 전체 삭제\"' apps/preemie-calc/tests/e2e/",
+      "result": "0건 — HeaderMenu 직접 클릭 잔존 선택자 없음(전부 menuitem 경유로 교체 확인)",
+      "passed": true
+    },
+    {
+      "command": "grep -rn '●\\|✓\\|△' apps/preemie-calc/tests/e2e/*.spec.ts",
+      "result": "1건 — nf-a11y.spec.ts:17 설명 주석 안의 인용뿐, assertion 코드에는 없음",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/",
+      "result": "OK 핸드오프 검증 — 검사 35건, 통과 35건, 실패 0건, 오류 0개, 경고 0개",
+      "passed": true
+    }
+  ]
+}

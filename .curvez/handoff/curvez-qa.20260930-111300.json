@@ -1,0 +1,129 @@
+{
+  "from": "curvez-qa",
+  "to": ["curvez-orchestrator"],
+  "status": "done",
+  "summary": "curvez-nextjs.20260930-105749.json(본문 최대 폭 --layout-content-max 720px 하나로 통일, 대시보드 main+sidebar 2열 → 1열) 대응. (1) 그 결과 깨진 2건(tests/e2e/nf-header-layout.spec.ts:226,247 — 이제 없는 .pc-dashboard-main/.pc-dashboard-sidebar 를 찾던 테스트)을 새 사실(모든 폭에서 대시보드는 1열이고 나이 카드·바로가기·공유 영역·면책의 왼쪽 x 가 같고 세로 순서가 age-summary→quick-links→share-entry→disclaimer 다)로 바꿨다 — 360/768/1280px 3개 테스트로 교체(이전엔 1280·768 각 1개, 총 2개 폭만 봤다). (2) 신규 파일 tests/e2e/nf-content-width.spec.ts(3개 테스트, 360/768/1280px 각 1개)를 추가해 9개 화면(input·input-weeks·dashboard·age-basis·checkups·copay-relief·correction-period·share·guide) 전부의 헤더 안쪽 그리드(role=banner 의 첫 자식 div)·본문 컨테이너(role=main 의 마지막 자식 div, 클래스 이름에 기대지 않고 구조로 잡았다 — GOAL 지시)의 boundingBox().x/.width 를 실측했다: 360px→x=0/width=360, 768px→x=24/width=720, 1280px→x=280/width=720, 9개 화면·헤더/본문 전부 0.00px 차이로 일치, 1280px 값이 정확히 GOAL 요구값 720px 과 맞다. globals.css 최상단 @import \"tailwindcss\" 가 Tailwind preflight(전역 box-sizing:border-box, 실측 node_modules/tailwindcss@4.3.3/preflight.css:12)를 들여오므로 max-width:720 은 padding 을 포함한 렌더 박스 자체의 상한이다 — 처음에 content-box 로 잘못 가정해 패딩을 빼는 계산을 넣었다가 656 이 나와 실패했고, 실측으로 border-box 를 확인한 뒤 boundingBox() 를 그대로 쓰도록 고쳐 720.00 을 확인했다(과정은 test-changes-width-720.md 에 남겼다). (3) CURVEZ_CAPTURE_DIR=width-720 으로 기존 캡처 스펙(tests/capture/screens.spec.ts, 수정 없음)을 재실행해 10개 slug × 360/1280px = 20장을 .curvez/qa/preemie-calc/screens/width-720/ 에 남겼다. (4) ac-matrix.md·strategy.md 에 8라운드 절을 추가했다 — 57개 ID 판정은 7라운드와 완전히 동일(자동 통과 55, 자동 실패 0, 수동 1, 조건부 2). 포트: 매 명령 실행 전후 lsof -i :3100 에 PID 43850(사용자 dev 서버)이 LISTEN 상태로 그대로였다(kill 하지 않았다). lsof -i :3200 은 매 실행 전 빈 상태였고 test:e2e·capture 가 자기 webServer 를 종료할 때마다 다시 빈 상태로 돌아왔다. src/** 는 전부 읽기만 했다 — 구현 결함은 발견하지 못했다.",
+  "artifacts": [
+    {
+      "path": "apps/preemie-calc/tests/e2e/nf-header-layout.spec.ts",
+      "kind": "code",
+      "note": "226~265행의 대시보드 2열 테스트 2건(.pc-dashboard-main/.pc-dashboard-sidebar 로케이터, 전제 소멸로 타임아웃 실패)을 대시보드 1열 실측 테스트 3건(360/768/1280px 각 1개, AgeSummaryCard·QuickLinks 첫 항목·ShareResultAction '링크 복사'·ReferenceFooter 4개 영역의 boundingBox 왼쪽 x 일치 + y 순서)으로 교체"
+    },
+    {
+      "path": "apps/preemie-calc/tests/e2e/nf-content-width.spec.ts",
+      "kind": "code",
+      "note": "신규. 9개 화면 × 360/768/1280px 에서 헤더 안쪽 그리드·본문 컨테이너의 boundingBox().x/.width 를 구조(role=banner 첫 자식 div / role=main 마지막 자식 div)로 잡아 실측 — 같은 화면 안 헤더=본문, 화면 간 일치(첫 화면 input 기준), 1280px 에서 720px 세 가지를 확인. 결과를 console.log 로 stdout 표에 남긴다"
+    },
+    { "path": ".curvez/qa/preemie-calc/test-changes-width-720.md", "kind": "doc", "note": "8라운드 바꾼 테스트 목록(이전→이후, 이유) + 9x3 실측표" },
+    { "path": ".curvez/qa/preemie-calc/ac-matrix.md", "kind": "doc", "note": "8라운드 절 추가 — 57개 ID 재확인, 실행 결과 수치, 9x3 실측표, 직접 고친 것 목록" },
+    { "path": ".curvez/qa/preemie-calc/strategy.md", "kind": "doc", "note": "8라운드 절 추가 — 층 배분, 수용 기준/디자인 스펙 대응표, 테스트하지 않는 것" },
+    { "path": ".curvez/qa/preemie-calc/screens/width-720/", "kind": "doc", "note": "10개 slug × 360/1280px = 20장(root, root-weeks-32, dashboard, dashboard-age-basis, dashboard-checkups, dashboard-copay-relief, dashboard-correction-period, share, guide-32-3, dashboard-2children)" },
+    { "path": ".curvez/qa/preemie-calc/last-run-typecheck-round8.log", "kind": "doc", "note": "(워크트리 루트) pnpm typecheck 원문, exit 0" },
+    { "path": ".curvez/qa/preemie-calc/last-run-lint-round8.log", "kind": "doc", "note": "(워크트리 루트) pnpm lint 원문, exit 0, 0 problems(1차 실행의 no-console unused-disable 경고 수정 후 재실행 결과)" },
+    { "path": ".curvez/qa/preemie-calc/last-run-root-round8.log", "kind": "doc", "note": "(워크트리 루트) pnpm test 원문, 203/203" },
+    { "path": ".curvez/qa/preemie-calc/last-run-build-round8.log", "kind": "doc", "note": "(워크트리 루트) pnpm build 원문, 491/491 정적 페이지" },
+    { "path": ".curvez/qa/preemie-calc/last-run-e2e-r1-round8.log", "kind": "doc", "note": "(apps/preemie-calc) pnpm test:e2e 1회차 원문, 189 passed, 0 failed, 18.3s" },
+    { "path": ".curvez/qa/preemie-calc/last-run-e2e-r2-round8.log", "kind": "doc", "note": "(apps/preemie-calc) pnpm test:e2e 2회차 원문, 189 passed, 0 failed, 19.5s — 1회차와 완전히 동일, 플래키 아님" },
+    { "path": ".curvez/qa/preemie-calc/screens/last-run-capture-width-720.log", "kind": "doc", "note": "CURVEZ_CAPTURE_DIR=width-720 캡처 원문, 20 passed, 0 failed, 8.9s" }
+  ],
+  "decisions": [
+    {
+      "what": "nf-header-layout.spec.ts 의 대시보드 2열 테스트 2건(1280px 다르다/768px 같다)을 '같은 선택자를 다르게' 고치지 않고, 검사 대상 자체를 4개 콘텐츠 영역(age-summary/quick-links/share-entry/disclaimer)의 왼쪽 x 일치 + 세로 순서로 바꿨다",
+      "why": "이전 테스트가 확인하던 전제(main·sidebar 라는 두 구획이 폭에 따라 나뉘거나 합쳐진다)자체가 코드에서 없어졌다(curvez-nextjs 가 wrapper div 를 삭제). 같은 이름의 로케이터로는 어떤 폭에서도 통과할 수 없어 '선택자만 바꾸는' 수선이 불가능했다. CONTEXT 가 지정한 새 사실을 그대로 옮기되, 이전 테스트의 성격(정렬 여부 확인)은 유지하고 폭도 2개→3개로 넓혔다(완화가 아니라 강화)",
+      "reversible_at": "apps/preemie-calc/tests/e2e/nf-header-layout.spec.ts:226 (원본은 test-changes-width-720.md 표에 그대로 남겨 뒀다)"
+    },
+    {
+      "what": "본문 컨테이너·헤더 안쪽 그리드의 폭·x 를 재는 방법으로 (a) role=banner/role=main 의 구조적 위치(첫/마지막 자식 div)로 대상을 잡고 (b) getComputedStyle 로 padding 을 빼는 계산 없이 boundingBox() 를 그대로 쓴다",
+      "why": "(a) GOAL 지시 '클래스 이름에 기대지 말고 실제 boundingBox 로 재는 편이 좋다' 를 그대로 따랐다 — 9개 화면의 본문 컨테이너 클래스 이름은 전부 다르지만(pc-dashboard-content, pc-content-narrow, pc-content-guide 등) main 의 마지막 div 자식이라는 구조는 같다. (b) 처음엔 padding 을 빼는 게 맞다고 판단해 구현했더니 1280px 에서 656 이 나와 GOAL 요구값(720)과 어긋났다 — 실측으로 globals.css 의 @import \"tailwindcss\"(Tailwind preflight, 전역 box-sizing:border-box)를 확인한 뒤에야 720 이 '패딩을 포함한 렌더 박스의 상한' 이라 boundingBox() 를 그대로 써야 한다는 것을 알았다. 이 시행착오를 test-changes-width-720.md 에 남겼다",
+      "reversible_at": "apps/preemie-calc/tests/e2e/nf-content-width.spec.ts:126-152"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "lsof -i :3100 (작업 시작 전/후, 모든 pnpm test:e2e·capture 실행 전후)",
+      "result": "node 43850 LISTEN *:3100 그대로 유지 — kill 하지 않았다",
+      "passed": true
+    },
+    {
+      "command": "lsof -i :3200 (매 실행 전)",
+      "result": "빈 출력 — 포트 비어 있음(playwright 가 매 실행 종료 시 자기 webServer 를 정리해 다음 실행 전에도 항상 비어 있었다)",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) PORT=3200 pnpm exec playwright test tests/e2e/nf-content-width.spec.ts (개별 실행, 1차 시도)",
+      "result": "1 failed — input@1280px: body.width=656, 기대 720(padding 을 빼는 계산이 잘못됐음을 발견)",
+      "passed": false
+    },
+    {
+      "command": "(apps/preemie-calc) PORT=3200 pnpm exec playwright test tests/e2e/nf-content-width.spec.ts (수정 후 재실행)",
+      "result": "3 passed(9.7s). 1280px: 9개 화면 전부 header.width=body.width=720.00",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm typecheck",
+      "result": "exit 0. 7개 워크스페이스 전부 오류 0건 — last-run-typecheck-round8.log",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm lint",
+      "result": "exit 0, 0 problems(전 워크스페이스). 1차 실행에서 no-console eslint-disable 무사용 경고 1건 → disable 주석 제거 후 재실행 0건 — last-run-lint-round8.log",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm test",
+      "result": "exit 0. apps/preemie-calc 62/62, packages/scopulus-ui 141/141 — 총 203/203, 실패 0 — last-run-root-round8.log",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm build",
+      "result": "exit 0. apps/preemie-calc 491/491 정적 페이지 생성 — last-run-build-round8.log",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) pnpm test:e2e — 1회차",
+      "result": "189 tests, 189 passed, 0 failed (18.3s) — last-run-e2e-r1-round8.log",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) pnpm test:e2e — 2회차",
+      "result": "189 tests, 189 passed, 0 failed (19.5s) — 1회차와 완전히 동일, 플래키 아님 — last-run-e2e-r2-round8.log",
+      "passed": true
+    },
+    {
+      "command": "grep -rnE '\\.(skip|only|todo)\\(|\\bx(it|describe)\\(' apps/preemie-calc/tests/",
+      "result": "0건",
+      "passed": true
+    },
+    {
+      "command": "grep -nE ':\\s*any\\b|<any>|\\bas\\s+any\\b' apps/preemie-calc/tests/e2e/nf-content-width.spec.ts apps/preemie-calc/tests/e2e/nf-header-layout.spec.ts",
+      "result": "0건",
+      "passed": true
+    },
+    {
+      "command": "grep -ohE 'PC-F[0-9]+-(AC|EX)[0-9]+|PC-NF-[A-Z0-9]+-[0-9]+' apps/preemie-calc/tests/e2e/*.ts apps/preemie-calc/tests/unit/*.ts | sort -u | wc -l",
+      "result": "57 (요구 57개와 정확히 일치, 미커버 0개 — 7라운드와 동일)",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) CURVEZ_CAPTURE=1 CURVEZ_CAPTURE_DIR=width-720 pnpm exec playwright test --project=capture",
+      "result": "20 passed, 0 failed (8.9s) — screens/last-run-capture-width-720.log",
+      "passed": true
+    },
+    {
+      "command": "ls .curvez/qa/preemie-calc/screens/width-720 | wc -l",
+      "result": "20",
+      "passed": true
+    },
+    {
+      "command": "(dashboard-1280.png, dashboard-360.png, dashboard-checkups-1280.png 육안 확인)",
+      "result": "대시보드가 모든 폭에서 1열이고 나이 카드·바로가기·+아이 추가·링크 복사가 같은 왼쪽 선에 있음을 확인. checkups 화면의 뒤로가기 버튼·본문 카드 좌측도 같은 선에 있음을 확인",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/",
+      "result": "OK 핸드오프 검증 — 검사 50건, 통과 50건, 실패 0건, 오류 0개, 경고 0개(이 핸드오프 파일 포함, 파일을 쓴 뒤 재실행해 확인)",
+      "passed": true
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "from": "curvez-nextjs",
+  "to": ["curvez-orchestrator", "curvez-qa", "curvez-reviewer"],
+  "status": "partial",
+  "summary": "F5 본인부담 경감 구간 경계를 보건복지부 보도자료 원문(PRD 버전 4 §9 정정, SPEC 버전 6 PC-F5-AC6·AC7)대로 고쳤다. entities/copay-relief/data/copay-relief.json 의 innerBoundary.value 를 'lower-inclusive'(경계 정각은 더 긴 구간)에서 'upper-inclusive'(경계 정각은 그 주수가 '이상'인 더 짧은 구간, from 포함·to 배타)로 바꿨다 — 재태 33주 0일(231일)이 5년 2개월, 29주 0일(203일)이 5년 3개월 구간으로 분류된다. innerBoundary 자체(status·tiers 의 from/to 값)는 바뀌지 않았고, 두 값의 '어느 쪽을 포함으로 볼지'만 뒤집었다. sourceNotes 에 정정 근거를 적었다(status 가 '확정'이라 provisionalBasis 필드는 노출되지 않아 sourceNotes 를 썼다). model/index.ts 의 주석 세 군데를 이 결정에 맞춰 고쳤다(코드 로직 자체는 안 바꿨다 — 기존 if/else 분기가 이미 두 해석을 다 구현해 두고 있었고 JSON 값만 뒤집으면 됐다). 202·203·204·230·231·232·258·259일을 jiti 로 직접 돌려 전부 원문과 일치함을 확인했다(아래 verification). 경계값이 들어가는 다른 계산(종료일 endDate)은 tier.period 를 그대로 쓰므로 경계 분류가 맞으면 종료일도 그 tier 기준으로 같이 맞다 — endDateMethod(미확정)는 이 작업과 무관하게 그대로 둔다. F16 가이드 페이지(views/guide-questions/ui/GuideQuestionView.tsx 의 copayReliefTierRows)는 innerBoundary 를 읽지 않고 tiers 의 from/to 숫자만으로 '29주 이상 33주 미만' 같은 범위 문구를 만들어서, 이번 변경과 무관하게 이미 PC-F16-AC4 원문과 일치한다 — 그 파일은 고치지 않았다(고칠 필요가 없었다는 확인만 했다). typecheck·lint 는 워크스페이스 전체 기준 0 오류로 통과했다. tests/unit/copay-relief.test.ts 는 8건 중 6건 통과·2건 실패이고, 실패한 2건은 지시서가 미리 예고한 대로 구경계 방향(옛 PRD 버전 2·3 해석)을 기대값으로 둔 옛 테스트라 실패가 정상이다 — curvez-qa 가 기대값을 뒤집어야 한다. e2e(f5-copay-relief.spec.ts, f16-question-guides.spec.ts)는 VERIFY 목록에 없고 FORBIDDEN 이 dev 서버 구동 자체를 막아 돌리지 않았다(포트 3200 은 비어 있음을 확인함). architecture.md 의 ⑬ 표·미결 위치 표가 2026-09-30 당시의 'lower-inclusive' 결정을 그대로 적고 있어 지금 코드와 어긋난다 — architecture.md 는 쓰기 금지 경로라 고치지 않고 blocked_on 으로 올린다.",
+  "artifacts": [
+    { "path": "apps/preemie-calc/src/entities/copay-relief/data/copay-relief.json", "kind": "code" },
+    { "path": "apps/preemie-calc/src/entities/copay-relief/model/index.ts", "kind": "code" }
+  ],
+  "decisions": [
+    {
+      "what": "copay-relief.json:53-56 innerBoundary.value 를 'lower-inclusive' → 'upper-inclusive' 로 바꾸고 status 는 '확정'을 유지했다.",
+      "why": "PRD 버전 4 §9(2026-10-02 정정)·SPEC 버전 6 PC-F5-AC6·AC7 원문이 '33주 이상~37주 미만 5년 2개월', '29주 이상~33주 미만 5년 3개월'이다. classifyCopayRelief 의 upper-inclusive 분기(from 포함·to 배타)가 정확히 이 '이상~미만' 규칙이다. 재태일수로 환산하면 231일(33주0일)은 tier-33-37w(5년2개월)의 from, 203일(29주0일)은 tier-29-33w(5년3개월)의 from 이라 이 분기로 요구된 라벨이 그대로 나온다.",
+      "reversible_at": "apps/preemie-calc/src/entities/copay-relief/data/copay-relief.json:53-56"
+    },
+    {
+      "what": "copay-relief.json:21-30 sourceNotes 에 source-mohw 각주를 추가해 경계 정정 근거(PRD 버전 4, SPEC 버전 6, 이전 결정이 반대였던 경위)를 적었다. innerBoundary 의 RawSettledString 타입은 status가 '확정'이면 openQuestion·provisionalBasis 를 Settled<T> 출력에 담지 않아(shared/lib/reference의 resolveSettledEnvelope), JSON 에 provisionalBasis 를 적어도 화면에 안 드러난다.",
+      "why": "GOAL 이 '근거(provisionalBasis 또는 sources 메모)에 PRD v4·SPEC v6 정정을 적는다'를 요구했다. sourceNotes 는 이미 CopayReliefSourceNote[] 로 노출되는 공개 필드라 근거를 실제로 읽을 수 있는 자리다.",
+      "reversible_at": "apps/preemie-calc/src/entities/copay-relief/data/copay-relief.json:21-30"
+    },
+    {
+      "what": "model/index.ts:109-111, 119-124 의 주석을 'lower-inclusive 가 2026-09-30 결정'이라는 옛 설명에서 'upper-inclusive 가 PRD 버전 4(2026-10-02 정정) 결정'으로 고쳤다. 분류 로직(line 125 이하 if/else)은 바꾸지 않았다 — 이미 두 해석을 다 구현해 두고 있어 JSON 값만 뒤집으면 요구된 결과가 나온다.",
+      "why": "주석이 JSON 값과 반대 설명을 남기면 다음에 이 파일을 읽는 사람이 다시 틀린 방향으로 되돌릴 수 있다. 로직 자체를 건드리지 않은 이유는 '최소한만 건드린다' — 이미 올바른 기존 분기 구조를 재작성할 필요가 없었다.",
+      "reversible_at": "apps/preemie-calc/src/entities/copay-relief/model/index.ts:109-124"
+    },
+    {
+      "what": "views/guide-questions/ui/GuideQuestionView.tsx 는 고치지 않았다 (copayReliefTierRows 가 innerBoundary 를 읽지 않고 tiers[].gestationDays.from/to 숫자만으로 '◯주 이상 ◯주 미만' 문구를 만든다 — 그 from/to 값(203/231/259)은 이번에 바뀌지 않았다).",
+      "why": "SCOPE 가 '경계 규칙 이름이 바뀌어 꼭 필요하면' 고치라고 했는데, 실제로 F16 쪽은 innerBoundary 에 의존하지 않아 고칠 필요가 없었다. 확인만 하고 손대지 않는 것이 '최소한만 건드린다'에 맞다.",
+      "reversible_at": "apps/preemie-calc/src/views/guide-questions/ui/GuideQuestionView.tsx:69-78"
+    },
+    {
+      "what": "VERIFY 목록(f5-copay-relief.spec.ts, f16-question-guides.spec.ts e2e)과 architecture.md ⑬·미결 위치 표 업데이트는 이번 산출물에서 손대지 않았다(전자는 FORBIDDEN·범위 밖, 후자는 쓰기 금지 경로).",
+      "why": "FORBIDDEN 이 dev 서버 구동·전체 E2E 를 금지했고 VERIFY 목록에도 e2e 가 없다. architecture.md 는 읽기 전용으로 명시됐다.",
+      "reversible_at": "해당 없음"
+    }
+  ],
+  "blocked_on": [
+    {
+      "question": ".curvez/architecture.md 의 '## preemie-calc 데이터 모양'(약 433줄, 953줄)과 '⑬ curvez-nextjs 가 옮길 값'(949-954줄)·미결 위치 표(976-978줄)가 'innerBoundary: lower-inclusive(33주·29주 정각은 더 긴 경감 구간)'를 2026-09-30 결정으로 적어 두고 있다. 이번에 PRD 버전 4(2026-10-02 정정)·SPEC 버전 6 PC-F5-AC6·AC7 에 맞춰 실제 값은 upper-inclusive 로 바꿨다. architecture.md 를 upper-inclusive·PRD 버전 4 근거로 갱신해 줄 수 있는가 — 지금 상태로는 architecture.md 와 코드가 반대 값을 말한다.",
+      "who": "curvez-architect"
+    },
+    {
+      "question": "apps/preemie-calc/tests/unit/copay-relief.test.ts 의 'PC-F5 구간 경계(203일·231일)는 lower-inclusive 로 확정됐다' describe 블록(약 58-73줄) 두 테스트가 203일→5년4개월, 231일→5년3개월을 기대한다. PRD 버전 4·SPEC 버전 6 원문대로면 203일→5년3개월, 231일→5년2개월이 맞다. 기대값과 describe 제목을 뒤집어 줄 수 있는가. (tests/ 는 이 작업 범위 밖이라 고치지 않았다)",
+      "who": "curvez-qa"
+    }
+  ],
+  "verification": [
+    {
+      "command": "JITI_TSCONFIG_PATHS=true jiti 로 202/203/204/230/231/232/258/259일 분류 직접 실행 (apps/preemie-calc 안에 임시 파일 작성 후 삭제)",
+      "result": "202->5년4개월, 203->5년3개월, 204->5년3개월, 230->5년3개월, 231->5년2개월, 232->5년2개월, 258->5년2개월, 259->not-eligible — 원문(33주 이상~37주 미만=5년2개월 29주 이상~33주 미만=5년3개월 29주 미만=5년4개월 37주 이상=대상 아님)과 전부 일치",
+      "passed": true
+    },
+    {
+      "command": "pnpm typecheck (워크스페이스 루트, pnpm -r --if-present typecheck)",
+      "result": "apps/preemie-calc 포함 7개 프로젝트 전부 Done, 오류 0건, exit 0",
+      "passed": true
+    },
+    {
+      "command": "pnpm lint (워크스페이스 루트, eslint . && pnpm -r --if-present lint)",
+      "result": "apps/preemie-calc 포함 7개 프로젝트 전부 Done, 출력에 오류·경고 0건, exit 0",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) pnpm exec vitest run tests/unit/copay-relief.test.ts",
+      "result": "8 tests, 6 passed, 2 failed. 실패 2건은 옛 경계 방향(lower-inclusive 시절 기대값)을 쓰는 'PC-F5 구간 경계(203일·231일)는 lower-inclusive 로 확정됐다' describe 의 테스트(203일 기대 5년4개월→실제 5년3개월, 231일 기대 5년3개월→실제 5년2개월) — 지시서가 예고한 대로 QA 가 기대값을 갱신해야 할 대상이다. PC-F5-AC1~AC5 에 대응하는 나머지 6건은 전부 통과",
+      "passed": false
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/quality-gate.mjs --only arch",
+      "result": "PASS arch: 규칙 19개 파싱 / 검사 19개 / 위반 0건",
+      "passed": true
+    },
+    {
+      "command": "lsof -i :3200 (e2e 실행 가능 여부 확인용, 실제 e2e 는 돌리지 않음 — VERIFY 목록 밖·FORBIDDEN 의 dev 서버 구동 금지)",
+      "result": "비어 있음(출력 없음) — 다른 워커와 충돌 없이 curvez-qa 가 f5-copay-relief.spec.ts·f16-question-guides.spec.ts 를 돌릴 수 있는 상태",
+      "passed": true
+    }
+  ]
+}

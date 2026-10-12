@@ -1,0 +1,147 @@
+{
+  "from": "curvez-designer",
+  "to": [
+    "curvez-orchestrator",
+    "curvez-nextjs"
+  ],
+  "status": "done",
+  "summary": "리뷰(curvez-reviewer.20260929-133840.json)와 구조 리뷰(curvez-structure-reviewer.20260929-133840.json)에서 나온 6건을 오케스트레이터 결정대로(SPEC 이 우선한다) 스펙에 반영했다. (1) ACC-03: screens/input.md 필드 순서를 SPEC 원문(PC-F1-AC1 '출산 예정일 칸 아래에 \"주수로 입력\" 전환이 있다')에 맞춰 출생일 → 예정일/주수 → 전환 링크 → 성별 로 고쳤고 focus-order 도 같이 바꿨다. (2) ACC-06: components/ShareActionButton.md 를 '링크 복사 버튼은 항상 보이고, navigator.share 가 있으면 공유 버튼을 추가로 보인다'로 고쳐 PC-F7-EX1 을 이번 1단계(카카오 SDK 미사용) 기준으로 맞췄다. 카카오 SDK 가 붙으면 다시 정한다는 문구를 purpose 에 남겼다. screens/dashboard.md 의 share-entry 역할 설명도 같이 고쳤다. (3) ACC-02: components/AgeSummaryCard.md 의 default 상태를 '두 칸 모두 라벨+값을 하나의 문구로 그린다(생후 {value}/교정 {value})'로 못 박아, 이전에 생후 칸만 라벨을 값에 붙이던 애매함을 없앴다. (4) PLC-02: AgeSummaryCard 의 variant=single 을 없애고 shared 층 컴포넌트 ValueCard(신규, components/ValueCard.md)로 뗐다. screens/copay-relief.md·correction-period.md 의 컴포넌트 참조를 ValueCard 로 바꿨다. (5) DSG-01: components/ShareCardCanvas.md 의 corrected props 에 subValue 필드를 더하고, before-due 일 때 핵심 숫자(96px, 예: 'D-25')와 나머지 보조 텍스트(40px, 예: '재태 36주 3일')를 다른 줄에 그리는 규칙을 값으로 정했다(사용 가능 폭 952px=1080-64×2, 문자당 최대 너비 추정 근거를 파일 안에 남겼다). (6) DUP-01: DateField·GestationInput·SegmentedControl·TextField 4개의 필수 표시를 새 컴포넌트 RequiredMark(신규, components/RequiredMark.md) 하나로 통일하고, 스크린리더 문구를 '{label}, 필수' 로 고정했다. 4개 컴포넌트 문서의 required 관련 서술을 이 스펙을 참조하도록 고쳤다. index.md 의 컴포넌트 목록(19→21개, RequiredMark·ValueCard 추가)과 커버리지 표, decisions 표를 위 6건에 맞춰 갱신했다. tokens.md 는 새 토큰이 필요 없어 손대지 않았다(대비 검증 표 재계산 불필요 — RequiredMark 의 별표 색은 기존 --color-accent-danger/--color-bg-surface 조합(6.47)을 그대로 재사용했다).",
+  "artifacts": [
+    {
+      "path": ".curvez/design/preemie-calc/screens/input.md",
+      "kind": "doc",
+      "note": "필드 순서·focus-order 를 SPEC 원문(PC-F1-AC1)에 맞춤(ACC-03)"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/ShareActionButton.md",
+      "kind": "doc",
+      "note": "링크 복사 항상 보임 + navigator.share 있으면 공유 버튼 추가(ACC-06). 카카오 SDK 붙을 때 재검토 표시 남김"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/screens/dashboard.md",
+      "kind": "doc",
+      "note": "share-entry region role 설명을 ShareActionButton 변경에 맞춤"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/AgeSummaryCard.md",
+      "kind": "doc",
+      "note": "교정 칸 문구를 생후 칸과 같은 '{라벨} {값}' 한 덩어리로 못박음(ACC-02). variant=single 관련 서술 제거(PLC-02)"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/ValueCard.md",
+      "kind": "doc",
+      "note": "신규. AgeSummaryCard(variant=single) 을 대체하는 shared 층 표시 카드(PLC-02)"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/screens/copay-relief.md",
+      "kind": "doc",
+      "note": "result 컴포넌트 참조를 AgeSummaryCard(variant=single) → ValueCard 로 교체"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/screens/correction-period.md",
+      "kind": "doc",
+      "note": "result 컴포넌트 참조를 AgeSummaryCard(variant=single) → ValueCard 로 교체"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/ShareCardCanvas.md",
+      "kind": "doc",
+      "note": "corrected.subValue 필드 추가, before-due 줄 나눔 규칙(96px/40px, 사용 가능 폭 952px) 확정(DSG-01)"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/RequiredMark.md",
+      "kind": "doc",
+      "note": "신규. 필수 표시(별표+스크린리더 문구 '{label}, 필수') 통일 규칙(DUP-01)"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/DateField.md",
+      "kind": "doc",
+      "note": "required 서술을 RequiredMark 참조로 통일"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/GestationInput.md",
+      "kind": "doc",
+      "note": "required 서술을 RequiredMark 참조로 통일"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/SegmentedControl.md",
+      "kind": "doc",
+      "note": "required 서술을 RequiredMark 참조로 통일"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/components/TextField.md",
+      "kind": "doc",
+      "note": "required 서술을 RequiredMark 참조로 통일"
+    },
+    {
+      "path": ".curvez/design/preemie-calc/index.md",
+      "kind": "doc",
+      "note": "컴포넌트 목록 19→21개, 커버리지 표·decisions 표를 6건 수정에 맞춰 갱신"
+    }
+  ],
+  "decisions": [
+    {
+      "what": "ACC-03·ACC-06 은 CONTEXT 의 오케스트레이터 결정(SPEC 이 우선한다)을 그대로 적용했다. 시안이 없는 상태에서 이전 디자인 스펙이 SPEC 과 다르게 정했던 값을 SPEC 원문 쪽으로 되돌렸다",
+      "why": "requirements.md 가 'SPEC 과 이 절이 다르면 SPEC 이 맞다'고 명시했고, 지시서 CONTEXT 가 두 건 모두 SPEC 쪽으로 맞추라고 확정했다. 디자인 스펙이 임의로 만든 값(전환 위치, 공유/복사 배타)이 원인이었다",
+      "reversible_at": ".curvez/design/preemie-calc/screens/input.md, .curvez/design/preemie-calc/components/ShareActionButton.md"
+    },
+    {
+      "what": "ACC-02 수정에서 '색만으로 구분하지 않는다(PC-NF-A11Y-1)'는 기존 규칙을 '라벨을 값 문구 안에 포함시키는 방식'으로 재확인했다. 별도 헤딩 요소로 라벨만 먼저 그리는 대안은 버렸다",
+      "why": "헤딩+값 분리 방식은 두 칸이 서로 다르게 구현될 여지(실제로 그렇게 됐다)를 남긴다. 값 문구 안에 라벨을 넣으면 렌더링 규칙이 하나뿐이라 애매함이 없고, PC-F2-AC1 의 정확한 문자열(getByText 로 찾을 수 있는 하나의 텍스트)도 자연히 만족한다",
+      "reversible_at": ".curvez/design/preemie-calc/components/AgeSummaryCard.md:## states"
+    },
+    {
+      "what": "PLC-02 수정에서 ValueCard 의 props 를 label/value/subValue 문자열 3개로 제한했다(AgeSummaryCard 의 도메인 타입 없음 전제를 그대로 유지)",
+      "why": "구조 리뷰가 지적한 문제의 핵심은 '도메인 타입 없이 문자열만 받는 표시 카드'가 widgets 층에 있었다는 것이다. shared 층으로 옮기면서 도메인을 아는 타입을 하나라도 넣으면 같은 문제가 다른 층에서 재발한다",
+      "reversible_at": ".curvez/design/preemie-calc/components/ValueCard.md"
+    },
+    {
+      "what": "DSG-01 수정에서 문자열을 구분자(' · ') 기준으로 자동 분할하는 대신, corrected 에 subValue 라는 별도 필드를 추가하는 쪽을 골랐다",
+      "why": "chronological.value·corrected(after-due).value 도 이미 ' · ' 를 포함한다(예: '92일 · 3개월'). 구분자 기준 자동 분할을 쓰면 이 값들도 의도치 않게 두 줄로 나뉜다. before-due 케이스만 정확히 겨냥하려면 그 케이스에만 있는 필드(subValue)를 추가하는 편이 다른 상태를 건드리지 않는다(최소한만 건드린다)",
+      "reversible_at": ".curvez/design/preemie-calc/components/ShareCardCanvas.md"
+    },
+    {
+      "what": "DUP-01 수정에서 스크린리더 문구를 기존 4곳 중 DateField 가 이미 쓰던 '{label}, 필수' 로 통일했다(TextField 의 '필수' 단독 문구가 아니라)",
+      "why": "tie-break 3번(그래도 갈리면 기존 토큰/화면과 같아지는 쪽). 두 후보(DateField 식 '{label}, 필수' vs TextField 식 '필수')가 갈렸고, DateField·GestationInput·SegmentedControl 세 곳이 label 정보를 이미 문구 없이도 자연히 포함하는 구조(legend, aria-label)라 '{label}, 필수' 쪽이 세 곳과 더 잘 맞는다고 판단했다",
+      "reversible_at": ".curvez/design/preemie-calc/components/RequiredMark.md"
+    },
+    {
+      "what": "RequiredMark 의 별표 색을 새 토큰 없이 기존 --color-accent-danger 를 재사용했다",
+      "why": "판단 기준표: '토큰과 값 차이가 지각 임계 이하면 기존 것을 쓴다' 와 '한 곳에서만 쓰이면 리터럴/기존 토큰, 새 토큰 승격은 3곳 이상일 때' 원칙에 따라, 이미 오류·위험 강조에 쓰던 색과 같은 의미(주의 환기)라 새 토큰을 만들지 않았다. 대비값 6.47 은 tokens.md 대비 검증 표에 이미 있는 조합과 같아 재계산이 필요 없었다",
+      "reversible_at": ".curvez/design/preemie-calc/tokens.md:## 색"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "for f in $(find .curvez/design/preemie-calc/screens -name '*.md'); do for k in state:default state:loading state:empty state:error focus-order; do grep -q -- \"$k\" \"$f\" || echo MISSING $k -\\> $f; done; done | wc -l",
+      "result": "screen-missing=0 (MISSING 출력 0줄, 화면 9개 전부 5개 키 보유)",
+      "passed": true
+    },
+    {
+      "command": "for f in $(find .curvez/design/preemie-calc/components -name '*.md'); do for k in a11y:label a11y:focus a11y:contrast a11y:target a11y:role '## props' '## states' '## a11y' '## responsive'; do grep -q -- \"$k\" \"$f\" || echo MISSING $k -\\> $f; done; done | wc -l",
+      "result": "component-missing=0 (MISSING 출력 0줄, 컴포넌트 21개 전부 9개 키 보유 — 신규 ValueCard·RequiredMark 포함)",
+      "passed": true
+    },
+    {
+      "command": "find .curvez/design/preemie-calc/screens -name '*.md' | wc -l ; find .curvez/design/preemie-calc/components -name '*.md' | wc -l",
+      "result": "screens=9, components=21",
+      "passed": true
+    },
+    {
+      "command": "awk -F'|' 대비 검증(tokens.md 라이트/다크 칸 비어있는지) — 이번 라운드에 tokens.md 는 손대지 않았다",
+      "result": "token-half-defined=0 (이전 라운드와 동일, 이 문서는 라이트 한 칸 형식으로 이미 확정돼 있다 — tokens.md decisions 참고)",
+      "passed": true
+    },
+    {
+      "command": "find .curvez/design/preemie-calc \\( -name '*.tsx' -o -name '*.ts' -o -name '*.css' \\) | wc -l",
+      "result": "impl-files=0",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/",
+      "result": "OK 핸드오프 검증 — 검사 18건, 통과 18건, 실패 0건, 오류 0개, 경고 0개(.curvez/handoff/ 안 핸드오프 전체 대상, 이 파일 포함)",
+      "passed": true
+    }
+  ],
+  "findings": []
+}

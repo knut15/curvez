@@ -1,0 +1,97 @@
+{
+  "from": "curvez-qa",
+  "to": ["curvez-orchestrator"],
+  "status": "done",
+  "summary": "디자인 재구성 전(before) 상태의 화면 9종(+ 아이 2명 대시보드 1종) 을 360px·1280px 두 폭으로 fullPage PNG 캡처했다. 캡처 스펙은 apps/preemie-calc/tests/capture/screens.spec.ts(Playwright, tests/e2e 밖이라 기본 test:e2e 에 안 잡힌다) 로 새로 썼고, playwright.config.ts 에는 CURVEZ_CAPTURE 환경변수가 있을 때만 등록되는 'capture' project 하나를 추가했다(project 추가만, 기존 chromium-mobile project 는 손대지 않음). 결과: .curvez/qa/preemie-calc/screens/before/ 에 PNG 20장(9화면×2폭 + dashboard-2children×2폭), 20개 중 20개 캡처 성공(스크린샷 실패 0), 전부 0바이트 아님, 파일명 접미사(-360/-1280)와 실제 sips 측정 pixelWidth 일치 확인. pnpm --filter preemie-calc test:e2e 는 연속 3회 모두 75 passed / 75 tests, 0 failed(플래키 아님) — 캡처 스펙 추가와 playwright.config.ts 변경이 기존 75건 결과에 영향을 주지 않았다. 작업 중 포트 3100 에 12분 이상 떠 있던 이전 세션의 낡은 next-server 잔여 프로세스(pid 19176, 이 작업과 무관한 이전 dev/test 세션의 잔재)를 발견했다 — Playwright 의 reuseExistingServer:true 설정 때문에 첫 캡처·첫 test:e2e 실행이 그 낡은 빌드를 재사용해 test:e2e 가 65/75 로 잘못 나왔다. kill 로 정리한 뒤 재실행해 위 수치(캡처 20/20, test:e2e 3연속 75/75)를 얻었다 — 이 프로세스는 이번 작업이 띄운 것이 아니다(작업 시작 전부터 떠 있었다). src·package.json 은 전혀 건드리지 않았다.",
+  "artifacts": [
+    {
+      "path": "apps/preemie-calc/tests/capture/screens.spec.ts",
+      "kind": "code",
+      "note": "신규 파일. 10개 라우트 설정(slug·path·setup·ready) × 2폭(360/1280) = 20개 test 를 루프로 생성한다. tests/e2e/support/fixtures·helpers 를 그대로 재사용(hydrationGuard 자동 적용, seedProfiles·fixClockKst). CURVEZ_CAPTURE_DIR 환경변수로 출력 디렉터리(before/after)를 바꾼다"
+    },
+    {
+      "path": "apps/preemie-calc/playwright.config.ts",
+      "kind": "code",
+      "note": "project 추가만. CURVEZ_CAPTURE 환경변수가 있을 때만 testDir './tests/capture' 를 가리키는 'capture' project 를 projects 배열에 조건부로 추가했다. 기본 실행(`playwright test`, 환경변수 없음)은 이전과 동일하게 chromium-mobile project 하나뿐이라 tests/e2e 의 75건에 영향이 없다"
+    },
+    {
+      "path": ".curvez/qa/preemie-calc/screens/README.md",
+      "kind": "doc",
+      "note": "신규 파일. 실행 방법 한 줄(CURVEZ_CAPTURE=1 CURVEZ_CAPTURE_DIR=before|after pnpm exec playwright test --project=capture)과 slug↔route 대응표"
+    },
+    {
+      "path": ".curvez/qa/preemie-calc/screens/before/",
+      "kind": "doc",
+      "note": "PNG 20장: root, root-weeks-32, dashboard, dashboard-age-basis, dashboard-checkups, dashboard-copay-relief, dashboard-correction-period, share, guide-32-3, dashboard-2children × (360,1280)"
+    },
+    { "path": ".curvez/qa/preemie-calc/screens/last-run-capture-before.log", "kind": "doc", "note": "캡처 실행 원문 출력(20 passed)" },
+    { "path": ".curvez/qa/preemie-calc/screens/last-run-test-e2e-1.log", "kind": "doc", "note": "pnpm test:e2e 1회차 원문(75 passed)" },
+    { "path": ".curvez/qa/preemie-calc/screens/last-run-test-e2e-2.log", "kind": "doc", "note": "pnpm test:e2e 2회차 원문(75 passed)" },
+    { "path": ".curvez/qa/preemie-calc/screens/last-run-test-e2e-3.log", "kind": "doc", "note": "pnpm test:e2e 3회차 원문(75 passed) — 3회 연속 동일, 플래키 아님" }
+  ],
+  "decisions": [
+    {
+      "what": "캡처 project 를 playwright.config.ts 에 상시 등록하지 않고 process.env.CURVEZ_CAPTURE 로 조건부 등록했다.",
+      "why": "Playwright 는 --project 필터 없이 실행하면 config 에 등록된 모든 project 를 돈다. 캡처 project 를 무조건 등록하면 기본 `pnpm test:e2e`(=`playwright test`, 필터 없음) 가 캡처 테스트까지 함께 실행해 75건이라는 기존 수치를 깨뜨린다. 환경변수 조건부로 두면 기본 호출 경로는 이전 config 와 완전히 동일해진다.",
+      "reversible_at": "apps/preemie-calc/playwright.config.ts:8-18"
+    },
+    {
+      "what": "캡처 스펙을 tests/capture/ 에 두고 chromium-mobile project 의 testDir(tests/e2e)에도 잡히지 않게 했다.",
+      "why": "GOAL 의 '기본 test:e2e 에 잡히지 않는 곳' 지침을 그대로 따른 것 — 두 project 어느 쪽에서도 이중으로 실행되지 않게 하려면 project 필터뿐 아니라 파일 위치도 겹치지 않아야 한다.",
+      "reversible_at": "apps/preemie-calc/tests/capture/screens.spec.ts"
+    },
+    {
+      "what": "포트 3100 에 떠 있던 이전 세션의 낡은 next-server 프로세스(pid 19176)를 kill 했다.",
+      "why": "Playwright webServer 의 reuseExistingServer:true 가 그 낡은 빌드를 재사용해 캡처·test:e2e 결과 둘 다 현재 src 상태를 반영하지 못하고 있었다(test:e2e 가 65/75 로 잘못 나왔다). 이 프로세스는 이번 작업이 띄운 것이 아니라 이전 세션의 잔재였고, kill 은 워크트리 파일을 건드리지 않는 프로세스 정리라 FORBIDDEN(git 쓰기, src 수정) 에 해당하지 않는다.",
+      "reversible_at": "해당 없음(프로세스 종료는 파일 변경이 아니다)"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "(apps/preemie-calc) CURVEZ_CAPTURE=1 CURVEZ_CAPTURE_DIR=before pnpm exec playwright test --project=capture",
+      "result": "20 passed (10.0s), 0 failed — .curvez/qa/preemie-calc/screens/last-run-capture-before.log. 포트 3100 이 비어 있는 상태(사전 확인)에서 시작해 webServer 가 새로 빌드·기동했고, 완료 후 포트가 다시 비었다(playwright 가 직접 띄운 서버를 정리했다)",
+      "passed": true
+    },
+    {
+      "command": "ls .curvez/qa/preemie-calc/screens/before | wc -l",
+      "result": "20",
+      "passed": true
+    },
+    {
+      "command": "find .curvez/qa/preemie-calc/screens/before -size 0",
+      "result": "빈 출력 — 0바이트 파일 0개",
+      "passed": true
+    },
+    {
+      "command": "sips -g pixelWidth *.png (before/ 전체 20장)",
+      "result": "파일명 접미사(-360/-1280) 와 실측 pixelWidth 가 20장 전부 일치",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) pnpm test:e2e — 연속 3회, 매 회 사이 포트 3100 잔여 프로세스 없음 확인",
+      "result": "1회차 75 passed (12.1s), 2회차 75 passed (12.5s), 3회차 75 passed (12.1s) — 3회 모두 0 failed, 결과 동일(플래키 아님). 이전에 낡은 서버(포트 3100, kill 전)를 재사용해 나온 '65 passed, 10 failed' 는 이번 작업의 회귀가 아니라 환경 잔재였다(위 decisions 참고) — .curvez/qa/preemie-calc/screens/last-run-test-e2e-{1,2,3}.log",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) pnpm typecheck",
+      "result": "exit 0. next typegen && tsc --noEmit — Types generated successfully, 오류 0건",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) pnpm lint",
+      "result": "exit 0. eslint 출력 없음(0 problems)",
+      "passed": true
+    },
+    {
+      "command": "grep -nE '\\.(skip|only|todo)\\(' apps/preemie-calc/tests/capture/screens.spec.ts",
+      "result": "0건",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/",
+      "result": "OK 핸드오프 검증 — 검사 31건, 통과 31건, 실패 0건, 오류 0개, 경고 0개",
+      "passed": true
+    }
+  ]
+}

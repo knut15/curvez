@@ -1,0 +1,63 @@
+{
+  "from": "curvez-qa",
+  "to": ["curvez-orchestrator", "curvez-nextjs"],
+  "status": "partial",
+  "summary": "apps/preemie-calc 1단계(F1~F7, F13) 화면·빌드 결과를 Playwright E2E(chromium-mobile, 360×800, page.clock 로 KST 시계 고정)와 vitest 빌드 산출물 검사로 판정했다. requirements.md ## preemie-calc 의 57개 ID(AC 38 + EX 8 + NF 11) 전부에 대응하는 테스트가 있다(comm -23 로 미커버 0개 확인). 신규로 tests/e2e/*.spec.ts 9개 파일 63개 테스트를 추가했고(f1-profile, f2-dashboard, f3-age-basis, f4-checkups, f5-copay-relief, f6-correction-period, f7-share, f13-guide, nf-mobile/privacy/med/a11y), tests/unit/f13-build-artifacts.test.ts 로 PC-F13-AC1·AC4(481개 guide HTML, sitemap 481개 URL)를 빌드 산출물로 직접 셌다. 실행 결과: playwright 63개 중 62개 통과·1개 실패(3회 연속 동일, 플래키 아님) — 실패는 PC-NF-MOBILE-3(버튼 48px 이상) 위반으로, features/profile-form/ui/ProfileForm.tsx 의 '주수로 입력' 토글이 shared/ui Button 을 쓰지 않고 독립적으로 만들어져 실제 높이 25.5px 로 렌더되는 실제 결함이다(추측 아님, boundingBox 로 확인). 워크트리 루트 pnpm test(vitest) 는 10개 파일 56개 테스트 56개 통과(기존 54개 + 신규 2개) + packages/scopulus-ui 141개 통과, 총 197개 중 197개 통과 0개 실패. typecheck 오류 0건. skip/only/todo 0건. 57개 ID 중 55개 자동 통과, 1개 자동 실패(PC-NF-MOBILE-3, 위 결함), 1개 수동(PC-F7-AC4 — 카드 숫자가 360px 화면에서 확대 없이 읽히는지는 픽셀 판정이라 자동화 불가, 계산 근거(96px 원본→32px 상당)는 확인했고 사람 확인 절차를 manual-checks.md 에 남겼다). status 를 partial 로 두는 이유는 이 1개 실패(결함)와 1개 수동 항목이 남아 있어서다 — 커버는 100% 지만 통과는 100%가 아니다.",
+  "artifacts": [
+    { "path": "apps/preemie-calc/tests/e2e/support/helpers.ts", "kind": "code", "note": "seedProfiles(localStorage 직접 주입)·fixClockKst·dueDateForGestationDays·canvas fillText 가로채기·navigator.share/clipboard 스텁·WCAG 대비 계산 등 공용 헬퍼" },
+    { "path": "apps/preemie-calc/tests/e2e/f1-profile.spec.ts", "kind": "code", "note": "PC-F1-AC1·AC4·AC5·AC6·EX3, PC-NF-MOBILE-4·PRIV-3" },
+    { "path": "apps/preemie-calc/tests/e2e/f2-dashboard.spec.ts", "kind": "code", "note": "PC-F2-AC1~AC5·EX1 화면 문구" },
+    { "path": "apps/preemie-calc/tests/e2e/f3-age-basis.spec.ts", "kind": "code", "note": "PC-F3-AC1~AC5 화면 문구" },
+    { "path": "apps/preemie-calc/tests/e2e/f4-checkups.spec.ts", "kind": "code", "note": "PC-F4-AC2·AC4·AC5" },
+    { "path": "apps/preemie-calc/tests/e2e/f5-copay-relief.spec.ts", "kind": "code", "note": "PC-F5-AC1~AC5 화면 문구" },
+    { "path": "apps/preemie-calc/tests/e2e/f6-correction-period.spec.ts", "kind": "code", "note": "PC-F6-AC1~AC4·EX1" },
+    { "path": "apps/preemie-calc/tests/e2e/f7-share.spec.ts", "kind": "code", "note": "PC-F7-AC1~AC3·EX1, PC-NF-PRIV-2" },
+    { "path": "apps/preemie-calc/tests/e2e/f13-guide.spec.ts", "kind": "code", "note": "PC-F13-AC2·AC3·EX1" },
+    { "path": "apps/preemie-calc/tests/e2e/nf-mobile.spec.ts", "kind": "code", "note": "PC-NF-MOBILE-1·2·3, 9개 화면. MOBILE-3 위반 1건 발견" },
+    { "path": "apps/preemie-calc/tests/e2e/nf-privacy.spec.ts", "kind": "code", "note": "PC-NF-PRIV-1, 실제 폼 입력→저장→편집 흐름의 네트워크 요청 감시" },
+    { "path": "apps/preemie-calc/tests/e2e/nf-med.spec.ts", "kind": "code", "note": "PC-NF-MED-1, 7개 화면" },
+    { "path": "apps/preemie-calc/tests/e2e/nf-a11y.spec.ts", "kind": "code", "note": "PC-NF-A11Y-1·2·3" },
+    { "path": "apps/preemie-calc/tests/unit/f13-build-artifacts.test.ts", "kind": "code", "note": "PC-F13-AC1·AC4, .next 빌드 산출물(guide HTML 481개, sitemap.xml.body /guide/ 481개)을 직접 센다" },
+    { "path": ".curvez/qa/preemie-calc/ac-matrix.md", "kind": "doc", "note": "57개 ID 전부의 판정표(자동 통과/자동 실패/수동) + 발견한 결함 상세" },
+    { "path": ".curvez/qa/preemie-calc/manual-checks.md", "kind": "doc", "note": "PC-F7-AC4 수동 확인 절차·근거 계산. PRD §7(비-AC) 참고 절차도 남김" },
+    { "path": ".curvez/qa/preemie-calc/strategy.md", "kind": "doc", "note": "이번 라운드 섹션 추가(층 배분, AC 대응표, 디자인 스펙 키 대응표, 테스트하지 않는 것, 실행 결과)" },
+    { "path": ".curvez/qa/preemie-calc/last-run-e2e-2.log", "kind": "doc" },
+    { "path": ".curvez/qa/preemie-calc/last-run-root-2.log", "kind": "doc" },
+    { "path": ".curvez/qa/preemie-calc/ac-all.txt", "kind": "doc" },
+    { "path": ".curvez/qa/preemie-calc/ac-covered.txt", "kind": "doc" }
+  ],
+  "decisions": [
+    {
+      "what": "F2~F6 의 계산값(재태기간, 나이, 경감 구간, 교정 종료 개월)은 지난 라운드 단위 테스트를 그대로 두고, 이번 라운드는 그 값이 실제 화면 문구로 배선됐는지만 e2e 로 추가했다(계산 자체를 e2e 에서 다시 검증하지 않았다).",
+      "why": "같은 것을 단위·e2e 두 층에서 똑같이 검증하면 실패 시 어느 층이 원인인지 알려주지 못한다(판단 기준 tie-break). 단위 테스트는 계산 함수의 출력을, e2e 는 그 출력이 화면에 실제로 연결됐는지를 검증해 서로 다른 결함을 잡는다.",
+      "reversible_at": ".curvez/qa/preemie-calc/strategy.md:2라운드 층 배분과 근거"
+    },
+    {
+      "what": "localStorage 손상(state:error) 화면과 4개 하위 화면(age-basis 등)의 '프로필 없음 → / 리다이렉트' 반복 검증, focus-order 전용 테스트는 이번 라운드에 쓰지 않았다.",
+      "why": "state:error 는 curvez-nextjs 의 결정 로그가 이번 범위에서 처리 코드를 만들지 않았다고 이미 밝혔고, 하위 4화면의 리다이렉트는 DashboardSubpageShell 하나가 공통 처리해 dashboard 에서 이미 확인한 것의 반복이라 새 정보가 적다. focus-order 는 CONTEXT 지정 목록에 없었다. 셋 다 strategy.md '테스트하지 않는 것'에 이유를 남겼다.",
+      "reversible_at": ".curvez/qa/preemie-calc/strategy.md:테스트하지 않는 것 — 이번 라운드 추가분"
+    },
+    {
+      "what": "PC-F7-AC1(카드 이미지에 이름 없음)을 canvas 픽셀 검사 대신 CanvasRenderingContext2D.prototype.fillText 를 addInitScript 로 가로채 '실제로 그리기 함수에 넘어간 문자열 목록'을 수집해 검증했다.",
+      "why": "canvas 는 픽셀이라 OCR 없이는 문자열 검사가 불가능하고, 새 의존성(OCR 라이브러리) 추가는 이번 라운드 FORBIDDEN 이다. fillText 가로채기는 실제 코드 실행 경로(진짜 그리기 호출)를 그대로 관찰하는 것이라 '구현이 맞다고 믿고 넘어가는 것'과는 다르지만, 폰트·크기·색까지 올바른지는 검증하지 못하는 한계가 있어 strategy.md에 그대로 적었다.",
+      "reversible_at": "apps/preemie-calc/tests/e2e/support/helpers.ts:installFillTextSpy"
+    }
+  ],
+  "blocked_on": [
+    {
+      "question": "발견한 결함: features/profile-form/ui/ProfileForm.tsx 의 '주수로 입력' 토글 버튼이 shared/ui Button 을 쓰지 않고 독립적으로 만들어져 있어 높이 스타일이 없다(padding:0만 있음). 실제 렌더 높이가 25.5px 로 PC-NF-MOBILE-3(48px 이상, tokens.md --touch-target-min)를 어긴다. 재현: `cd apps/preemie-calc && pnpm exec playwright test tests/e2e/nf-mobile.spec.ts -g \"input 화면\"`. 실제 출력: `Error: input: 48px 미만 터치 대상 — [{\"text\":\"주수로 입력\",\"height\":25.5}]`. 대응: shared/ui Button(variant=\"text\")을 쓰거나 이 버튼에 min-height:var(--touch-target-min)를 추가해 달라. 고쳐지면 tests/e2e/nf-mobile.spec.ts 를 다시 돌려 확인한다.",
+      "who": "curvez-nextjs"
+    }
+  ],
+  "verification": [
+    { "command": "cd apps/preemie-calc && pnpm exec playwright test --reporter=line (1회차)", "result": "63 tests, 62 passed, 1 failed (PC-NF-MOBILE-1·2·3 — input 화면). exit != 0", "passed": false },
+    { "command": "cd apps/preemie-calc && pnpm exec playwright test --reporter=line (2회차)", "result": "63 tests, 62 passed, 1 failed — 같은 테스트(input 화면). 1회차와 동일", "passed": false },
+    { "command": "cd apps/preemie-calc && pnpm exec playwright test --reporter=line (3회차)", "result": "63 tests, 62 passed, 1 failed — 같은 테스트. 3회 연속 동일 결과라 플래키가 아니라 실결함으로 판정", "passed": false },
+    { "command": "cd apps/preemie-calc && pnpm exec playwright test --reporter=line (4회차, 최종 로그)", "result": "63 tests, 62 passed, 1 failed — 동일. 원문 로그 .curvez/qa/preemie-calc/last-run-e2e-2.log", "passed": false },
+    { "command": "pnpm test (워크트리 루트, = pnpm -r --if-present test)", "result": "exit 0. apps/preemie-calc 10개 파일 56개 테스트 56개 통과(기존 54 + 신규 2), packages/scopulus-ui 38개 파일 141개 테스트 141개 통과. 총 197개 중 197개 통과, 0개 실패 — .curvez/qa/preemie-calc/last-run-root-2.log", "passed": true },
+    { "command": "pnpm --filter preemie-calc typecheck (= next typegen && tsc --noEmit, tests/** 포함)", "result": "Types generated successfully. tsc --noEmit 오류 0건, exit 0", "passed": true },
+    { "command": "grep -nE '\\b(it|test|describe)\\.(skip|only|todo)\\b|\\bx(it|describe)\\(' apps/preemie-calc/tests/e2e/*.ts apps/preemie-calc/tests/unit/*.ts | wc -l", "result": "0건", "passed": true },
+    { "command": "comm -23 .curvez/qa/preemie-calc/ac-all.txt .curvez/qa/preemie-calc/ac-covered.txt (57개 요구 ID vs 테스트에 등장한 ID)", "result": "출력 0줄 — 57개 전부 대응(미커버 0개)", "passed": true },
+    { "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/", "result": "OK. 검사 17건, 통과 17건, 실패 0건, 오류 0개, 경고 0개 (이 핸드오프 파일 포함)", "passed": true }
+  ]
+}

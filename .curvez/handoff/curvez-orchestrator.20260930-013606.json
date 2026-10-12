@@ -1,0 +1,42 @@
+{
+  "from": "curvez-orchestrator",
+  "to": ["user"],
+  "status": "done",
+  "summary": "디자인 재구성 라운드를 마쳤다. 화면 9개를 '밝고 생기 있는' 방향으로 다시 설계하고 구현했다. 헤더 제목은 모든 폭에서 가운데(27개 조합 중심 차이 0~0.01px)이고, 좌우 버튼과 겹치는 폭은 0px 이다(36개 조합). 게이트: arch 위반 0, typecheck exit 0, lint 0 problems, test 203/203, build 491/491, E2E 185/185 를 2회 통과했다. 57개 요구 ID 판정은 그대로다(자동 통과 55, 조건부 2 포함, 실패 0, 수동 1). 재리뷰 2회를 다 썼고 blocker·major 는 0건이다. P3 4건(DSG-06~09)이 새로 남았다. 변경 전·후 캡처는 각 20장이다.",
+  "artifacts": [
+    { "path": ".curvez/team.md", "kind": "decision", "note": "디자인 재구성 라운드 D1~D7, 오케스트레이터 결정, 남은 P3" },
+    { "path": ".curvez/handoff/curvez-reviewer.20260930-004251.json", "kind": "review", "note": "대필" },
+    { "path": ".curvez/handoff/curvez-reviewer.20260930-010609.json", "kind": "review", "note": "대필" },
+    { "path": ".curvez/handoff/curvez-reviewer.20260930-012842.json", "kind": "review", "note": "대필" }
+  ],
+  "decisions": [
+    {
+      "what": "헤더 제목을 3분할 그리드 가운데 칸에 가두고, 넘치면 말줄임 대신 가운데 정렬로 최대 3줄까지 줄바꿈한다",
+      "why": "360px 에서 긴 제목이 뒤로가기 버튼과 20.5px 겹쳤다(DSG-05). 좌우 예약 폭을 줄이면 버튼 터치 영역과 가운데 정렬이 흔들린다. 처음에는 2줄로 정했는데, 어절 단위 줄바꿈을 적용하자 '교정연령 적용 종료 안내' 가 3줄이 필요해 3줄로 올렸다",
+      "reversible_at": "apps/preemie-calc/src/shared/ui/PageHeader.tsx"
+    },
+    {
+      "what": "앱 전체에 word-break: keep-all(어절 단위 줄바꿈)을 적용하고, 나이 값 조각은 한 덩어리로 유지한다",
+      "why": "변경 후 캡처에서 '이른둥이 육 / 아 계산기', '3 / 개월', '2026-06- / 26' 처럼 음절과 값 중간이 끊겼다. 자동 테스트는 이것을 잡지 못했다",
+      "reversible_at": "apps/preemie-calc/src/app/globals.css, apps/preemie-calc/src/widgets/age-summary/lib/nowrap-chunks.tsx"
+    },
+    {
+      "what": "'+ 아이 추가' 버튼 앞 아이콘을 뺐다. 라벨은 E2E 가 찾는 이름이라 그대로 두었다",
+      "why": "라벨의 '+' 와 아이콘이 겹쳐 더하기 표시가 두 번 보였다",
+      "reversible_at": "apps/preemie-calc/src/features/switch-child/ui/ChildSwitcherTabs.tsx"
+    },
+    {
+      "what": "guide 페이지는 조합 제목을 h1, 헤더 사이트 이름을 h2 로 두었다",
+      "why": "h1 이 2개였다. SEO 페이지라 조합 제목이 h1 이어야 한다",
+      "reversible_at": "apps/preemie-calc/src/views/guide/ui/GuideView.tsx"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    { "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/quality-gate.mjs --no-stop (curvez-qa, 최종)", "result": "PASS arch 14/14 위반 0, typecheck, lint(0 problems), test(203/203), build(491/491). 실패 0", "passed": true },
+    { "command": "pnpm test:e2e (apps/preemie-calc, curvez-qa, 최종 2회)", "result": "185 passed / 0 failed 두 번(17.2s, 16.9s)", "passed": true },
+    { "command": "헤더 가운데 정렬·겹침 실측(nf-header-layout.spec.ts)", "result": "중심 차이 27개 조합 모두 0~0.01px. 제목과 좌우 버튼의 겹침은 36개 조합 모두 0px. 페이지당 h1 은 1개", "passed": true },
+    { "command": "Read .curvez/qa/preemie-calc/screens/after/dashboard-2children-360.png, dashboard-1280.png (오케스트레이터 육안 확인)", "result": "1차 구현에서 결함 4건을 발견했다. 수정 뒤 재촬영본에서는 사라졌다", "passed": true },
+    { "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/", "result": "이 파일을 쓰기 전 43건 통과. 쓴 뒤 재실행 결과는 사용자 보고에 적는다", "passed": true }
+  ]
+}

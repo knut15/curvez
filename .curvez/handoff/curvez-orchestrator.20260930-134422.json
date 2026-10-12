@@ -1,0 +1,28 @@
+{
+  "from": "curvez-orchestrator",
+  "to": ["user"],
+  "status": "partial",
+  "summary": "SPEC v2 기능 라운드(F7 문구 복사, F8 성장, F10 접종, F14 목표키, F15 분유량, 데이터 반영, 글 영역 720px)의 구현과 테스트를 마쳤다. 걸린 시간은 11:37~13:44 이다. QA 게이트 1회 결과: typecheck 0, lint 0, build exit 0(503쪽), 단위 98/102, E2E 248/261. 실패 원인은 셋이다. 목표키 범위 결함(리뷰 blocker ACC-01, src) 2건, 팀 파일 원인 4건, 팀 소유 테스트 9건(판정 제외). 코디네이터 지시대로 이 라운드의 마지막 게이트는 이어지는 통합 수정 라운드 끝에 한 번으로 합친다. 그래서 status 는 partial 이다. 고칠 것은 통합 라운드의 curvez-nextjs 에 넘겼다.",
+  "artifacts": [
+    { "path": ".curvez/team.md", "kind": "decision", "note": "라운드 기록은 통합 라운드 끝에 함께 다시 쓴다" },
+    { "path": ".curvez/standing.md", "kind": "decision", "note": "15번 팀 소유 경로(13:37 해제)" },
+    { "path": ".curvez/handoff/curvez-reviewer.20260930-124514.json", "kind": "review", "note": "대필" }
+  ],
+  "decisions": [
+    { "what": "예방접종 정본을 질병관리청 원본 표로 한다(국립재활원 재게재본과 3곳 다름)", "why": "사용자 결정 9가 '재게재본 잠정, 원본과 재대조' 였고, 재대조 결과 차이가 나왔다", "reversible_at": "apps/preemie-calc/src/entities/vaccination/data/vaccination-schedule.json" },
+    { "what": "성장 LMS 는 0~36개월 행만 옮긴다(원본은 84개월까지)", "why": "PRD 범위가 0~3세다", "reversible_at": "apps/preemie-calc/src/entities/growth/data/growth-lms.json" },
+    { "what": "백분위의 표준정규분포 함수를 순수 함수(A&S 7.1.26, 최대 오차 6.95e-8 실측)로 구현했다", "why": "SPEC 이 정한 LMS→Z→백분위 계산의 수학 공식이라 라이브러리 대체가 아니라고 판단했다. 사용자 확인 질문으로 올린다", "reversible_at": "apps/preemie-calc/src/shared/lib/normal-distribution" },
+    { "what": "F8 AC3(추이 그래프)는 만들지 않았다", "why": "차트 라이브러리가 없고 직접 그리기는 금지다", "reversible_at": ".curvez/qa/preemie-calc/ac-matrix.md PC-F8-AC3 보류" },
+    { "what": "앞 라운드 게이트를 통합 라운드 끝으로 미뤘다", "why": "코디네이터 권고. 전체 build·E2E 를 한 번만 돌린다(standing 14)", "reversible_at": "통합 라운드 핸드오프" }
+  ],
+  "blocked_on": [
+    { "question": "경감 구간 경계: PRD 결정 2는 '33주·29주 정각은 더 긴 경감 구간'이다. 그런데 근거인 보건복지부 원문은 '5년 3개월(29주 이상~33주 미만)', '5년 4개월(29주 미만)'이라, 29주 0일은 5년 3개월, 33주 0일은 5년 2개월(더 짧은 쪽)이 된다. 오케스트레이터가 앞서 올린 질문의 괄호 설명('이상' 쪽 = 더 긴 경감)이 틀렸다. 원문대로 고칠지 확인해 달라", "who": "user" },
+    { "question": "F8 AC3 추이 그래프에 쓸 차트 라이브러리를 설치해도 되는가(예: recharts). 없으면 AC3 은 보류로 남는다", "who": "user" },
+    { "question": "백분위 계산의 표준정규분포 함수를 코드로 두는 것(라이브러리 없이)을 그대로 둘지", "who": "user" }
+  ],
+  "verification": [
+    { "command": "curvez-qa 라운드 게이트 1회 (curvez-qa.20260930-134140.json)", "result": "typecheck 0 errors, lint 0 problems, pnpm test preemie-calc 98/102, build exit 0 503쪽, E2E 248 passed / 13 failed", "passed": false },
+    { "command": "curvez-reviewer v2 리뷰 (curvez-reviewer.20260930-124514.json)", "result": "blocker 1(ACC-01 목표키 범위), major 3, minor 2. 백분위·Φ·접종 41차수·데이터 222행 대조는 통과", "passed": false },
+    { "command": "lsof -i :3100", "result": "PID 43850 LISTEN 유지", "passed": true }
+  ]
+}

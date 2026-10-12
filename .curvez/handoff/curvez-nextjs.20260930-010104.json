@@ -1,0 +1,98 @@
+{
+  "from": "curvez-nextjs",
+  "to": ["curvez-orchestrator", "curvez-qa", "curvez-reviewer"],
+  "status": "partial",
+  "summary": "curvez-reviewer 의 DSG-05(360px 헤더 제목-뒤로가기 겹침, major)와 curvez-qa 가 발견한 /guide h1 중복을 고쳤다. PageHeader.tsx 의 h1 이 justifySelf:center + max-width:min(60vw,320px) 로 자기 콘텐츠 폭(최대 320px)만큼 렌더링돼 3분할 그리드 가운데 칸(360px 에서 104px)을 넘쳐 좌우 zone 과 겹쳤다. justifySelf:stretch + minWidth:0 으로 h1 박스를 가운데 칸 폭 그대로 채우게 바꾸고, 넘치는 텍스트는 ellipsis 대신 -webkit-line-clamp:2 로 가운데 정렬 2줄까지 줄바꿈하게 했다. 헤더는 고정 height 대신 display:flex + minHeight 로 바꿔, 2줄이 되어도 높이가 늘어나되(64px 미만으로 줄지 않음) 세로 중앙 정렬은 유지된다. /guide 의 h1 중복은 PageHeader 에 headingLevel(기본 1) prop 을 추가해 GuideView 에서만 2 로 내렸다 — SEO 콘텐츠 제목(조합 제목, '32주 출생, 생후 3개월')을 h1 로 남기고 헤더의 사이트 이름을 h2 로 내렸다. 그 결과 tests/e2e/nf-header-layout.spec.ts 의 getByRole('banner').getByRole('heading',{level:1}) 로 헤더 제목을 잡는 assertion 중 guide 3개(360/768/1280px)가 깨졌다 — banner 안에 level:1 heading 이 더 이상 없기 때문이다. tests/ 는 FORBIDDEN 이라 고치지 않았고, decisions 에 QA 갱신 필요로 남긴다. 스크래치패드에 둔 Playwright 측정 스크립트(jiti+renderToStaticMarkup+chromium setContent, 워크트리 밖)로 7개 variant × 4개 폭(360/390/768/1280) = 28개 조합에서 제목-좌우zone 겹침 0px, 중심 차이 최대 0.01px 을 직접 확인했다. --layout-header-side-reserve(112px)는 그대로다. 다른 결함(DSG-06~08, 남은 P3)은 건드리지 않았다.",
+  "artifacts": [
+    {
+      "path": "apps/preemie-calc/src/shared/ui/PageHeader.tsx",
+      "kind": "code",
+      "note": "DSG-05 수정: h1 스타일을 justifySelf:stretch+minWidth:0+line-clamp:2 로 바꿔 가운데 칸 폭 안에 가둔다. headerStyle 을 display:flex+minHeight 로 바꿔 2줄일 때 높이가 늘어나게 한다. headingLevel?:1|2 prop 추가(기본 1)"
+    },
+    {
+      "path": "apps/preemie-calc/src/app/globals.css",
+      "kind": "code",
+      "note": ".pc-header-grid 의 height:100% 를 width:100% 로 바꿨다 — 부모(header)가 더 이상 고정 height 를 갖지 않으므로 퍼센트 높이가 무의미해졌고, flex 아이템이 가로폭을 채우도록 width 가 필요해졌다. grid-template-columns·padding·align-items 는 그대로다"
+    },
+    {
+      "path": "apps/preemie-calc/src/views/guide/ui/GuideView.tsx",
+      "kind": "code",
+      "note": "guide h1 중복 수정: <PageHeader ... headingLevel={2} /> 로 헤더 제목을 h2 로 내리고, 본문의 SEO 조합 제목(content.heading)을 페이지의 유일한 h1 로 남겼다"
+    }
+  ],
+  "decisions": [
+    {
+      "what": "h1 이 그리드 가운데 칸을 넘칠 때 justifySelf:stretch + minWidth:0 + overflow-wrap:break-word + (-webkit-line-clamp:2, -webkit-box-orient:vertical, display:-webkit-box) 로 최대 2줄까지 가운데 정렬 줄바꿈하게 했다(ellipsis 대신). max-width:min(60vw,320px) 은 안전장치로 그대로 뒀다 — stretch 로 박스 폭이 이미 트랙 폭으로 제한되므로 데스크톱에서 짧은 제목의 시각적 결과는 이전과 같다(텍스트가 text-align:center 로 박스 안에서 가운데 정렬되기 때문)",
+      "why": "오케스트레이터 tie-break: '제목을 가운데 칸 안에 가두고(minWidth 0, 칸 폭 안), 넘치면 말줄임 대신 가운데 정렬 두 줄까지 줄바꿈한다'. 기존 justifySelf:center 는 아이템의 고유 폭(콘텐츠 기반, 최대 320px)을 그대로 써서 그리드 트랙 폭(104px)보다 넓어지면 트랙 밖으로 넘쳤다(DSG-05 원인). stretch 는 아이템 박스 폭을 트랙 해석 폭과 정확히 같게 만들어 원천적으로 넘칠 수 없게 한다",
+      "reversible_at": "apps/preemie-calc/src/shared/ui/PageHeader.tsx (h1 style 객체)"
+    },
+    {
+      "what": "헤더를 고정 height:var(--layout-header-height) 대신 display:flex + alignItems:center + minHeight:var(--layout-header-height) 로 바꿨다",
+      "why": "2줄로 줄바꿈된 제목(최대 60px 높이)이 고정 64px 헤더 안에 들어가지 않는 경우를 대비해 높이가 늘어날 수 있어야 한다(GOAL: '두 줄이 되어도 헤더 높이와 터치 영역 48px 이상이 유지돼야 한다'). flex+minHeight 는 minHeight 로 최소 64px 을 보장하면서 콘텐츠가 더 크면 자동으로 늘어나고, align-items:center 로 세로 중앙 정렬도 그대로 유지한다. 실측(jiti+chromium)으로는 실제 4개 화면의 2줄 제목이 60px 높이라 64px 안에 들어가 헤더 실측 높이가 65px(경계 반올림)로 거의 그대로였고, 더 긴 임의 제목으로도 line-clamp:2 가 높이를 60px 로 고정해 헤더가 65px 를 넘지 않음을 확인했다 — 즉 이 4개 실제 타이틀에서는 헤더가 커지지 않지만, 커져야 하는 경우에도 클리핑되지 않는 구조로 바꿨다",
+      "reversible_at": "apps/preemie-calc/src/shared/ui/PageHeader.tsx (headerStyle), apps/preemie-calc/src/app/globals.css (.pc-header-grid)"
+    },
+    {
+      "what": "/guide 의 h1 중복은 GuideView 의 SEO 조합 제목(content.heading, 예: '32주 출생, 생후 3개월')을 h1 로 남기고 PageHeader 의 사이트 이름 제목을 h2 로 내리는 쪽을 골랐다. 이를 위해 PageHeader 에 headingLevel?:1|2(기본 1) prop 을 새로 추가했다. 다른 8개 화면(input·input-weeks·dashboard·age-basis·checkups·copay-relief·correction-period·share)은 headingLevel 을 넘기지 않아 그대로 h1 이다",
+      "why": "GOAL 지시대로 'SEO 페이지라 콘텐츠 제목(조합 제목)을 h1 로 두는 쪽을 우선 검토'했고, 이 페이지는 481개의 정적 SEO 랜딩이라 검색엔진에 실제 페이지 주제('32주 출생, 생후 3개월')를 h1 으로 노출하는 편이 사이트 공통 브랜드명보다 낫다고 판단했다. PageHeader.md 스펙에는 headingLevel prop 이 없지만, 이는 시각 상태를 바꾸는 것이 아니라 페이지당 h1 하나라는 HTML 시맨틱 결함을 고치는 최소 추가라 디자이너 라운드트립 없이 구현했다",
+      "reversible_at": "apps/preemie-calc/src/shared/ui/PageHeader.tsx (PageHeaderProps.headingLevel), apps/preemie-calc/src/views/guide/ui/GuideView.tsx"
+    },
+    {
+      "what": "QA 갱신 필요 — apps/preemie-calc/tests/e2e/nf-header-layout.spec.ts 의 guide@360px·guide@768px·guide@1280px 3개 테스트가 깨졌다(30초 타임아웃, `getByRole('banner').getByRole('heading',{level:1})` 를 못 찾음)",
+      "why": "이 테스트는 헤더 h1 이 모든 9개 화면에서 level:1 이라고 가정하고 role=banner 안에서 level:1 heading 을 찾는다. guide 페이지는 이번 수정으로 헤더 제목이 h2 가 됐으므로(콘텐츠의 h1 과 페이지당 h1 하나를 지키기 위해) 이 3개는 selector 를 level 무관(예: getByRole('banner').getByRole('heading').first()) 으로 바꾸거나 level:2 로 바꿔야 통과한다. tests/ 는 이 에이전트의 쓰기 범위 밖(FORBIDDEN)이라 직접 고치지 않았다. 같은 파일에 8개 화면 21개 + 대시보드 2열 대조 2개 = 나머지 23개(+ 다른 스펙 파일 전부)는 그대로 통과한다(apps/preemie-calc pnpm test:e2e 실행 결과 101 passed / 3 failed)",
+      "reversible_at": "apps/preemie-calc/tests/e2e/nf-header-layout.spec.ts:123-124 (curvez-qa 소유)"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "(워크트리 루트) pnpm typecheck",
+      "result": "exit 0. apps/preemie-calc 'Types generated successfully' + Done, 나머지 6개 워크스페이스도 Done. 오류 0건",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm lint",
+      "result": "exit 0. eslint . && pnpm -r --if-present lint — 전 워크스페이스 Done, 출력 없음(0 problems)",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm test",
+      "result": "exit 0. apps/preemie-calc 10개 파일 62/62 통과, packages/scopulus-ui 38개 파일 141/141 통과. 총 203/203, 0 실패",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm build",
+      "result": "exit 0. apps/preemie-calc next build 성공, 491/491 정적 페이지(guide 481 + 나머지 10). 나머지 3개 앱도 Done",
+      "passed": true
+    },
+    {
+      "command": "node quality-gate.mjs --no-stop (워크트리 루트)",
+      "result": "5개 게이트(arch·typecheck·lint·test·build) 전부 PASS, 실패 0건. arch: 규칙 14개 파싱/검사 14개/위반 0건",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) lsof -i :3100 → pnpm test:e2e",
+      "result": "실행 전 포트 3100 비어 있음(직접 dev 서버 기동 안 함, run_in_background 안 씀). 104 tests, 101 passed, 3 failed(guide@360/768/1280, 위 decisions 'QA 갱신 필요' 참고). 다른 101개는 전부 통과 — nf-header-layout.spec.ts 의 나머지 26개 포함",
+      "passed": false
+    },
+    {
+      "command": "grep -c '<h1' apps/preemie-calc/.next/server/app/guide/32/3.html",
+      "result": "1 (이전에는 2 — PageHeader h1 + GuideView h1). 같은 검사를 dashboard·share·age-basis·checkups·copay-relief·correction-period.html 에도 돌려 전부 1임을 확인했다",
+      "passed": true
+    },
+    {
+      "command": "스크래치패드 스크립트(jiti 2.7.0 로 PageHeader.tsx 직접 import, jsx:{runtime:'automatic'} 옵션, react-dom/server renderToStaticMarkup, @playwright/test chromium 으로 globals.css 주입 후 setContent) — variant back(제목 4종: '교정연령 적용 종료 안내'·'본인부담 경감 종료일'·'나이 기준'·'영유아검진 도우미')·title-only(headingLevel 기본값·2)·dashboard 총 7개 × 폭 360/390/768/1280 = 28개 조합에서 제목 box 와 좌/우 zone box 의 x축 겹침, document.scrollWidth, 제목-헤더 중심 차이를 측정",
+      "result": "28개 조합 전부 좌/우 겹침 0.0px, scrollWidth == 뷰포트 폭(가로 스크롤 없음), 중심 차이 0~0.01px(기준 ≤2px). 360px 에서 '교정연령 적용 종료 안내'·'본인부담 경감 종료일' 은 title box 폭이 정확히 104px(가운데 트랙 폭)로 제한되고 높이 60px(2줄)로 줄바꿈됨을 확인 — DSG-05 재현 조건에서 겹침이 사라졌다",
+      "passed": true
+    },
+    {
+      "command": "스크래치패드 스크립트(추가) — variant=back, 제목='교정연령 적용 종료 안내' 를 360px 에서 header·button boundingBox 측정. 같은 조건에 훨씬 긴 임의 제목(약 2배 길이)으로도 재측정",
+      "result": "두 경우 모두 header height=65px(minHeight 64px 대비 반올림 오차), button height=48px(터치 영역 유지). line-clamp:2 가 2줄을 넘는 콘텐츠도 60px 높이로 고정해 헤더가 늘어나지 않으면서도 잘리지 않는 2줄로 클램프됨을 확인",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/",
+      "result": "OK 핸드오프 검증 — 검사 36건, 통과 36건, 실패 0건, 오류 0개, 경고 0개",
+      "passed": true
+    }
+  ]
+}

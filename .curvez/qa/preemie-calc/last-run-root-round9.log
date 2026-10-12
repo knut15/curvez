@@ -1,0 +1,90 @@
+$ pnpm -r --if-present test
+Scope: 7 of 8 workspace projects
+apps/preemie-calc test$ vitest run
+packages/scopulus-ui test$ vitest --project storybook --run
+apps/preemie-calc test: (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+apps/preemie-calc test:   - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+apps/preemie-calc test: Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+apps/preemie-calc test:  RUN  v4.1.11 /Users/kim/Workspace/curvez/.claude/worktrees/preemie-calc/apps/preemie-calc
+apps/preemie-calc test:  ❯ tests/unit/f13-build-artifacts.test.ts (2 tests | 2 failed) 13ms
+apps/preemie-calc test:      × .next/server/app/guide/**/*.html 이 481개다 10ms
+apps/preemie-calc test:      × sitemap.xml.body 안의 '/guide/' URL 이 481개다 1ms
+apps/preemie-calc test:  ❯ tests/unit/target-height.test.ts (6 tests | 2 failed) 9ms
+apps/preemie-calc test:      × computeTargetHeight 가 architecture.md 예시와 정확히 같다 6ms
+apps/preemie-calc test:      × computeTargetHeight 가 architecture.md 예시와 정확히 같다 1ms
+apps/preemie-calc test: ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+apps/preemie-calc test:  FAIL  tests/unit/f13-build-artifacts.test.ts > PC-F13-AC1 — 빌드가 끝나면 481개 조합 페이지가 모두 생성된다 > .next/server/app/guide/**/*.html 이 481개다
+apps/preemie-calc test: AssertionError: expected 487 to be 481 // Object.is equality
+apps/preemie-calc test: - Expected
+apps/preemie-calc test: + Received
+apps/preemie-calc test: - 481
+apps/preemie-calc test: + 487
+apps/preemie-calc test:  ❯ tests/unit/f13-build-artifacts.test.ts:38:44
+apps/preemie-calc test:      36|       `${GUIDE_DIR} 가 없다 — 이 테스트보다 먼저 'pnpm --filter preemie-calc buil…
+apps/preemie-calc test:      37|     ).toBe(true);
+apps/preemie-calc test:      38|     expect(countGuideHtmlFiles(GUIDE_DIR)).toBe(EXPECTED_COMBO_COUNT);
+apps/preemie-calc test:        |                                            ^
+apps/preemie-calc test:      39|   });
+apps/preemie-calc test:      40| });
+apps/preemie-calc test: ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+apps/preemie-calc test:  FAIL  tests/unit/f13-build-artifacts.test.ts > PC-F13-AC4 — 사이트맵에 481개 페이지가 모두 들어 있다 > sitemap.xml.body 안의 '/guide/' URL 이 481개다
+apps/preemie-calc test: AssertionError: expected 488 to be 481 // Object.is equality
+apps/preemie-calc test: - Expected
+apps/preemie-calc test: + Received
+apps/preemie-calc test: - 481
+apps/preemie-calc test: + 488
+apps/preemie-calc test:  ❯ tests/unit/f13-build-artifacts.test.ts:50:27
+apps/preemie-calc test:      48|     const body = readFileSync(SITEMAP_BODY, "utf-8");
+apps/preemie-calc test:      49|     const guideUrlCount = (body.match(/\/guide\//g) ?? []).length;
+apps/preemie-calc test:      50|     expect(guideUrlCount).toBe(EXPECTED_COMBO_COUNT);
+apps/preemie-calc test:        |                           ^
+apps/preemie-calc test:      51|   });
+apps/preemie-calc test:      52| });
+apps/preemie-calc test: ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+apps/preemie-calc test:  FAIL  tests/unit/target-height.test.ts > PC-F14-AC1 아빠 175cm·엄마 162cm, 남아 → 175.0cm (168.5~181.5cm) > computeTargetHeight 가 architecture.md 예시와 정확히 같다
+apps/preemie-calc test: AssertionError: expected { midCm: 175, minCm: 171.8, …(1) } to deeply equal { midCm: 175, minCm: 168.5, …(1) }
+apps/preemie-calc test: - Expected
+apps/preemie-calc test: + Received
+apps/preemie-calc test:   {
+apps/preemie-calc test: -   "maxCm": 181.5,
+apps/preemie-calc test: +   "maxCm": 178.3,
+apps/preemie-calc test:     "midCm": 175,
+apps/preemie-calc test: -   "minCm": 168.5,
+apps/preemie-calc test: +   "minCm": 171.8,
+apps/preemie-calc test:   }
+apps/preemie-calc test:  ❯ tests/unit/target-height.test.ts:9:20
+apps/preemie-calc test:       7|   it("computeTargetHeight 가 architecture.md 예시와 정확히 같다", () => {
+apps/preemie-calc test:       8|     const result = computeTargetHeight({ sex: "male", fatherCm: 175, m…
+apps/preemie-calc test:       9|     expect(result).toEqual({ midCm: 175.0, minCm: 168.5, maxCm: 181.5 …
+apps/preemie-calc test:        |                    ^
+apps/preemie-calc test:      10|   });
+apps/preemie-calc test:      11| });
+apps/preemie-calc test: ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+apps/preemie-calc test:  FAIL  tests/unit/target-height.test.ts > PC-F14-AC2 같은 부모 키, 여아 → 162.0cm (155.5~168.5cm) > computeTargetHeight 가 architecture.md 예시와 정확히 같다
+apps/preemie-calc test: AssertionError: expected { midCm: 162, minCm: 158.8, …(1) } to deeply equal { midCm: 162, minCm: 155.5, …(1) }
+apps/preemie-calc test: - Expected
+apps/preemie-calc test: + Received
+apps/preemie-calc test:   {
+apps/preemie-calc test: -   "maxCm": 168.5,
+apps/preemie-calc test: +   "maxCm": 165.3,
+apps/preemie-calc test:     "midCm": 162,
+apps/preemie-calc test: -   "minCm": 155.5,
+apps/preemie-calc test: +   "minCm": 158.8,
+apps/preemie-calc test:   }
+apps/preemie-calc test:  ❯ tests/unit/target-height.test.ts:16:20
+apps/preemie-calc test:      14|   it("computeTargetHeight 가 architecture.md 예시와 정확히 같다", () => {
+apps/preemie-calc test:      15|     const result = computeTargetHeight({ sex: "female", fatherCm: 175,…
+apps/preemie-calc test:      16|     expect(result).toEqual({ midCm: 162.0, minCm: 155.5, maxCm: 168.5 …
+apps/preemie-calc test:        |                    ^
+apps/preemie-calc test:      17|   });
+apps/preemie-calc test:      18| });
+apps/preemie-calc test: ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+apps/preemie-calc test:  Test Files  2 failed | 13 passed (15)
+apps/preemie-calc test:       Tests  4 failed | 98 passed (102)
+apps/preemie-calc test:    Start at  13:36:37
+apps/preemie-calc test:    Duration  729ms (transform 1.19s, setup 0ms, import 1.85s, tests 87ms, environment 1ms)
+apps/preemie-calc test: Failed
+/Users/kim/Workspace/curvez/.claude/worktrees/preemie-calc/apps/preemie-calc:
+[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] preemie-calc@0.1.0 test: `vitest run`
+Exit status 1
+[ELIFECYCLE] Test failed. See above for more details.

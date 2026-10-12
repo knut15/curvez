@@ -1,0 +1,99 @@
+
+Running 63 tests using 5 workers
+
+[1/63] [chromium-mobile] › tests/e2e/f1-profile.spec.ts:45:7 › PC-F1-AC5 · PC-F1-EX3 — 아이가 2명 이상이면 전환 탭이 보이고, 이름이 없으면 번호로 보인다 › 탭에 '아이 1'·'아이 2'가 보이고, '+ 아이 추가'를 누르면 /?new=1 로 이동해 폼이 보인다(리다이렉트 없음)
+[2/63] [chromium-mobile] › tests/e2e/f1-profile.spec.ts:11:7 › PC-F1-AC1 · PC-NF-MOBILE-4 — 첫 화면에는 입력칸과 버튼만 보인다 › 입력칸 3종(출생일·출산예정일·성별) + 주수전환 + 저장 버튼만 보이고, 그 외 버튼이 없다
+[3/63] [chromium-mobile] › tests/e2e/f1-profile.spec.ts:35:7 › PC-F1-AC4 — 저장된 프로필이 있으면 입력 없이 대시보드로 간다 › `/` 진입 시 자동으로 /dashboard 로 리다이렉트된다
+[4/63] [chromium-mobile] › tests/e2e/f13-guide.spec.ts:6:5 › PC-F13-AC2 — '32주 출생 생후 3개월' 페이지에 '예정일보다 8주 일찍 태어남'과 교정 나이 설명이 보인다
+[5/63] [chromium-mobile] › tests/e2e/f1-profile.spec.ts:71:7 › PC-F1-AC6 · PC-NF-PRIV-3 — 정보 전체 삭제 › 확인하면 저장된 프로필이 모두 사라지고 첫 화면으로 돌아간다
+[6/63] [chromium-mobile] › tests/e2e/f13-guide.spec.ts:16:5 › PC-F13-AC3 — 계산기로 가는 링크를 누르면 해당 주수(32주)가 채워진 입력 화면이 열린다
+[7/63] [chromium-mobile] › tests/e2e/f13-guide.spec.ts:31:5 › PC-F13-EX1 — 1단계는 검진 안내만 넣고, 접종 안내는 없다
+[8/63] [chromium-mobile] › tests/e2e/f2-dashboard.spec.ts:10:5 › PC-F2-AC1 — 오늘 2026-06-01: '생후 92일 · 3개월'과 '교정 36일 · 1개월'이 나란히 보인다
+[9/63] [chromium-mobile] › tests/e2e/f2-dashboard.spec.ts:23:5 › PC-F2-AC2 — 오늘 2026-04-01: '교정 D-25'와 '재태 36주 3일'이 보인다
+[10/63] [chromium-mobile] › tests/e2e/f2-dashboard.spec.ts:33:5 › PC-F2-AC3 — 오늘 2026-06-01: 다음 월령일 '생후 4개월: 2026-07-01'과 '교정 2개월: 2026-06-26'이 보인다
+[11/63] [chromium-mobile] › tests/e2e/f2-dashboard.spec.ts:45:5 › PC-F2-AC4 — 재태 38주5일(37주 이상)이면 교정 칸이 보이지 않고 생후 나이만 보인다
+[12/63] [chromium-mobile] › tests/e2e/f2-dashboard.spec.ts:57:5 › PC-F2-AC5 — 나이 옆에 '생후: 출생일 기준 · 교정: 출산 예정일 기준'이 한 줄로 적혀 있다
+[13/63] [chromium-mobile] › tests/e2e/f2-dashboard.spec.ts:67:5 › PC-F2-EX1 — 프로필이 없으면 F1 첫 화면으로 보낸다
+[14/63] [chromium-mobile] › tests/e2e/f3-age-basis.spec.ts:13:5 › PC-F3-AC1 — '예방접종 — 출생 기준 — 생후 3개월'이 보인다
+[15/63] [chromium-mobile] › tests/e2e/f3-age-basis.spec.ts:22:5 › PC-F3-AC2 — '이유식 — 교정 기준 — 교정 1개월'이 보인다
+[16/63] [chromium-mobile] › tests/e2e/f3-age-basis.spec.ts:31:5 › PC-F3-AC3 — '영유아검진 방문 — 출생 기준', '문진표·발달선별검사지 — 교정 기준(24개월 검진까지)'이 보인다
+[17/63] [chromium-mobile] › tests/e2e/f3-age-basis.spec.ts:44:5 › PC-F3-AC4 — 항목마다 근거 자료 이름과 기준일이 보인다
+[18/63] [chromium-mobile] › tests/e2e/f3-age-basis.spec.ts:52:5 › PC-F3-AC5 — 재태 37주 이상 아이는 모든 항목이 '생후 나이 그대로'로 보인다
+[19/63] [chromium-mobile] › tests/e2e/f4-checkups.spec.ts:11:5 › PC-F4-AC2 — 오늘 2026-09-15(생후 6개월14일·교정 4개월20일)이면 '오늘은 교정 4개월 기준으로 문진표를 쓰세요'가 보인다
+[20/63] [chromium-mobile] › tests/e2e/f4-checkups.spec.ts:21:5 › PC-F4-AC4 — 오늘 날짜가 든 차수가 맨 위에 강조돼 보이고, 지난·예정 차수와 구분된다
+[21/63] [chromium-mobile] › tests/e2e/f4-checkups.spec.ts:38:5 › PC-F4-AC5 — 화면 아래에 데이터 출처와 기준일이 보인다
+[22/63] [chromium-mobile] › tests/e2e/f5-copay-relief.spec.ts:12:5 › PC-F5-AC1 — 재태 32주0일이면 '5년 3개월' 구간으로 분류된다
+[23/63] [chromium-mobile] › tests/e2e/f5-copay-relief.spec.ts:18:5 › PC-F5-AC2 — 재태 28주6일이면 '5년 4개월' 구간으로 분류된다
+[24/63] [chromium-mobile] › tests/e2e/f5-copay-relief.spec.ts:24:5 › PC-F5-AC3 — 재태 35주0일이면 '5년 2개월' 구간으로 분류된다
+[25/63] [chromium-mobile] › tests/e2e/f5-copay-relief.spec.ts:30:5 › PC-F5-AC4 — 재태 37주0일 이상이면 '경감 대상이 아닙니다'가 보인다
+[26/63] [chromium-mobile] › tests/e2e/f5-copay-relief.spec.ts:36:5 › PC-F5-AC5 — 종료 예정일과 '2026년 1월 시행 제도 기준' 문구가 함께 보인다
+[27/63] [chromium-mobile] › tests/e2e/f6-correction-period.spec.ts:12:5 › PC-F6-AC1 · PC-F6-AC4 — 재태 32주0일·체중 미입력이면 '24개월까지'와 연장 조건, '의료진과 상담해 정하세요'가 보인다
+[28/63] [chromium-mobile] › tests/e2e/f6-correction-period.spec.ts:25:5 › PC-F6-AC2 — 재태 27주6일이면 '36개월까지 쓸 수 있음'이 보인다
+[29/63] [chromium-mobile] › tests/e2e/f6-correction-period.spec.ts:31:5 › PC-F6-AC3 — 재태 32주0일·출생 체중 1.4kg이면 '36개월까지 쓸 수 있음'이 보인다
+[30/63] [chromium-mobile] › tests/e2e/f6-correction-period.spec.ts:39:5 › PC-F6-EX1 — 재태 37주 이상이면 대시보드 quick-links에 이 카드 자체가 없다
+[31/63] [chromium-mobile] › tests/e2e/f7-share.spec.ts:25:5 › PC-F7-AC1 · PC-NF-PRIV-2 — 이름 '하늘'로 저장한 프로필의 공유 링크와 카드 그리기 입력에 '하늘'이 없다
+[32/63] [chromium-mobile] › tests/e2e/f7-share.spec.ts:49:5 › PC-F7-AC3 — 공유 링크 fragment 키는 b·d 두 개뿐이다
+[33/63] [chromium-mobile] › tests/e2e/f7-share.spec.ts:92:5 › PC-F7-EX1 — navigator.share 를 쓸 수 없는 환경에서는 '링크 복사' 버튼이 보인다
+[34/63] [chromium-mobile] › tests/e2e/f7-share.spec.ts:64:5 › PC-F7-AC2 — 공유 링크를 다른 브라우저 컨텍스트(저장값 없음)에서 열면 같은 날짜 기준 같은 결과가 보인다
+[35/63] [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:14:5 › PC-NF-A11Y-1 — 검진 차수 상태(지남/오늘/예정)는 텍스트 라벨과 기호를 함께 쓴다
+[36/63] [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:31:5 › PC-NF-A11Y-1 — 미확정 표시는 색이 아니라 '△' 기호 + '미확정' 라벨 + 텍스트로 구분된다
+[37/63] [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:41:5 › PC-NF-A11Y-1 — 성별 선택 항목은 선택되면 색뿐 아니라 '✓' 기호로도 구분된다
+[38/63] [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:49:5 › PC-NF-A11Y-3 — 입력칸마다 접근 가능한 이름(레이블)이 있다
+[39/63] [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:129:7 › PC-NF-A11Y-2 — input 화면의 주요 텍스트 대비가 4.5:1 이상이다
+[40/63] [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:129:7 › PC-NF-A11Y-2 — dashboard 화면의 주요 텍스트 대비가 4.5:1 이상이다
+[41/63] [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:129:7 › PC-NF-A11Y-2 — age-basis 화면의 주요 텍스트 대비가 4.5:1 이상이다
+[42/63] [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:129:7 › PC-NF-A11Y-2 — checkups 화면의 주요 텍스트 대비가 4.5:1 이상이다
+[43/63] [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:129:7 › PC-NF-A11Y-2 — copay-relief 화면의 주요 텍스트 대비가 4.5:1 이상이다
+[44/63] [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:129:7 › PC-NF-A11Y-2 — correction-period 화면의 주요 텍스트 대비가 4.5:1 이상이다
+[45/63] [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:129:7 › PC-NF-A11Y-2 — share 화면의 주요 텍스트 대비가 4.5:1 이상이다
+[46/63] [chromium-mobile] › tests/e2e/nf-a11y.spec.ts:129:7 › PC-NF-A11Y-2 — guide 화면의 주요 텍스트 대비가 4.5:1 이상이다
+[47/63] [chromium-mobile] › tests/e2e/nf-med.spec.ts:22:7 › PC-NF-MED-1 — dashboard 화면에 의료 면책 문구가 보인다
+[48/63] [chromium-mobile] › tests/e2e/nf-med.spec.ts:22:7 › PC-NF-MED-1 — age-basis 화면에 의료 면책 문구가 보인다
+[49/63] [chromium-mobile] › tests/e2e/nf-med.spec.ts:22:7 › PC-NF-MED-1 — checkups 화면에 의료 면책 문구가 보인다
+[50/63] [chromium-mobile] › tests/e2e/nf-med.spec.ts:22:7 › PC-NF-MED-1 — copay-relief 화면에 의료 면책 문구가 보인다
+[51/63] [chromium-mobile] › tests/e2e/nf-med.spec.ts:22:7 › PC-NF-MED-1 — correction-period 화면에 의료 면책 문구가 보인다
+[52/63] [chromium-mobile] › tests/e2e/nf-med.spec.ts:22:7 › PC-NF-MED-1 — share 화면에 의료 면책 문구가 보인다
+[53/63] [chromium-mobile] › tests/e2e/nf-med.spec.ts:22:7 › PC-NF-MED-1 — guide 화면에 의료 면책 문구가 보인다
+[54/63] [chromium-mobile] › tests/e2e/nf-mobile.spec.ts:71:7 › PC-NF-MOBILE-1·2·3 — input 화면
+[55/63] [chromium-mobile] › tests/e2e/nf-mobile.spec.ts:71:7 › PC-NF-MOBILE-1·2·3 — dashboard 화면
+[56/63] [chromium-mobile] › tests/e2e/nf-mobile.spec.ts:71:7 › PC-NF-MOBILE-1·2·3 — age-basis 화면
+[57/63] [chromium-mobile] › tests/e2e/nf-mobile.spec.ts:71:7 › PC-NF-MOBILE-1·2·3 — checkups 화면
+[58/63] [chromium-mobile] › tests/e2e/nf-mobile.spec.ts:71:7 › PC-NF-MOBILE-1·2·3 — copay-relief 화면
+[59/63] [chromium-mobile] › tests/e2e/nf-mobile.spec.ts:71:7 › PC-NF-MOBILE-1·2·3 — correction-period 화면
+[60/63] [chromium-mobile] › tests/e2e/nf-mobile.spec.ts:71:7 › PC-NF-MOBILE-1·2·3 — share 화면
+  1) [chromium-mobile] › tests/e2e/nf-mobile.spec.ts:71:7 › PC-NF-MOBILE-1·2·3 — input 화면 ──────────
+
+    Error: input: 48px 미만 터치 대상 — [{"text":"주수로 입력","height":25.5}]
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 6
+
+    - Array []
+    + Array [
+    +   Object {
+    +     "height": 25.5,
+    +     "text": "주수로 입력",
+    +   },
+    + ]
+
+      54 |     }
+      55 |   }
+    > 56 |   expect(violations, `${screen}: 48px 미만 터치 대상 — ${JSON.stringify(violations)}`).toEqual([]);
+         |                                                                                  ^
+      57 | }
+      58 |
+      59 | const screens: Array<{ name: string; path: string; seed: boolean }> = [
+        at assertTouchTargets (/Users/kim/Workspace/curvez/.claude/worktrees/preemie-calc/apps/preemie-calc/tests/e2e/nf-mobile.spec.ts:56:82)
+        at /Users/kim/Workspace/curvez/.claude/worktrees/preemie-calc/apps/preemie-calc/tests/e2e/nf-mobile.spec.ts:79:5
+
+    Error Context: test-results/nf-mobile-PC-NF-MOBILE-1·2·3-—-input-화면-chromium-mobile/error-context.md
+
+
+[61/63] [chromium-mobile] › tests/e2e/nf-mobile.spec.ts:83:5 › PC-NF-MOBILE-1·2·3 — copay-relief state:boundary-unconfirmed
+[62/63] [chromium-mobile] › tests/e2e/nf-privacy.spec.ts:12:5 › PC-NF-PRIV-1 — 프로필 입력·저장·대시보드 조회·프로필 편집 동안 나가는 요청에 이름·출생일·예정일 값이 없다
+[63/63] [chromium-mobile] › tests/e2e/nf-mobile.spec.ts:71:7 › PC-NF-MOBILE-1·2·3 — guide 화면
+  1 failed
+    [chromium-mobile] › tests/e2e/nf-mobile.spec.ts:71:7 › PC-NF-MOBILE-1·2·3 — input 화면 ───────────
+  62 passed (11.4s)

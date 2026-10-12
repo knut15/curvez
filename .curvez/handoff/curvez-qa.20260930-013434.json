@@ -1,0 +1,137 @@
+{
+  "from": "curvez-qa",
+  "to": ["curvez-orchestrator"],
+  "status": "done",
+  "summary": "curvez-nextjs.20260930-012225.json(스키마 오류로 curvez-nextjs.20260930-012435.json 이 같은 내용으로 대신했다 — GOAL 지시대로 그 스키마 오류는 제외하고 보고한다)이 오케스트레이터 캡처 육안 검토에서 찾은 시각 결함 5건(헤더 제목 음절 중간 줄바꿈, 나이 카드 숫자·단위 조각 끊김, 날짜 끊김, '+ 아이 추가' 버튼 라벨 줄바꿈, 1280px 에서 그 버튼이 콘텐츠 영역 밖 x=16 에 뜬 문제)을 고쳤다. 이 라운드는 (1) 게이트 5개와 E2E 를 최종 재판정하고, (2) 그 결함 5건이 다시 생겨도 자동으로 잡히도록 회귀 검사 45개를 새로 추가하고, (3) 변경 후 캡처 20장을 다시 찍었다. 워크트리 루트 pnpm typecheck(exit 0, 오류 0건, 7개 워크스페이스) · pnpm lint(exit 0, 0 problems) · pnpm test(exit 0, 203/203: preemie-calc 62/62 + scopulus-ui 141/141) · pnpm build(exit 0, preemie-calc 491/491 정적 페이지) 전부 통과, quality-gate.mjs --no-stop 5/5 PASS(arch 14규칙 위반 0). apps/preemie-calc pnpm test:e2e 는 2회 연속 실행 모두 185개 통과, 0개 실패(exit 0, 1회차 17.2s·2회차 16.9s, 두 결과 완전히 동일 — 플래키 아님). 185 = 6라운드 140개(변경 없음, 그대로 통과) + 이번 라운드 신규 45개(apps/preemie-calc/tests/e2e/nf-visual-defects-regression.spec.ts, 전부 신규 — 삭제·skip 없음). 신규 45개는 GOAL CONTEXT 의 회귀 검사 목록 (1)~(4)에 1:1 대응한다 — (1)모든 button·a[role] 라벨이 한 줄(Range.getClientRects()<=1)과 (2)body word-break:keep-all 을 9개 화면×360/390/768/1280px=36개 테스트로 같이 확인, (3)나이 카드 값 조각('92일'·'3개월'·'36일'·'1개월'·'2026-06-26' 포함)이 한 줄(nowrap span 의 Range.getClientRects()<=1)인지 AgeSummaryCard 를 쓰는 dashboard·share 화면×4폭=8개로 확인, (4)1280px 대시보드에서 '+ 아이 추가' 버튼과 첫 카드의 왼쪽 x 차이 ≤2px(실측 0~2px 이내)를 1개로 확인했다. 항목 (5)(헤더 제목 잘림 없음, line-clamp 2→3 변경 후에도 유효)는 새 테스트를 추가하지 않았다 — 6라운드가 이미 추가한 nf-header-layout.spec.ts의 'DSG-05 회귀' 그룹이 9개 화면×4폭 전부에서 scrollHeight<=clientHeight+1 을 확인하고 있고, 이 단언은 줄 수(2줄이든 3줄이든)와 무관하게 잘림 여부만 보므로 line-clamp 값 변경과 무관하게 그대로 유효해 중복 추가는 판단 기준의 '최소한만 건드린다'에 어긋난다고 판단했다. skip/only/todo 0건, any 0건(신규 파일), 수용 기준 커버 57/57(미커버 0, 요구사항 변경 없음 — 6라운드와 동일한 57개 ID 판정: 자동 통과 55·자동 실패 0·수동 1, 조건부 2건 유지). after 캡처 20장을 .curvez/qa/preemie-calc/screens/after/ 에 재촬영해 덮어썼다(20 passed, 8.9s, mtime 이번 실행 시각 01:32 확인). dashboard-2children-360.png·dashboard-1280.png·dashboard-correction-period-360.png·share-360.png 4장을 육안으로 재확인해 결함 5건이 전부 사라진 것을 눈으로도 확인했다(상세 대응표는 ac-matrix.md '7라운드' 절). 포트 3100 은 이번 세션 모든 명령 실행 전마다 lsof 로 비어 있음을 확인했고, run_in_background·직접 dev 서버 기동은 하지 않았다(Playwright webServer 만 사용). src·package.json 은 전혀 건드리지 않았다(git status 로 apps/preemie-calc/src 밖 파일만 바뀐 것 확인 — 신규 테스트 파일 1개 + .curvez/qa 문서만 추가). node validate-handoff.mjs .curvez/handoff/ 는 검사 42건 전부 통과, 오류 0개, 경고 0개(curvez-nextjs.20260930-012225.json 을 포함한 전체 디렉터리 기준으로도 오류가 없었다 — 012435 가 같은 내용으로 이미 대신하고 있어 별도 조치 불필요). 동시에 진행 중이던 curvez-reviewer.20260930-012842.json(읽기 전용 재리뷰, 지적 0건)와 curvez-designer.20260930-013031.json(디자인 스펙을 구현에 맞춰 갱신)은 이 라운드의 QA 범위 밖이라 별도로 소비하지 않았다.",
+  "artifacts": [
+    {
+      "path": "apps/preemie-calc/tests/e2e/nf-visual-defects-regression.spec.ts",
+      "kind": "code",
+      "note": "신규 파일. 45개 테스트: (1)+(2) 결합 '[시각 결함 회귀] body keep-all + 버튼·링크 라벨 한 줄'(9화면×4폭=36), (3) '[시각 결함 회귀] 나이 카드 값 조각 줄바꿈 없음'(dashboard·share×4폭=8), (4) '[시각 결함 회귀] 1280px 대시보드에서 \"+ 아이 추가\" 버튼이 카드와 같은 왼쪽 선에 있다'(1개). SCREENS 배열은 nf-header-layout.spec.ts 의 HEADER_SCREENS 와 같은 9개 화면 정의를 그대로 옮겼다(두 파일이 서로 다른 관심사를 검증해 데이터를 공유 모듈로 추출하지 않고 독립시켰다 — decisions 참고)"
+    },
+    {
+      "path": ".curvez/qa/preemie-calc/ac-matrix.md",
+      "kind": "doc",
+      "note": "'7라운드' 절 추가 — 57개 ID 재확인(6라운드와 동일), 실행 결과 수치, 캡처 육안 재확인 표(결함 5건 전부 사라짐), 신규 회귀 검사 4종 실측표, 직접 고친 것(신규 파일 1개)"
+    },
+    {
+      "path": ".curvez/qa/preemie-calc/strategy.md",
+      "kind": "doc",
+      "note": "'7라운드' 절 추가 — 층 배분과 근거(전부 e2e), 수용 기준 대응표(변경 없음), 디자인 스펙 키 대응표(새 키 없음, GOAL 회귀 목록에 직접 대응), 테스트하지 않는 것(a[role] 죽은 조건·임의 긴 문자열·nowrapChunks 내부 구현), 실행 결과, 직접 고친 것"
+    },
+    { "path": ".curvez/qa/preemie-calc/screens/after/", "kind": "doc", "note": "PNG 20장 재촬영(파일명 동일, mtime 이번 실행 시각 01:32 로 갱신)" },
+    { "path": ".curvez/qa/preemie-calc/last-run-typecheck-round7.log", "kind": "doc", "note": "워크트리 루트 pnpm typecheck 원문(exit 0)" },
+    { "path": ".curvez/qa/preemie-calc/last-run-lint-round7.log", "kind": "doc", "note": "워크트리 루트 pnpm lint 원문(exit 0, 0 problems)" },
+    { "path": ".curvez/qa/preemie-calc/last-run-root-round7.log", "kind": "doc", "note": "워크트리 루트 pnpm test 원문(203/203)" },
+    { "path": ".curvez/qa/preemie-calc/last-run-build-round7.log", "kind": "doc", "note": "워크트리 루트 pnpm build 원문(preemie-calc 491/491 정적 페이지)" },
+    { "path": ".curvez/qa/preemie-calc/last-run-quality-gate-round7.log", "kind": "doc", "note": "quality-gate.mjs --no-stop 원문(5/5 PASS)" },
+    { "path": ".curvez/qa/preemie-calc/last-run-e2e-r1-round7.log", "kind": "doc", "note": "pnpm test:e2e 1회차 원문(185 passed, 0 failed)" },
+    { "path": ".curvez/qa/preemie-calc/last-run-e2e-r2-round7.log", "kind": "doc", "note": "pnpm test:e2e 2회차 원문(185 passed, 0 failed — 1회차와 동일, 플래키 아님)" },
+    { "path": ".curvez/qa/preemie-calc/screens/last-run-capture-after-round7.log", "kind": "doc", "note": "after 캡처 원문(20 passed, 0 failed)" }
+  ],
+  "decisions": [
+    {
+      "what": "GOAL 이 요구한 회귀 검사 5개 중 (5)(헤더 제목 잘림 없음)는 새 테스트를 추가하지 않고 6라운드의 기존 테스트가 이미 커버하고 있음을 문서로만 남겼다.",
+      "why": "nf-header-layout.spec.ts 의 'DSG-05 회귀' 테스트 그룹이 6라운드부터 이미 9개 화면×360/390/768/1280px 전부에서 title.scrollHeight<=title.clientHeight+1 을 확인하고 있다. 이 단언은 제목이 몇 줄인지(1줄이든 2줄이든 line-clamp 이 2든 3든)와 무관하게 '넘치는 텍스트가 clientHeight 밖으로 잘렸는가'만 본다 — PageHeader.tsx 의 line-clamp 값이 2에서 3으로 바뀐 이번 변경에도 그대로 유효하다. 같은 사실을 다시 재는 테스트를 또 추가하면 판단 기준 '실패 지점이 좁아야 한다'에 오히려 반한다(두 테스트가 같은 이유로 동시에 실패해 어느 쪽이 원인인지 구분이 안 된다) — 판단 기준의 '최소한만 건드린다'를 따라 중복을 만들지 않았다.",
+      "reversible_at": "apps/preemie-calc/tests/e2e/nf-header-layout.spec.ts:210-221 (기존 assertion 위치)"
+    },
+    {
+      "what": "회귀 검사 (1)(모든 button·a[role] 라벨 한 줄)의 셀렉터를 GOAL 문구 그대로 'button, a[role]'로 구현했다 — 현재 코드에는 role 속성이 붙은 <a> 가 하나도 없어(grep 으로 확인) 이 부분은 사실상 항상 빈 집합이다.",
+      "why": "GuideCta.tsx·InfoRow.tsx 는 next/link 의 <a href> 를 role 없이 쓴다(GuideCta.tsx 자체 주석이 이를 의도적 예외로 설명한다). GOAL 이 명시한 셀렉터를 임의로 'a[href]'로 넓히면 범위 확대이자 GOAL 문구를 벗어난 해석이라, 문구 그대로 구현하고 이 사실을 strategy.md '테스트하지 않는 것'에 남겼다 — 향후 a[role] 요소가 생기면 이 테스트가 자동으로 그 요소도 검사한다.",
+      "reversible_at": "apps/preemie-calc/tests/e2e/nf-visual-defects-regression.spec.ts:145"
+    },
+    {
+      "what": "9개 화면 정의(SCREENS)를 nf-header-layout.spec.ts 의 HEADER_SCREENS 와 별도 파일에 그대로 복제했다(공유 모듈로 추출하지 않았다).",
+      "why": "두 파일은 서로 다른 관심사(헤더 정렬·겹침 vs 줄바꿈·정렬 회귀)를 검증한다. 공유 모듈로 추출하면 한 파일의 화면 정의 변경이 다른 파일의 테스트 대상도 조용히 바꿀 수 있어 결합도가 생긴다. 판단 기준 '최소한만 건드린다'(기존 통과 중인 nf-header-layout.spec.ts 를 리팩터링 목적으로 건드리지 않는다)를 우선했다 — 데이터 중복은 있지만 두 파일이 독립적으로 읽고 고칠 수 있다.",
+      "reversible_at": "apps/preemie-calc/tests/e2e/nf-visual-defects-regression.spec.ts:22-115"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "lsof -i :3100 (모든 typecheck/lint/test/build/quality-gate/test:e2e/capture 실행 전마다)",
+      "result": "매번 빈 출력(다른 프로세스 없음). run_in_background·직접 dev 서버 기동 안 함 — Playwright webServer(next build && next start -p 3100)만 사용",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) pnpm exec playwright test nf-visual-defects-regression.spec.ts (신규 파일만 먼저 격리 실행)",
+      "result": "45 passed (10.1s), 0 failed",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm typecheck",
+      "result": "exit 0. 7개 워크스페이스 전부 'Types generated successfully' + Done, 오류 0건 — .curvez/qa/preemie-calc/last-run-typecheck-round7.log",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm lint",
+      "result": "exit 0. eslint . && pnpm -r --if-present lint — 전 워크스페이스 Done, 출력 없음(0 problems) — .curvez/qa/preemie-calc/last-run-lint-round7.log",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm test",
+      "result": "exit 0. apps/preemie-calc 10개 파일 62개 테스트 62개 통과, packages/scopulus-ui 38개 파일 141개 테스트 141개 통과. 총 203개 중 203개 통과, 0개 실패 — .curvez/qa/preemie-calc/last-run-root-round7.log",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm build",
+      "result": "exit 0. apps/preemie-calc next build 성공, 491/491 정적 페이지 생성. city-presets·scopulus-ui·handwork 도 전부 Done — .curvez/qa/preemie-calc/last-run-build-round7.log",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/quality-gate.mjs --no-stop",
+      "result": "PASS arch(규칙 14개 파싱/검사 14개/위반 0건), PASS typecheck, PASS lint, PASS test, PASS build — quality-gate 통과, 5개 게이트 실행, 실패 0건 — .curvez/qa/preemie-calc/last-run-quality-gate-round7.log",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) pnpm test:e2e — 1회차",
+      "result": "185 tests, 185 passed, 0 failed (17.2s) — .curvez/qa/preemie-calc/last-run-e2e-r1-round7.log",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) pnpm test:e2e — 2회차",
+      "result": "185 tests, 185 passed, 0 failed (16.9s) — 1회차와 완전히 동일, 플래키 아님 — .curvez/qa/preemie-calc/last-run-e2e-r2-round7.log",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) grep -rnE '\\.(skip|only|todo)\\(|\\bx(it|describe)\\(' tests/",
+      "result": "0건",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) grep -nE ':\\s*any\\b|<any>|\\bas\\s+any\\b' tests/e2e/nf-visual-defects-regression.spec.ts",
+      "result": "0건",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) grep -ohE 'PC-F[0-9]+-(AC|EX)[0-9]+|PC-NF-[A-Z0-9]+-[0-9]+' tests/e2e/*.ts tests/unit/*.ts | sort -u | wc -l",
+      "result": "57(요구 57개와 정확히 일치, 미커버 0개 — 6라운드와 동일)",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) CURVEZ_CAPTURE=1 CURVEZ_CAPTURE_DIR=after pnpm exec playwright test --project=capture",
+      "result": "20 passed (8.9s), 0 failed",
+      "passed": true
+    },
+    {
+      "command": "ls -la .curvez/qa/preemie-calc/screens/after | 확인",
+      "result": "20장 전부 이번 실행 시각(01:32)으로 mtime 갱신, before 와 동일 파일명",
+      "passed": true
+    },
+    {
+      "command": "Read .curvez/qa/preemie-calc/screens/after/dashboard-2children-360.png · dashboard-1280.png · dashboard-correction-period-360.png · share-360.png (육안 확인)",
+      "result": "헤더 제목 음절 중간 끊김 없음('이른둥이'/'육아 계산기' 어절 단위), 나이 카드 값 조각('92일'·'3개월'·'36일'·'1개월'·'2026-06-26') 끊김 없음, '+ 아이 추가' 한 줄, 1280px 에서 버튼이 카드와 같은 왼쪽 선, correction-period@360px 제목이 3줄('교정연령'/'적용 종료'/'안내')로 잘림 없이 표시 — 결함 5건 전부 사라짐",
+      "passed": true
+    },
+    {
+      "command": "git status --porcelain | grep 'apps/preemie-calc/src'",
+      "result": "0건 — src 아래 변경 없음(신규 테스트 파일 1개 + .curvez/qa 문서만 추가·수정)",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/",
+      "result": "OK 핸드오프 검증 — 검사 42건, 통과 42건, 실패 0건, 오류 0개, 경고 0개(GOAL 이 언급한 curvez-nextjs.20260930-012225.json 의 스키마 오류는 curvez-nextjs.20260930-012435.json 이 같은 내용으로 이미 대신하고 있어 전체 디렉터리 기준 오류 0건으로 나왔다 — 별도 제외 처리 불필요)",
+      "passed": true
+    }
+  ]
+}

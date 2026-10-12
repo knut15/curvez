@@ -1,0 +1,30 @@
+{
+  "meta": {
+    "id": "formula-coefficients",
+    "title": "분유 수유량 참고 계수(아이사랑 포털)",
+    "sources": [
+      {
+        "id": "source-childcare-feeding",
+        "name": "아이사랑 0~3개월 수유 안내",
+        "url": "https://www.childcare.go.kr/?menuno=429"
+      }
+    ],
+    "effectiveDate": "2026-09-30",
+    "lastVerified": "2026-09-30",
+    "schemaVersion": 1
+  },
+  "bands": [
+    {
+      "id": "0-3m",
+      "sourceRangeText": "3개월이 될 때까지",
+      "ageWindow": { "start": { "months": 0, "days": 0 }, "endExclusive": { "months": 3, "days": 0 } },
+      "mlPerKgPerDay": { "min": 150, "max": 180 }
+    },
+    {
+      "id": "from-3m",
+      "sourceRangeText": "확인 중",
+      "ageWindow": { "start": { "months": 3, "days": 0 }, "endExclusive": null },
+      "mlPerKgPerDay": null
+    }
+  ]
+}

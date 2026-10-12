@@ -1,0 +1,138 @@
+{
+  "from": "curvez-nextjs",
+  "to": ["curvez-orchestrator", "curvez-qa", "curvez-reviewer"],
+  "status": "done",
+  "summary": "curvez-nextjs.20260930-012225.json 을 대신한다(스키마 오류). 오케스트레이터가 변경 후 캡처에서 찾은 시각 결함 4건을 모두 고쳤다. (1) 한글 단어 중간 줄바꿈: globals.css body 에 word-break:keep-all 을 추가해 어절 단위로만 줄바꿈하게 했다. 다만 correction-period 화면의 '교정연령 적용 종료 안내'(360px)는 keep-all 적용 뒤 헤더 가운데 트랙(~104px)에 2줄로 못 들어가는 걸 실측으로 확인해(전 핸드오프가 이미 이 폭을 측정해 둠), PageHeader.tsx 의 line-clamp 를 2→3 으로 올려 잘림 없이 3줄까지 보이게 했다(기존 line-clamp:2 로는 텍스트가 잘렸다 — scrollHeight>clientHeight). (2) AgeSummaryCard 의 '92일 · 3개월' 류 값이 숫자와 단위 사이에서 끊기는 문제: 공백으로 나눈 조각마다 white-space:nowrap 을 씌우는 nowrapChunks 헬퍼를 widgets/age-summary/lib 에 새로 만들어 적용했다(keep-all 은 한글 음절 사이만 막고 숫자-한글 경계의 줄바꿈 기회는 막지 못해 별도 처리가 필요했다). 디자인 스펙(AgeSummaryCard.md)이 <768px 에서 2열 유지를 명시하므로 세로 스택은 하지 않았다 — nowrap 조각만으로 값이 안 끊기는 걸 캡처로 확인했다. (3) '+ 아이 추가' 버튼: leading UserRoundPlus 아이콘을 빼 '+' 중복을 없앴고(라벨 문구는 그대로), ChildSwitcherTabs 행에 dashboard content 컨테이너와 같은 반응형 max-width/padding 클래스(.pc-child-switcher-row)를 둬 1280px 에서 카드와 같은 왼쪽 선에 오게 했다. 버튼-카드 사이 1280px 빈 공간은 .pc-dashboard-content 의 상단 패딩을 --space-8→--space-5 로 줄여(다른 3변은 유지) 약 76px→약 36px 로 줄였다. Button.tsx 에 white-space:nowrap + flexShrink:0 을 더해 360px 에서 라벨이 줄바꿈되던 것도 함께 고쳤다(모든 Button 공통 — 스펙에 wrap 허용 규칙이 없고 기존 라벨이 전부 짧아 회귀 없음, typecheck/lint/test/e2e 로 확인). (4) 위 조치 뒤 360/390/768/1280 전 화면 버튼 문구가 한 줄인지 nf-header-layout.spec.ts(140/140)과 재캡처 스크린샷 육안 확인으로 검증했다.",
+  "artifacts": [
+    {
+      "path": "apps/preemie-calc/src/app/globals.css",
+      "kind": "code",
+      "note": "body{word-break:keep-all}(113행, 결함1). .pc-dashboard-content 1280px 미디어쿼리 padding 상단만 --space-8→--space-5(213행, 결함3 빈공간). 새 클래스 .pc-child-switcher-row 추가(226~244행, 결함3 정렬) — .pc-dashboard-content 와 같은 400/640/1120 max-width 단계·좌우 패딩(space-4→space-6@1280)을 그대로 미러링"
+    },
+    {
+      "path": "apps/preemie-calc/src/features/switch-child/ui/ChildSwitcherTabs.tsx",
+      "kind": "code",
+      "note": "루트 div 에 className=\"pc-child-switcher-row\" 추가, 인라인 padding 제거(58행, 결함3 정렬). '+ 아이 추가' Button 의 icon={{name:'UserRoundPlus',...}} prop 제거(결함3 더하기 중복) — 라벨 문구 '+ 아이 추가' 는 그대로 유지(E2E 가 이 이름으로 찾음)"
+    },
+    {
+      "path": "apps/preemie-calc/src/shared/ui/Button.tsx",
+      "kind": "code",
+      "note": "style 에 whiteSpace:'nowrap', flexShrink:0 추가(90~91행, 결함3·4 — 라벨 중간 줄바꿈 방지 + 좁은 flex 행에서 버튼이 눌려 라벨이 끊기는 대신 형제가 스크롤되게 함)"
+    },
+    {
+      "path": "apps/preemie-calc/src/widgets/age-summary/lib/nowrap-chunks.tsx",
+      "kind": "code",
+      "note": "신규 파일. nowrapChunks(text) — 공백 단위로 잘라 조각마다 <span style=nowrap>, 조각 사이 공백은 그대로 둬 문장 전체는 여러 줄로 접힐 수 있게 함(결함2)"
+    },
+    {
+      "path": "apps/preemie-calc/src/widgets/age-summary/ui/AgeSummaryCard.tsx",
+      "kind": "code",
+      "note": "chronological.value·corrected.value·corrected.subValue·nextMonthDates 합성 문자열 4곳에 nowrapChunks 적용(41,48,52,68행, 결함2). '교정 36일 · 1개월' getByText(exact:true) 는 <p> 의 정규화된 textContent 가 여전히 그 문자열과 같아 그대로 통과함을 e2e(PC-F2-AC1, ACC-02)로 확인"
+    },
+    {
+      "path": "apps/preemie-calc/src/shared/ui/PageHeader.tsx",
+      "kind": "code",
+      "note": "WebkitLineClamp 2→3(95행, 결함1 보완) — keep-all 적용 뒤 'correction-period'(360px, '교정연령 적용 종료 안내')만 2줄에 못 들어가 잘림(scrollHeight>clientHeight)이 나서 3줄까지 허용. 다른 8개 화면은 여전히 1~2줄"
+    }
+  ],
+  "decisions": [
+    {
+      "what": "word-break:keep-all 을 body(전역)에 한 번만 추가하고, PageHeader.h1 의 overflow-wrap:break-word 는 안전망으로 그대로 뒀다(제거하지 않음)",
+      "why": "오케스트레이터 결정 그대로: '앱 전체에 word-break:keep-all 을 적용한다(globals.css body)'. keep-all+break-word 조합은 한글 어절 단위 줄바꿈을 기본으로 쓰되, 극단적으로 좁은 폭에서 단어 하나가 칸보다 넓은 경우에만 break-word 가 안전망으로 개입하는 표준 패턴이라 유지했다",
+      "reversible_at": "apps/preemie-calc/src/app/globals.css:113"
+    },
+    {
+      "what": "PageHeader 제목의 -webkit-line-clamp 을 2→3으로 올렸다(2줄 제한을 깨뜨림)",
+      "why": "GOAL 은 '제목은 2줄 제한이 유지되는지, keep-all 로 잘리지 않는지 측정한다' 고 명시했다 — 측정한 결과 둘은 동시에 만족 불가능했다. correction-period@360px 의 헤더 가운데 트랙은 실측 ~104px(전 핸드오프 curvez-nextjs.20260930-010104.json 의 jiti+chromium 실측과 일치)인데, keep-all 로 쪼갤 수 있는 가장 작은 2줄 조합('교정연령 적용'/'종료 안내')도 128px 이 필요해 104px 에 못 들어간다 — 즉 2줄 유지와 keep-all(안 잘림) 은 이 화면에서 동시에 만족할 수 없는 제약이었다. '잘리지 않는지' 를 하드 기준으로 보고(기존 nf-header-layout.spec.ts 의 주석도 '글자가 잘리지 않았는지' 를 실제 assert 대상으로 삼고 있고 '정확히 2줄' 은 assert 하지 않는다) line-clamp 을 3으로 올려 전체 문구가 보이게 했다. 헤더는 sticky+flex+minHeight 라 높이가 자연히 늘어난다(다른 화면은 텍스트가 짧아 여전히 1~2줄, 시각적 회귀 없음). requirements.md 의 요구 문구·수용 기준에는 '2줄' 이 명시돼 있지 않다 — 이전 구현자의 코드 주석에만 있던 선택이었다",
+      "reversible_at": "apps/preemie-calc/src/shared/ui/PageHeader.tsx:95"
+    },
+    {
+      "what": "AgeSummaryCard 360px 두 칸(생후/교정)을 세로로 쌓지 않고 2열을 유지했다 — GOAL 이 '쌓을지는 측정으로 판단' 이라고 했지만, .curvez/design/preemie-calc/components/AgeSummaryCard.md ## responsive 가 '<768: 2열을 유지하되 ... 360px 폭에서 두 칸이 겹치지 않도록' 이라고 명시했다",
+      "why": "디자인 스펙이 이미 <768 2열 유지를 못박았고, nowrapChunks 만으로 값 조각이 끊기지 않는 걸 재캡처(dashboard-2children-360.png)로 확인했다 — 겹침·줄바꿈 문제가 nowrap 만으로 해소돼 스펙을 깨고 쌓을 이유가 없었다. 스펙과 GOAL 이 갈리면 '이미 적힌 결정'(스펙)을 우선한다는 tie-break 을 따랐다",
+      "reversible_at": ".curvez/design/preemie-calc/components/AgeSummaryCard.md (디자이너 소유, 이 에이전트는 미변경)"
+    },
+    {
+      "what": "'+ 아이 추가' Button 의 leading icon(UserRoundPlus)을 뺐다 — ChildSwitcherTabs.md 스펙(##states default 행)은 이 아이콘을 명시하지만, 구현은 아이콘 없이 라벨 '+ 아이 추가' 만 남겼다",
+      "why": "GOAL 이 명시적으로 지시했다: 라벨에 이미 '+' 가 있어 아이콘까지 더하면 더하기가 두 번 보인다. 라벨 문구 자체('+ 아이 추가')는 E2E 가 찾는 이름이라 바꾸지 않았다. 이 불일치를 curvez-designer 에게 질문으로 올렸었는데, 오케스트레이터가 이미 정했다 — 구현대로 아이콘 없이 두고 curvez-designer 가 ChildSwitcherTabs.md 스펙 쪽을 구현에 맞춰 갱신한다. 따라서 이 항목은 blocked_on 이 아니라 이 decisions 항목 하나로 남긴다",
+      "reversible_at": "apps/preemie-calc/src/features/switch-child/ui/ChildSwitcherTabs.tsx:107-112"
+    },
+    {
+      "what": "Button.tsx 에 white-space:nowrap + flexShrink:0 을 앱 전체 공통으로 추가했다(개별 사용처가 아니라 컴포넌트 자체)",
+      "why": "Button.md 스펙에 줄바꿈 허용 규칙이 없고(라벨은 항상 짧은 단일 문구 전제), 기존 8개 사용처(취소·저장·주수로 입력·저장하고 결과 보기·링크 복사·카드 이미지로 공유·처음으로·계산기로 돌아가기 등) 라벨이 모두 짧아 nowrap 으로 넘치는 경우가 없음을 grep 으로 확인했다. ChildSwitcherTabs 처럼 좁은 flex 행 안에 놓이는 버튼에서 flexShrink:0 이 없으면 버튼이 눌려 라벨이 중간에 끊긴다(결함3의 360px 원인) — 컴포넌트 하나만 고치면 앞으로 비슷한 자리에 쓰이는 다른 pop/버튼도 같은 문제가 재발하므로 공통 컴포넌트에서 고쳤다",
+      "reversible_at": "apps/preemie-calc/src/shared/ui/Button.tsx:90-91"
+    },
+    {
+      "what": ".pc-dashboard-content 의 1280px 상단 패딩만 --space-8(64px)에서 --space-5(24px)로 줄이고 좌우·하단은 그대로 뒀다(3-value shorthand)",
+      "why": "결함3의 '버튼과 카드 사이 약 76px 빈 공간' = ChildSwitcherTabs 자체 하단 패딩(--space-3=12px) + content 상단 패딩(--space-8=64px). 상단만 --space-5(24px)로 줄이면 12+24=36px 로, 토큰만 써서 눈에 띄게 줄어든다. 좌우 패딩(--space-6)·하단 패딩(--space-8)은 다른 화면·페이지 하단 여백과의 일관성을 위해 손대지 않았다",
+      "reversible_at": "apps/preemie-calc/src/app/globals.css:213"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "(워크트리 루트) pnpm typecheck",
+      "result": "exit 0. apps/preemie-calc 'Types generated successfully' + Done, packages/scopulus-ui·apps/city-presets·apps/handwork·apps/scopulus-ui 전부 Done. 오류 0건",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm lint",
+      "result": "exit 0. eslint . && pnpm -r --if-present lint — 전 워크스페이스 Done, 출력 없음(0 problems, 0 warnings)",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm test",
+      "result": "exit 0. apps/preemie-calc 10개 파일 62/62 통과(Duration 334ms), packages/scopulus-ui 38개 파일 141/141 통과. 총 203/203, 실패 0",
+      "passed": true
+    },
+    {
+      "command": "(워크트리 루트) pnpm build",
+      "result": "exit 0. apps/preemie-calc next build 성공, 491/491 정적 페이지(guide 481 + 나머지 10). city-presets·handwork·scopulus-ui 3개 앱도 모두 Done",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) pnpm test:e2e",
+      "result": "140 tests, 140 passed, 0 failed(15.1s). 1차 실행에서 correction-period@360px 1건이 line-clamp:2 로 인한 제목 잘림(scrollHeight=90 > clientHeight=60)으로 실패했고, PageHeader.tsx line-clamp 을 3으로 올린 뒤 재실행해 140/140 전부 통과했다",
+      "passed": true
+    },
+    {
+      "command": "architecture.md ## preemie-calc 금지 import 표(ARCH-101~108) grep 재검사",
+      "result": "8개 규칙 전부 위반 0건(ARCH-101~108 합계 0). apps/preemie-calc/src/entities 안 next/* import 도 0건",
+      "passed": true
+    },
+    {
+      "command": "grep -nE ':\\s*any\\b|<any>|\\bas\\s+any\\b' (변경 5개 파일)",
+      "result": "0건 — any·as 단언 없음",
+      "passed": true
+    },
+    {
+      "command": "CURVEZ_CAPTURE=1 CURVEZ_CAPTURE_DIR=after (apps/preemie-calc) pnpm exec playwright test --project=capture",
+      "result": "20 tests, 20 passed. 이후 Read 도구로 dashboard-2children-360.png·dashboard-1280.png·dashboard-correction-period-360.png·dashboard-correction-period-1280.png·share-360.png·dashboard-checkups-360.png·dashboard-copay-relief-360.png 를 직접 열어 육안 확인",
+      "passed": true
+    },
+    {
+      "command": "dashboard-2children-360.png 육안 확인(결함1·2)",
+      "result": "헤더 제목 '이른둥이 / 육아 계산기' — 어절 단위 줄바꿈, 음절 중간 끊김 없음. 나이 카드 '생후 92일 ·' / '3개월', '교정 36일 ·' / '1개월', '...· 교정 2개월:' / '2026-06-26' — 숫자+단위·날짜 조각이 전부 한 덩어리로 유지되고, 줄바꿈은 조각 사이(공백·가운뎃점)에서만 일어난다",
+      "passed": true
+    },
+    {
+      "command": "dashboard-1280.png 육안 확인(결함3)",
+      "result": "'+ 아이 추가' 버튼이 카드들과 같은 왼쪽 선(x=112)에 있다(전에는 x=16 에 떠 있었다). 버튼 라벨 '+' 기호가 하나만 보인다(leading 아이콘 제거). 버튼-카드 사이 빈 공간이 눈에 띄게 줄었다(육안상 이전 스크린샷 대비 약 절반)",
+      "passed": true
+    },
+    {
+      "command": "dashboard-correction-period-360.png · -1280.png 육안 확인(결함1)",
+      "result": "360px: '교정연령' / '적용 종료' / '안내' 3줄, 음절 중간 끊김 없음(이전 '교정연령 적 / 용 종료 안내' 결함 사라짐). 1280px: '교정연령 적용 종료 안내' 한 줄",
+      "passed": true
+    },
+    {
+      "command": "share-360.png · dashboard-checkups-360.png · dashboard-copay-relief-360.png 육안 확인(결함4)",
+      "result": "'내 아이도 계산해보기 →' 한 줄, 헤더 제목들('영유아검진 / 도우미', '본인부담 / 경감 종료일') 어절 단위 2줄, 버튼 문구 줄바꿈 없음",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/curvez-nextjs.20260930-012435.json",
+      "result": "OK 핸드오프 검증 — 검사 1건, 통과 1건, 실패 0건, 오류 0개, 경고 0개",
+      "passed": true
+    }
+  ]
+}

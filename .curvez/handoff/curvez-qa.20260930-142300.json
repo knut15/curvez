@@ -1,0 +1,62 @@
+{
+  "from": "curvez-qa",
+  "to": ["curvez-orchestrator"],
+  "status": "done",
+  "summary": "통합 라운드: 팀(tmux) F16~F18·F1-AC7 테스트 파일(6개, standing 15 로 소유 제한이 풀림)의 실패 12건 + 발견 1건을 고쳤고, curvez-nextjs 의 두 마무리 라운드(20260930-135922 리뷰 6건 수정, 20260930-141142 TEAM-03·05·06·07·08·09 수정)가 done 으로 끝난 뒤 최종 게이트(typecheck·lint·test·build·전체 e2e) 5개를 각 1회 돌려 AC 69·EX 14·NF 11 = 94개 ID 판정표를 완성했다. 대응 12건: (1) f16-question-guides.spec.ts AC6 의 footer 셀렉터(getByRole('contentinfo')→locator('footer'), <footer>가 <main> 자손이면 암묵적 contentinfo 랜드마크가 없다는 HTML/ARIA 규칙 때문에 6건 모두 실패했었다) + 출처 이름 엄격화(TEAM-04), (2) 같은 파일 AC5 의 copay-relief 오판정(AC5 원문에 없는 조건) 제거(TEAM-02), (3) f18-age-basis-public.spec.ts AC1 의 낡은 SPEC v3 목록('성장 백분위')을 v5 5항목으로 교체, (4) 같은 파일 AC3 의 출처 이름 엄격화(TEAM-04·05), (5) f1-profile.spec.ts·nf-a11y.spec.ts 의 getByText('주수로 입력') strict mode 충돌을 getByRole(button)로 해소, (6) target-height.spec.ts AC1·AC2·state:empty 의 선택자를 ValueCard 의 3분할 <p> 구조에 맞춰 role=group 텍스트 정규화 판정으로 교체(nextjs 의 ACC-01 수정과 맞물려 실동작), (7) f13-build-artifacts.test.ts 의 481 고정 기대값이 F16 questions/F18 age-basis 라우트와 섞이던 카운트 로직을 숫자 이름 weeks 디렉터리·/guide/<주수>/<개월> 패턴으로 좁히고 sitemap 전체 수(496) 단언을 추가, (8) F16 EX1·F18 AC2 계산기 링크 왕복(입력 화면 → 저장 → 원래 대상 화면)과 외부 경로 거부(열린 리다이렉트 방지) 를 검증하는 e2e 신규 3건 추가, (9) 지시서에 없던 f17-guide-index.spec.ts AC2 의 getByLabel 부분 일치 strict mode 충돌(팀이 더한 section aria-labelledby 와 겹침)을 발견해 exact 매치로 해소. 이전에 src 결함으로 자동 실패 판정했던 PC-F14-AC1·AC2(목표키 범위 계산)와 조건부 판정이던 PC-F13-AC1·AC4(481 고정값)는 각각 nextjs 수정·이 라운드 테스트 수정으로 자동 통과로 바뀌었다. 최종 게이트 수치: typecheck exit 0(7 워크스페이스 오류 0), lint exit 0(0 problems), root test(apps/preemie-calc 15 files/103 tests 전부 통과, packages/scopulus-ui 38/141 전부 통과), build exit 0(preemie-calc 503개 정적 페이지, 4앱 전부 Done), 전체 e2e(PORT=3200, 1회) 263 tests 263 passed 0 failed. 94개 ID 중 91개 자동 통과 + 1개 조건부(PC-F8-AC4, 정부 자료 형태 한계, 9라운드부터 동일) + 1개 보류(PC-F8-AC3, 차트 라이브러리 미정) + 1개 '사용자 확인 대기'(PC-F16-AC4 근본 원인 — AC 문구 자체는 화면에 세 구간이 보여 충족하나, 계산기와 경계 정각 해석이 어긋나는 근본 원인은 curvez-reviewer TEAM-01 이 이미 오케스트레이터에게 판정을 요청했고 이 라운드는 GOAL 지시대로 손대지 않았다). PC-F5 경계(203일·231일)는 지시대로 그대로 뒀다. 포트 3100(PID 43850) 실행 전후 모두 유지, kill 없음. 3200 은 매 실행 전후 빈 상태. src·package.json 은 전부 읽기만 했다(수정 0건) — 이번 라운드가 새로 발견해 nextjs 에 돌리는 src 결함은 없다.",
+  "artifacts": [
+    { "path": "apps/preemie-calc/tests/e2e/f16-question-guides.spec.ts", "kind": "code", "note": "AC6 footer 셀렉터 교체(locator('footer'))+출처 이름 엄격화, AC5 copay-relief 제외, EX1 왕복+외부 경로 거부 e2e 신규 2건. PAGES 배열에 sourceNames 필드 추가" },
+    { "path": "apps/preemie-calc/tests/e2e/f18-age-basis-public.spec.ts", "kind": "code", "note": "AC1 SPEC v5 5항목 교체('성장 백분위'→'발달 평가'), AC3 출처 이름 엄격화(행별 sourceLabel 확인), AC2 '프로필 없을 때' 테스트를 F3 화면 도착까지 왕복 완성" },
+    { "path": "apps/preemie-calc/tests/e2e/f17-guide-index.spec.ts", "kind": "code", "note": "지시서에 없던 발견: AC2 getByLabel(/출생 주수/) 가 팀이 더한 section(접근 가능한 이름 겹침)과 strict mode 충돌 — exact:true 로 해소" },
+    { "path": "apps/preemie-calc/tests/e2e/f1-profile.spec.ts", "kind": "code", "note": "getByText('주수로 입력')→getByRole('button', {name:'주수로 입력'}) strict mode 충돌 해소" },
+    { "path": "apps/preemie-calc/tests/e2e/nf-a11y.spec.ts", "kind": "code", "note": "같은 strict mode 충돌 해소(위와 동일 패턴)" },
+    { "path": "apps/preemie-calc/tests/e2e/target-height.spec.ts", "kind": "code", "note": "AC1·AC2·state:empty 선택자를 ValueCard 의 role=group 텍스트 정규화 판정으로 교체 — 3개로 나뉜 <p>를 하나의 getByText 로 찾던 것이 DOM 구조상 항상 실패였다" },
+    { "path": "apps/preemie-calc/tests/unit/f13-build-artifacts.test.ts", "kind": "code", "note": "조합 페이지 카운트를 숫자 이름 weeks 디렉터리만(WEEKS_DIR_NAME=/^\\d+$/), 사이트맵 카운트를 /guide/\\d+/\\d+ 패턴만으로 좁혀 F16·F18 라우트와 섞이지 않게 했다. sitemap 전체 수(496) 신규 단언 추가(테스트 1개→3개)" },
+    { "path": ".curvez/qa/preemie-calc/test-changes-combined.md", "kind": "doc", "note": "신규. 6개 변경 파일의 이전→이후·근거 전문(테스트 이름·코드 스니펫 포함)" },
+    { "path": ".curvez/qa/preemie-calc/ac-matrix.md", "kind": "doc", "note": "F1(AC7 행 추가), F16·F17·F18(신규 절), F13(AC1·AC4 조건부→자동 통과), F14(AC1·AC2 자동 실패→자동 통과), '10라운드' 절(요약·최종 게이트 수치·바꾼 테스트 목록) 추가. 총 개수 79→94" },
+    { "path": ".curvez/qa/preemie-calc/strategy.md", "kind": "doc", "note": "'10라운드' 절 추가 — 층 배분·AC 대응표·디자인 스펙 키 대응표(F16~F18 스펙 없음 명시)·테스트하지 않는 것·최종 게이트 수치·9라운드 미해결 3건의 10라운드 해소 현황" },
+    { "path": ".curvez/qa/preemie-calc/last-run-typecheck-round10.log", "kind": "doc", "note": "(워크트리 루트) pnpm typecheck 원문, exit 0, 오류 0건(7 워크스페이스)" },
+    { "path": ".curvez/qa/preemie-calc/last-run-lint-round10.log", "kind": "doc", "note": "(워크트리 루트) pnpm lint 원문, exit 0, 0 problems" },
+    { "path": ".curvez/qa/preemie-calc/last-run-root-round10.log", "kind": "doc", "note": "(워크트리 루트) pnpm test 원문. apps/preemie-calc 103/103, packages/scopulus-ui 141/141, 실패 0건" },
+    { "path": ".curvez/qa/preemie-calc/last-run-build-round10.log", "kind": "doc", "note": "(워크트리 루트) pnpm build 원문, exit 0, preemie-calc 503개 정적 페이지, 4앱 전부 Done" },
+    { "path": ".curvez/qa/preemie-calc/last-run-e2e-round10.log", "kind": "doc", "note": "(apps/preemie-calc) PORT=3200 pnpm exec playwright test 전체 1회 원문. 263 tests, 263 passed, 0 failed(22.5s)" }
+  ],
+  "decisions": [
+    {
+      "what": "curvez-nextjs.20260930-135922.json 와 20260930-141142.json 를 지시서가 기다리라던 '14* 또는 그 뒤 시각의 새 nextjs 핸드오프'로 판단해 30분 폴링 없이 바로 최종 게이트로 넘어갔다",
+      "why": "135922(13:59:22)는 지시서 SCOPE 가 이미 '읽기만' 입력으로 명시한 파일이라 이 라운드 시작 시점에 이미 존재했고, 141142(14:11:42)는 작업 도중(14:12) 폴링해 새로 나타난 것을 확인했다 — 두 핸드오프의 artifacts·decisions 를 대조한 결과 GOAL 이 말한 '팀 리뷰 지적 6건'(ACC-01·DSG-01~03·ERR-01~02, 135922)과 그 이후 TEAM-03·05·06·07·08·09(141142) 수정이 정확히 이 두 파일에 해당해 더 기다릴 대상이 없다고 판단했다",
+      "reversible_at": ".curvez/handoff/curvez-nextjs.20260930-135922.json, .curvez/handoff/curvez-nextjs.20260930-141142.json"
+    },
+    {
+      "what": "PC-F16-AC4 를 '자동 통과'로 판정하되 그 근본 원인(경감 구간 문구와 계산기 경계 정각 해석 불일치, curvez-reviewer TEAM-01)은 ac-matrix.md 에 '사용자 확인 대기'로 별도 기록만 하고 이 핸드오프의 blocked_on 에는 올리지 않았다",
+      "why": "AC4 원문('재태기간 구간 3개와 기간이 보인다')은 화면에 세 구간·세 기간이 실제로 보여 충족한다 — 테스트가 실패하지 않는다. 근본 원인은 이미 curvez-reviewer 가 오케스트레이터에게 blocked_on 으로 직접 올려 뒀고(20260930-135018), GOAL 도 '사용자 답을 기다린다 — 지금 테스트는 그대로 둔다'고 명시해 이 라운드가 새로 막힌 것이 아니다. 중복해서 blocked_on 에 올리면 같은 이슈가 두 핸드오프에 따로 떠 오케스트레이터가 하나를 놓칠 위험이 있다",
+      "reversible_at": ".curvez/qa/preemie-calc/ac-matrix.md:## 10라운드"
+    },
+    {
+      "what": "PC-F17-AC2 의 getByLabel strict mode 충돌은 지시서 CONTEXT 목록에 없었지만 직접 발견해 고쳤다",
+      "why": "최종 게이트 전 스팟 체크(f17-guide-index.spec.ts 개별 실행)에서 실패를 확인했고, 원인이 팀이 더한 새 section 요소와의 접근 가능한 이름 겹침이라 이번 라운드가 고치는 다른 strict mode 충돌들과 성격이 같았다. 고치지 않으면 최종 전체 e2e 게이트가 이 1건 때문에 실패로 나와 '263/263 통과'를 보고할 수 없었다",
+      "reversible_at": "apps/preemie-calc/tests/e2e/f17-guide-index.spec.ts:26-27"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    { "command": "lsof -i :3100 (작업 시작 전/후, 모든 개별 spec·전체 e2e 실행 전후)", "result": "node 43850 LISTEN *:3100 그대로 유지 — kill 하지 않았다", "passed": true },
+    { "command": "lsof -i :3200 (각 실행 전후)", "result": "매번 빈 출력 — playwright webServer 가 자체 종료해 남은 프로세스 없음", "passed": true },
+    { "command": "(apps/preemie-calc) pnpm exec vitest run tests/unit/f13-build-artifacts.test.ts (수정 직후 개별 확인)", "result": "1 file, 3 tests, 3 passed", "passed": true },
+    { "command": "(apps/preemie-calc) PORT=3200 pnpm exec playwright test tests/e2e/f16-question-guides.spec.ts tests/e2e/f18-age-basis-public.spec.ts tests/e2e/target-height.spec.ts tests/e2e/f1-profile.spec.ts tests/e2e/nf-a11y.spec.ts tests/e2e/f1-ac7-due-date-label.spec.ts (수정 직후 1차)", "result": "63 tests, 62 passed, 1 failed(f16 AC6 corrected-age-until — effectiveDate=null 일 때 '기준일 확인 전' 문구를 놓친 정규식)", "passed": false },
+    { "command": "(apps/preemie-calc) PORT=3200 pnpm exec playwright test tests/e2e/f16-question-guides.spec.ts (정규식 수정 뒤 그 spec 만 재실행, standing 14)", "result": "25 tests, 25 passed", "passed": true },
+    { "command": "(apps/preemie-calc) PORT=3200 pnpm exec playwright test tests/e2e/f17-guide-index.spec.ts (AC2 selector 수정 전, 발견용)", "result": "3 tests, 2 passed, 1 failed(AC2, getByLabel strict mode 충돌)", "passed": false },
+    { "command": "(apps/preemie-calc) PORT=3200 pnpm exec playwright test tests/e2e/f17-guide-index.spec.ts (exact:true 수정 뒤 재실행)", "result": "3 tests, 3 passed", "passed": true },
+    { "command": "curvez-nextjs.20260930-141142.json 도착 후 (apps/preemie-calc) PORT=3200 pnpm exec playwright test tests/e2e/f16-question-guides.spec.ts tests/e2e/f17-guide-index.spec.ts tests/e2e/f18-age-basis-public.spec.ts tests/e2e/target-height.spec.ts tests/e2e/f1-profile.spec.ts tests/e2e/nf-a11y.spec.ts tests/e2e/f1-ac7-due-date-label.spec.ts (src 변경 반영 재확인, 1회)", "result": "66 tests, 66 passed", "passed": true },
+    { "command": "(apps/preemie-calc) PORT=3200 pnpm exec playwright test tests/e2e/vaccinations.spec.ts tests/e2e/nf-header-layout.spec.ts tests/e2e/nf-content-width.spec.ts (TEAM-07 vaccination 그룹핑 등 회귀 스팟 체크)", "result": "74 tests, 74 passed", "passed": true },
+    { "command": "(apps/preemie-calc) pnpm exec vitest run (전체, TEAM-09 correction-period API 변경 반영 재확인)", "result": "15 files, 103 tests, 103 passed", "passed": true },
+    { "command": "(워크트리 루트) pnpm typecheck", "result": "exit 0. 7개 워크스페이스 전부 Done, 오류 0건 — last-run-typecheck-round10.log", "passed": true },
+    { "command": "(워크트리 루트) pnpm lint", "result": "exit 0. 전 워크스페이스 Done, 0 problems — last-run-lint-round10.log", "passed": true },
+    { "command": "(워크트리 루트) pnpm test", "result": "apps/preemie-calc Test Files 15 passed(15) Tests 103 passed(103). packages/scopulus-ui Test Files 38 passed(38) Tests 141 passed(141). 실패 0건 — last-run-root-round10.log", "passed": true },
+    { "command": "(워크트리 루트) pnpm build", "result": "exit 0(Done). apps/preemie-calc: Generating static pages using 9 workers (503/503). 4앱(preemie-calc·city-presets·handwork·scopulus-ui) 전부 Done, 오류 0건 — last-run-build-round10.log", "passed": true },
+    { "command": "(apps/preemie-calc) pnpm exec vitest run tests/unit/f13-build-artifacts.test.ts (새 빌드 산출물로 재확인)", "result": "1 file, 3 tests, 3 passed(조합 481/481, 사이트맵 조합 481/481, 사이트맵 전체 496/496)", "passed": true },
+    { "command": "(apps/preemie-calc) PORT=3200 pnpm exec playwright test (전체, 1회, 최종 게이트)", "result": "263 tests, 263 passed, 0 failed(22.5s) — last-run-e2e-round10.log", "passed": true },
+    { "command": "grep -rnE '\\.(skip|only|todo)\\(|\\bx(it|describe)\\(' apps/preemie-calc/tests/", "result": "0건", "passed": true },
+    { "command": "grep -ohE 'PC-F[0-9]+-(AC|EX)[0-9]+|PC-NF-[A-Z0-9]+-[0-9]+' apps/preemie-calc/tests/e2e/*.ts apps/preemie-calc/tests/unit/*.ts | sort -u | wc -l (요구 94개 대비)", "result": "93/94 — 미커버 PC-F8-AC3 1개(차트 라이브러리 미정, 의도된 보류)", "passed": true },
+    { "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/", "result": "OK 핸드오프 검증 — 검사 65건, 통과 65건, 실패 0건, 오류 0개, 경고 0개(이 파일 포함 전체 재검증)", "passed": true }
+  ]
+}

@@ -1,0 +1,25 @@
+
+Running 20 tests using 5 workers
+
+  ✓   1 [capture] › tests/capture/screens.spec.ts:154:9 › capture guide-32-3 @ 360px (414ms)
+  ✓   2 [capture] › tests/capture/screens.spec.ts:154:9 › capture dashboard-correction-period @ 360px (416ms)
+  ✓   4 [capture] › tests/capture/screens.spec.ts:154:9 › capture root @ 360px (428ms)
+  ✓   5 [capture] › tests/capture/screens.spec.ts:154:9 › capture dashboard-checkups @ 360px (442ms)
+  ✓   3 [capture] › tests/capture/screens.spec.ts:154:9 › capture dashboard @ 360px (449ms)
+  ✓   7 [capture] › tests/capture/screens.spec.ts:154:9 › capture dashboard-correction-period @ 1280px (238ms)
+  ✓   6 [capture] › tests/capture/screens.spec.ts:154:9 › capture guide-32-3 @ 1280px (238ms)
+  ✓  10 [capture] › tests/capture/screens.spec.ts:154:9 › capture dashboard @ 1280px (242ms)
+  ✓   9 [capture] › tests/capture/screens.spec.ts:154:9 › capture dashboard-checkups @ 1280px (255ms)
+  ✓   8 [capture] › tests/capture/screens.spec.ts:154:9 › capture root @ 1280px (274ms)
+  ✓  11 [capture] › tests/capture/screens.spec.ts:154:9 › capture share @ 360px (230ms)
+  ✓  14 [capture] › tests/capture/screens.spec.ts:154:9 › capture dashboard-copay-relief @ 360px (208ms)
+  ✓  13 [capture] › tests/capture/screens.spec.ts:154:9 › capture dashboard-age-basis @ 360px (237ms)
+  ✓  15 [capture] › tests/capture/screens.spec.ts:154:9 › capture root-weeks-32 @ 360px (228ms)
+  ✓  12 [capture] › tests/capture/screens.spec.ts:154:9 › capture dashboard-2children @ 360px (276ms)
+  ✓  17 [capture] › tests/capture/screens.spec.ts:154:9 › capture dashboard-copay-relief @ 1280px (235ms)
+  ✓  16 [capture] › tests/capture/screens.spec.ts:154:9 › capture share @ 1280px (250ms)
+  ✓  18 [capture] › tests/capture/screens.spec.ts:154:9 › capture dashboard-age-basis @ 1280px (231ms)
+  ✓  20 [capture] › tests/capture/screens.spec.ts:154:9 › capture dashboard-2children @ 1280px (235ms)
+  ✓  19 [capture] › tests/capture/screens.spec.ts:154:9 › capture root-weeks-32 @ 1280px (265ms)
+
+  20 passed (8.8s)

@@ -1,0 +1,136 @@
+{
+  "from": "curvez-nextjs",
+  "to": ["curvez-orchestrator", "curvez-qa"],
+  "status": "partial",
+  "summary": "apps/preemie-calc 에 F1~F6 화면 6개 라우트(/, /dashboard, /dashboard/age-basis, /dashboard/checkups, /dashboard/copay-relief, /dashboard/correction-period)를 .curvez/design/preemie-calc 스펙대로 구현했다. `/?weeks=n`·`/?new=1` 쿼리 상태도 같은 `/` 라우트 안에서 처리된다. U1 의 계산 도메인(computeChildAges·ageBasisRows·planCheckups·classifyCopayRelief·correctionPeriod)을 그대로 호출해 화면에 반영했고, 프로필은 localStorage 에만 저장·전환·전체 삭제한다(서버로 나가는 fetch/서버 액션 0건, entities 안의 new Date/Date.now 0건, 도메인 레이어 next/* import 0건 — 전부 grep 으로 확인). typecheck·build·arch 게이트·curvez-qa 의 기존 단위 테스트 54건은 전부 통과했지만, lint 는 U1 이 이미 지목한 워크스페이스 eslint 10/eslint-plugin-react 7 비호환 크래시가 그대로 남아 있어(우회하지 않음) status 를 partial 로 낮춘다. 또한 시간 제약으로 각 컴포넌트 스펙의 a11y 세부 동작 일부(모달 focus trap, SegmentedControl/ChildSwitcherTabs 방향키 roving tabindex, 아이 전환·삭제·저장 완료 live region 안내 문구)를 구현하지 못했다 — 아래 decisions·verification 에 정확히 무엇이 되고 안 됐는지 적었다. F7(공유)·F13(guide, /guide, sitemap)은 지시서 범위 밖이라 손대지 않았다.",
+  "artifacts": [
+    { "path": "apps/preemie-calc/src/entities/child/model/index.ts", "kind": "code", "note": "추가만 함(기존 export 시그니처 불변): createChildProfile, childDisplayName(PC-F1-EX3 '아이 N' 번호)" },
+    { "path": "apps/preemie-calc/src/entities/child/api/index.ts", "kind": "code", "note": "신규. localStorage 저장소(architecture ② 표): readProfileStore/saveProfile/selectProfile/deleteAllChildData(PC-F1-AC4~AC6) + 추가 loadProfileStore/selectedProfileOf(빈 상태와 손상 상태를 구분, dashboard state:error)" },
+    { "path": "apps/preemie-calc/src/entities/child/ui/use-profile-store.ts", "kind": "code", "note": "신규. localStorage 읽기를 감싸는 클라이언트 훅(entities/*/ui 예외 표 적용)" },
+    { "path": "apps/preemie-calc/src/entities/child/index.ts", "kind": "code", "note": "api·ui 세그먼트 재노출 추가" },
+    { "path": "apps/preemie-calc/src/shared/ui/Button.tsx", "kind": "code", "note": "PC-F1-AC1, PC-NF-MOBILE-3(48px 이상)" },
+    { "path": "apps/preemie-calc/src/shared/ui/TextField.tsx", "kind": "code", "note": "EditProfileDialog 안 이름·체중 입력(PC-F1-EX3, PC-F6-AC3, PC-F7-AC1 자리)" },
+    { "path": "apps/preemie-calc/src/shared/ui/DateField.tsx", "kind": "code", "note": "PC-F1-AC1, AC2, AC3" },
+    { "path": "apps/preemie-calc/src/shared/ui/GestationInput.tsx", "kind": "code", "note": "PC-F1-AC1, AC3, PC-F13-AC3(주수 프리필 입력칸)" },
+    { "path": "apps/preemie-calc/src/shared/ui/SegmentedControl.tsx", "kind": "code", "note": "PC-F1-AC1(성별), PC-NF-A11Y-1(색+텍스트+✓기호)" },
+    { "path": "apps/preemie-calc/src/shared/ui/PageHeader.tsx", "kind": "code", "note": "PC-F1-AC6(정보 전체 삭제 진입점), PC-F6-AC3/PC-F7-AC1(프로필 편집 진입점)" },
+    { "path": "apps/preemie-calc/src/shared/ui/Skeleton.tsx", "kind": "code", "note": "각 화면 state:loading 자리(실사용 조건은 200ms 이상일 때만, 스펙상 거의 미노출)" },
+    { "path": "apps/preemie-calc/src/shared/ui/StatusBadge.tsx", "kind": "code", "note": "PC-F4-AC4, PC-NF-A11Y-1(색+텍스트+기호 3중 표시)" },
+    { "path": "apps/preemie-calc/src/shared/ui/StatePanel.tsx", "kind": "code", "note": "PC-F4-EX1, PC-F5-AC4, dashboard/각 하위화면 state:error" },
+    { "path": "apps/preemie-calc/src/shared/ui/ReferenceFooter.tsx", "kind": "code", "note": "PC-NF-MED-1('참고용이며 진단을 대신하지 않음' 고정 문구), PC-F3-AC4, PC-F4-AC5, PC-F5-AC5" },
+    { "path": "apps/preemie-calc/src/shared/ui/UnconfirmedNotice.tsx", "kind": "code", "note": "Settled<T>.status==='미확정' 표시(F4/F5/F6 unconfirmed)" },
+    { "path": "apps/preemie-calc/src/shared/ui/ConfirmDialog.tsx", "kind": "code", "note": "PC-F1-AC6" },
+    { "path": "apps/preemie-calc/src/shared/ui/InfoRow.tsx", "kind": "code", "note": "PC-F3-AC1~AC5(variant=basis), dashboard quick-links(variant=nav-card)" },
+    { "path": "apps/preemie-calc/src/shared/ui/index.ts", "kind": "code", "note": "shared/ui 공개 API 배럴" },
+    { "path": "apps/preemie-calc/src/app/globals.css", "kind": "code", "note": ".sr-only 유틸리티, 스피너/펄스 keyframes 추가(값은 그대로, U1 토큰 유지)" },
+    { "path": "apps/preemie-calc/src/widgets/age-summary/lib/format.ts", "kind": "code", "note": "PC-F2-AC1~AC3(리터럴 문구 '생후 92일 · 3개월', '교정 D-25', '재태 36주 3일', '생후 4개월: 2026-07-01', '교정 2개월: 2026-06-26' 조립)" },
+    { "path": "apps/preemie-calc/src/widgets/age-summary/ui/AgeSummaryCard.tsx", "kind": "code", "note": "PC-F2-AC1~AC5, PC-F5-AC1~AC3/AC5(single variant), PC-F6-AC1~AC3(single variant)" },
+    { "path": "apps/preemie-calc/src/widgets/age-summary/index.ts", "kind": "code", "note": "배럴" },
+    { "path": "apps/preemie-calc/src/widgets/checkup-plan/ui/CheckupRoundItem.tsx", "kind": "code", "note": "PC-F4-AC1, AC4" },
+    { "path": "apps/preemie-calc/src/widgets/checkup-plan/ui/CheckupPlanSection.tsx", "kind": "code", "note": "PC-F4-AC1~AC5, PC-F4-EX1('영유아검진 대상 기간이 끝났습니다' 원문)" },
+    { "path": "apps/preemie-calc/src/widgets/checkup-plan/index.ts", "kind": "code", "note": "배럴" },
+    { "path": "apps/preemie-calc/src/widgets/age-basis-list/ui/AgeBasisSection.tsx", "kind": "code", "note": "PC-F3-AC1~AC5(리터럴 '예방접종 — 출생 기준 — 생후 3개월' 등은 InfoRow 조합으로 표현)" },
+    { "path": "apps/preemie-calc/src/widgets/age-basis-list/index.ts", "kind": "code", "note": "배럴" },
+    { "path": "apps/preemie-calc/src/widgets/copay-relief-result/ui/CopayReliefSection.tsx", "kind": "code", "note": "PC-F5-AC1~AC5, PC-F5-AC4('경감 대상이 아닙니다' 원문), '2026년 1월 시행 제도 기준' 원문" },
+    { "path": "apps/preemie-calc/src/widgets/copay-relief-result/index.ts", "kind": "code", "note": "배럴" },
+    { "path": "apps/preemie-calc/src/widgets/correction-period-result/ui/CorrectionPeriodSection.tsx", "kind": "code", "note": "PC-F6-AC1~AC4, PC-F6-AC4('의료진과 상담해 정하세요' 원문), '24개월까지'/'출생 체중이 1.5kg 미만이면 36개월까지'/'36개월까지 쓸 수 있음' 원문" },
+    { "path": "apps/preemie-calc/src/widgets/correction-period-result/index.ts", "kind": "code", "note": "배럴" },
+    { "path": "apps/preemie-calc/src/widgets/nav-links/ui/QuickLinks.tsx", "kind": "code", "note": "PC-F6-EX1(재태 37주 이상이면 카드 숨김)" },
+    { "path": "apps/preemie-calc/src/widgets/nav-links/index.ts", "kind": "code", "note": "배럴" },
+    { "path": "apps/preemie-calc/src/widgets/dashboard-subpage/ui/DashboardSubpageShell.tsx", "kind": "code", "note": "age-basis/checkups/copay-relief/correction-period 4 화면 공용: 프로필 로딩·PC-F2-EX1류 리다이렉트·손상 시 에러 패널" },
+    { "path": "apps/preemie-calc/src/widgets/dashboard-subpage/index.ts", "kind": "code", "note": "배럴" },
+    { "path": "apps/preemie-calc/src/features/profile-form/ui/ProfileForm.tsx", "kind": "code", "note": "PC-F1-AC1~AC3, EX1('날짜를 확인하세요' 원문)·EX2, 저장 버튼 비활성 로직" },
+    { "path": "apps/preemie-calc/src/features/profile-form/index.ts", "kind": "code", "note": "배럴" },
+    { "path": "apps/preemie-calc/src/features/switch-child/ui/ChildSwitcherTabs.tsx", "kind": "code", "note": "PC-F1-AC5, EX3('아이 N'), '+ 아이 추가' → /?new=1" },
+    { "path": "apps/preemie-calc/src/features/switch-child/index.ts", "kind": "code", "note": "배럴" },
+    { "path": "apps/preemie-calc/src/features/clear-all-data/ui/ClearAllDataDialog.tsx", "kind": "code", "note": "PC-F1-AC6, PC-NF-PRIV-3" },
+    { "path": "apps/preemie-calc/src/features/clear-all-data/index.ts", "kind": "code", "note": "배럴" },
+    { "path": "apps/preemie-calc/src/features/edit-profile/ui/EditProfileDialog.tsx", "kind": "code", "note": "PC-F1-EX3, PC-F6-AC3, PC-F7-AC1 자리(이름·출생 체중 입력)" },
+    { "path": "apps/preemie-calc/src/features/edit-profile/index.ts", "kind": "code", "note": "배럴" },
+    { "path": "apps/preemie-calc/src/views/input/ui/InputView.tsx", "kind": "code", "note": "PC-F1-AC1, AC4(저장된 프로필 있으면 /dashboard 리다이렉트), AC5(/?new=1 은 리다이렉트 건너뜀), PC-F13-AC3(weeks 쿼리 파싱)" },
+    { "path": "apps/preemie-calc/src/views/input/index.ts", "kind": "code", "note": "배럴" },
+    { "path": "apps/preemie-calc/src/views/dashboard/ui/DashboardView.tsx", "kind": "code", "note": "PC-F2-AC1~AC5, PC-F2-EX1(프로필 없으면 / 로), PC-F1-AC5/AC6 진입점, dashboard state:error" },
+    { "path": "apps/preemie-calc/src/views/dashboard/index.ts", "kind": "code", "note": "배럴" },
+    { "path": "apps/preemie-calc/src/views/age-basis/ui/AgeBasisView.tsx", "kind": "code", "note": "PC-F3-AC1~AC5" },
+    { "path": "apps/preemie-calc/src/views/age-basis/index.ts", "kind": "code", "note": "배럴" },
+    { "path": "apps/preemie-calc/src/views/checkups/ui/CheckupsView.tsx", "kind": "code", "note": "PC-F4-AC1~AC5, EX1" },
+    { "path": "apps/preemie-calc/src/views/checkups/index.ts", "kind": "code", "note": "배럴" },
+    { "path": "apps/preemie-calc/src/views/copay-relief/ui/CopayReliefView.tsx", "kind": "code", "note": "PC-F5-AC1~AC5" },
+    { "path": "apps/preemie-calc/src/views/copay-relief/index.ts", "kind": "code", "note": "배럴" },
+    { "path": "apps/preemie-calc/src/views/correction-period/ui/CorrectionPeriodView.tsx", "kind": "code", "note": "PC-F6-AC1~AC4, EX1" },
+    { "path": "apps/preemie-calc/src/views/correction-period/index.ts", "kind": "code", "note": "배럴" },
+    { "path": "apps/preemie-calc/src/app/page.tsx", "kind": "code", "note": "F1 라우트. 서버 컴포넌트(searchParams await 만), 실제 렌더는 views/input(use client)로 위임" },
+    { "path": "apps/preemie-calc/src/app/dashboard/page.tsx", "kind": "code", "note": "F2 라우트" },
+    { "path": "apps/preemie-calc/src/app/dashboard/age-basis/page.tsx", "kind": "code", "note": "F3 라우트" },
+    { "path": "apps/preemie-calc/src/app/dashboard/checkups/page.tsx", "kind": "code", "note": "F4 라우트" },
+    { "path": "apps/preemie-calc/src/app/dashboard/copay-relief/page.tsx", "kind": "code", "note": "F5 라우트" },
+    { "path": "apps/preemie-calc/src/app/dashboard/correction-period/page.tsx", "kind": "code", "note": "F6 라우트" }
+  ],
+  "decisions": [
+    {
+      "what": "app/page.tsx 와 app/dashboard/**/page.tsx 6개는 전부 얇은 서버 컴포넌트로 두고(searchParams 를 await 하는 것 외 로직 없음), 실제 조립은 \"use client\" 가 붙은 views/*/ui/*View.tsx 로 위임했다.",
+      "why": "프로필은 localStorage 에만 있어(PC-NF-PRIV-1) 서버가 읽을 데이터가 없다 — 화면 대부분이 애초에 클라이언트에서만 값을 채울 수 있어 RSC 원칙(서버 기본값)을 지킬 서버 쪽 콘텐츠 자체가 없다. 대신 curvez-nextjs 표준 규칙(\"use client\" 는 페이지/레이아웃 최상단에 두지 않는다)은 그대로 지켜, page.tsx 파일에는 지시문이 없고 leaf 인 view 컴포넌트에만 있다. quality-gate 의 'use client' leaf 검사(4번 항목)로 0건을 확인했다",
+      "reversible_at": "apps/preemie-calc/src/app/page.tsx, apps/preemie-calc/src/app/dashboard/**/page.tsx"
+    },
+    {
+      "what": "shared/ui 에 Button·TextField·DateField·GestationInput·SegmentedControl·PageHeader·Skeleton·StatusBadge·StatePanel·ReferenceFooter·UnconfirmedNotice·ConfirmDialog·InfoRow(13개)를 두고, widgets 에는 AgeSummaryCard·CheckupRoundItem 만 두었다.",
+      "why": "architecture.md 는 widgets 예시로 '나이 요약', '검진 도우미 카드' 를 직접 이름 붙였다(AgeSummaryCard·CheckupRoundItem 이 여기 해당). 나머지 13개는 도메인 값을 미리 포맷팅해서 받는 순수 프레젠테이션이라(문자열·enum prop 뿐, entities import 없음) shared 정의('도메인을 모르는 것')에 더 맞는다고 판단했다",
+      "reversible_at": "apps/preemie-calc/src/shared/ui/**, apps/preemie-calc/src/widgets/age-summary/**, apps/preemie-calc/src/widgets/checkup-plan/ui/CheckupRoundItem.tsx"
+    },
+    {
+      "what": "dashboard 의 F7 진입점(design 의 ShareActionButton 자리)은 variant=secondary, disabled=true 인 Button 으로만 두고, navigator.share/링크복사/공유 카드 생성 로직은 만들지 않았다.",
+      "why": "지시서 CONTEXT 가 'F7 은 U3 에서 만든다. 이번엔 disabled 로 두거나 두지 않는다 — 고른 쪽을 적는다' 고 명시. 자리를 남겨 디자인 레이아웃(AgeSummaryCard 아래 share-entry 영역)이 U3 에서 어긋나지 않게 하는 쪽을 골랐다",
+      "reversible_at": "apps/preemie-calc/src/views/dashboard/ui/DashboardView.tsx"
+    },
+    {
+      "what": "entities/child/api 의 readProfileStore() 는 architecture 원 시그니처(ProfileStoreV1 반환, 실패 시 빈 상태)를 그대로 유지하고, 대신 loadProfileStore() 를 새로 추가해 { status: 'ok'|'empty'|'corrupted' } 로 '프로필 0개' 와 '저장값 손상' 을 구분했다.",
+      "why": "dashboard 화면 스펙(state:empty vs state:error)이 이 둘을 다른 화면으로 요구한다(전자는 / 로 리다이렉트, 후자는 에러 패널). architecture 는 이 구분을 명시하지 않아 새 함수를 추가로 만들었다(기존 시그니처는 바꾸지 않음 — curvez-qa 병행 작업 보호)",
+      "reversible_at": "apps/preemie-calc/src/entities/child/api/index.ts"
+    },
+    {
+      "what": "CheckupRoundItem 의 '검사지 기준 개월' 배지는 오늘이 속한 current 차수에만 실제 개월 수(currentQuestionnaireMonths)를 보여주고, past·upcoming 차수는 '교정 기준'/'생후 기준' 처럼 기준 이름만 보여준다(개월 수 없음).",
+      "why": "architecture 의 CheckupPlan 타입은 currentQuestionnaireMonths 를 '현재 차수일 때만' 한 값으로 낸다 — 과거·미래 차수에 대응하는 '그 시점의 교정/생후 개월'을 내는 함수가 없다. 방문 시작일 기준으로 역산할 수도 있었지만, 그러면 같은 차수가 current 인 동안 보여주는 값(오늘 기준)과 그 차수가 past 로 넘어간 뒤 보여줄 값(방문 시작일 기준)이 서로 달라져 화면이 모순돼 보인다. 없는 값을 지어내지 않는 쪽을 택했다",
+      "reversible_at": "apps/preemie-calc/src/widgets/checkup-plan/ui/CheckupPlanSection.tsx"
+    },
+    {
+      "what": "copay-relief 화면에서 classifyCopayRelief 가 { kind: 'boundary-unconfirmed' } (재태일수가 정확히 203일·231일)를 낼 때, design 문서에 없는 표시를 즉흥으로 만드는 대신 UnconfirmedNotice 하나로만 안내하고 결과 카드(AgeSummaryCard)는 그리지 않았다.",
+      "why": ".curvez/design/preemie-calc/screens/copay-relief.md 의 state 목록은 default/loading/empty/error 넷뿐이고 이 다섯 번째 경계 상태를 다루지 않는다. PC-F5-AC1~AC4 가 요구하는 값(32주0일·28주6일·35주0일·37주0일)은 전부 이 경계값(203·231)을 피해 가므로 화면 테스트에는 걸리지 않지만, 스펙에 없는 상태를 임의로 디자인하지 않기 위해 최소한으로만 표시했다. curvez-designer 확인이 필요해 blocked_on 에도 남긴다",
+      "reversible_at": "apps/preemie-calc/src/widgets/copay-relief-result/ui/CopayReliefSection.tsx"
+    },
+    {
+      "what": "age-basis·checkups·copay-relief·correction-period 4개 화면의 state:error 중 '기준 데이터 JSON 을 불러오지 못했을 때'는 런타임에서 실제로 처리하는 코드를 만들지 않았다(에러 바운더리 없음). localStorage 손상(state:error, PC-F2 쪽)만 처리했다.",
+      "why": "기준 데이터는 정적 import 라 구조가 어긋나면 resolveReferenceMeta 등이 모듈 평가 시점(빌드/최초 로드)에 예외를 던진다 — 즉 '빌드는 됐는데 특정 화면에서만 JSON 로드가 실패'하는 상황은 일어나지 않는다. 이 상태를 위한 React 에러 바운더리를 만드는 것은 검증 불가능한 가상의 실패를 다루는 코드라 판단해 시간 예산 안에서 만들지 않았다",
+      "reversible_at": "apps/preemie-calc/src/widgets/*-result/ui/*, apps/preemie-calc/src/widgets/age-basis-list, apps/preemie-calc/src/widgets/checkup-plan"
+    },
+    {
+      "what": "다음 a11y 세부 동작은 design 스펙에 적혀 있지만 이번 라운드에서 구현하지 못했다: (1) ConfirmDialog·EditProfileDialog 의 focus trap(모달 밖으로 Tab 이 못 나가게 막는 것) — 열릴 때 첫 포커스 이동만 구현했다. (2) SegmentedControl·ChildSwitcherTabs 의 방향키 roving tabindex — 클릭/Tab 만 동작한다. (3) 아이 전환·삭제 완료·프로필 저장 완료 시의 live region 안내 문구(각 화면 a11y:announce) — 렌더링하지 않았다.",
+      "why": "시간 예산 안에서 PC-F1~F6 의 AC 를 전부 화면에 반영하는 것을 우선했다. 세 항목 모두 스펙에 있고 임의로 줄인 것이 아니라 못한 것이므로 '구현했다' 고 보고하지 않고 여기에 정직하게 남긴다 — status 를 partial 로 낮춘 이유 중 하나다",
+      "reversible_at": "apps/preemie-calc/src/shared/ui/ConfirmDialog.tsx, apps/preemie-calc/src/features/edit-profile/ui/EditProfileDialog.tsx, apps/preemie-calc/src/shared/ui/SegmentedControl.tsx, apps/preemie-calc/src/features/switch-child/ui/ChildSwitcherTabs.tsx, apps/preemie-calc/src/views/dashboard/ui/DashboardView.tsx"
+    }
+  ],
+  "blocked_on": [
+    {
+      "question": "(U1 에서 이미 올라간 질문, 아직 해소되지 않아 다시 올린다) apps/preemie-calc/package.json 에 eslint ^9(handwork 와 같은 버전)을 devDependency 로 추가해도 되는가? 지금은 워크스페이스 루트의 eslint 10.9.1 이 잡혀 `pnpm --filter preemie-calc lint` 가 `TypeError: Error while loading rule 'react/display-name': contextOrFilename.getFilename is not a function` 로 크래시한다(이번 라운드에도 재확인함, 동일 크래시).",
+      "who": "curvez-orchestrator"
+    },
+    {
+      "question": "copay-relief.json 의 재태일수가 정확히 203일(29주0일)·231일(33주0일)인 경계 케이스에 대한 화면 상태가 .curvez/design/preemie-calc/screens/copay-relief.md 에 없다. 지금은 UnconfirmedNotice 하나만 보여주도록 최소 구현했는데, 이 경계 상태의 문구·레이아웃을 정의해 줄 수 있는가?",
+      "who": "curvez-designer"
+    }
+  ],
+  "verification": [
+    { "command": "pnpm --filter preemie-calc typecheck (= next typegen && tsc --noEmit)", "result": "Types generated successfully. tsc --noEmit 오류 0건, exit 0" },
+    { "command": "pnpm typecheck (워크스페이스 전체, pnpm -r --if-present typecheck)", "result": "7개 워크스페이스 전부 통과, exit 0" },
+    { "command": "pnpm --filter preemie-calc build (= next build)", "result": "Compiled successfully. Route (app): / (dynamic, searchParams 때문), /dashboard, /dashboard/age-basis, /dashboard/checkups, /dashboard/copay-relief, /dashboard/correction-period, /_not-found (전부 static) — 6개 요구 라우트 전부 생성 확인, exit 0" },
+    { "command": "pnpm build (워크스페이스 전체, pnpm -r --if-present build)", "result": "7개 워크스페이스 전부 빌드 성공, exit 0" },
+    { "command": "pnpm --filter preemie-calc test (= vitest run, curvez-qa 소유 tests/unit/*.test.ts 9개 파일)", "result": "Test Files 9 passed (9), Tests 54 passed (54) — 이번 라운드에서 추가한 entities/child 의 새 export(createChildProfile 등)로 인한 회귀 없음 확인, exit 0" },
+    { "command": "pnpm --filter preemie-calc lint (= eslint)", "result": "실패. exit 2. `ESLint: 10.9.1 / TypeError: Error while loading rule 'react/display-name': contextOrFilename.getFilename is not a function` — U1 이 이미 지목한 것과 동일한 크래시(워크스페이스 루트 eslint 10 과 eslint-plugin-react 7 비호환). 우회 명령을 만들지 않고 원문 그대로 기록. status: partial 의 사유" },
+    { "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/quality-gate.mjs --only arch --json", "result": "{ ok: true, 규칙 14개 파싱 / 검사 14개(ARCH-103·104 대상 features·widgets 디렉터리가 이번 라운드에 생겨 이제 검사됨) / 위반 0건 }" },
+    { "command": "grep -rn 'new Date(\\|Date.now(' apps/preemie-calc/src --include='*.ts' --include='*.tsx' | grep -v 'src/shared/lib/calendar-date/'", "result": "0건 — 시계를 읽는 곳이 shared/lib/calendar-date 뿐임을 확인" },
+    { "command": "grep -rn 'fetch(\\|\"use server\"' apps/preemie-calc/src", "result": "0건 — 아이 정보가 서버로 나가는 코드 없음(PC-NF-PRIV-1)" },
+    { "command": "grep -rlE '^\"use client\"' apps/preemie-calc/src/app --include='page.tsx' --include='layout.tsx'", "result": "0건 — app 층의 page.tsx/layout.tsx 어디에도 최상단 \"use client\" 없음(전부 views/* leaf 에 있음)" },
+    { "command": "grep -rnE ':\\s*any\\b|<any>|\\bas\\s+any\\b' apps/preemie-calc/src --include='*.ts' --include='*.tsx'", "result": "0건" },
+    { "command": "grep -rnE '\\bas\\s+[A-Z][A-Za-z0-9_]*' apps/preemie-calc/src --include='*.ts' --include='*.tsx'", "result": "5건 — 전부 기존 계약(U1 의 calendar.ts 2건, 브랜드 타입 생성) 또는 이번 라운드에 새로 만든 entities/child/api 의 2건(unknown → Record<string,unknown>, 타입가드 함수 안에서만, 바로 위에 이유 주석 추가)뿐. features/profile-form 의 `v as Sex` 는 타입가드 함수(isSex)로 교체해 0건으로 줄였다" },
+    { "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/", "result": "OK. 검사 10건, 통과 10건, 실패 0건, 오류 0개, 경고 0개 (.curvez/handoff/ 안의 핸드오프 10개 전부, 이 파일 포함)" }
+  ]
+}

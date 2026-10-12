@@ -1,0 +1,169 @@
+{
+  "from": "curvez-reviewer",
+  "to": ["curvez-orchestrator", "curvez-nextjs"],
+  "status": "partial",
+  "summary": "리뷰 축 5개 중 5개를 검증했다. 축 3(디자인)은 .curvez/design 을 따로 열지 않고 요청받은 항목만 코드와 렌더 결과로 확인했다: 헤더 가운데, h1 하나, 720px 공용 클래스. 지적은 major 2건, minor 7건, blocker 0건이다. 이미 알려진 4건(계산기 링크 복귀, F18 항목 v5, ProfileForm aria-describedby 우회, copayReliefTierRows 복제)과 남은 P3 는 다시 내지 않았다. 경감 구간 문구는 29주 0일·33주 0일에서 앱 계산과 어긋난다(TEAM-01). 그 뿌리는 PRD 결정과 보도자료 원문 사이의 해석 차이라서 blocked_on 으로 올렸다. 확인한 것 가운데 통과한 항목: jiti 로 렌더한 F16 6쪽과 F18 모두 h1 이 1개다. sitemap 은 496건이다(정적 9, 질문 6, 조합 481, 중복 0). typecheck·lint·arch 는 전부 통과했다. 가이드 쪽에서 localStorage 를 읽는 곳은 F18 AC2 가 요구하는 MyChildCta 하나뿐이다. 하이드레이션 위험은 MyChildCta 의 href 전환 하나다(TEAM-03). E2E 는 지시에 따라 돌리지 않았다. docs/SPEC.md 를 읽지 않아 이유식 문구의 SPEC 근거는 확인하지 못했다(TEAM-08).",
+  "artifacts": [],
+  "decisions": [
+    {
+      "what": "copayReliefTierRows 가 경계를 '29주 이상 33주 미만'으로 조립하는 방식 자체는 지적하지 않고, 그 문구가 앱 계산과 어긋나는 사실만 TEAM-01 로 냈다",
+      "why": "그 함수의 복제는 이미 알려져 curvez-nextjs 가 고치고 있다. TEAM-01 은 복제와 별개로 29주 0일·33주 0일에서 사용자에게 틀린 기간을 보여 주는 정확성 문제다",
+      "reversible_at": "findings 의 TEAM-01 을 빼면 된다"
+    },
+    {
+      "what": "F16 AC6 의 '기준일 확인 전' 표시(교정연령 쪽, correction-period.json effectiveDate=null)는 지적하지 않았다",
+      "why": "ReferenceFooter 가 null 일 때 쓰는 기존 규약(ACC-04)과 같고, 데이터가 원문 대조 전이라 날짜를 지어 넣지 않은 것이 맞다",
+      "reversible_at": "findings 에 TEAM-10 으로 추가하면 된다"
+    },
+    {
+      "what": "따라잡기 성장 쪽의 '백분위 3 미만·97 초과면 상담', '교정 40주 전 백분위 표시 안 함' 문구는 근거가 있다고 판정했다",
+      "why": "PC-F8-AC2, PC-F8-AC5·EX1 과 entities/growth/model/index.ts:204 의 판정과 같다. 새로 지어낸 의료 권고가 아니다",
+      "reversible_at": "findings 에 TEAM-11 로 추가하면 된다"
+    },
+    {
+      "what": "예방접종 쪽의 'A형간염 1차 12개월~24~35개월' 처럼 어색한 문구는 지적하지 않았다",
+      "why": "vaccination-schedule.json:576 의 sourceTimingText 원문을 그대로 옮긴 것이라 이번 팀 코드의 결함이 아니다",
+      "reversible_at": "findings 에 데이터 지적으로 추가하면 된다"
+    },
+    {
+      "what": "기존 E2E 에서 getByLabel(\"출산 예정일\") 을 쓰는 곳(nf-privacy.spec.ts:24, f1-profile.spec.ts:19·97, nf-a11y.spec.ts:66)은 결함으로 보지 않고 위치만 남긴다",
+      "why": "Playwright getByLabel 의 문자열 인자는 부분 일치라서 '원래 출산 예정일' 칸을 그대로 찾는다",
+      "reversible_at": "exact 옵션을 쓰는 테스트가 생기면 findings 로 추가하면 된다"
+    },
+    {
+      "what": "F17 AC2 테스트가 제목에 쉼표가 들어간 '32주 출생, 생후 3개월' 로 판정하는 것은 지적하지 않았다",
+      "why": "F13 이 이미 만든 제목(widgets/guide-content/lib/build-guide-content.ts:19)과 같고, AC 가 요구하는 것은 해당 조합 페이지가 열리는 것이다",
+      "reversible_at": "findings 에 추가하면 된다"
+    },
+    {
+      "what": "구조 관찰(등급 없음, 오케스트레이터 전달용): CalculatorLink.tsx 와 MyChildCta.tsx 가 views/guide GuideCta 의 링크 스타일을 그대로 복제했다",
+      "why": "파일 사이 관계라 curvez-structure-reviewer 의 축이다. 위치만 남긴다: src/views/guide-questions/ui/CalculatorLink.tsx:14, src/views/age-basis-public/ui/MyChildCta.tsx:18",
+      "reversible_at": "curvez-orchestrator 가 structure-reviewer 에게 넘길지 정한다"
+    }
+  ],
+  "blocked_on": [
+    {
+      "who": "curvez-orchestrator",
+      "question": "경감 구간 경계 해석이 둘로 갈린다(사용자 결정 필요). 보도자료 원문은 '29주 이상~33주 미만 5년3개월', '29주 미만 5년4개월'이다(sources-v2.md 사실 #5). 이 문장을 글자대로 읽으면 29주 0일은 5년 3개월이다. 그런데 PRD §9 결정 '정각은 더 긴 경감 구간'을 따른 앱 계산(copay-relief/model/index.ts 의 from 배타·to 포함)은 203일→5년 4개월, 231일→5년 3개월을 낸다. 조사 브리프 83행은 '이상 쪽'과 '더 긴 경감'을 같은 뜻으로 적었지만 둘은 반대다. 가이드 문구(원문 그대로)와 앱 계산 중 어느 쪽에 맞출지 정해야 TEAM-01 의 수정 방향이 정해진다."
+    }
+  ],
+  "verification": [
+    {
+      "command": "pnpm typecheck (profile.commands.typecheck)",
+      "result": "exit 0. apps/preemie-calc: next typegen && tsc --noEmit Done",
+      "passed": true
+    },
+    {
+      "command": "pnpm lint (profile.commands.lint)",
+      "result": "exit 0. eslint . 와 7개 워크스페이스 lint 모두 Done",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/quality-gate.mjs --only arch",
+      "result": "PASS arch: 규칙 19개 파싱 / 검사 19개 / 위반 0건",
+      "passed": true
+    },
+    {
+      "command": "jiti + react-dom/server renderToStaticMarkup(GuideQuestionView × 6, AgeBasisPublicView)",
+      "result": "h1 개수: 6쪽과 F18 모두 1. '미확정' 개수: corrected-age-until 1, copay-relief 1, 나머지 0. F18 CTA href=\"/\"(서버 스냅샷). 5개 행: 예방접종·영유아검진 방문·문진표·발달선별검사지·이유식·발달 평가",
+      "passed": true
+    },
+    {
+      "command": "jiti: app/sitemap.ts default() 와 classifyCopayRelief(203·231일 전후)",
+      "result": "sitemap 496건(중복 0, 조합 481, questions 6, /guide 1, /guide/age-basis 1). 202→5년4개월, 203(29w0d)→5년4개월, 204→5년3개월, 231(33w0d)→5년3개월, 232→5년2개월",
+      "passed": true
+    }
+  ],
+  "findings": [
+    {
+      "id": "TEAM-01",
+      "kind": "acceptance",
+      "severity": "major",
+      "priority": "P1",
+      "what": "본인부담 경감 가이드는 '재태기간 29주 이상 33주 미만: 5년 3개월', '29주 미만: 5년 4개월'로 보여 준다. 앱 계산은 29주 0일(203일)을 5년 4개월, 33주 0일(231일)을 5년 3개월로 분류해, 경계 정각에서 가이드와 계산기가 서로 다른 기간을 말한다",
+      "where": "apps/preemie-calc/src/views/guide-questions/ui/GuideQuestionView.tsx:82",
+      "why": "공개 가이드와 계산기(F5)가 같은 아이에게 다른 경감 기간을 안내한다. PC-F16-AC4 문구는 원문 그대로라 충족하지만, 경계 정각을 설명하지 않아 PRD §9 미결 2 의 결정(정각은 더 긴 구간)과 모순된다. 뿌리가 PRD 결정과 원문 해석의 충돌이라 blocker 가 아닌 major 로 두고 판정을 blocked_on 으로 올렸다. 수정 방향: 오케스트레이터 판정 뒤, AC4 의 세 줄은 그대로 두고 '29주 0일·33주 0일은 더 긴 구간' 같은 경계 설명을 데이터(innerBoundary)에서 읽어 덧붙이거나, 앱 계산 쪽을 고친다",
+      "evidence": "재현: jiti 로 classifyCopayRelief({birthDate:2026-01-01, gestation:{totalDays:203}}) → eligible '5년 4개월', totalDays:231 → '5년 3개월'. 같은 렌더에서 copay-relief 쪽 본문은 '재태기간 29주 이상 33주 미만: |5년 3개월|재태기간 29주 미만: |5년 4개월'. copay-relief.json tiers 는 203/231 경계, innerBoundary=lower-inclusive. 위치는 복제 수정 중이라 줄이 바뀔 수 있다(구간 문구 조립: GuideQuestionView.tsx:78~82)"
+    },
+    {
+      "id": "TEAM-02",
+      "kind": "acceptance",
+      "severity": "major",
+      "priority": "P1",
+      "what": "F16 테스트 'PC-F16-AC5 — 미확정 표시는 교정연령 쪽에만 붙는다'는 copay-relief 쪽에서도 '미확정' 0건을 기대한다. 그러나 그 쪽은 PRD 미결 2(종료일)의 UnconfirmedNotice 를 정상으로 보여 주므로 이 테스트는 반드시 실패한다",
+      "where": "apps/preemie-calc/tests/e2e/f16-question-guides.spec.ts:71",
+      "why": "PC-F16-AC5 는 교정연령 쪽에 '미확정'이 보이는지만 요구하고 다른 쪽에 없다는 것을 요구하지 않는다. 테스트가 요구에 없는 조건을 만들었고, 그 조건은 standing 5(미결 값에 '미확정' 표시)를 따르는 올바른 화면과 부딪힌다. 라운드 마지막 E2E 게이트를 확실히 깨므로 major 다. 제품 동작은 옳아서 blocker 로 올리지 않았다. 수정 방향: 이 테스트를 지우거나 반복 목록에서 copay-relief 를 뺀다",
+      "evidence": "재현: jiti 렌더 결과 copay-relief 쪽 '미확정' 1건('|미확정| · 종료일 당일을 포함하는지는 원문을 찾지 못했습니다...'). 코드 근거: GuideQuestionView.tsx:209~211 에서 copayReliefEndDateMethod.status === '미확정' 이면 UnconfirmedNotice 를 렌더하고, UnconfirmedNotice.tsx:32 가 <strong>미확정</strong> 을 쓴다. Playwright 는 돌리지 않았다(지시)"
+    },
+    {
+      "id": "TEAM-03",
+      "kind": "failure-path",
+      "severity": "minor",
+      "priority": "P3",
+      "what": "[확인 필요] F18 '내 아이로 계산하기'의 href 는 하이드레이션 전에 '/'(서버 스냅샷 empty)다. 프로필이 있는 사용자가 하이드레이션 전에 누르면 '/' 로 간 뒤 InputView 가 /dashboard 로 보내, F3(/dashboard/age-basis)이 아닌 화면에 닿는다",
+      "where": "apps/preemie-calc/src/views/age-basis-public/ui/MyChildCta.tsx:15",
+      "why": "PC-F18-AC2 의 '프로필이 있을 때는 F3 화면'이 짧은 시간 구간에서 깨진다. f18 테스트 36~37행도 링크가 보이자마자 클릭하므로 같은 경쟁으로 가끔 실패할 수 있다. 실행으로 확인하지 못해 minor 로 낮췄다. 알려진 (1)은 프로필이 없을 때의 문제이고, 이것은 프로필이 있을 때의 문제다. 수정 방향: hydrated 전에는 클릭을 막거나, 테스트에서 하이드레이션 완료를 기다린 뒤 클릭한다",
+      "evidence": "재현: seedProfiles 뒤 /guide/age-basis 를 열고 하이드레이션 전에 링크를 클릭한다. 실행 확인 못 함(읽기만 함). 근거: use-profile-store.ts:27~31 getServerSnapshot → {status:'empty'}, jiti 렌더 href=\"/\", InputView.tsx:36 router.replace('/dashboard')"
+    },
+    {
+      "id": "TEAM-04",
+      "kind": "acceptance",
+      "severity": "minor",
+      "priority": "P2",
+      "what": "F18 AC3 테스트가 '근거 자료 이름'을 데이터 파일 제목 '어느 나이를 쓰나 기준표'로 판정하고, F16 AC6 테스트는 /기준일/ 만 보고 근거 자료 이름을 확인하지 않는다",
+      "where": "apps/preemie-calc/tests/e2e/f18-age-basis-public.spec.ts:43",
+      "why": "PC-F18-AC3·PC-F16-AC6 은 근거 자료 이름을 요구한다. 지금 선택자로는 출처 이름이 사라져도 테스트가 통과한다. 수정 방향: F18 은 '질병관리청 표준 예방접종 일정표' 같은 실제 출처 이름을, F16 은 쪽마다 meta.sources 이름을 단언한다",
+      "evidence": "재현: 출처 이름을 빼도 통과하는지 코드로 대조. f18 spec:43 은 ageBasisMeta.title 을 찾는다(AgeBasisPublicView.tsx:65 가 푸터에 그 제목을 넣는다). f16 spec:34 는 page.getByText(/기준일/).first() 뿐이다. 실행 확인 못 함(읽기만 함)"
+    },
+    {
+      "id": "TEAM-05",
+      "kind": "acceptance",
+      "severity": "minor",
+      "priority": "P2",
+      "what": "F18 공개판 푸터가 근거 자료 자리에 출처가 아닌 데이터 파일 제목 '어느 나이를 쓰나 기준표 · 기준일 2026-09-30'을 보여 준다",
+      "where": "apps/preemie-calc/src/views/age-basis-public/ui/AgeBasisPublicView.tsx:65",
+      "why": "행마다 실제 출처가 이미 있어 PC-F18-AC3 은 충족한다. 다만 푸터의 '출처' 줄이 존재하지 않는 자료 이름으로 읽힌다. F16 쪽은 meta.sources 이름을 쓰므로 두 공개 페이지의 출처 표시가 어긋난다. 수정 방향: ageBasisMeta.sources 이름으로 푸터를 채우거나, 행에 출처가 있으니 disclaimer-only 로 둔다",
+      "evidence": "재현: jiti 로 AgeBasisPublicView 를 렌더하면 '|어느 나이를 쓰나 기준표 · 기준일 2026-09-30|참고용이며 진단을 대신하지 않음|' 이 나온다"
+    },
+    {
+      "id": "TEAM-06",
+      "kind": "acceptance",
+      "severity": "minor",
+      "priority": "P2",
+      "what": "F18 페이지 metadata description 이 v5 에서 빠진 '성장 백분위'를 항목으로 적고 '발달 평가'는 빠뜨렸다",
+      "where": "apps/preemie-calc/src/app/guide/age-basis/page.tsx:8",
+      "why": "검색 결과에 보이는 설명이 SPEC v5 의 5개 항목(PC-F18-AC1)과 다르다. 알려진 (2)와 원인은 같지만 화면 목록이 아닌 메타데이터 줄이라 수정에서 빠지지 않도록 위치를 따로 남긴다. 수정 방향: '예방접종, 영유아검진, 이유식, 발달 평가' 로 바꾼다",
+      "evidence": "재현: grep '성장 백분위' src/app/guide → page.tsx:8 1건. 화면 행은 데이터에서 읽어 이미 '발달 평가'다(jiti 렌더 확인)"
+    },
+    {
+      "id": "TEAM-07",
+      "kind": "acceptance",
+      "severity": "minor",
+      "priority": "P2",
+      "what": "예방접종 가이드는 로타바이러스 RV1·RV5 와 일본뇌염 불활성화·약독화를 '둘 중 하나'라는 표시 없이 나란히 나열한다. 읽는 사람은 두 계열을 모두 맞아야 하는 것으로 받아들일 수 있다",
+      "where": "apps/preemie-calc/src/views/guide-questions/ui/GuideQuestionView.tsx:96",
+      "why": "데이터(vaccination-schedule.json)는 alternativeGroup 'rotavirus'·'japanese-encephalitis'로 대체 관계를 적어 두었는데 가이드가 그 정보를 버린다. 계산기(entities/vaccination/model:83)는 그 관계를 쓴다. 틀린 사실을 적은 것이 아니라 정보를 빠뜨린 것이라 tie-break 로 minor 에 두었다. 수정 방향: alternativeGroup 이 같은 계열을 묶어 '둘 중 하나' 를 붙인다",
+      "evidence": "재현: jiti 렌더 vaccination 쪽 '|로타바이러스(RV1)| 1차 2개월 · 2차 4개월|로타바이러스(RV5)| 1차 2개월 · 2차 4개월 · 3차 6개월|...|일본뇌염(불활성화)|...|일본뇌염(약독화)|...' — 대체 표시가 없다"
+    },
+    {
+      "id": "TEAM-08",
+      "kind": "acceptance",
+      "severity": "minor",
+      "priority": "P3",
+      "what": "[확인 필요] 이유식 쪽의 '교정 6개월 전후가 기준'은 데이터 파일과 조사 브리프 어디에도 근거가 없다. 그런데 푸터가 이 문장을 '아이사랑 이른둥이 안내'의 내용처럼 보이게 한다",
+      "where": "apps/preemie-calc/src/views/guide-questions/ui/GuideQuestionView.tsx:150",
+      "why": "age-basis.json 은 이유식=corrected 만 담고, sources-v2.md 사실 #4 도 '이유식은 교정 나이를 따른다'만 확인했다. 팀 지시서는 '교정 6개월 전후'를 쓰라고 했지만 docs/SPEC.md 를 읽지 않아 그 문장이 SPEC 원문인지 확인하지 못했다. SPEC 에 있으면 결함이 아니다. 수정 방향: SPEC 원문이면 근거로 SPEC 을 표시하고, 아니면 age-basis 데이터에 출처와 함께 넣은 뒤 읽는다",
+      "evidence": "재현: grep '6개월 전후' .curvez/research/preemie-calc/sources-v2.md 와 src/entities/*/data → 0건. jiti 렌더 weaning 쪽 푸터 '아이사랑 이른둥이 안내 · 기준일 2026-09-30'. 실행 확인 못 함(SPEC 원문 대조 불가)"
+    },
+    {
+      "id": "TEAM-09",
+      "kind": "acceptance",
+      "severity": "minor",
+      "priority": "P2",
+      "what": "교정연령 쪽이 미결 3 에 걸린 값(24개월·36개월·28주·1.5kg)을 correction-period.json 에서 읽지 않고 문장에 직접 적었다. questions.ts:40 의 description 도 같다",
+      "where": "apps/preemie-calc/src/views/guide-questions/ui/GuideQuestionView.tsx:165",
+      "why": "standing 5 는 미결에 걸린 값을 데이터 파일이나 한 곳의 상수로 모으라고 한다. 지금은 값이 같아 화면은 맞지만, 미결 3 이 정해져 데이터가 바뀌면 F6 계산기와 이 가이드가 조용히 어긋난다. 수정 방향: defaultUntilMonths·extended.untilMonths·gestationDaysBelow/7·birthWeightGramsBelow 로 문장을 만든다",
+      "evidence": "재현: correction-period.json 의 defaultUntilMonths 를 30 으로 바꿔도 가이드는 '24개월'을 보여 준다(코드 대조). 실행 확인 못 함(읽기만 함, 쓰기 금지)"
+    }
+  ]
+}

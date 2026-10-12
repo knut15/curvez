@@ -1,0 +1,79 @@
+{
+  "from": "curvez-requirements",
+  "to": ["curvez-orchestrator"],
+  "status": "done",
+  "summary": "SPEC v1 §2 의 F1~F7·F13 수용 기준 38건(PC-F<n>-AC<n>)과 예외 8건(PC-F<n>-EX<n>), §6 비기능 11건(PC-NF-*)을 .curvez/requirements.md 의 '## preemie-calc' 절로 옮겼다. AC·예외 문장은 SPEC 에서 기계적으로 뽑아 글자 단위로 대조했다. 새 요구는 없다. PRD §9 미결 1·2·3·5·6 은 해석 없이 기능별로 연결만 적었다. F8~F12 는 범위 밖으로 한 줄 적었다. 참고: SPEC §6 의 성능·첫 결과·신뢰·광고는 지시 범위 밖이라 옮기지 않았는데, 이 중 '첫 결과 10초 이내(수동 확인)' 는 PRD §7 의 1단계 완료 조건에도 들어 있다.",
+  "artifacts": [
+    { "path": ".curvez/requirements.md", "kind": "spec", "note": "## preemie-calc 절 하나. 필수 6개 섹션은 ### 로 둠" }
+  ],
+  "decisions": [
+    {
+      "what": "수용 기준 표에 Given/When/Then 칸을 두지 않고 SPEC 원문 칸에 SPEC 문장을 그대로 둔다",
+      "why": "이번 라운드 지시가 '옮기기만' 이다. GWT 로 바꿔 쓰면 해석이 들어가 SPEC 과 뜻이 달라질 수 있다",
+      "reversible_at": ".curvez/requirements.md:### 수용 기준"
+    },
+    {
+      "what": "비기능 11건의 확인 방법을 '제안' 으로 적는다",
+      "why": "SPEC §6 에 확인 방법이 없다. 칸을 비우면 curvez-qa 가 실행 계획을 세울 출발점이 없다. curvez-qa 가 바꿔도 된다",
+      "reversible_at": ".curvez/requirements.md:#### 비기능 (SPEC §6 중 모바일·프라이버시·의료 면책·접근성)"
+    },
+    {
+      "what": "예외(EX) 8건의 확인 방법은 'SPEC 미지정' 으로 둔다",
+      "why": "SPEC 이 예외별 확인 방법을 정하지 않았다. 지어내지 않는다",
+      "reversible_at": ".curvez/requirements.md:### 수용 기준"
+    },
+    {
+      "what": "PRD 미결은 ### 미결 질문 이 아니라 ### PRD 미결 연결 에 두고 blocked_on 에 올리지 않는다",
+      "why": "이 미결은 이번 라운드 작업(옮기기)을 막지 않고, PRD §9 에 이미 사용자 몫으로 적혀 있다. standing.md 5번이 구현 쪽 처리 방식(한 곳에 모으고 '미확정' 표시)을 정해 두었다",
+      "reversible_at": ".curvez/requirements.md:### PRD 미결 연결"
+    },
+    {
+      "what": "PC-F1-EX1 은 '22주 0일 미만' 과 '44주 초과' 를 한 ID 로 둔다",
+      "why": "SPEC 에서 한 항목(한 줄)이다",
+      "reversible_at": ".curvez/requirements.md:#### F1. 아이 프로필"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "grep -cE '^\\| PC-F[0-9]+-AC[0-9]+ \\|' .curvez/requirements.md",
+      "result": "38 (고유 ID 38. 기능별 F1 6, F2 5, F3 5, F4 5, F5 5, F6 4, F7 4, F13 4)",
+      "passed": true
+    },
+    {
+      "command": "node 스크립트: SPEC.md 의 '  - [ ] AC<n>. ' 줄과 '- 예외' 항목을 뽑아 requirements.md 표의 SPEC 원문 칸과 문자열 완전 일치 비교",
+      "result": "일치 46 (AC 38 + EX 8), 다름 0, 누락 0, 여분 0",
+      "passed": true
+    },
+    {
+      "command": "grep -cE '^\\| PC-NF-[A-Z0-9]+-[0-9]+ \\|' .curvez/requirements.md 와 SPEC §6 모바일·프라이버시·의료 면책·접근성 행 부분문자열 대조",
+      "result": "11건. 11건 모두 SPEC §6 원문에 그대로 있음, 불일치 0",
+      "passed": true
+    },
+    {
+      "command": "필수 6개 헤딩 grep -qF (## 목표 ~ ## 결정 기록)",
+      "result": "누락 0줄",
+      "passed": true
+    },
+    {
+      "command": "grep -nE '빠르게|적절히|충분히|쾌적|사용자 친화|잘 동작|직관적' .curvez/requirements.md 그리고 standing.md 9번 금지 글자 grep",
+      "result": "둘 다 0줄",
+      "passed": true
+    },
+    {
+      "command": "awk 로 ### 범위 밖 목록 항목 수",
+      "result": "3",
+      "passed": true
+    },
+    {
+      "command": "Given/When/Then 형식 검사 (에이전트 기본 검증 2번)",
+      "result": "적용하지 않음. 지시가 SPEC 원문 그대로 옮기기라 GWT 칸을 두지 않았다 (decisions 1번)",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/",
+      "result": "검사 4건, 통과 4건, 실패 0건, 오류 0개, 경고 0개",
+      "passed": true
+    }
+  ]
+}

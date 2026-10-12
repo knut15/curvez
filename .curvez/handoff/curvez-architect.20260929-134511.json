@@ -1,0 +1,61 @@
+{
+  "from": "curvez-architect",
+  "to": [
+    "curvez-orchestrator",
+    "curvez-nextjs"
+  ],
+  "status": "done",
+  "summary": "리뷰어 이의 3건을 판정해 .curvez/architecture.md 의 '## preemie-calc' 절에 반영했다. (1) ACC-04: ReferenceMeta 의 effectiveDate·lastVerified 를 '둘 다 날짜' 또는 '둘 다 null(원문 대조 전)' 두 경우의 유니온으로 바꿨다. Settled<CalendarDate> 는 쓰지 않는다. 대조 전에는 날짜로 채우지 않고 화면은 '기준일 확인 전' 을 보인다. (2) PLC-01: 같은 층 import type 을 예외로 두지 않고, 두 타입을 shared 로 옮기지도 않는다. 규칙 슬라이스 3개가 읽는 필드만 담은 입력 타입을 자기 model 에 선언한다. 데이터 모양 절의 시그니처를 의존 방향 절에 맞춰 고쳤다. (3) PLC-03: widgets 판정 기준을 '쓰는 view 수' 에서 '@/entities·@/features 를 import 하는가, 두 view 이상이 쓰는가' 로 바꿨다. widget 4개(age-basis-list·checkup-plan·copay-relief-result·correction-period-result)는 그대로 두고 nav-links 하나만 views/dashboard/ui 로 내린다. 같은 기준에 따라 guide 의 build-guide-content.ts(child+checkup 묶음)는 widgets/guide-content 로 올린다. 금지 import 표(ARCH-101~108)는 바꾸지 않았다. handwork 절(1~102행)은 0줄 바뀌었다. 구현자가 옮길 파일은 decisions 의 각 항목 끝 '[구현]' 에 파일 경로 단위로 적었다. 오케스트레이터가 전달할 것: curvez-qa 의 tests/unit/reference-data.test.ts:28-29 와 tests/unit/age-basis.test.ts:54-55 는 effectiveDate 가 날짜라고 기대하므로 (1) 이 구현되면 실패한다. curvez-designer 의 components/ReferenceFooter.md 의 sources.effectiveDate 타입(string)과 null 일 때 문구도 (1) 에 맞춰야 한다.",
+  "artifacts": [
+    {
+      "path": ".curvez/architecture.md",
+      "kind": "decision",
+      "note": "'## preemie-calc' 절만 다시 썼다. 바뀐 곳: 레이어 정의 표의 widgets·views 행과 그 아래 판정 순서, 의존 방향 첫 항목, 데이터 모양 ③ 끝 문단·④ ReferenceMeta 와 규칙 함수 시그니처·⑥ F13 항목·⑦ 표 한 행, PRD 미결 절 끝 한 줄, 폴더 구조 아래 문장, 예외 절 한 줄, 권고 절 두 줄, 확인 못 한 것 한 항목, 결정 로그 기존 1행 보완 + 새 3행"
+    }
+  ],
+  "decisions": [
+    {
+      "what": "이의 1(ACC-04, curvez-reviewer): ReferenceMeta 를 { id; title; sources; schemaVersion: 1 } & ({ effectiveDate: CalendarDate; lastVerified: CalendarDate } | { effectiveDate: null; lastVerified: null }) 로 바꾼다. null 은 '원문 대조 전' 이다. 원문에 날짜가 없으면 대조한 날(lastVerified)을 effectiveDate 로 적는다. 한쪽만 null 이면 resolveReferenceMeta 가 오류로 멈춘다. 화면은 effectiveDate 가 null 이면 '기준일 확인 전' 을 보인다(문구는 designer 스펙이 있으면 그것). Settled<CalendarDate> 는 쓰지 않는다. [구현] apps/preemie-calc/src/shared/lib/reference/index.ts: ReferenceMeta 를 위 유니온으로, ReferenceMetaInput.effectiveDate 를 string | null 로, resolveReferenceMeta 에 '한쪽만 null 이면 오류' 추가 / apps/preemie-calc/src/entities/{age-basis/data/age-basis.json, checkup/data/checkup-rounds.json, copay-relief/data/copay-relief.json, correction-period/data/correction-period.json}: meta.effectiveDate 를 null 로(copay-relief 의 2026-01-01 포함. '2026년 1월 시행 제도 기준' 문구는 policyLabel 이 따로 보인다) / apps/preemie-calc/src/shared/ui/ReferenceFooter.tsx: ReferenceFooterSource.effectiveDate 를 string | null 로, null 이면 '기준일 확인 전' / apps/preemie-calc/src/widgets/age-basis-list/ui/AgeBasisSection.tsx:25: 행별 '기준일 …' 문구에 같은 null 분기. 나머지 Section 3개는 값을 그대로 넘기므로 고칠 곳 없음",
+      "why": "오케스트레이터가 기준일을 지어낸 날짜로 채우지 않는다고 정했다. 기준일은 원문과 대조해야 얻는 값이라 대조 전에는 알 수 없다. Settled<T> 는 PRD §9 미결 번호(openQuestion)가 필수인 제품 결정용 타입이라 원문 대조 같은 할 일에 붙일 번호가 없고, 섞으면 '미확정' 표시가 두 종류를 구분하지 못한다. 두 필드를 따로 null 허용하면 '확인 안 했는데 기준일은 있음' 같은 상태가 다시 생기므로 두 경우로 묶었다. 필드 이름을 그대로 둬서 JSON 은 값만 바뀐다(tie-break: 작은 변경)",
+      "reversible_at": ".curvez/architecture.md:preemie-calc 데이터 모양"
+    },
+    {
+      "what": "이의 2(PLC-01, curvez-structure-reviewer): 선택지 (3) 을 고른다. 같은 층 import type 은 예외로 두지 않고, CorrectedAge·GestationalAge 를 shared 로 옮기지 않는다. 규칙 슬라이스는 읽는 필드만 담은 입력 타입을 자기 model 에 선언한다. age-basis: { kind: 'hidden' } | { kind: 'before-due' } | { kind: 'after-due'; span: CalendarSpan }. copay-relief·correction-period: gestation: { totalDays: number }. 입력 키 이름(corrected, gestation)은 그대로다. [구현] apps/preemie-calc/src/entities/age-basis/model/index.ts: 12행 import type { CorrectedAge } 를 지우고 입력 유니온 선언 / apps/preemie-calc/src/entities/copay-relief/model/index.ts: 12행 import type { GestationalAge } 를 지우고 { totalDays: number } 선언 / apps/preemie-calc/src/entities/correction-period/model/index.ts: 11행 같은 방식. widgets 쪽(AgeBasisSection·CopayReliefSection·CorrectionPeriodSection)은 child 값을 그대로 넘기므로 고칠 곳 없음",
+      "why": "모순은 데이터 모양 절의 시그니처 쪽 실수다. 의존 방향 규칙을 그대로 두고 시그니처를 규칙에 맞췄다. (2) shared 로 옮기면 교정 나이라는 도메인 개념이 '도메인을 모르는' 층에 들어가 레이어 정의 표와 어긋난다. (1) 타입 전용 예외는 문서만 바꾸면 되지만 child 의 타입을 바꿀 때 규칙 슬라이스 셋이 함께 깨지는 결합을 남기고, 이미 규칙을 지키는 entities/checkup 과 기준이 달라진다. (3) 은 3개 파일 안에서 끝나고 TypeScript 구조 타입 덕에 호출부가 바뀌지 않는다",
+      "reversible_at": ".curvez/architecture.md:preemie-calc 의존 방향"
+    },
+    {
+      "what": "이의 3(PLC-03, curvez-structure-reviewer): 규칙을 고친다. view 루트 컴포넌트를 뺀 조각은 (a) @/entities/* 나 @/features/* 를 import 하면 widgets, (b) 아니어도 두 view 이상이 쓰면 widgets, (c) 둘 다 아니면 그 view 의 views/<route>/ui(함수면 lib). 쓰는 view 수만으로는 내리지 않는다. 지적된 5개 중 age-basis-list·checkup-plan·copay-relief-result·correction-period-result 는 (a) 라 그대로 둔다. nav-links 는 shared/ui 만 쓰고 views/dashboard 한 곳에서만 쓰므로 내린다. [구현] apps/preemie-calc/src/widgets/nav-links/ui/QuickLinks.tsx → apps/preemie-calc/src/views/dashboard/ui/QuickLinks.tsx 로 옮기고 apps/preemie-calc/src/widgets/nav-links/index.ts 는 없앤다 / apps/preemie-calc/src/views/dashboard/ui/DashboardView.tsx:14 import 를 './QuickLinks' 로",
+      "why": "옛 규칙('라우트 하나에만 쓰는 조립은 넣지 않는다')은 자기 예시(검진 도우미 카드)부터 어겼고, 지키려면 widget 5개(파일 10개)를 옮겨야 했다. 이 앱에서 widget 이 실제로 하는 일은 의존 방향 절이 적은 대로 아이 나이와 규칙 슬라이스를 묶는 것이다. 그 일을 기준으로 삼으면 import 문만 보고 누구나 같은 답을 낸다. 옮길 것은 nav-links 1개 슬라이스(파일 2개)다(tie-break: 작은 변경)",
+      "reversible_at": ".curvez/architecture.md:preemie-calc 레이어 정의"
+    },
+    {
+      "what": "이의 3 의 결과로 guide 조립 위치를 정한다(PLC-04 와 겹치는 부분만). views/guide/lib/build-guide-content.ts 는 entities/child(describeCombo)와 entities/checkup(roundAtAge)을 합치므로 판정 (a) 에 따라 widget 이다. [구현] apps/preemie-calc/src/views/guide/lib/build-guide-content.ts → apps/preemie-calc/src/widgets/guide-content/lib/build-guide-content.ts 로 옮기고 apps/preemie-calc/src/widgets/guide-content/index.ts 에서 buildGuideContent·GuideContent 를 내보낸다 / apps/preemie-calc/src/views/guide/ui/GuideView.tsx:6 import 를 '@/widgets/guide-content' 로 / apps/preemie-calc/src/views/guide/index.ts 의 buildGuideContent·GuideContent 두 export 줄을 지운다 / apps/preemie-calc/src/app/guide/[weeks]/[months]/page.tsx:4 의 buildGuideContent 를 '@/widgets/guide-content' 에서 가져온다. PLC-04 의 교정 개월 환산(weeksEarly/4)을 describeCombo 로 옮기는 일은 구현 지적이라 이 판정과 따로 한다",
+      "why": "의존 방향 절이 이미 '둘을 묶는 일은 widget 이 한다' 고 적었고, 새 판정 순서도 같은 답을 낸다. views 에 두면 권고('views 는 조립만 한다')와 어긋난 채로 남는다. app → widgets 는 허용된 방향이라 page.tsx 가 직접 불러도 된다",
+      "reversible_at": ".curvez/architecture.md:preemie-calc 데이터 모양"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/quality-gate.mjs --only arch",
+      "result": "PASS arch: ARCH-NNN 규칙 검사 / 규칙 14개 파싱 / 검사 14개 / 위반 0건 / quality-gate 통과 — 1개 게이트 실행, 실패 0건. 작업 전 기준선도 같은 값(14 / 14 / 0). 금지 import 표는 바꾸지 않았다",
+      "passed": true
+    },
+    {
+      "command": "git -C /Users/kim/Workspace/curvez/.claude/worktrees/preemie-calc diff --numstat -- .curvez/architecture.md ; git diff -U0 -- .curvez/architecture.md | grep '^@@' ; git diff -- .curvez/architecture.md | grep -c '^-[^-]' ; sed -n 1,102p .curvez/architecture.md | shasum",
+      "result": "numstat '505\t0\t.curvez/architecture.md' / 헝크 1개 '@@ -101,0 +102,505 @@' (HEAD 의 101행 뒤에 더하기만) / 지운 줄 0 / 1~102행 shasum 작업 전후 모두 ba59d6c8f3bac2a0fd736edc0ebabae23bd46a97. handwork 절 변경 0줄. preemie-calc 절은 아직 커밋 전이라 HEAD 대비 전부 추가로 보인다",
+      "passed": true
+    },
+    {
+      "command": "python3 자체 점검(.curvez/architecture.md 의 '## preemie-calc' 절): 필수 헤딩 7개 존재, ARCH-1xx 규칙 수, 각 ERE 를 grep -Eq <re> /dev/null 로 실행, domain → 화살표 수, 결정 로그 행의 되돌릴 위치 형식, 금지 글자",
+      "result": "OK 7 / MISSING 0, ARCH-1xx 규칙 8개, REGEX-BAD 0, domain 화살표 0, 결정 로그 22행 중 되돌릴 위치(.curvez/architecture.md:preemie-calc <헤딩>) 빠진 행 0, 금지 글자 0건",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/",
+      "result": "OK 핸드오프 검증 — 검사 16건, 통과 16건, 실패 0건, 오류 0개, 경고 0개 (이 핸드오프에 결과를 적은 뒤 한 번 더 돌린 값은 최종 보고에 적는다)",
+      "passed": true
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "from": "curvez-nextjs",
+  "to": ["curvez-orchestrator", "curvez-qa"],
+  "status": "done",
+  "summary": "리뷰 DSG-01 을 고쳤다. apps/preemie-calc/src/entities/copay-relief/data/copay-relief.json 의 sourceNotes 에서 source-mohw 각주(내부 문서 번호·작업 경위 문장: 'PRD 버전 4', 'SPEC 버전 6 PC-F5-AC6·AC7', '조사 브리프 설명이 원문과 반대였고 대조하지 않고 옮겼다')를 뺐다. architecture.md ⑬ 표가 정한 대로 sourceNotes 에는 source-nhis 각주 한 건만 남았다. 정정 경위는 이미 architecture.md 결정 로그(:1201-1202)와 requirements.md '미결 2 경계 정정' 표에 있어 JSON 에 다시 옮기지 않았다(새 비렌더 필드를 만드는 대신 가장 단순한 수정: 항목 삭제). classifyCopayRelief 분류 로직과 innerBoundary 값(upper-inclusive)은 건드리지 않았다. growth·widgets/growth-panel 쪽 파일도 건드리지 않았다.",
+  "artifacts": [
+    {
+      "kind": "code",
+      "path": "apps/preemie-calc/src/entities/copay-relief/data/copay-relief.json"
+    }
+  ],
+  "decisions": [
+    {
+      "what": "정정 경위 각주(source-mohw)를 sourceNotes 배열에서 통째로 삭제했다. 새 비렌더 필드(예: innerBoundaryCorrectionBasis)로 옮기는 대신 삭제만 했다",
+      "why": "그 경위는 이미 architecture.md 결정 로그(2026-10-02 두 항목, :1201-1202)와 requirements.md '미결 2 경계 정정' 표(:341, :348-350)에 전문이 남아 있어 데이터 파일에 다시 적을 필요가 없다. 지시서의 '남겨야 하면' 은 조건부였고, 이미 다른 곳에 있으므로 조건이 성립하지 않는다. 더 단순한 수정(삭제)을 전체 삭제보다 복잡한 대안(새 필드 추가) 위에 두었다",
+      "reversible_at": "apps/preemie-calc/src/entities/copay-relief/data/copay-relief.json:21"
+    },
+    {
+      "what": "classifyCopayRelief, innerBoundary 값(upper-inclusive), endDateMethod 는 그대로 두었다",
+      "why": "지시서 SCOPE 가 '분류 로직·innerBoundary 값은 건드리지 않는다'를 명시했고, 리뷰 축 (1)(2)(3)(5)는 이미 통과였다. DSG-01 은 렌더링 결함이지 분류 결함이 아니다",
+      "reversible_at": "apps/preemie-calc/src/entities/copay-relief/model/index.ts"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "pnpm --filter preemie-calc typecheck (= profile.commands.typecheck 를 preemie-calc 로 좁힘; next typegen && tsc --noEmit)",
+      "result": "'Generating route types...' / '✓ Types generated successfully' 이후 tsc 오류 출력 0건, exit 0",
+      "passed": true
+    },
+    {
+      "command": "pnpm --filter preemie-calc lint (= profile.commands.lint 를 preemie-calc 로 좁힘; eslint)",
+      "result": "오류·경고 출력 없음, exit 0",
+      "passed": true
+    },
+    {
+      "command": "jiti(2.7.0, alias @→src, jsx:{runtime:automatic}) + react-dom/server renderToStaticMarkup 으로 CopayReliefSection(출생일 2026-01-15, 재태 203일·231일)과 GuideQuestionView(slug=copay-relief) 를 렌더해 'PRD 버전'·'SPEC 버전'·'PC-F5' 문자열 포함 여부를 센다",
+      "result": "forbidden-count: 0 (세 출력 어디에도 세 문자열이 없다). 203일 결과: '5년 3개월'/'종료 예정일: 2031-04-15'. 231일 결과: '5년 2개월'/'종료 예정일: 2031-03-15'. 가이드 화면: '재태기간 33주 이상 37주 미만: 5년 2개월 / 29주 이상 33주 미만: 5년 3개월 / 29주 미만: 5년 4개월'. 세 출력 모두에 공단 안내 각주('공단 안내 페이지는 2026-09-30 현재 개정 전 내용(신청일부터 만 5세)이다')가 그대로 보인다(nhis-note true/true/true). 종료일 계산 방식 미확정 안내도 양쪽에 유지된다",
+      "passed": true
+    }
+  ]
+}

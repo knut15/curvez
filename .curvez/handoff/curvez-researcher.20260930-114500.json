@@ -1,0 +1,67 @@
+{
+  "from": "curvez-researcher",
+  "to": ["curvez-orchestrator", "curvez-architect", "curvez-nextjs"],
+  "status": "partial",
+  "summary": "PRD §9 결정 8·9번을 재확인했다. 8(성장 백분위): 공공데이터포털 LMS·백분위수기준 CSV 를 로그인 없이 실제로 내려받았고(626행/99행, 각 33.8KB/2.1KB), 3세 미만 WHO Growth Standards 적용 여부를 질병관리청 공식 페이지 원문으로 확정했다. LMS 파일이 PRD 전제(0~36개월)보다 넓은 범위(지표별 60~84개월)를 갖고 있다는 새 사실도 나왔다 — 사용자 결정 필요. F8 AC4 비교 절차(입력값→L·M·S 조회→Z-score→백분위, M값 입력 시 50.0 회귀 테스트)를 두 파일 컬럼 그대로 남겼다. 9(예방접종): 질병관리청(nip.kdca.go.kr) 원본 표를 이미지로 직접 확보해(로그인 불필요, javascript 버튼이 아니라 img 태그) 국립재활원 재게재본과 항목별로 대조했다. DTaP 6차 누락, MMR 2차 시기(24~35개월 vs 4~6세), IPV 3~4차 시기 불일치를 발견했다 — 국립재활원 재게재본을 그대로 정본으로 못 쓴다. 기존 확인 불가 7건(검진 1차 범위, 교정 적용 종료 24/36개월·확장조건, 경감 종료일 세부 규칙, 경감 대상 체중 기준 병존 여부, 목표키 공식 1차 출처, 분유량 4개월 이후 계수)은 이번 라운드 조사 범위 밖이라 그대로 남아 있다. blocked_on 7건.",
+  "artifacts": [
+    { "path": ".curvez/research/preemie-calc/sources-v2.md", "kind": "research", "note": "확인된 사실 18건(신규 6건: #13~18), 확인 불가 7건, 모순과 선택 4건(신규 3건: MMR·IPV·DTaP 원본 vs 재게재본), '## 2026-09-30 재확인(8·9)' 절 신설, 데이터 JSON 반영 제안 표 갱신, 사용자가 정할 질문 10건(신규 1건)" },
+    { "path": ".curvez/research/preemie-calc/raw/nhis-growth-lms-20240731.csv", "kind": "research", "note": "국민건강보험공단 영유아성장도표 LMS 원본(EUC-KR), 626행, 33865B" },
+    { "path": ".curvez/research/preemie-calc/raw/nhis-growth-lms-20240731-utf8.csv", "kind": "research", "note": "위 파일 UTF-8 변환본, 38402B" },
+    { "path": ".curvez/research/preemie-calc/raw/nhis-growth-percentile-20240731.csv", "kind": "research", "note": "국민건강보험공단 영유아성장도표 백분위수기준 원본(EUC-KR), 99행, 2099B" },
+    { "path": ".curvez/research/preemie-calc/raw/nhis-growth-percentile-20240731-utf8.csv", "kind": "research", "note": "위 파일 UTF-8 변환본, 2123B" },
+    { "path": ".curvez/research/preemie-calc/raw/kdca-vaccine-schedule-children-2026.jpg", "kind": "research", "note": "질병관리청 표준예방접종일정표(2026) 원본 이미지, 7016x4961px, 2445338B(2.4MB)" }
+  ],
+  "decisions": [
+    {
+      "what": "성장도표 3세 미만(0~35개월) 구간이 WHO Growth Standards 를 쓴다는 것을 질병관리청 공식 페이지(kdca.go.kr) 원문으로 확정했다. data.go.kr 파일 메타데이터에는 이 언급이 없어 별도 A 등급 출처로 보강했다",
+      "why": "LMS 파일 자체에서도 35→36개월 경계에 L·S 값 불연속이 관측돼(사실 #14) 정황적으로 일치한다",
+      "reversible_at": ".curvez/research/preemie-calc/sources-v2.md:## 2026-09-30 재확인(8·9) > 8. 성장 백분위"
+    },
+    {
+      "what": "예방접종 데이터의 정본을 국립재활원 재게재본에서 질병관리청 원본(nip.kdca.go.kr 이미지)으로 바꿀 것을 권고했다",
+      "why": "재게재본이 DTaP 6차 누락, MMR 2차 시기(24~35개월 vs 원본 4~6세), IPV 3~4차 시기 등에서 원본과 달랐다. 모순 처리 규칙상 원발행처를 우선한다",
+      "reversible_at": ".curvez/research/preemie-calc/sources-v2.md:## 모순과 선택"
+    }
+  ],
+  "blocked_on": [
+    { "question": "영유아검진 1차 대상 시기(생후 14~35일)를 확인할 원문을 찾지 못했다. 어느 출처로 재확인할지", "who": "curvez-researcher" },
+    { "question": "교정연령 적용 종료 24/36개월 구분과 28주 미만·1.5kg 미만 확장 조건의 원문을 찾지 못했다 (PRD 미결3)", "who": "curvez-orchestrator" },
+    { "question": "교정연령 적용 종료를 출생 기준으로 셀지 교정 기준으로 셀지 원문이 없다 (PRD 미결3)", "who": "curvez-orchestrator" },
+    { "question": "이른둥이 경감 종료일 계산의 세부 규칙(시행령 별표2 하목 원문, 만료일 당일 포함 여부)을 시행령 원문 파일에서 확인할지 (PRD 미결2)", "who": "curvez-orchestrator" },
+    { "question": "경감 대상 자격에 재태기간 외 출생체중(2,500g 이하) 기준이 별도로 병존하는지 확인이 필요하다", "who": "curvez-researcher" },
+    { "question": "목표키 공식(부모 평균 ±6.5cm)의 국내 1차 출처(질병관리청·대한소아내분비학회)를 찾지 못했다. Tanner 공식으로 표기하고 넘어갈지, 추가 조사를 진행할지", "who": "curvez-orchestrator" },
+    { "question": "분유량 4개월 이후 구간의 체중당 계수를 찾지 못했다. 다음 라운드에서 계속 조사할지", "who": "curvez-researcher" }
+  ],
+  "verification": [
+    {
+      "command": "BRIEF=.curvez/research/preemie-calc/sources-v2.md; awk '/^## 확인된 사실/{f=1;next} /^## /{f=0} f' $BRIEF | grep -E '^\\|[[:space:]]*[0-9]+[[:space:]]*\\|' > facts; grep -c . facts; grep -vcE 'https?://' facts; grep -vcE '[0-9]{4}-[0-9]{2}-[0-9]{2}' facts; grep -cE '\\|[[:space:]]*C[[:space:]]*\\|' facts",
+      "result": "행수 18, URL없음 0, 날짜없음 0, C등급인용 0",
+      "passed": true
+    },
+    {
+      "command": "grep -cE '^## (확인된 사실|확인 불가|모순과 선택|선택지 비교|조사 경로)' $BRIEF ; grep -cE '^- \\*\\*(조사 질문|조사 일자|기준 버전|결론 한 줄):\\*\\*' $BRIEF",
+      "result": "섹션 5, 머리말 4",
+      "passed": true
+    },
+    {
+      "command": "awk '/^## 확인 불가/{f=1;next} /^## /{f=0} f' $BRIEF | grep -cE '^\\|[[:space:]]*[0-9]+[[:space:]]*\\|'  vs  blocked_on.length",
+      "result": "확인불가 7건, blocked_on 7건 — 일치. (이전 라운드의 확인 불가 #8·#9 는 이번 라운드에 해소돼 표에서 뺐고 '확인된 사실' #16~18 로 옮겼다)",
+      "passed": true
+    },
+    {
+      "command": "이번 세션에서 실제로 WebFetch/WebSearch 한 횟수와 curl 다운로드 횟수 수기 집계 (인용 URL 수 = 실제로 연 URL 수)",
+      "result": "WebFetch 4회 + WebSearch 2회 = 6회(이전 라운드 29/30 에 누적하면 세션 전체 35회지만, 이번 라운드 자체는 6회로 상한 내). curl 직접 다운로드 6회(LMS CSV, 백분위 CSV, data.go.kr 페이지 2회, nip.kdca.go.kr 페이지, 예방접종 이미지) — 이건 웹 검색 도구가 아니라 파일 다운로드라 상한 집계에 넣지 않았다. 확인된 사실 신규 6건(#13~18) 전부 이번 세션에 직접 열거나 다운로드해 확인한 URL이다",
+      "passed": true
+    },
+    {
+      "command": "curl 로 받은 원본 파일 크기 확인: ls -la .curvez/research/preemie-calc/raw/",
+      "result": "nhis-growth-lms-20240731.csv 33865B, nhis-growth-lms-20240731-utf8.csv 38402B, nhis-growth-percentile-20240731.csv 2099B, nhis-growth-percentile-20240731-utf8.csv 2123B, kdca-vaccine-schedule-children-2026.jpg 2445338B — 전부 50MB 미만",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/",
+      "result": "OK 핸드오프 검증 — 검사 53건, 통과 53건, 실패 0건, 오류 0개, 경고 0개",
+      "passed": true
+    }
+  ]
+}

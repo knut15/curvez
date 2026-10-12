@@ -1,0 +1,91 @@
+{
+  "from": "curvez-architect",
+  "to": [
+    "curvez-orchestrator",
+    "curvez-nextjs",
+    "curvez-qa"
+  ],
+  "status": "done",
+  "summary": ".curvez/architecture.md 의 '## preemie-calc' 절을 두 변경에 맞췄다. (1) 경감 구간 경계: ⑬ 표의 innerBoundary 행과 미결 위치 표의 '미결 2 경감 구간 경계' 행을 upper-inclusive(231일=33주 0일 → 5년 2개월, 203일=29주 0일 → 5년 3개월, PC-F5-AC6·AC7)로 고쳤다. 두 칸 모두 2026-09-30 의 lower-inclusive 를 문장으로 남겼다. ④ 의 innerBoundary 주석에 두 값의 뜻(from 포함·to 미포함 / 아래 tier 의 to 포함)을 더했다. 결정 로그에는 2026-09-30 결정 행을 '2026-10-02 PRD 버전 4·SPEC 버전 6 로 뒤집힘' 표시와 경위(오케스트레이터가 사용자에게 올린 질문의 괄호 설명이 원문과 반대였다)를 붙여 옮겨 적고, 새 결정 행을 더했다. 그때 이 결정은 ⑬·미결 표에만 있고 로그에 행이 없었다. (2) F8 AC3 추이 그래프: ⑧ 끝의 '그래프는 만들지 않는다(결정 (d))' 문단을 '2026-10-02 범위에 들어왔다' 로 바꾸고 '추이 그래프' 하위 절 5개를 더했다. 정한 것: shared/lib/normal-distribution 에 inverseStandardNormalCdf(p): number (순수 함수, 라이브러리 없음, 사용자 결정 3, 0.001≤p≤0.999 에서 절대 오차 1e-6 이하). entities/growth/model 에 lmsValueAtZ(row, z), growthReferenceValues(input: GrowthAgeInput, measuredOn): GrowthReferenceResult(before-due / out-of-range / ok{month, height, weight, headCircumference: {p3,p50,p97}}), REFERENCE_PERCENTILES = [3,50,97]. growthPercentiles 는 바꾸지 않고, 측정일 나이 계산은 두 함수가 함께 쓰는 비공개 함수 하나로 둔다. 기준값은 기록의 측정일마다 그 나이의 만 개월 LMS 행으로 계산하고 개월 격자로 계산하지 않는다(x축이 측정일이다). widgets/growth-panel/lib 에 buildGrowthTrendPoints({records, age}): Record<GrowthMeasure, GrowthTrendPoint[]> 를 순수 함수로 둔다. 예정일 전·36개월 뒤 기록은 p3·p50·p97 이 null 이라 기준선이 끊긴다. recharts 는 widgets/*/ui 의 \"use client\" 파일에서만 import 한다. ARCH-114~118 을 더해 shared·entities·features·views·app 에서 recharts import 를 막았다(더하기 전 src 전체에서 recharts import 0건). widget 의 lib 이 recharts 를 부르지 않는 것과 \"use client\" 는 권고에 검사 명령 2개로 두었다. 표준정규분포를 확인 못 한 것에서 해결로 옮겼다. handwork 절(1~102행)은 shasum 이 같다. designer 스펙과 다르게 정한 곳이 1개 있다: 그래프 점의 cautionNeeded 는 행 전체(세 지표 OR)가 아니라 그 지표 하나의 consult 다.",
+  "artifacts": [
+    {
+      "path": ".curvez/architecture.md",
+      "kind": "decision"
+    }
+  ],
+  "decisions": [
+    {
+      "what": "⑬ innerBoundary 행과 미결 위치 표의 미결 2 경계 행을 upper-inclusive 로 고치고, 2026-09-30 의 lower-inclusive 는 같은 칸에 문장으로 남긴다. 결정 로그에 2026-09-30 행(뒤집힘 표시·경위)과 2026-10-02 행을 더한다",
+      "why": "PRD 버전 4 §9 정정과 SPEC 버전 6 PC-F5-AC6·AC7. 코드(copay-relief.json)는 curvez-nextjs 가 이미 upper-inclusive 로 바꿔 문서와 코드가 반대를 말하고 있었다(curvez-nextjs.20261002-105551 blocked_on). 지시서가 이전 결정을 지우지 말라고 했다",
+      "reversible_at": ".curvez/architecture.md:preemie-calc PRD 미결 값의 위치"
+    },
+    {
+      "what": "inverseStandardNormalCdf 를 shared/lib/normal-distribution 의 순수 함수로 둔다. 근사식은 curvez-nextjs 가 고르되 standardNormalCdf 로 뉴턴 보정하지 않는다",
+      "why": "사용자 결정 3(역함수도 라이브러리 없이). 정방향 근사 오차(약 1.5e-7)가 z = 1.88 근처에서 z 오차 1e-6 을 넘겨 옮아 온다",
+      "reversible_at": ".curvez/architecture.md:preemie-calc 폴더 구조"
+    },
+    {
+      "what": "백분위 기준선은 기록의 측정일마다 그 나이의 만 개월 LMS 행으로 계산한다. 개월 격자로 계산하지 않는다",
+      "why": "designer 가 x축을 측정일로 정했다. 격자 점은 x 좌표가 없고, 같은 행을 써야 점과 기준선의 위아래가 표의 백분위와 맞는다. 대가는 기록 사이 기준선이 직선이라는 것이다",
+      "reversible_at": ".curvez/architecture.md:preemie-calc 데이터 모양"
+    },
+    {
+      "what": "기준값 계산은 새 함수 growthReferenceValues·lmsValueAtZ 로 두고 growthPercentiles 의 시그니처·결과는 바꾸지 않는다",
+      "why": "기존 결과에 필드를 더하면 결과를 통째로 비교하는 테스트가 깨질 수 있다. 나이 계산을 비공개 함수 하나로 모아 두 함수가 같은 LMS 행을 쓰게 한다",
+      "reversible_at": ".curvez/architecture.md:preemie-calc 데이터 모양"
+    },
+    {
+      "what": "buildGrowthTrendPoints 를 widgets/growth-panel/lib 에 두고, 점의 cautionNeeded 를 그 지표 하나의 consult 로 정한다. designer 스펙 GrowthTrendChart.md 의 'GrowthRecordRow.cautionNeeded 그대로' 와 다르다",
+      "why": "@/entities/growth 를 부르므로 widget(판정 순서 1), React 없이 테스트하려면 lib. 표의 행 판정(GrowthPanelSection.tsx:89)은 세 지표 OR 라 지표별 그래프에 쓰면 다른 지표 때문에 주의 모양이 찍힌다",
+      "reversible_at": ".curvez/architecture.md:preemie-calc 데이터 모양"
+    },
+    {
+      "what": "ARCH-114~118 을 더해 shared·entities·features·views·app 에서 recharts import 를 막는다. eslint 에는 옮기지 않고 arch 게이트로만 검사한다",
+      "why": "그래프는 entity 값을 받아 그리므로 widget 이다. 브라우저 전용 큰 라이브러리를 widget 잎 파일에 가둬 서버에서 그리는 페이지와 model 테스트가 끌고 가지 않게 한다. arch 게이트는 규칙 한 줄에 경로 하나라 층마다 한 줄이다",
+      "reversible_at": ".curvez/architecture.md:preemie-calc 금지 import"
+    },
+    {
+      "what": "문서는 Edit 대신 Python 스크립트로 파일 전체를 읽고 '## preemie-calc' 뒤에서만 바꾼 뒤 전체를 다시 썼다. 바꿀 곳마다 정확히 1건 매치를 확인했다",
+      "why": "1~102행(handwork)을 손으로 다시 옮겨 적으면 한 글자라도 바뀔 위험이 있다. 바꾼 뒤 1~102행 shasum 을 전후로 비교했다",
+      "reversible_at": ".curvez/architecture.md:preemie-calc 결정 로그"
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/quality-gate.mjs --only arch",
+      "result": "PASS arch: ARCH-NNN 규칙 검사 / 규칙 24개 파싱 / 검사 24개 / 위반 0건 / quality-gate 통과 — 1개 게이트 실행, 실패 0건 (바꾸기 전: 규칙 19개 / 위반 0건)",
+      "passed": true
+    },
+    {
+      "command": "head -n 102 (바꾸기 전 사본·바꾼 뒤) 를 cmp 와 shasum 으로 비교",
+      "result": "handwork 1-102 동일. 두 파일 모두 ba59d6c8f3bac2a0fd736edc0ebabae23bd46a97",
+      "passed": true
+    },
+    {
+      "command": "node scratchpad/check_arch.mjs (preemie-calc 헤딩 7개, ARCH 규칙 수, grep -E 문법, ARCH-114 패턴 표본 5개, 결정 로그 되돌릴 위치 빈 칸)",
+      "result": "OK 7개(레이어 정의·의존 방향·금지 import·폴더 구조·스택 매핑·예외·결정 로그). 규칙 수 24. REGEX-BAD 0. 표본: from \"recharts\" 1, 'recharts/es6' 1, import(\"recharts\") 1, 주석 \"recharts\" 0, \"rechartsx\" 0 — 5개 모두 기대값. 결정 로그 행 47, 되돌릴 위치 빈 칸 0",
+      "passed": true
+    },
+    {
+      "command": "grep -rlE \"(from|import\\()[[:space:]]*['\\\"]recharts\" apps/preemie-calc/src | wc -l",
+      "result": "0 (아직 recharts 를 쓰는 코드가 없다. ARCH-114~118 과 권고 검사 1·2 는 구현 뒤 curvez-structure-reviewer 가 실측한다)",
+      "passed": true
+    },
+    {
+      "command": "python3 statistics.NormalDist().inv_cdf(0.97 / 0.03 / 0.5) 와 growth-lms.json 222행의 min(1 + L·S·z), z=±1.8807936",
+      "result": "1.8807936081512504, -1.8807936081512509, 0.0. min 밑 0.8393703328895044, L=0 행 0개, 행 222",
+      "passed": true
+    },
+    {
+      "command": "금지어 글자 grep -c (.curvez/architecture.md)",
+      "result": "0",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/validate-handoff.mjs .curvez/handoff/",
+      "result": "OK 핸드오프 검증 — 검사 75건, 통과 75건, 실패 0건, 오류 0개, 경고 0개 (이 항목을 더하기 전 실행. 더한 뒤 다시 실행한 결과는 최종 보고에 있다)",
+      "passed": true
+    }
+  ]
+}

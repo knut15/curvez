@@ -1,0 +1,113 @@
+{
+  "from": "curvez-nextjs",
+  "to": ["curvez-orchestrator", "curvez-qa"],
+  "status": "done",
+  "summary": "curvez-reviewer(20260930-135018)의 src 쪽 지적 6건(TEAM-03,05,06,07,08,09)을 고쳤다. TEAM-06(F18 metadata description v5 5항목)은 직전 라운드(curvez-nextjs.20260930-135922)에서 이미 고쳐져 있어 그대로 확인만 했다. TEAM-01(경감 경계 문구 모순)은 오케스트레이터 판정 대기 중이라 손대지 않았다. typecheck·lint·arch 게이트 모두 0건이고, apps/preemie-calc 단위 테스트 15 files/103 tests 전부 통과(직전 라운드가 남긴 f13-build-artifacts.test.ts 2건 실패는 이번 실행에서 재현되지 않았다 — QA 쪽 변경으로 보인다). f16-question-guides.spec.ts·f18-age-basis-public.spec.ts 를 PORT=3200 에서 한 번 돌려 29/29 통과(직전 라운드가 남긴 footer role=contentinfo·구식 '성장 백분위' 관련 8건 실패도 이번에는 나타나지 않았다 — GOAL 이 언급한 대로 curvez-qa 가 테스트를 고치고 있어서로 보인다).",
+  "artifacts": [
+    {
+      "path": "apps/preemie-calc/src/views/age-basis-public/ui/MyChildCta.tsx",
+      "kind": "code",
+      "note": "TEAM-03: useProfileStore 의 hydrated 플래그(기존 훅에 이미 있던 값, 이번에 처음 소비)로 pointerEvents/aria-disabled/tabIndex 를 하이드레이션 전에는 비활성으로 둔다. 앵커 자체(href)는 서버·클라이언트 첫 렌더 모두 그대로 렌더해 크롤러·새 탭 열기는 그대로 되고, 서버값과 초기 클라이언트값이 둘 다 hydrated=false 로 같아 하이드레이션 경고가 나지 않는다. 마우스·터치 클릭은 pointer-events:none 으로 완전히 막힌다(키보드 Tab+Enter 활성화는 이론상 그 찰나의 창에 가능하지만, tabIndex=-1 로 탭 순서에서 빠진다)"
+    },
+    {
+      "path": "apps/preemie-calc/src/views/age-basis-public/ui/AgeBasisPublicView.tsx",
+      "kind": "code",
+      "note": "TEAM-05: 푸터 sources 를 데이터 파일 제목(ageBasisMeta.title) 한 줄 대신 ageBasisMeta.sources 의 실제 출처 이름(질병관리청·일산병원·아이사랑) 3줄로 바꿨다. 행마다 이미 보이는 sourceLabel() 은 손대지 않았다"
+    },
+    {
+      "path": "apps/preemie-calc/src/views/guide-questions/ui/GuideQuestionView.tsx",
+      "kind": "code",
+      "note": "TEAM-07: groupVaccinationSeries()를 추가해 alternativeGroup 이 같은 계열(로타바이러스 RV1·RV5, 일본뇌염 불활성화·약독화)을 묶어 '(둘 중 하나)' 로 표시한다(데이터의 alternativeGroup 에서 읽고, 새 짝을 즉흥으로 만들지 않았다). TEAM-08: Weaning() 에 '아래 출처가 확인하는 것은 이유식은 교정 나이를 따른다까지'라는 muted 문단을 추가해, '교정 6개월 전후'가 아이사랑 안내의 표현인 것처럼 보이던 출처 표시를 바로잡았다. 기존 두 문장(교정 6개월 전후, 시작 시기는 의료진과 상담)은 그대로 두고 새 문단만 더했다 — 새 의료 권고를 더하지 않았다. TEAM-09: CorrectedAgeUntil() 의 24·36개월·28주·1.5kg 을 entities/correction-period 의 새 공개 API(correctionPeriodDefaultUntilMonths, correctionPeriodExtended)에서 읽게 바꿨다. 주·kg 변환(÷DAYS_PER_WEEK, ÷1000)은 화면이 한다(copayReliefTierRows 와 같은 패턴). 미결 3 미확정 표시(UnconfirmedNotice, correctionPeriodAgeBasis.status)는 그대로 유지했다"
+    },
+    {
+      "path": "apps/preemie-calc/src/views/guide-questions/lib/questions.ts",
+      "kind": "code",
+      "note": "TEAM-09: 'corrected-age-until' description 의 24·36개월도 correctionPeriodDefaultUntilMonths·correctionPeriodExtended.untilMonths 로 바꿨다. 파일 위 주석의 '데이터를 읽지 않는 순수 상수' 문구를 사실과 맞게 고쳤다(ARCH-107 은 위반하지 않는다 — data/*.json 이 아니라 슬라이스의 model 공개 API 를 읽는다)"
+    },
+    {
+      "path": "apps/preemie-calc/src/entities/correction-period/model/index.ts",
+      "kind": "code",
+      "note": "TEAM-09: correctionPeriodDefaultUntilMonths, correctionPeriodExtended(untilMonths·gestationDaysBelow·birthWeightGramsBelow) 를 새 공개 API 로 내보냈다. 값·판정 로직(correctionPeriod())은 바꾸지 않았다"
+    }
+  ],
+  "decisions": [
+    {
+      "what": "TEAM-06(F18 metadata description)은 이번 라운드에서 다시 고치지 않았다 — curvez-nextjs.20260930-135922 가 이미 v5 5항목(예방접종, 영유아검진 방문, 문진표·발달선별검사지, 이유식, 발달 평가)으로 바꿔 두었고, 리뷰(135018)는 그 이전 코드를 본 것이라 판단했다",
+      "why": "apps/preemie-calc/src/app/guide/age-basis/page.tsx:8~9 을 직접 읽어 확인했다. 리뷰 파일 타임스탬프(135018)가 직전 nextjs 라운드(135922)보다 앞서, 리뷰가 아직 고치기 전 코드를 본 것으로 보인다",
+      "reversible_at": "apps/preemie-calc/src/app/guide/age-basis/page.tsx:8"
+    },
+    {
+      "what": "TEAM-03 은 '하이드레이션 뒤에만 링크 렌더'가 아니라 '앵커는 항상 렌더하되 pointer-events·tabIndex 로 활성화만 막는' 방식을 골랐다",
+      "why": "MyChildCta 코드 자체의 주석이 '크롤러와 새 탭 열기를 위해 실제 <a href> 를 쓴다'고 명시한다. 하이드레이션 전 렌더를 비활성 placeholder(div)로 바꾸면 이 요구(크롤러 인덱싱)를 깨뜨린다. 또한 이미 직전 라운드에서 href 를 '/'에서 '/?next=F3_HREF' 로 바꿔 두어, 하이드레이션 전에 클릭해도 최종 도착지는 항상 F3 다(InputView 가 next 쿼리로 되돌린다) — 남은 문제는 '입력 화면을 잠깐 거치는 것'이라, 클릭 자체를 막는 것으로 충분하다고 판단했다",
+      "reversible_at": "apps/preemie-calc/src/views/age-basis-public/ui/MyChildCta.tsx"
+    },
+    {
+      "what": "같은 하이드레이션 경쟁 패턴이 있는 apps/preemie-calc/src/views/guide-questions/ui/CalculatorLink.tsx(F16)는 고치지 않았다",
+      "why": "TEAM-03 의 where 는 MyChildCta.tsx 하나였다. CalculatorLink 는 F16 계산기 링크로 다른 파일이고, 지시서 범위(6건) 밖이라 최소한만 건드리는 원칙을 따라 손대지 않았다. 같은 수정이 필요하면 이 파일도 대상이다",
+      "reversible_at": "apps/preemie-calc/src/views/guide-questions/ui/CalculatorLink.tsx"
+    },
+    {
+      "what": "TEAM-08 은 '교정 6개월 전후' 문장을 지우거나 바꾸지 않고, 출처 범위를 밝히는 새 muted 문단만 더했다",
+      "why": "지시서가 '교정 6개월 전후는 PRD §1 표와 SPEC F12 문구라 유지'하라고 명시했다. 문제는 문장 자체가 아니라 그 문장이 아이사랑 출처의 것처럼 보이는 표시라서, 표시만 바로잡았다",
+      "reversible_at": "apps/preemie-calc/src/views/guide-questions/ui/GuideQuestionView.tsx (Weaning 함수)"
+    },
+    {
+      "what": "TEAM-01(경감 경계 문구와 계산의 모순)은 건드리지 않았다",
+      "why": "GOAL 이 명시적으로 '사용자 답을 기다린다. 손대지 않는다'고 지시했다",
+      "reversible_at": null
+    }
+  ],
+  "blocked_on": [],
+  "verification": [
+    {
+      "command": "pnpm typecheck (profile.commands.typecheck)",
+      "result": "exit 0. apps/preemie-calc: next typegen(✓ Types generated successfully) && tsc --noEmit Done. 7개 워크스페이스 전부 Done, 오류 0건",
+      "passed": true
+    },
+    {
+      "command": "pnpm lint (profile.commands.lint)",
+      "result": "exit 0. eslint . 와 7개 워크스페이스 lint 모두 Done, 출력에 error·warning 없음(0 problems)",
+      "passed": true
+    },
+    {
+      "command": "node /Users/kim/.claude/plugins/cache/curvez/curvez/0.6.0/scripts/quality-gate.mjs --only arch",
+      "result": "PASS arch: 규칙 19개 파싱 / 검사 19개 / 위반 0건",
+      "passed": true
+    },
+    {
+      "command": "grep -rn 'eslint-disable' apps/preemie-calc/src",
+      "result": "0건(exit 1, 매치 없음)",
+      "passed": true
+    },
+    {
+      "command": "grep -rnE ':\\s*any\\b|<any>|\\bas\\s+any\\b' apps/preemie-calc/src --include='*.ts' --include='*.tsx'",
+      "result": "0건",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) pnpm exec vitest run tests/unit/vaccination.test.ts tests/unit/copay-relief.test.ts tests/unit/correction-period.test.ts",
+      "result": "3 files, 18 tests, 18 passed",
+      "passed": true
+    },
+    {
+      "command": "pnpm --filter preemie-calc test",
+      "result": "Test Files 15 passed (15), Tests 103 passed (103) — 직전 라운드가 남긴 f13-build-artifacts.test.ts 2건 실패는 이번 실행에서 재현되지 않았다",
+      "passed": true
+    },
+    {
+      "command": "(apps/preemie-calc) PORT=3200 pnpm exec playwright test tests/e2e/f18-age-basis-public.spec.ts tests/e2e/f16-question-guides.spec.ts",
+      "result": "29 tests, 29 passed(한 번 실행, 결과만 기록). PC-F18-AC3(실제 근거 자료 이름·기준일)·PC-F16-AC4(경감 구간 3개)·PC-F16-AC5(미확정 표시 범위) 모두 포함해 통과. 직전 라운드가 남긴 8건 실패(footer role=contentinfo, 구식 '성장 백분위')는 이번 실행에서 나타나지 않았다 — GOAL 이 언급한 대로 curvez-qa 가 테스트를 고치고 있어서로 보인다. tests/ 는 이번 라운드가 고치지 않았다",
+      "passed": true
+    },
+    {
+      "command": "lsof -i :3100 (작업 전후)",
+      "result": "node 43850 LISTEN *:opcon-xps(3100) 그대로 — kill 하지 않았다",
+      "passed": true
+    },
+    {
+      "command": "lsof -i :3200 (playwright 실행 직후)",
+      "result": "빈 출력 — 남은 프로세스 없음",
+      "passed": true
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "meta": {
+    "id": "copay-relief",
+    "title": "이른둥이 외래 본인부담 경감 기간",
+    "sources": [
+      {
+        "id": "source-mohw",
+        "name": "보건복지부 보도자료 (2026년 1월 시행)",
+        "url": "https://mohw.go.kr/board.es?act=view&bid=0027&list_no=1488237&mid=a10503010100&nPage=1&tag="
+      },
+      {
+        "id": "source-nhis",
+        "name": "국민건강보험공단 이른둥이 본인부담 경감 안내",
+        "url": "https://www.nhis.or.kr/static/html/wbma/c/wbmac0226.html"
+      }
+    ],
+    "effectiveDate": "2026-01-01",
+    "lastVerified": "2026-09-30",
+    "schemaVersion": 1
+  },
+  "sourceNotes": [
+    {
+      "sourceId": "source-nhis",
+      "text": "공단 안내 페이지는 2026-09-30 현재 개정 전 내용(신청일부터 만 5세)이다"
+    }
+  ],
+  "policyLabel": "2026년 1월 시행 제도 기준",
+  "eligibleBelowGestationDays": 259,
+  "tiers": [
+    {
+      "id": "tier-under-29w",
+      "label": "5년 4개월",
+      "gestationDays": { "from": null, "to": 203 },
+      "period": { "years": 5, "months": 4 }
+    },
+    {
+      "id": "tier-29-33w",
+      "label": "5년 3개월",
+      "gestationDays": { "from": 203, "to": 231 },
+      "period": { "years": 5, "months": 3 }
+    },
+    {
+      "id": "tier-33-37w",
+      "label": "5년 2개월",
+      "gestationDays": { "from": 231, "to": 259 },
+      "period": { "years": 5, "months": 2 }
+    }
+  ],
+  "innerBoundary": {
+    "status": "확정",
+    "value": "upper-inclusive"
+  },
+  "endDateMethod": {
+    "status": "미확정",
+    "value": "birth-plus-period",
+    "openQuestion": "PRD-9-2",
+    "provisionalBasis": "시작일이 출생일인 것은 보건복지부 보도자료로 확인했다(2026-09-30). 만료일 당일 포함 여부는 원문을 찾지 못했다"
+  }
+}

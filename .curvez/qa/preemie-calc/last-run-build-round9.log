@@ -1,0 +1,140 @@
+$ pnpm -r --if-present build
+Scope: 7 of 8 workspace projects
+apps/preemie-calc build$ next build
+apps/preemie-calc build: ▲ Next.js 16.3.4 (Turbopack)
+apps/preemie-calc build: ✓ Running next.config took 9ms
+apps/preemie-calc build:   Creating an optimized production build ...
+apps/preemie-calc build: ✓ Compiled successfully in 791ms
+apps/preemie-calc build:   Running TypeScript ...
+apps/preemie-calc build:   Finished TypeScript in 1428ms ...
+apps/preemie-calc build:   Collecting page data using 9 workers ...
+apps/preemie-calc build:   Generating static pages using 9 workers (0/503) ...
+apps/preemie-calc build:   Generating static pages using 9 workers (125/503) 
+apps/preemie-calc build:   Generating static pages using 9 workers (251/503) 
+apps/preemie-calc build:   Generating static pages using 9 workers (377/503) 
+apps/preemie-calc build: ✓ Generating static pages using 9 workers (503/503) in 1208ms
+apps/preemie-calc build:   Finalizing page optimization ...
+apps/preemie-calc build: Route (app)
+apps/preemie-calc build: ┌ ○ /
+apps/preemie-calc build: ├ ○ /_not-found
+apps/preemie-calc build: ├ ○ /dashboard
+apps/preemie-calc build: ├ ○ /dashboard/age-basis
+apps/preemie-calc build: ├ ○ /dashboard/checkups
+apps/preemie-calc build: ├ ○ /dashboard/copay-relief
+apps/preemie-calc build: ├ ○ /dashboard/correction-period
+apps/preemie-calc build: ├ ○ /dashboard/formula
+apps/preemie-calc build: ├ ○ /dashboard/growth
+apps/preemie-calc build: ├ ○ /dashboard/target-height
+apps/preemie-calc build: ├ ○ /dashboard/vaccinations
+apps/preemie-calc build: ├ ○ /guide
+apps/preemie-calc build: ├   /guide/[weeks]/[months]
+apps/preemie-calc build: │ ├ ● /guide/24/0
+apps/preemie-calc build: │ ├ ● /guide/24/1
+apps/preemie-calc build: │ ├ ● /guide/24/2
+apps/preemie-calc build: │ └ ● [+478 more paths]
+apps/preemie-calc build: ├ ○ /guide/age-basis
+apps/preemie-calc build: ├   /guide/questions/[slug]
+apps/preemie-calc build: │ ├ ● /guide/questions/vaccination
+apps/preemie-calc build: │ ├ ● /guide/questions/checkup-questionnaire
+apps/preemie-calc build: │ ├ ● /guide/questions/weaning
+apps/preemie-calc build: │ └ ● [+3 more paths]
+apps/preemie-calc build: ├ ○ /share
+apps/preemie-calc build: └ ○ /sitemap.xml
+apps/preemie-calc build: ○  (Static)  prerendered as static content
+apps/preemie-calc build: ●  (SSG)     prerendered as static HTML (uses generateStaticParams)
+apps/preemie-calc build: Done
+apps/city-presets build$ next build
+apps/handwork build$ next build
+apps/scopulus-ui build$ next build
+apps/scopulus-ui build: ▲ Next.js 16.3.4 (Turbopack)
+apps/handwork build: ▲ Next.js 16.3.4 (Turbopack)
+apps/city-presets build: ▲ Next.js 16.3.4 (Turbopack)
+apps/city-presets build: ✓ Running next.config.ts took 23ms
+apps/scopulus-ui build: ✓ Running next.config.ts took 26ms
+apps/handwork build: ✓ Running next.config.ts took 26ms
+apps/city-presets build:   Creating an optimized production build ...
+apps/scopulus-ui build:   Creating an optimized production build ...
+apps/handwork build:   Creating an optimized production build ...
+apps/scopulus-ui build: ✓ Compiled successfully in 1022ms
+apps/scopulus-ui build:   Running TypeScript ...
+apps/handwork build: ✓ Compiled successfully in 1074ms
+apps/handwork build:   Running TypeScript ...
+apps/city-presets build: ✓ Compiled successfully in 1246ms
+apps/city-presets build:   Running TypeScript ...
+apps/city-presets build:   Finished TypeScript in 1452ms ...
+apps/city-presets build:   Collecting page data using 7 workers ...
+apps/handwork build:   Finished TypeScript in 1525ms ...
+apps/handwork build:   Collecting page data using 9 workers ...
+apps/scopulus-ui build:   Finished TypeScript in 2.3s ...
+apps/scopulus-ui build:   Collecting page data using 9 workers ...
+apps/city-presets build:   Generating static pages using 7 workers (0/6) ...
+apps/handwork build:   Generating static pages using 9 workers (0/112) ...
+apps/scopulus-ui build:   Generating static pages using 9 workers (0/46) ...
+apps/handwork build:   Generating static pages using 9 workers (28/112) 
+apps/city-presets build:   Generating static pages using 7 workers (1/6) 
+apps/city-presets build:   Generating static pages using 7 workers (2/6) 
+apps/handwork build:   Generating static pages using 9 workers (56/112) 
+apps/city-presets build:   Generating static pages using 7 workers (4/6) 
+apps/city-presets build: ✓ Generating static pages using 7 workers (6/6) in 1298ms
+apps/city-presets build:   Finalizing page optimization ...
+apps/scopulus-ui build:   Generating static pages using 9 workers (11/46) 
+apps/city-presets build: Route (app)
+apps/city-presets build: ┌ ○ /
+apps/city-presets build: ├ ○ /_not-found
+apps/city-presets build: ├ ○ /about
+apps/city-presets build: ├ ○ /icon.svg
+apps/city-presets build: └ ○ /verify
+apps/city-presets build: ○  (Static)  prerendered as static content
+apps/handwork build:   Generating static pages using 9 workers (84/112) 
+apps/scopulus-ui build:   Generating static pages using 9 workers (22/46) 
+apps/scopulus-ui build:   Generating static pages using 9 workers (34/46) 
+apps/handwork build: ✓ Generating static pages using 9 workers (112/112) in 1518ms
+apps/handwork build:   Finalizing page optimization ...
+apps/handwork build: Route (app)
+apps/handwork build: ┌ ○ /
+apps/handwork build: ├ ○ /_not-found
+apps/handwork build: ├   /[collection]
+apps/handwork build: │ └ ● /insight
+apps/handwork build: ├ ● /[collection]/[slug]
+apps/handwork build: ├ ○ /cases
+apps/handwork build: ├   /cases/[slug]
+apps/handwork build: │ ├ ● /cases/access-refresh-token-flow
+apps/handwork build: │ ├ ● /cases/board-api-nine-steps
+apps/handwork build: │ ├ ● /cases/fsd-to-ddd
+apps/handwork build: │ └ ● [+19 more paths]
+apps/handwork build: ├ ○ /design
+apps/handwork build: ├ ○ /labs
+apps/handwork build: ├   /labs/[slug]
+apps/handwork build: │ ├ ● /labs/architecture-preset
+apps/handwork build: │ ├ ● /labs/design-tokens-locked
+apps/handwork build: │ ├ ● /labs/design-without-knowing-stack
+apps/handwork build: │ └ ● [+39 more paths]
+apps/handwork build: ├ ○ /works
+apps/handwork build: └   /works/[slug]
+apps/handwork build:   ├ ● /works/agent-lab
+apps/handwork build:   ├ ● /works/aster
+apps/handwork build:   ├ ● /works/blog
+apps/handwork build:   └ ● [+36 more paths]
+apps/handwork build: ○  (Static)  prerendered as static content
+apps/handwork build: ●  (SSG)     prerendered as static HTML (uses generateStaticParams)
+apps/scopulus-ui build: ✓ Generating static pages using 9 workers (46/46) in 1363ms
+apps/scopulus-ui build:   Finalizing page optimization ...
+apps/scopulus-ui build: Route (app)
+apps/scopulus-ui build: ┌ ○ /
+apps/scopulus-ui build: ├ ○ /_not-found
+apps/scopulus-ui build: ├ ○ /changelog
+apps/scopulus-ui build: ├ ○ /components
+apps/scopulus-ui build: ├   /components/[slug]
+apps/scopulus-ui build: │ ├ ● /components/alert
+apps/scopulus-ui build: │ ├ ● /components/app-link
+apps/scopulus-ui build: │ ├ ● /components/aspect-ratio
+apps/scopulus-ui build: │ └ ● [+35 more paths]
+apps/scopulus-ui build: ├   /docs/[slug]
+apps/scopulus-ui build: │ ├ ● /docs/getting-started
+apps/scopulus-ui build: │ └ ● /docs/tokens
+apps/scopulus-ui build: └ ○ /icon.svg
+apps/scopulus-ui build: ○  (Static)  prerendered as static content
+apps/scopulus-ui build: ●  (SSG)     prerendered as static HTML (uses generateStaticParams)
+apps/city-presets build: Done
+apps/handwork build: Done
+apps/scopulus-ui build: Done
