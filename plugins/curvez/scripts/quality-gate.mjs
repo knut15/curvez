@@ -168,15 +168,21 @@ function gateArch() {
   let total = 0;
   const hits = [];
   const unchecked = [];
+  const missingPaths = [];
 
   for (const rule of rules) {
-    // 검사 경로에 공백이 있으면 zsh 에서 단어 분리가 안 돼 0건이 된다. 규칙 하나에 경로 하나가 원칙이다.
-    const target = join(ROOT, rule.path.trim());
-    if (!existsSync(target)) {
+    // 검사 경로 칸에 경로를 공백으로 여럿 적은 행이 실제로 있다. 칸 전체를 경로 하나로 읽으면
+    // "경로 없음" 으로 건너뛰어 그 규칙이 한 번도 검사되지 않는다. 나눠서 각각 검사한다.
+    const paths = rule.path.trim().split(/\s+/);
+    const targets = paths.map((p) => join(ROOT, p)).filter(existsSync);
+    if (targets.length === 0) {
       unchecked.push(`${rule.id}(${rule.path})`);
       continue;
     }
-    const r = spawnSync("grep", ["-rInE", rule.pattern, target], {
+    // 일부만 없으면 나머지는 검사하되, 없는 경로를 숨기지 않는다.
+    const missing = paths.filter((p) => !existsSync(join(ROOT, p)));
+    if (missing.length) missingPaths.push(`${rule.id}(${missing.join(" ")})`);
+    const r = spawnSync("grep", ["-rInE", rule.pattern, ...targets], {
       encoding: "utf8",
       maxBuffer: 16 * 1024 * 1024,
     });
@@ -187,7 +193,7 @@ function gateArch() {
     }
   }
 
-  return { parsed: rules.length, violations: total, hits, unchecked };
+  return { parsed: rules.length, violations: total, hits, unchecked, missingPaths };
 }
 
 // ── main ────────────────────────────────────────────────────────────
@@ -245,6 +251,8 @@ function main() {
       if (a.hits.length) parts.push(a.hits.join(", "));
       if (a.unchecked.length)
         parts.push(`경로 없음: ${a.unchecked.join(", ")}`);
+      if (a.missingPaths.length)
+        parts.push(`일부 경로 없음: ${a.missingPaths.join(", ")}`);
 
       let ok = a.violations === 0;
       if (checked === 0) {
