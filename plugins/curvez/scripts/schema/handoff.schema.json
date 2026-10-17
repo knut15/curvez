@@ -153,7 +153,7 @@
           "priority": {
             "type": "string",
             "enum": ["P0", "P1", "P2", "P3"],
-            "description": "curvez-structure-reviewer 의 우선순위."
+            "description": "구조 지적의 우선순위."
           },
           "move_to": {
             "type": "string",

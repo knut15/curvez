@@ -105,9 +105,12 @@ function checkOrphanDocs() {
  */
 function checkDocDrift() {
   const counts = {
-    에이전트: readdirSync(join(PLUGIN_ROOT, "agents")).filter((f) =>
-      f.endsWith(".md"),
-    ).length,
+    // 에이전트는 두지 않는다. 디렉터리가 없으면 0종으로 센다.
+    에이전트: existsSync(join(PLUGIN_ROOT, "agents"))
+      ? readdirSync(join(PLUGIN_ROOT, "agents")).filter((f) =>
+          f.endsWith(".md"),
+        ).length
+      : 0,
     스킬: readdirSync(join(PLUGIN_ROOT, "skills"), {
       withFileTypes: true,
     }).filter(
