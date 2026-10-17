@@ -101,7 +101,7 @@
     },
     "findings": {
       "type": "array",
-      "description": "리뷰 지적. curvez-reviewer 와 curvez-structure-reviewer 가 쓴다. 그 외 에이전트는 비워 둔다.",
+      "description": "리뷰 지적. 리뷰를 맡은 에이전트가 쓴다. 그 외 에이전트는 비워 둔다.",
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -148,12 +148,12 @@
           "severity": {
             "type": "string",
             "enum": ["blocker", "major", "minor"],
-            "description": "curvez-reviewer 의 등급."
+            "description": "리뷰 지적의 등급."
           },
           "priority": {
             "type": "string",
             "enum": ["P0", "P1", "P2", "P3"],
-            "description": "curvez-structure-reviewer 의 우선순위."
+            "description": "구조 지적의 우선순위."
           },
           "move_to": {
             "type": "string",

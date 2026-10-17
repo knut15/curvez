@@ -4,25 +4,24 @@
     "name": "kim"
   },
   "metadata": {
-    "description": "프로젝트 오케스트레이션 하네스. 기술 스펙·아키텍처·담당 에이전트를 세팅하고 팀 병렬 개발을 시작한다.",
-    "version": "0.6.0"
+    "description": "curvez 의 Claude Code 플러그인 모음. 아키텍처 경계·검증 규칙(curvez)과 프런트엔드 제약(frontend-constraints)을 담는다.",
+    "version": "0.7.0"
   },
   "plugins": [
     {
       "name": "curvez",
       "source": "./plugins/curvez",
-      "description": "Next.js·React Native 프로젝트를 위한 오케스트레이션 하네스. 아키텍처 확정, 에이전트 세팅, 팀 병렬 실행, 품질 게이트를 제공한다.",
-      "version": "0.6.0",
+      "description": "Next.js 프로젝트에 아키텍처 경계와 검증 규칙을 거는 플러그인. OMC·superpowers 같은 오케스트레이션 플러그인 위에 얹어 쓴다.",
+      "version": "0.7.0",
       "author": {
         "name": "kim"
       },
       "keywords": [
-        "orchestration",
-        "harness",
+        "architecture",
+        "quality-gate",
         "nextjs",
-        "react-native",
         "ddd",
-        "agents"
+        "handoff"
       ]
     },
     {

@@ -1,205 +1,69 @@
 ---
 name: bootstrap
-description: 새 프로젝트에 curvez 를 붙인다. 스택을 감지하고 인터뷰로 `.curvez/profile.json` 을 확정한 뒤 `.curvez/` 와 CI 워크플로를 스캐폴드한다. "curvez 붙여줘", "curvez 시작", "초기 설정 해줘", "부트스트랩", "bootstrap", "set up curvez", "init curvez" 라고 하거나 `.curvez/profile.json` 없이 curvez 작업을 시작하려 할 때 실행한다.
+description: 프로젝트에 curvez 를 붙인다. 스택을 감지해 `.curvez/profile.json` 을 확정하고 `.curvez/`·CI 워크플로·lint 설정을 스캐폴드한다. "curvez 붙여줘", "curvez 시작", "초기 설정 해줘", "bootstrap", "set up curvez" 라고 하거나 `.curvez/profile.json` 없이 curvez 작업을 시작하려 할 때 실행한다.
 ---
 
-`.curvez/profile.json` 은 curvez 전체의 진입 전제다. `stack` 이 팀 편성을 정하고, `paths` 가 각
-에이전트의 소유 경로를 정하고, `commands` 가 품질 게이트의 실행 명령을 정한다. 이 파일이 틀리면
-그 위에서 도는 모든 워커가 같은 방향으로 틀린다. **그래서 이 스킬의 규칙은 하나다 — 모르는 값을
-채우지 않는다.**
-
-주 사용 에이전트는 `curvez-orchestrator` 다. 이 스킬은 워커를 띄우지 않는다.
-
-## 언제 이 스킬을 쓰는가
-
-- 프로젝트에 curvez 를 처음 붙일 때
-- `.curvez/profile.json` 이 없는 상태에서 curvez 작업 지시를 받았을 때
-- `curvez-orchestrator` 가 `.curvez/profile.json` 없음으로 `status: blocked` 를 냈을 때
-- 스택이 바뀌어(단일 앱 → 모노레포) 프로파일의 `stack` 과 `paths` 를 다시 잡아야 할 때
+`.curvez/profile.json` 은 curvez 의 모든 절차가 기대는 전제다. `stack` 과 `paths` 는 아키텍처 경계의 검사 경로를,
+`commands` 는 품질 게이트가 실제로 돌릴 명령을 정한다. 이 파일이 틀리면 그 위의 검사가 전부 같은 방향으로 틀린다.
+그래서 규칙은 하나다. **모르는 값을 채우지 않는다.**
 
 ## 언제 쓰지 않는가
 
-- 레이어·의존 방향·금지 import 를 정하거나 다시 정할 때 → `architecture-setup` 을 쓴다.
-  bootstrap 은 `.curvez/architecture.md` 의 **자리만** 만들고 내용은 건드리지 않는다
-- 이미 세팅된 프로젝트에서 이번 작업의 팀을 짤 때 → `team-orchestration` 을 쓴다
-- 핸드오프 JSON 을 쓰거나 읽을 때 → `agent-contract` 를 쓴다
-- 스킬·에이전트 정의 문서를 만들 때 → `authoring-skills` / `authoring-agents` 를 쓴다
-- 화면·컴포넌트 스펙을 만들 때 → `wireframe-spec` 을 쓴다
+- 레이어·금지 import 를 정한다 → `architecture-setup` 을 쓴다. bootstrap 은 `architecture.md` 의 자리만 만든다
+- `profile.json` 이 이미 있다 → 덮어쓰지 않는다. 아래 "이미 있을 때" 만 적용한다
 
-**이유:** bootstrap 은 프로젝트당 사실상 한 번 도는 스킬이다. 이미 `profile.json` 이 있는데
-이 스킬이 뜨면 확정된 전제를 다시 흔들고, 그 사이 다른 에이전트가 옛 전제로 작업 중일 수 있다.
-
-## 절차 개요
-
-1. 이미 있는지 본다 (멱등성)
-2. 스택을 감지한다
-3. `commands` 를 `scripts` 에서 읽는다
-4. 못 채운 것만 인터뷰한다 (최대 5문)
-5. `profile.json` 을 쓴다
-6. `.curvez/` 를 스캐폴드하고 `.gitignore`·CI 워크플로·lint 설정·CLAUDE.md 를 손본다
-7. 검증하고 `architecture-setup` 으로 넘긴다
-
-## 1. 이미 있는지 본다
+## 1. 실행기를 돌린다
 
 ```bash
-test -e .curvez/profile.json && echo "EXISTS" || echo "NEW"
+node "$CURVEZ_ROOT/scripts/bootstrap.mjs" --dry-run --json   # 무엇을 만들지 먼저 본다
+node "$CURVEZ_ROOT/scripts/bootstrap.mjs" --json             # 실제로 만든다
 ```
 
-| 결과     | 행동                                           |
-| -------- | ---------------------------------------------- |
-| `NEW`    | 절차 2 로 간다                                 |
-| `EXISTS` | **덮어쓰지 않는다.** 아래 보충 규칙만 적용한다 |
+실행기는 사용자에게 묻지 않는다. 자동으로 판정한 것만 쓰고, 판정하지 못한 것은 `questions[]` 로 돌려준다.
+그 질문을 사용자에게 전하는 것이 이 스킬의 일이다.
 
-### 이미 있을 때의 보충 규칙
+실행기가 하는 일:
 
-1. `profile.json` 을 읽고 절차 7 의 검증 명령을 그대로 돌린다
-2. `missing=` 에 나온 **필수 키만** 채운다. 채우는 값은 감지 결과나 사용자 답이어야 한다
-3. 이미 값이 있는 키는 사용자가 명시적으로 바꾸라고 한 것만 바꾼다
-4. `.curvez/` 아래 없는 디렉터리·파일만 만든다. 있는 파일은 열지도 않는다
-5. **없는 산출물은 지금 만든다.** 프로파일이 있다는 것이 "할 일이 없다" 는 뜻은 아니다 —
-   예전에 붙인 프로젝트에는 나중에 추가된 산출물(CI 워크플로 등)이 없다.
-   **이유:** 통째로 건너뛰면 사용자는 bootstrap 을 다시 돌렸는데도 아무 일이 없었던 것으로 보고,
-   왜 없는지 알 방법이 없다
+- `package.json` 으로 스택을 감지한다. `next` 가 있고 워크스페이스가 아니면 `nextjs`, 워크스페이스면 앱 구성을 보고 `monorepo` 인지 판정한다
+- `package.json` 의 `scripts` 에서 `commands` 를 고른다. 해당 스크립트가 없으면 그 키를 비운다. 명령을 지어내지 않는다
+- 원격 브랜치를 읽어 `git` 블록을 채운다
+- `.curvez/` 아래 `profile.json`, `architecture.md`(헤딩 7개 골격), `handoff/`, `tmp/` 를 만들고 `.gitignore` 에 `.curvez/tmp/` 한 줄을 넣는다
+- 워크플로가 하나도 없고 원격이 GitHub 이면 `.github/workflows/ci.yml` 을 만든다. 게이트 명령은 `commands` 를 그대로 쓴다
+- ESLint·Prettier 설정이 하나도 없으면 기본 설정 파일을 만든다
+- 루트에 `CLAUDE.md` 가 없으면 템플릿을 복제한다
 
-**기존 값을 덮어쓰지 마라.**
-**이유:** `paths` 는 이미 `.curvez/architecture.md` 의 `## 스택 매핑`, `.curvez/design/` 의
-`route(nextjs)`, 각 에이전트의 소유 경로 판정에 참조돼 있다. 경로 하나를 조용히 바꾸면
-그 참조들이 전부 어긋나는데, 어긋난 자리는 실행이 실패할 때까지 드러나지 않는다.
-덮어쓰기가 정말 필요하면 그것은 bootstrap 이 아니라 사용자가 결정할 마이그레이션이다.
+이미 있는 워크플로, lint 설정, `CLAUDE.md` 는 `--force` 로도 덮지 않는다. `--force` 는 `profile.json` 에만 적용된다.
 
-## 2. 스택을 감지한다
+스택 감지가 애매하면 [references/stack-detection.md](references/stack-detection.md) 를 읽는다.
+스택이 정해지면 `$CURVEZ_ROOT/presets/stack/<stack>.md` 를 읽는다. 그 스택에서만 생기는 오탐과 경로 후보가 있다.
 
-```bash
-node -e '
-const fs = require("fs");
-const read = (p) => { try { return JSON.parse(fs.readFileSync(p, "utf8")); } catch { return null; } };
-const root = read("package.json");
-if (!root) { console.log("NO_PACKAGE_JSON"); process.exit(0); }
-const d = { ...(root.dependencies || {}), ...(root.devDependencies || {}) };
-console.log(JSON.stringify({
-  workspace: !!root.workspaces || fs.existsSync("pnpm-workspace.yaml"),
-  next: d.next || null,
-  packageManager: root.packageManager || null,
-  scripts: Object.keys(root.scripts || {})
-}, null, 2));
-'
-```
+## 2. 질문을 한 번에 묻는다
 
-출력으로 판정한다. 두 줄에 안 걸리면 판정하지 마라.
+`questions[]` 가 비어 있지 않으면 **한 번에 모아** 사용자에게 묻는다. 상한은 5문이다.
+5문으로 안 끝나면 문항이 많은 것이 아니라 감지가 덜 된 것이다. `package.json` 위치와 워크스페이스 구성을 다시 본다.
 
-| 출력                            | 판정                                                   |
-| ------------------------------- | ------------------------------------------------------ |
-| `workspace: false`, `next` 있음 | `nextjs`                                               |
-| `workspace: true`               | **아직 확정하지 않는다.** 워크스페이스를 순회해야 한다 |
+답을 받으면 `profile.json` 에 반영한다. 답이 없는 필수 키는 비워 둔 채 멈추고, 무엇이 비었는지 보고한다.
 
-`workspace: true` 이거나 위 두 줄 중 어느 것에도 안 맞으면
-[references/stack-detection.md](references/stack-detection.md) 를 읽고 그 절차를 따른다.
+## 3. 사람 손이 필요한 일
 
-### 애매하면 묻는다
+실행기가 하지 않는 일이다. 전부 **사용자 승인을 받고** 한다.
 
-아래는 전부 **추측 금지**다. 절차 4 의 인터뷰 문항으로 올린다.
+| 상황 | 할 일 |
+|---|---|
+| 통합 브랜치가 원격에 없어 실행기가 로컬에 `release` 를 만들었다 | `git push -u origin release`. push 전까지 `baseBranch` 는 원격에 없는 브랜치다 |
+| lint·prettier 설정 파일을 새로 만들었다 | `pnpm add -D eslint @eslint/js globals prettier`, `scripts` 에 `"lint": "eslint ."` 등록, `pnpm lint` 를 실제로 돌린 뒤 `commands.lint` 를 채운다 |
+| `packageManager` 감지값이 pnpm 이 아니다 | 바꾸지 않는다. 그 사실만 보고한다 |
 
-| 상황                                          | 왜 추측하면 안 되는가                                                                 |
-| --------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `next` 가 없다                                | curvez 대상이 아닌 저장소일 수 있다. 스택을 지어내면 존재하지 않는 경로에 코드를 쓴다 |
-| `NO_PACKAGE_JSON`                             | Node 프로젝트가 아니거나 루트가 아니다. 루트 위치부터 확인한다                        |
-| `workspace: true` 인데 앱 패키지가 하나뿐이다 | 모노레포 구조여도 `stack` 은 실제 앱 구성으로 갈린다                                  |
+설치 없이 `scripts` 만 등록하면 게이트가 매번 `command not found` 로 실패하고, 그 실패는 코드가 깨진 실패와 구분되지 않는다.
 
-### 스택이 정해지면 해당 스택 프리셋을 읽는다
-
-판정이 끝나면 **절차 3 으로 넘어가기 전에** 아래를 읽는다. 감지 신호의 오탐 케이스, 경로 후보,
-`commands` 이름 후보, 그 스택에서만 걸리는 함정이 거기 있다.
-
-```
-$CURVEZ_ROOT/presets/stack/<stack>.md
-```
-
-| `stack`    | 프리셋                      | 거기서만 알 수 있는 것                                                                                      |
-| ---------- | --------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `nextjs`   | `presets/stack/nextjs.md`   | App Router / Pages Router 판정을 디렉터리 이름이 아니라 파일 규약(`layout.*` / `_app.*`)으로 해야 하는 이유 |
-| `monorepo` | `presets/stack/monorepo.md` | `paths.domain` 을 이름이 아니라 **의존 관계**로 판정하는 방법                                               |
-
-**이 파일이 없어도 멈추지 마라.** 정상 설치에는 있지만, 없으면 이 스킬의 절차만으로
-진행할 수 있다. 다만 위 표의 함정들은 프리셋에만 적혀 있으므로, 없이 진행했다면 그 사실을
-`decisions` 에 남긴다.
-
-**이유:** 스택별 오탐 케이스를 이 스킬 본문에 전부 담으면 두 스택의 상세가 한 문서에 쌓여
-지금 필요 없는 한 스택 몫이 매번 읽힌다. 감지 결과가 나온 **뒤에** 해당 분기만 읽는 것이 맞다.
-
-## 3. commands 를 scripts 에서 읽는다
-
-절차 2 출력의 `scripts` 배열에서만 고른다. 위에서부터 먼저 맞는 이름 하나를 쓴다.
-
-| `commands` 키 | `scripts` 후보 (이 순서)           | 값 형식             |
-| ------------- | ---------------------------------- | ------------------- |
-| `typecheck`   | `typecheck` → `type-check` → `tsc` | `pnpm <스크립트명>` |
-| `lint`        | `lint`                             | `pnpm <스크립트명>` |
-| `test`        | `test`                             | `pnpm <스크립트명>` |
-| `build`       | `build`                            | `pnpm <스크립트명>` |
-
-**후보가 하나도 없으면 그 키를 통째로 생략한다. 명령을 지어내지 마라.**
-**이유:** `commands` 는 `curvez-qa` 가 그대로 실행하는 값이다. 없는 스크립트를 적어 두면 매 라운드
-`Command "typecheck" not found` 로 끝나는데, 이 실패는 코드가 깨진 실패와 출력만으로 구분되지 않아
-QA 가 "검증 실패" 로 보고하고 구현 에이전트가 멀쩡한 코드를 고치기 시작한다.
-
-`typecheck` / `lint` / `test` 가 **셋 다** 비면 인터뷰 문항으로 올린다 — 품질 게이트가 통째로 비면
-`status: done` 을 판정할 근거가 없어진다.
-
-`packageManager` 는 감지값과 무관하게 `pnpm` 으로 고정한다. 감지값이 pnpm 이 아니면 그 사실을
-인터뷰 문항이 아니라 **완료 보고에 남긴다** — 패키지 매니저 교체는 bootstrap 의 범위가 아니다.
-
-## 4. 못 채운 것만 인터뷰한다
-
-**문항 상한은 5문이다. 넘기지 마라.**
-
-**이유:** 사용자는 한 번에 답한다. 6문을 넘기면 뒤쪽 문항의 답이 짧아지거나 통째로 빠지고,
-빠진 답은 결국 추측으로 메워진다. `curvez-architect` 의 아키텍처 인터뷰도 같은 상한(3~5문)이라
-사용자가 bootstrap → architecture 로 이어서 받는 총 문항 수도 예측 가능해진다.
-5문으로 안 끝나면 문항이 많은 것이 아니라 **감지를 덜 돌린 것**이다. 절차 2·3 으로 돌아간다.
-
-문항 후보는 아래가 전부다. 감지로 이미 채운 것은 묻지 마라.
-
-| 순위 | 문항                                                                                  | 나오는 조건                                                                                      |
-| ---- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| 1    | 이 프로젝트의 스택은 `nextjs` / `monorepo` 중 무엇인가                                | 절차 2 가 애매로 끝났을 때                                                                       |
-| 2    | 웹/도메인 소스 경로가 각각 어디인가                                                   | 필수 `paths` 키를 감지로 못 채웠을 때                                                            |
-| 4    | 원격 목록이 이렇다 — 작업 브랜치를 `baseBranch` 에서 따고 PR 도 거기로 여는 게 맞는가 | **2단으로 판정됐을 때**(이름만 보고 정한 값이라 확인받는다) 또는 원격 브랜치를 아예 못 읽었을 때 |
-| 5    | 타입 체크·린트·테스트를 어떤 명령으로 도는가                                          | 절차 3 에서 셋 다 비었을 때                                                                      |
-| 6    | 테스트 파일이 어디 있는가                                                             | 아래 폴백으로도 못 찾았을 때                                                                     |
-
-**한 번에 다 던지고 한 번에 받는다.** 한 문항씩 왕복하지 않는다.
-
-후보가 6개지만 **던지는 것은 5문까지다.** 상한을 넘으면 순위대로 5문만 던지고, 밀린 키는
-`status: blocked` 로 남긴다 — 값을 추측으로 메우지 않는다. 6개가 다 나오는 상황은 감지가 통째로
-실패한 것이므로 절차 2·3 을 다시 돌리는 편이 빠르다.
-
-### paths.tests 만 폴백이 허용된다
-
-```bash
-ls -d tests test __tests__ e2e 2>/dev/null | head -3
-```
-
-디렉터리가 하나로 잡히면 그것을 쓴다. 없으면 `*.test.*` / `*.spec.*` / `__tests__/` 가 소스 트리에
-흩어져 있다는 뜻이므로 `paths.tests` 키를 생략한다.
-
-**필수 키에는 폴백을 쓰지 마라. 필수 키를 못 채우면 `status: blocked` 다.**
-**이유:** `paths.tests` 는 선택 키라 없어도 후속 에이전트가 관례로 찾아간다. 필수 키는 소유 경로
-판정에 쓰여서, 틀린 값 하나가 두 구현 에이전트를 같은 파일에 동시에 붙인다.
-
-## 5. profile.json 을 쓴다
-
-`Write` 로 `.curvez/profile.json` 을 쓴다. 형식은 아래가 정본이다.
+## profile.json 형식
 
 ```json
 {
   "stack": "monorepo",
   "packageManager": "pnpm",
   "architecture": "ddd",
-  "paths": {
-    "web": "apps/web",
-    "domain": "packages/domain",
-    "tests": "tests"
-  },
+  "paths": { "web": "apps/web", "domain": "packages/domain", "tests": "tests" },
   "git": {
     "baseBranch": "release",
     "releaseBranch": "main",
@@ -216,167 +80,25 @@ ls -d tests test __tests__ e2e 2>/dev/null | head -3
 }
 ```
 
-| `stack`    | 필수 키                     | 선택 키       |
-| ---------- | --------------------------- | ------------- |
-| `nextjs`   | `paths.web`                 | `paths.tests` |
+| `stack` | 필수 키 | 선택 키 |
+|---|---|---|
+| `nextjs` | `paths.web` | `paths.tests` |
 | `monorepo` | `paths.web`, `paths.domain` | `paths.tests` |
 
-**`git` 블록 — 다섯 키 전부 쓴다.** 감지는 `git branch -r` 로 한다. 원격에 `release` 또는
-`develop` 이 있으면 그것이 `baseBranch` 다. 없으면 `release` 브랜치를 **새로 만들어** 2단으로
-간다 (아래 불릿).
+- `paths` 는 저장소 루트 기준 상대 경로이고 끝에 `/` 를 붙이지 않는다
+- 모르는 선택 키는 키째로 뺀다. `""` 는 "없음" 이 아니라 "빈 경로" 로 읽혀 루트 전체를 검사하게 된다
+- `paths.tests` 만 폴백이 허용된다. 필수 키를 못 채우면 멈춘다
+- `humanMergeTargets` 초기값은 `[releaseBranch]` 다. 그 머지가 배포인지는 curvez 가 알 수 없으니 안전한 쪽을 기본으로 둔다. 비우는 것은 사용자만 한다
+- `release`·`develop` 이라는 이름만 보고 `baseBranch` 를 정했으면 실행기가 확인 질문을 돌려준다. 오래된 브랜치일 수 있다
 
-| 키                  | 값                                       | 채우는 법                                                 |
-| ------------------- | ---------------------------------------- | --------------------------------------------------------- |
-| `baseBranch`        | 작업 브랜치를 따는 곳이자 PR 타겟        | 원격의 `release` \| `develop`. 없으면 새로 만든 `release` |
-| `releaseBranch`     | 배포된 것                                | 원격의 `main` \| `master`                                 |
-| `mergeStrategy`     | `rebase` \| `merge` \| `squash`          | 초기값 `"rebase"`                                         |
-| `protectedBranches` | 직접 커밋 금지                           | `[releaseBranch, baseBranch]`                             |
-| `humanMergeTargets` | **이 타겟으로 가는 PR 은 사람이 누른다** | 초기값 `[releaseBranch]`                                  |
+## 이미 있을 때
 
-- **통합 브랜치가 원격에 없으면 `release` 를 새로 만들어 2단으로 간다.** `scripts/bootstrap.mjs` 가
-  로컬에 `release` 브랜치를 만들고(원격 `main` 기준), **push 는 이 스킬이 한다**:
-  `git push -u origin release`. push 전까지 `baseBranch` 는 원격에 없는 브랜치라 절차 7 의
-  완료 기준을 통과할 수 없다 — 만들었으면 push 까지가 한 단위다.
-  **이유:** 1단은 모든 작업 PR 이 배포 브랜치로 직행하는 구조다. 통합 지점을 기본으로 두면
-  `main` 으로 가는 머지는 사람이 누른다는 `humanMergeTargets` 기본값이 그대로 성립한다
-- **원격 브랜치를 읽지 못하면 `git` 블록을 지어내지 말고 인터뷰 문항으로 돌린다**(절차 4).
-  **이유:** 브랜치를 잘못 짚으면 배포된 것 위에서 작업하거나 남의 작업 위에 커밋이 쌓인다.
-  경로를 잘못 짚는 것과 달리 파일을 옮기듯 분리할 수 없다
-- `humanMergeTargets` 초기값이 `[releaseBranch]` 인 이유: **그 머지가 곧 배포인지는 프로젝트의
-  CD 설정에 달렸고 curvez 는 알 수 없다.** 1단 구조에서는 이 값 때문에 모든 작업 PR 을 사람이
-  누르게 된다. 그 프로젝트에서 배포가 아니라면 사용자가 배열을 비운다 — 안전한 쪽을 기본으로 두고
-  명시적으로 여는 구조다. **에이전트가 임의로 비우지 않는다**
-- **2단으로 판정했으면 프로파일에 쓰기 전에 확인받는다.** `release`·`develop` 이라는 **이름만 보고**
-  통합 브랜치라고 정한 값이기 때문이다. 그 브랜치가 오래된 유물인 저장소에서는 작업 브랜치가
-  아무도 보지 않는 곳에서 나고 PR 도 거기로 열린다 — 오류가 나지 않아 리뷰 화면을 열어야 드러난다.
-  `scripts/bootstrap.mjs` 는 이 경우 `git.baseBranch` 문항을 원격 목록과 함께 `questions[]` 로
-  돌려준다. **새로 만든 `release` 는 확인 문항이 없다** — 이름을 보고 추정한 것이 없고,
-  빈자리에 기본 전략을 세운 것이라 확인할 대상이 없다
+1. 아래 검증 명령을 돌린다
+2. `missing=` 에 나온 필수 키만 채운다. 값은 감지 결과나 사용자 답이어야 한다
+3. 값이 있는 키는 사용자가 바꾸라고 한 것만 바꾼다. `paths` 하나를 조용히 바꾸면 `architecture.md` 의 검사 경로가 전부 어긋난다
+4. 없는 산출물(예: 나중에 추가된 CI 워크플로)은 지금 만든다. 실행기를 다시 돌리면 없는 것만 만든다
 
-- `paths` 값은 **저장소 루트 기준 상대 경로**다. 끝에 `/` 를 붙이지 않는다
-- `architecture` 초기값은 `"ddd"` 다. 확정은 `architecture-setup` 이 한다
-- `crossReview` 는 선택 키다. bootstrap 은 쓰지 않고, 교차 검토를 쓸 사용자가 `{ "cli": "codex" }`
-  (모델을 고정하려면 `"model"` 도)로 넣는다. 읽는 쪽은 `curvez-cross-reviewer` 다
-- 값을 모르는 선택 키는 **키째로 생략한다.** 빈 문자열·`null` 을 넣지 마라
-  - **이유:** 후속 에이전트는 키 존재 여부로 분기한다. `""` 는 "없음" 이 아니라 "빈 경로" 로 읽혀
-    루트 전체를 대상으로 삼는 명령이 만들어진다
-
-## 6. .curvez/ 를 스캐폴드한다
-
-```bash
-mkdir -p .curvez/research .curvez/handoff .curvez/tmp
-touch .curvez/research/.gitkeep .curvez/handoff/.gitkeep
-```
-
-`.gitkeep` 이 없으면 빈 디렉터리가 커밋되지 않아 다음 사람이 클론했을 때 경로가 사라진다.
-
-이어서 자리만 만든다. **내용을 채우지 마라.**
-
-`.curvez/architecture.md` — 헤딩 7개와 한 줄씩만 둔다.
-
-```
-## 레이어 정의
-## 의존 방향
-## 금지 import
-## 폴더 구조
-## 스택 매핑
-## 예외
-## 결정 로그
-```
-
-각 헤딩 아래에는 `architecture-setup 이 채운다.` 한 줄만 쓴다.
-**헤딩 문자열과 각 절의 작성 규칙은 `architecture-setup` 이 정본이다.** 골격이 어긋나 있으면
-`architecture-setup` 이 전체를 다시 쓴다 — bootstrap 이 맞추려 들지 마라.
-
-`.curvez/team.md` — `curvez-orchestrator` 가 라운드마다 전체를 다시 쓰는 파일이다.
-`아직 팀이 편성되지 않았다.` 한 줄만 둔다. 형식의 정본은 `curvez-orchestrator` 정의다.
-
-### .gitignore 는 tmp 만 막는다
-
-```bash
-grep -qxF '.curvez/tmp/' .gitignore 2>/dev/null \
-  || printf '\n# curvez 실행 부산물 — 재현 가치가 없다\n.curvez/tmp/\n' >> .gitignore
-```
-
-`grep -qxF` 가 있어 두 번 돌려도 줄이 늘지 않는다.
-
-**`.curvez/` 자체는 커밋 대상이다. `.gitignore` 에 `.curvez/` 를 넣지 마라.**
-**이유:** `profile.json`·`architecture.md`·`design/` 은 사람과 에이전트가 **공유하는 전제**다.
-커밋하지 않으면 다른 사람의 에이전트가 같은 저장소에서 다른 전제로 시작하고, 두 결과물이 왜
-다른지 판정할 근거가 코드 어디에도 남지 않는다. `handoff/` 도 커밋한다 — `curvez-retrospector` 가
-실행 이력을 시간순으로 재구성하는 유일한 원본이다.
-`tmp/` 만 예외다. 파싱 실패한 워커 응답 원문 같은 실행 부산물이라 재현 가치가 없고 크기만 는다.
-
-### CI 워크플로도 함께 만든다
-
-`.github/workflows/ci.yml` 을 만든다. **게이트 명령은 `commands` 에서 그대로 가져온다 — 여기서
-명령을 새로 만들지 마라.**
-**이유:** 로컬 게이트와 CI 게이트가 다른 명령을 돌리면 "로컬은 통과인데 CI 는 빨간" 상태가
-상시화되고, 그때 어느 쪽이 맞는지 판정할 근거가 없다. 단일 출처는 `commands` 다.
-
-담기는 것은 다섯이다.
-
-| 무엇                                    | 어디서 온 값                                                                                                     |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| 트리거 브랜치 (`pull_request` · `push`) | `git.baseBranch` · `git.releaseBranch`. 하드코딩된 `main` 을 쓰지 않는다                                         |
-| 게이트 스텝                             | `commands` 의 `typecheck` → `lint` → `test` → `build` 중 **있는 것만**, 이 순서로                                |
-| Node 버전                               | `package.json` 의 `engines.node` 에서 메이저만. 없으면 `22`                                                      |
-| pnpm                                    | `pnpm/action-setup@v4`. `packageManager` 필드가 있으면 그것을 읽으므로 버전을 주지 않고, 없을 때만 `version: 10` |
-| 설치                                    | `pnpm install --frozen-lockfile` — lockfile 이 어긋나면 조용히 맞추지 말고 실패한다                              |
-
-게이트 순서를 싼 것부터 두는 이유: 먼저 깨지는 것이 먼저 보고돼야 실패 원인을 좁히는 비용이 싸다.
-`build` 가 먼저 돌면 타입 오류 하나 때문에 몇 분을 기다린 뒤에야 그 사실을 알게 된다.
-
-**아래 넷 중 하나라도 해당하면 만들지 않는다. 이유를 보고하고 넘어간다.**
-
-| 만들지 않는 경우                                                 | 왜                                                                                                                                  |
-| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `.github/workflows/` 에 이미 워크플로가 있다 (**이름이 달라도**) | 워크플로는 시크릿·배포·환경 승인과 얽혀 있다. 게이트가 두 번 도는 것 자체가 비용이고, 어느 쪽이 정본인지는 사람이 판단한다          |
-| 원격이 GitHub 이 아니다                                          | GitLab·Bitbucket 은 파일 위치와 문법이 통째로 다르다. 형식을 지어내면 **안 도는 파일이 저장소에 남고 사용자는 CI 가 있다고 믿는다** |
-| 원격 `origin` 이 없다                                            | 어느 CI 를 쓰는지 알 근거가 없다                                                                                                    |
-| `commands` 에 게이트가 하나도 없다                               | 돌릴 것이 없다                                                                                                                      |
-
-**기존 워크플로는 `--force` 로도 덮지 않는다.** `--force` 는 `.curvez/profile.json` 에만 걸린다.
-**이유:** 프로파일을 덮는 것은 이 저장소 안의 전제를 바꾸는 일이고, 워크플로를 덮는 것은
-**배포 파이프라인을 바꾸는 일**이다. 되돌리기 비용이 같은 등급이 아니다.
-
-### lint·prettier 설정이 없으면 기본값을 만든다
-
-루트에 ESLint·Prettier 설정이 하나도 없으면 기본 설정을 만든다. 어떤 형태든 이미 있으면
-(`eslint.config.*` / `.eslintrc*` / `.prettierrc*` / `prettier.config.*` / `package.json` 의
-`eslintConfig`·`prettier` 키) 그쪽은 손대지 않는다 — `--force` 로도 덮지 않는다.
-**이유:** lint 설정은 프로젝트가 이미 고른 규칙의 집합이다. 덮으면 전 소스의 위반 목록이 한 번에
-바뀌고, 어느 위반이 코드 문제이고 어느 것이 설정 교체 탓인지 가려낼 수 없게 된다.
-
-| 파일                | 내용                                                                             |
-| ------------------- | -------------------------------------------------------------------------------- |
-| `eslint.config.mjs` | flat config. `@eslint/js` recommended + node·browser globals. JS 계열만 검사한다 |
-| `.prettierrc.json`  | `{}` — prettier 기본값                                                           |
-| `.prettierignore`   | lockfile 과 빌드 산출물(`.next/`, `dist/` 등) 제외                               |
-
-**스크립트는 파일만 만든다. 설치·등록은 이 스킬의 몫이다.** 위 파일이 새로 만들어졌으면 이어서:
-
-1. `pnpm add -D eslint @eslint/js globals prettier`
-2. `package.json` 의 `scripts` 에 `"lint": "eslint ."` · `"format": "prettier --write ."` 를 등록한다
-3. `pnpm lint` 를 실제로 돌려 결과를 확인한 뒤 profile 의 `commands.lint` 를 `pnpm lint` 로 채운다 —
-   절차 3 의 규칙 그대로, `scripts` 에 실제로 생긴 뒤에만 적는다
-
-**이유:** 스크립트가 설치 없이 `scripts` 만 등록하면 게이트가 매 라운드
-`eslint: command not found` 로 실패하고, 그 실패는 코드가 깨진 실패와 출력만으로 구분되지 않는다.
-네트워크를 타는 설치는 스크립트가 아니라 에이전트가 사용자에게 보이는 자리에서 한다.
-
-TypeScript 프로젝트면 `typescript-eslint` 추가를 완료 보고에 **제안으로만** 남긴다 — 기본 설정은
-JS 계열(`js/mjs/cjs/jsx`)만 검사한다.
-
-### CLAUDE.md 가 없으면 코딩 지침 템플릿을 복제한다
-
-프로젝트 루트에 `CLAUDE.md` 가 없으면 `$CURVEZ_ROOT/templates/CLAUDE.md`
-(Karpathy 코딩 지침 12항)를 그대로 복제한다. **이미 있으면 내용과 무관하게 손대지 않는다 —
-`--force` 로도 덮지 않는다.**
-**이유:** CLAUDE.md 는 사용자가 프로젝트 규칙을 직접 쌓아 가는 파일이다. 병합·갱신을 시도하면
-사용자 규칙과 템플릿 문장이 섞여 어느 쪽이 의도인지 가려낼 수 없다. 복제는 빈자리에만 한다.
-
-## 7. 검증하고 넘긴다
+## 검증
 
 ```bash
 node -e '
@@ -393,45 +115,17 @@ process.exit(missing.length || ghost.length ? 1 : 0);
 '
 ```
 
-`missing=none`, `notOnDisk=none`, exit 0 이어야 한다. `missing` 이 남으면 `status: blocked` 로
-핸드오프를 내고 무엇을 못 채웠는지 `blocked_on` 에 `who: user` 로 남긴다. 절대 메우지 마라.
+`missing=none`, `notOnDisk=none`, exit 0 이어야 한다.
 
-이 절차는 `scripts/bootstrap.mjs` 가 실행기로 구현돼 있다. 위 명령을 하나씩 돌려도 되고
-스크립트를 부르면 감지·판정·스캐폴드가 한 번에 끝난다.
+## 다음 단계
 
-```bash
-node "$CURVEZ_ROOT/scripts/bootstrap.mjs" [--dry-run] [--json] [--force]
-```
-
-**스크립트는 사용자에게 묻지 않는다.** 자동 판정만 하고 나머지는 `questions[]` 로 돌려준다.
-그 질문을 사용자에게 전달하는 것은 이 스킬의 몫이다.
-**이유:** 추측으로 채운 값은 다음 라운드에서 사실처럼 쓰이고, 틀렸을 때 출처를 되짚을 수 없다.
-
-### 다음 단계
-
-bootstrap 이 끝나면 **`architecture-setup` 을 부른다.** `.curvez/architecture.md` 의 `## 금지 import`
-표가 없으면 `curvez-structure-reviewer` 가 검사할 대상이 없고, 구현 에이전트는 경계 없이 코드를 쓴다.
-
-`profile.json` 과 `architecture.md` 가 둘 다 채워진 뒤에야 `team-orchestration` 으로 실제 작업 팀을 짠다.
-
-핸드오프는 `agent-contract` 형식으로 `.curvez/handoff/curvez-orchestrator.<timestamp>.json` 에 남긴다.
-`to` 에 `curvez-architect` 를 넣는다.
+끝나면 `architecture-setup` 을 부른다. `## 금지 import` 표가 없으면 `quality-gate` 의 경계 검사가 "검사 못 함" 으로 실패한다.
 
 ## 완료 기준
 
-- [ ] 절차 7 의 검증 명령이 exit 0 이고 `missing=none`, `notOnDisk=none`
-- [ ] `stack` 이 `nextjs` / `monorepo` 중 하나
-- [ ] `commands` 의 모든 값이 `package.json` 의 `scripts` 에 실제로 있는 이름
-- [ ] `git` 의 다섯 키가 전부 있고, `baseBranch` · `releaseBranch` 가 원격에 실제로 있는 브랜치다
-      (`release` 를 새로 만든 경우 `git push -u origin release` 까지 끝냈다.
-      원격을 못 읽었다면 그 키를 지어내지 않고 `blocked` 로 남겼다)
-- [ ] `.curvez/` 아래 `profile.json` `architecture.md` `team.md` `research/` `handoff/` `tmp/` 6개가 전부 존재
-- [ ] `.gitignore` 에 `.curvez/tmp/` 가 **정확히 1줄**, `.curvez/` 통째 무시 줄은 **0줄**
-- [ ] `.github/workflows/ci.yml` 을 만들었거나, **만들지 않은 이유를 보고했다**. 만들었으면 그
-      스텝의 명령이 `commands` 의 값과 문자열까지 같고, 기존 워크플로를 덮은 곳은 0곳이다
-- [ ] lint·prettier 설정이 이미 있어 손대지 않았거나, 새로 만들었다. 만들었으면
-      `pnpm add -D eslint @eslint/js globals prettier` 와 `scripts` 등록까지 끝냈고,
-      `commands.lint` 가 실제로 도는 명령이다
-- [ ] `CLAUDE.md` 가 프로젝트 루트에 있다 — 원래 있었거나, 템플릿을 복제했다
-- [ ] 인터뷰 문항 수 **5문 이하**
-- [ ] 감지·인터뷰로 확인하지 못한 값을 채운 곳 **0곳**
+- [ ] 검증 명령이 exit 0 이고 `missing=none`, `notOnDisk=none`
+- [ ] `commands` 의 모든 값이 `package.json` 의 `scripts` 에 실제로 있는 이름이다
+- [ ] `git` 다섯 키가 있고 `baseBranch`·`releaseBranch` 가 원격에 있다. 못 읽었으면 지어내지 않고 멈췄다
+- [ ] `.gitignore` 에 `.curvez/tmp/` 가 정확히 1줄, `.curvez/` 통째 무시 줄은 0줄
+- [ ] CI 워크플로를 만들었거나 만들지 않은 이유를 보고했다. 기존 워크플로를 덮은 곳은 0곳이다
+- [ ] 설치·push 는 사용자 승인을 받고 했다

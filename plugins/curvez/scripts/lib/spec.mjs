@@ -56,10 +56,9 @@ export const OWNS_SHARED_EXEMPT = [".curvez/handoff/"];
 /**
  * 프로젝트가 소유권 예외를 선언하는 파일과 그 안의 표 제목.
  *
- * 코어 에이전트의 소유 경로 안쪽을 프로젝트 에이전트가 맡아야 할 때가 있다. 그때
- * 코어 정의를 고치면 이 플러그인을 쓰는 다른 프로젝트의 팀 편성이 아무도 요청하지
- * 않았는데 함께 달라진다. `docs/extending.md` 의 "새 에이전트 만들기 4단계" 가 그래서
- * 프로젝트 쪽에만 선언하라고 정했다.
+ * 한 에이전트의 소유 경로 안쪽을 다른 에이전트가 맡아야 할 때가 있다. 그 예외는
+ * 플러그인이 아니라 프로젝트 쪽에만 선언한다. 플러그인을 고치면 이 플러그인을 쓰는
+ * 다른 프로젝트까지 아무도 요청하지 않았는데 함께 달라진다.
  *
  * 그 선언을 기계가 읽지 못하면 문서와 검사가 어긋난다 — 규약대로 적었는데도 검증기가
  * 막는다. 이 값이 그 간격을 메운다.
@@ -105,55 +104,6 @@ export const DESCRIPTION_MIN_LENGTH = 40;
 /** description 에 있어야 할 따옴표 트리거 최소 개수. */
 export const MIN_QUOTED_TRIGGERS = 3;
 
-/** 원칙 파일(principles/*.md) 프론트매터 필수 필드. */
-export const PRINCIPLE_REQUIRED_FIELDS = ["name", "applies_when"];
-
-/** 원칙 본문에 있어야 할 굵은 표제. 규칙만 있고 이유·판정 질문이 없으면 적용 여부를 정할 수 없다. */
-export const PRINCIPLE_REQUIRED_LABELS = [
-  "**이유:**",
-  "**패턴:**",
-  "**판정 질문:**",
-];
-
-/**
- * 오케스트레이터가 워커에게 넘기는 지시서의 칸. 줄 맨 앞에 `칸이름:` 으로 쓴다.
- * 정본은 이 배열이고, 뜻은 `skills/agent-contract/SKILL.md` 의 `## 지시서` 가 설명한다.
- */
-export const BRIEF_FIELDS = [
-  "GOAL",
-  "SCOPE",
-  "CONTEXT",
-  "ACCEPTANCE",
-  "VERIFY",
-  "FORBIDDEN",
-  "REPORT",
-  "STANDING",
-];
-
-/**
- * `없음: <이유>` 로 비울 수 없는 칸.
- * 이유: 목표·쓰기 범위·보고 방식이 없는 워커는 무엇을 어디에 쓰고 어떻게 끝낼지 추측한다.
- */
-export const BRIEF_STRICT_FIELDS = ["GOAL", "SCOPE", "REPORT"];
-
-/** check-grant 의 판정 단계. team 은 권한만, merge 는 권한·멈춤 경로·머지 증거까지 본다. */
-export const GRANT_STAGES = ["team", "merge"];
-
-/** 자율 권한 파일(.curvez/grant.md) 프론트매터 필수 필드. */
-export const GRANT_REQUIRED_FIELDS = ["target", "expires"];
-
-/**
- * 자율 권한이 있어도 머지를 멈추는 변경. diff 에 이 경로가 하나라도 있으면 사람에게 넘긴다.
- * 이유: 의존성 변경은 설치 승인, curvez 자체 수정은 규약 수정 승인, 워크플로 변경은 배포 판단이다.
- * 셋 다 전역 규칙이 권한 밖으로 둔 행동이다. 강제 push·원격 브랜치 삭제는 guard-bash 가 막는다.
- */
-export const GRANT_STOP_PATTERNS = [
-  /(^|\/)package\.json$/,
-  /(^|\/)(pnpm-lock\.yaml|package-lock\.json|yarn\.lock|bun\.lockb?)$/,
-  /^plugins\/curvez\//,
-  /^\.github\/workflows\//,
-];
-
 /** 핸드오프 status 허용값. */
 export const HANDOFF_STATUSES = ["done", "blocked", "partial"];
 
@@ -187,10 +137,10 @@ export const HANDOFF_OPTIONAL_FIELDS = ["findings"];
  */
 export const FINDING_REQUIRED_FIELDS = ["id", "kind", "where", "what", "why"];
 
-/** curvez-reviewer 의 심각도 등급. */
+/** 리뷰 지적의 심각도 등급. */
 export const FINDING_SEVERITIES = ["blocker", "major", "minor"];
 
-/** curvez-structure-reviewer 의 우선순위. */
+/** 구조 지적의 우선순위. */
 export const FINDING_PRIORITIES = ["P0", "P1", "P2", "P3"];
 
 /**

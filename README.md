@@ -1,12 +1,15 @@
 # curvez
 
-Next.js 프로젝트를 위한 **Claude Code 오케스트레이션 하네스**.
+![pnpm](https://img.shields.io/badge/pnpm-11.20.0-F69220?style=flat-square&logo=pnpm&logoColor=white)
 
-아키텍처를 확정하고, 담당 에이전트를 세팅하고, 팀을 병렬로 돌린다.
-프로젝트 고유의 세부 담당은 각 프로젝트에서 직접 만든다 — curvez 는 그 **규약과 검증기**를 제공한다.
+Next.js 프로젝트에 **아키텍처 경계와 검증 규칙을 거는 Claude Code 플러그인**.
+
+에이전트 팀을 짜고 일을 나눠 맡기는 오케스트레이션은 oh-my-claudecode 나 superpowers 같은 플러그인에 맡긴다.
+curvez 는 그 위에 얹혀, 누가 코드를 쓰든 같은 규칙으로 검사되게 한다. 레이어 경계를 기계가 검사할 수 있는
+표로 굳히고, 게이트를 실제로 돌려 수치로 남기고, 검증 없는 "완료" 보고를 막는다.
 
 ```
-에이전트 13종 · 스킬 17종 · 문서 11편 · 실행기 8종 · 훅 6종
+스킬 4종 · 실행기 4종 · 훅 4종 · 프리셋 3종
 ```
 
 ---
@@ -18,7 +21,7 @@ Next.js 프로젝트를 위한 **Claude Code 오케스트레이션 하네스**.
 /plugin install curvez@curvez
 ```
 
-설치하면 에이전트가 서브에이전트 이름으로 등록되고, 스킬이 `curvez:` 네임스페이스로 붙는다.
+설치하면 스킬이 `curvez:` 네임스페이스로 붙는다.
 
 ## 업데이트
 
@@ -40,50 +43,38 @@ discover 는 미설치 플러그인만 보여주므로 이미 설치된 것은 �
 ## 시작
 
 ```
-curvez 붙여줘        →  스택 감지 → .curvez/profile.json → 디렉터리 스캐폴드
-아키텍처 잡아줘       →  DDD 프리셋 + 3~5문 인터뷰 → 경계 규칙 확정
-와이어프레임         →  화면·토큰·컴포넌트 스펙
-웹 구현해줘         →  App Router · RSC 경계를 지킨 구현
-검증해줘             →  typecheck · lint · test · 아키텍처 경계를 실제 실행
+curvez 붙여줘     →  스택 감지 → .curvez/profile.json → 디렉터리 스캐폴드
+아키텍처 잡아줘    →  DDD 프리셋 + 3~5문 인터뷰 → 금지 import 표 확정
+검증해줘          →  아키텍처 경계 · typecheck · lint · test 를 실제로 실행
+핸드오프          →  서브에이전트 결과를 검증 결과가 붙은 계약으로 돌려받기
 ```
 
-순서가 있다. 구현 에이전트는 `.curvez/architecture.md` 의 `## 금지 import` 표를
-위반 판정의 유일한 근거로 쓰므로, 그 파일이 없으면 `blocked` 로 멈춘다.
+순서가 있다. 경계 검사는 `.curvez/architecture.md` 의 `## 금지 import` 표를 유일한 근거로 쓰므로,
+그 표가 없으면 "위반 없음" 이 아니라 "검사 못 함" 으로 실패한다.
 
 ## 무엇을 제공하는가
 
-|                   |                                                                                                                                                              |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **에이전트 13종** | 요구사항·조사·브랜드/마케팅·아키텍처·디자인·웹·QA·리뷰·구조리뷰·교차리뷰·회고·git·오케스트레이터                                                             |
-| **스킬 17종**     | 각 단계의 실행 절차. 사용자 발화로 자동 호출된다                                                                                                             |
-| **실행기**        | `bootstrap` `quality-gate` `doctor` + 검증 3종 + 스캐폴더 2종                                                                                                |
-| **훅 5종**        | 파괴적 git·npm 차단, 금지어 차단, 편집 후 자동 검증, 턴 종료 시 계약 점검, 버전 업데이트 알림                                                                |
-| **프리셋**        | 아키텍처 DDD, 스택 `nextjs`·`monorepo`                                                                                                                       |
-| **벤더 스킬**     | mattpocock-skills 1.2.3 에서 7종, emilkowalski/skills 에서 애니메이션·디자인 9종 복사 (둘 다 MIT). 출처·버전·복사일은 각 `plugins/curvez/vendor/*/VENDOR.md` |
+| | |
+|---|---|
+| **스킬 4종** | `bootstrap` `architecture-setup` `quality-gate` `agent-contract` |
+| **실행기** | `bootstrap` (스택 감지·스캐폴드) · `quality-gate` (게이트 실행·수치 출력) · `validate-handoff` · `doctor` |
+| **훅** | 파괴적 git·npm 차단, 설정 파일 기반 금지어 차단, 턴 종료 시 핸드오프 점검, 버전 업데이트 알림 |
+| **프리셋** | 아키텍처 DDD, 스택 `nextjs`·`monorepo` |
 
 ## 설계의 뼈대
 
 **검증 없는 완료를 금지한다.** 핸드오프의 `status: done` 은 `verification` 이 비면
-검증기가 거부한다. 수신 에이전트가 송신자의 `done` 을 믿고 자기 작업을 시작하므로,
+검증기가 거부한다. 받는 쪽이 `done` 을 믿고 다음 작업을 시작하므로,
 검증되지 않은 완료 하나가 그 뒤 전부를 잘못된 전제 위에 올린다.
 
-**파일 소유권으로 병렬을 판정한다.** 도구 권한이 아니라 경로 분할이 충돌을 막는다.
-소유가 겹치면 병렬을 포기하고 순차로 강등한다 — 같은 파일을 동시에 고치면
-나중에 쓴 쪽이 앞선 쪽을 조용히 지우고, 그 손실은 어디에도 기록되지 않는다.
+**"검사 못 함" 과 "위반 없음" 을 구분한다.** 게이트는 결과와 함께 무엇을 얼마나 검사했는지를 낸다.
+테스트가 0개 돌았거나 경계 규칙을 하나도 못 읽었으면 exit 0 이어도 통과로 치지 않는다.
 
 **규약을 문서가 아니라 스크립트가 강제한다.** 문서에 적힌 규칙은 지켜지지 않는다.
-`doctor` 가 7종을 검사하고 어긋나면 exit 1 이다.
+`doctor` 가 플러그인 구조와 문서를 검사하고 어긋나면 exit 1 이다.
 
 ```bash
 node plugins/curvez/scripts/doctor.mjs --plugin
-```
-
-```
-[A] 정적 규약 — exit code 를 좌우한다
-    OK   플러그인 구조 · 훅 매니페스트 · 제어면 등록
-    OK   문서 동기화 · 문서 연결 · 에이전트 · 스킬
-[B] 런타임 완비 — 참고 정보
-    완비 6/6
 ```
 
 ## 저장소 구조
@@ -91,31 +82,24 @@ node plugins/curvez/scripts/doctor.mjs --plugin
 pnpm 워크스페이스다. 플러그인은 워크스페이스 밖에 있다 — npm 패키지가 아니라 마켓플레이스가 로드한다.
 이 레포는 마켓플레이스 하나에 플러그인 둘을 담는다.
 
-| 경로                           |                                                                                |
-| ------------------------------ | ------------------------------------------------------------------------------ |
-| `plugins/curvez`               | Claude Code 플러그인. 루트 `.claude-plugin/marketplace.json` 이 진입점이다     |
-| `plugins/frontend-constraints` | 두 번째 플러그인. AI 가 쓴 UI 를 디자인 토큰·아키텍처 규칙 안에 묶는다         |
-| `packages/*`                   | 여러 앱이 가져다 쓰는 것. 경계 규칙은 [packages/README.md](packages/README.md) |
-| `apps/*`                       | 배포되는 것. 경계 규칙은 [apps/README.md](apps/README.md)                      |
+| 경로 | |
+|---|---|
+| `plugins/curvez` | Claude Code 플러그인. 루트 `.claude-plugin/marketplace.json` 이 진입점이다 |
+| `plugins/frontend-constraints` | 두 번째 플러그인. AI 가 쓴 UI 를 디자인 토큰·아키텍처 규칙 안에 묶는다 |
+| `packages/*` | 여러 앱이 가져다 쓰는 것. 경계 규칙은 [packages/README.md](packages/README.md) |
+| `apps/*` | 배포되는 것. 경계 규칙은 [apps/README.md](apps/README.md) |
 
 ## 문서
 
-| 알고 싶은 것               | 문서                                                           |
-| -------------------------- | -------------------------------------------------------------- |
-| 전체 그림과 문서 관계      | [docs/README.md](plugins/curvez/docs/README.md)                |
-| 왜 이 구조인가, 버린 대안  | [design-rationale.md](plugins/curvez/docs/design-rationale.md) |
-| 팀을 어떻게 돌리는가       | [team-execution.md](plugins/curvez/docs/team-execution.md)     |
-| 에이전트 간 계약           | [handoff-contract.md](plugins/curvez/docs/handoff-contract.md) |
-| 무엇이 "됐다" 인가         | [quality-model.md](plugins/curvez/docs/quality-model.md)       |
-| 브랜치·커밋·PR             | [git-strategy.md](plugins/curvez/docs/git-strategy.md)         |
-| 내 프로젝트에 확장하기     | [extending.md](plugins/curvez/docs/extending.md)               |
-| 실측으로 밟은 셸 함정 13건 | [shell-pitfalls.md](plugins/curvez/docs/shell-pitfalls.md)     |
-
-제작 기준은 [GOAL.md](GOAL.md) 에 있다.
+| 알고 싶은 것 | 문서 |
+|---|---|
+| 전체 그림, 설치·업데이트, 금지어 설정 | [docs/README.md](plugins/curvez/docs/README.md) |
+| 왜 DDD 인가 | [architecture-presets.md](plugins/curvez/docs/architecture-presets.md) |
+| 핸드오프 계약 | [handoff-contract.md](plugins/curvez/docs/handoff-contract.md) |
+| 무엇이 "됐다" 인가 | [quality-model.md](plugins/curvez/docs/quality-model.md) |
+| 실측으로 밟은 셸 함정 | [shell-pitfalls.md](plugins/curvez/docs/shell-pitfalls.md) |
 
 ## 아직 확인되지 않은 것
 
-`/plugin install` 로 실제 설치했을 때 로더가 에이전트·스킬·훅을 인식하는지는 검증되지 않았다.
-스크립트를 직접 호출한 검증과 실제 프로젝트 한 곳에서의 왕복(`bootstrap → architecture → quality-gate → handoff`)은 마쳤다.
-
-실제 Claude Code 환경에서의 멀티에이전트 end-to-end 왕복도 아직 없다.
+`/plugin install` 로 실제 설치했을 때 로더가 스킬·훅을 인식하는지는 이 구성으로 다시 확인하지 않았다.
+스크립트를 직접 호출한 검증과, 기존 프로젝트(tour)에서 예전 버전과 결과를 맞춰 본 비교는 마쳤다.

@@ -39,8 +39,8 @@
 
 ### 라우터 판정 — App Router 인가 Pages Router 인가
 
-`curvez-nextjs` 는 **App Router 를 전제로 한다.** 자체 검증도 `paths.web` 아래 `src/app` 을 본다.
-Pages Router 프로젝트는 `stack: "nextjs"` 가 맞더라도 담당 에이전트의 전제가 깨지므로 별도 판단이 필요하다.
+curvez 의 DDD 프리셋과 예시 경로는 **App Router 를 전제로 한다**(`src/app`).
+Pages Router 프로젝트는 `stack: "nextjs"` 가 맞더라도 그 전제가 깨지므로 별도 판단이 필요하다.
 
 | 신호                                           | 판정                                                                       |
 | ---------------------------------------------- | -------------------------------------------------------------------------- |
@@ -53,7 +53,7 @@ Pages Router 프로젝트는 `stack: "nextjs"` 가 맞더라도 담당 에이전
 일부 아키텍처는 `src/app` 과 `src/pages` 를 **레이어 이름**으로 쓴다. 파일 규약(`layout`, `_app`)이
 있어야 그것이 Next.js 라우터라는 근거가 된다. → 아래 `## 아키텍처 프리셋과의 조합` 참조.
 
-**Pages Router 로 판정되면 `curvez-nextjs` 를 그대로 붙이지 마라.** bootstrap 은 `stack: "nextjs"` 로
+**Pages Router 로 판정되면 App Router 전제의 경로를 그대로 쓰지 마라.** bootstrap 은 `stack: "nextjs"` 로
 프로파일을 쓰되, Pages Router 라는 사실을 완료 보고에 남긴다. `profile.json` 스키마에는 라우터를
 담을 키가 없다 — 계약 밖의 키를 만들지 말고 보고로 남긴다.
 
@@ -101,8 +101,8 @@ console.log(JSON.stringify({
 **`paths.web` 은 앱 패키지의 루트다. 소스 디렉터리가 아니다.**
 `package.json` 과 `next.config.*` 가 있는 디렉터리를 가리킨다.
 
-**이유:** `curvez-nextjs` 의 자체 검증이 `$WEB/src/domain`, `$WEB/src`, `$WEB/src/app` 을 검사 경로로
-쓴다. `paths.web` 에 `apps/web/src` 를 넣으면 그 검사들이 `apps/web/src/src/...` 를 보게 되어
+**이유:** 금지 import 표의 검사 경로가 `$WEB/src/domain`, `$WEB/src`, `$WEB/src/app` 처럼
+`paths.web` 아래를 가리킨다. `paths.web` 에 `apps/web/src` 를 넣으면 그 검사들이 `apps/web/src/src/...` 를 보게 되어
 전부 0건으로 나오고, 그 0 은 "위반 없음" 과 구분되지 않는다.
 
 | 배치                      | `paths.web`                            | 확인 방법                                             |
@@ -120,8 +120,8 @@ console.log(JSON.stringify({
 ### `paths.domain`
 
 `stack: "nextjs"` 에서는 **쓰지 않는다.** 필수도 선택도 아니다 — 키째로 없어야 한다.
-웹 전용 저장소에 `paths.domain` 을 넣으면 `curvez-orchestrator` 가 monorepo 용 순차 강등 규칙을
-적용해 병렬로 돌 수 있는 라운드를 직렬로 만든다.
+웹 전용 저장소에 `paths.domain` 을 넣으면 monorepo 용 규칙(공유 도메인을 건드리는 작업은 순차로 돌린다)이
+걸려 병렬로 돌 수 있는 작업이 직렬이 된다.
 
 앱 패키지가 여럿이면 그것은 `nextjs` 가 아니라 `monorepo` 다.
 
@@ -142,7 +142,7 @@ ls -d tests test __tests__ e2e 2>/dev/null | head -3
 
 Next.js 에서 흔한 배치는 **코로케이션 + `e2e/` 분리**다 (`src/**/*.test.ts` 가 소스 옆에 흩어져 있고
 Playwright 스펙만 `e2e/` 에 모임). 이때 단일 디렉터리로 잡히지 않으므로 **`paths.tests` 를 생략한다.**
-`curvez-nextjs` 와 `curvez-qa` 는 키가 없으면 `*.test.*` / `*.spec.*` / `__tests__/` 규칙으로 찾는다.
+키가 없으면 `*.test.*` / `*.spec.*` / `__tests__/` 관례로 찾는다.
 
 여러 후보가 잡히는데 하나를 못 고르겠으면 인터뷰 5번 문항으로 올린다. 배열로 넣지 마라 —
 `paths.tests` 는 단일 문자열이다.
@@ -165,8 +165,8 @@ Playwright 스펙만 `e2e/` 에 모임). 이때 단일 디렉터리로 잡히지
 
 빈 문자열도 `null` 도 아니다. **키가 없어야 한다.**
 
-**이유:** `commands` 는 `curvez-qa` 와 `curvez-nextjs` 가 `eval` 로 그대로 실행하는 값이다.
-없는 스크립트를 적어 두면 매 라운드 `Command "typecheck" not found` 로 끝나는데, 이 실패는
+**이유:** `commands` 는 `quality-gate` 가 그대로 실행하는 값이다.
+없는 스크립트를 적어 두면 매번 `Command "typecheck" not found` 로 끝나는데, 이 실패는
 코드가 깨진 실패와 출력만으로 구분되지 않아 구현 에이전트가 멀쩡한 코드를 고치기 시작한다.
 `""` 는 더 나쁘다 — `[ -n "$TYPECHECK" ]` 를 통과하지 못해 조용히 건너뛰어지고, 게이트가
 안 돌았다는 사실 자체가 로그에 안 남는다.
@@ -270,8 +270,7 @@ monorepo 면 `$(paths.web)/next.config.*` 를 본다.
 | 서버 전용 모듈(DB 클라이언트, API 키 래퍼)을 `"use client"` 파일이 import | 번들 크기가 튀거나 빌드가 깨진다. 안 깨지면 그대로 나간다 |
 | `"use client"` 를 `page.tsx`·`layout.tsx` 최상단에 붙임                   | 그 아래 전 트리가 클라이언트 번들로 넘어간다              |
 
-bootstrap 단계에서 할 수 있는 것은 확인과 보고뿐이다. 판정과 수정은 `curvez-nextjs` 와
-`curvez-reviewer` 의 몫이다.
+bootstrap 단계에서 할 수 있는 것은 확인과 보고뿐이다. 판정과 수정은 구현과 리뷰의 몫이다.
 
 ```bash
 grep -rn "NEXT_PUBLIC_" --include="*.ts" --include="*.tsx" --exclude-dir=node_modules --exclude-dir=.next . | head
@@ -281,7 +280,7 @@ grep -rn "NEXT_PUBLIC_" --include="*.ts" --include="*.tsx" --exclude-dir=node_mo
 
 ### 4. `src/` 유무가 후속 검사 경로를 바꾼다
 
-`curvez-nextjs` 의 자체 검증은 `$WEB/src/domain`, `$WEB/src`, `$WEB/src/app` 을 고정으로 본다.
+금지 import 표의 예시 검사 경로는 `$WEB/src/domain`, `$WEB/src`, `$WEB/src/app` 이다.
 루트에 `src/` 없이 `app/` 이 바로 있는 프로젝트에서는 그 검사들이 전부 **0건**으로 나오고,
 0 은 "위반 없음" 과 구분되지 않는다.
 

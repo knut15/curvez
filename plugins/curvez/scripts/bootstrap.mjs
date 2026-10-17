@@ -406,12 +406,6 @@ const ARCH_SKELETON = `# 아키텍처
 |---|---|---|
 `;
 
-const TEAM_SKELETON = `# 팀 구성
-
-> \`curvez:team-orchestration\` 이 라운드마다 다시 쓴다.
-
-이번 라운드에 세팅된 담당이 없다.
-`;
 
 /** CI 에서 돌릴 게이트. 순서는 싼 것부터 — 먼저 깨지는 것이 먼저 보고돼야 한다. */
 const CI_GATES = ["typecheck", "lint", "test", "build"];
@@ -814,7 +808,7 @@ function scaffold(profile, ci, lint, branch) {
   const created = [];
   const skipped = [];
 
-  for (const d of ["", "research", "handoff", "tmp", "qa"]) {
+  for (const d of ["", "handoff", "tmp", "qa"]) {
     const p = d ? join(CURVEZ, d) : CURVEZ;
     if (!existsSync(p)) {
       mkdirSync(p, { recursive: true });
@@ -823,7 +817,7 @@ function scaffold(profile, ci, lint, branch) {
   }
 
   // 빈 디렉터리는 클론 시 사라진다.
-  for (const d of ["research", "handoff"]) {
+  for (const d of ["handoff"]) {
     const keep = join(CURVEZ, d, ".gitkeep");
     if (!existsSync(keep)) {
       writeFileSync(keep, "");
@@ -834,7 +828,6 @@ function scaffold(profile, ci, lint, branch) {
   const files = [
     [PROFILE, JSON.stringify(profile, null, 2) + "\n"],
     [join(CURVEZ, "architecture.md"), ARCH_SKELETON],
-    [join(CURVEZ, "team.md"), TEAM_SKELETON],
   ];
   for (const [p, content] of files) {
     const rel = p.slice(ROOT.length + 1);

@@ -18,26 +18,6 @@
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/guard-forbidden-words.mjs\""
           }
         ]
-      },
-      {
-        "matcher": "Agent|Task",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/check-brief.mjs\""
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/validate-on-write.mjs\""
-          }
-        ]
       }
     ],
     "Stop": [
