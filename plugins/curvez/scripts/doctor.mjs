@@ -326,7 +326,7 @@ function checkRuntimeReadiness() {
     {
       path: "presets/architecture/ddd.md",
       what: "DDD 아키텍처 프리셋",
-      fallback: "curvez-architect 의 내장 폴백 레이어",
+      fallback: "architecture-setup 의 내장 폴백 레이어",
     },
     {
       path: "presets/stack/nextjs.md",

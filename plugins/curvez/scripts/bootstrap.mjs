@@ -808,7 +808,7 @@ function scaffold(profile, ci, lint, branch) {
   const created = [];
   const skipped = [];
 
-  for (const d of ["", "research", "handoff", "tmp", "qa"]) {
+  for (const d of ["", "handoff", "tmp", "qa"]) {
     const p = d ? join(CURVEZ, d) : CURVEZ;
     if (!existsSync(p)) {
       mkdirSync(p, { recursive: true });
@@ -817,7 +817,7 @@ function scaffold(profile, ci, lint, branch) {
   }
 
   // 빈 디렉터리는 클론 시 사라진다.
-  for (const d of ["research", "handoff"]) {
+  for (const d of ["handoff"]) {
     const keep = join(CURVEZ, d, ".gitkeep");
     if (!existsSync(keep)) {
       writeFileSync(keep, "");

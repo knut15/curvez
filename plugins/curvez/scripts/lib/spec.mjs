@@ -138,7 +138,7 @@ export const HANDOFF_OPTIONAL_FIELDS = ["findings"];
  */
 export const FINDING_REQUIRED_FIELDS = ["id", "kind", "where", "what", "why"];
 
-/** curvez-reviewer 의 심각도 등급. */
+/** 리뷰 지적의 심각도 등급. */
 export const FINDING_SEVERITIES = ["blocker", "major", "minor"];
 
 /** curvez-structure-reviewer 의 우선순위. */
