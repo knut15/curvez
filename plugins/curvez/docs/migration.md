@@ -12,6 +12,51 @@ curvez 는 **user scope 플러그인**이다. 한 번 업데이트하면 그 계
 
 ---
 
+## 0.7.0 — 오케스트레이션을 빼고 경계·검증 규칙만 남긴다
+
+에이전트 팀을 짜고 일을 나눠 맡기는 기능은 oh-my-claudecode·superpowers 와 겹쳐서 뺐다.
+curvez 는 이제 그 위에 얹어 쓰는 **규칙·검증 계층**이다.
+
+### 무엇이 바뀌었나
+
+| #   | 변경 | 정본 |
+| --- | --- | --- |
+| ①   | **에이전트를 전부 지웠다.** 오케스트레이터·요구사항·조사·아키텍처·디자인·구현·QA·리뷰·구조 리뷰·회고·git·마케팅 담당 | — |
+| ②   | **스킬은 4종만 남았다.** `bootstrap` `architecture-setup` `quality-gate` `agent-contract`. 나머지(`team-orchestration` `research-brief` `wireframe-spec` `nextjs-implementation` `commit` `branching` `retrospective` `structure-audit` `authoring-agents` `authoring-skills` `design-routing` `motion-standards`)는 지웠다 | `skills/` |
+| ③   | **`architecture-setup` 이 혼자 읽힌다.** 지운 아키텍처 에이전트에 있던 폴백 레이어·인터뷰 문항·헤딩 형식·판단 기준을 스킬로 옮겼다 | `skills/architecture-setup/SKILL.md` |
+| ④   | **arch 게이트가 검사 경로 여러 개를 적은 규칙도 검사한다.** 예전에는 `src/domain/ src/infrastructure/` 처럼 공백으로 여러 경로를 적은 행을 "경로 없음" 으로 건너뛰었다 | `scripts/quality-gate.mjs` |
+| ⑤   | **금지어 훅이 설정 파일에서 금지어를 읽는다.** 설정이 없으면 아무것도 막지 않는다 | [README 의 금지어 설정](README.md#금지어-설정) |
+| ⑥   | **`validate-agents` `validate-skills` `new-agent` `new-skill` 과 `validate-on-write` 훅을 지웠다.** doctor 는 프로젝트의 `.claude/skills/` 를 더 이상 검증하지 않는다 | `scripts/doctor.mjs` |
+| ⑦   | **bootstrap 이 `.curvez/team.md` 와 `.curvez/research/` 를 만들지 않는다** | `scripts/bootstrap.mjs` |
+| ⑧   | **bootstrap 스킬의 push·설치는 사용자 승인 뒤에 한다** | `skills/bootstrap/SKILL.md` |
+
+핸드오프 스키마는 그대로다.
+
+### 업데이트 절차 (필수)
+
+절차의 정본은 [README 의 업데이트](README.md#업데이트)다. 끝나면 `installed_plugins.json` 의
+`curvez@curvez` 가 `version: "0.7.0"` 인지 확인하고, `node "$CLAUDE_PLUGIN_ROOT/scripts/doctor.mjs"` 로
+exit 0 을 본다.
+
+### 프로젝트에서 할 일 (조건부)
+
+- **'벽' 같은 금지어 차단을 계속 쓰려면** — `~/.claude/curvez/forbidden-words.json` 이나
+  `.curvez/forbidden-words.json` 에 낱말을 적는다. 이 파일이 없으면 0.7.0 의 훅은 아무것도 막지 않는다
+- **경로를 여러 개 적은 금지 import 규칙이 있는 프로젝트** — 그 규칙이 처음으로 검사된다.
+  예전에 초록불이던 arch 게이트에서 위반이 새로 나올 수 있다. 그건 새로 생긴 위반이 아니라 그동안 못 보던 위반이다
+- **CLAUDE.md·프로젝트 문서가 지운 스킬·에이전트를 부르는 프로젝트** — `curvez:team-orchestration` 이나
+  `curvez-orchestrator` 같은 이름은 더 이상 없다. 그 자리는 OMC·superpowers 의 해당 기능으로 바꾼다
+- **0.6.0 을 설치해 쓰던 경우** — 0.6.0 에만 있던 `curvez-mode`, 교차 리뷰어, `.curvez/grant.md` 자율 권한도
+  0.7.0 에는 없다
+
+### 하지 않아도 되는 것
+
+- **`.curvez/team.md` `requirements.md` `design/` `research/` 정리** — curvez 가 더 이상 읽지도 쓰지도 않는다.
+  남겨 둬도 아무 일이 없다. 지울지는 프로젝트가 정한다
+- **기존 핸드오프 마이그레이션** — 스키마 변경이 없다. `from`·`to` 에 지운 에이전트 이름이 있어도 검증을 통과한다
+
+---
+
 ## 마켓플레이스 0.6.0 — `frontend-constraints` 플러그인 추가
 
 **curvez 플러그인 자체는 `0.5.0` 그대로다.** 바뀐 것은 마켓플레이스이고, 이 레포가 플러그인

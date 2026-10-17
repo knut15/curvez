@@ -161,6 +161,8 @@ function checkDocDrift() {
     t.replace(/```[\s\S]*?```/g, "").replace(/`[^`\n]*`/g, "");
 
   for (const file of docs) {
+    // 마이그레이션 노트는 버전별 이력이다. "에이전트 12종" 은 그 버전의 사실이라 지금과 달라도 맞다.
+    if (file === join(PLUGIN_ROOT, "docs", "migration.md")) continue;
     const text = strip(readFileSync(file, "utf8"));
     const rel = file.slice(PLUGIN_ROOT.length + 1) || file;
 
