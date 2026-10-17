@@ -11,9 +11,12 @@ forbidden-words: allow  ← 이 파일은 금지어를 케이스로 적어야 �
 
 그래서 통과 케이스를 차단 케이스보다 많이 둔다.
 
+금지어는 설정 파일에서 읽는다. 테스트는 HOME 과 cwd 를 임시 디렉터리로 바꿔
+사용자의 실제 설정을 읽지 않게 한다.
+
 exit 0 = 전부 통과.
 """
-import json, subprocess, sys, os
+import json, subprocess, sys, os, tempfile
 
 os.chdir(os.path.join(os.path.dirname(__file__), "..", ".."))
 HOOK = "hooks/guard-forbidden-words.mjs"
@@ -49,14 +52,49 @@ cases = [
     ({}, 0, "tool_input 이 비어 있음"),
 ]
 
+WALL = {"words": [{"word": "벽", "hint": "목록·화면 → \"목록에 실린다\""}]}
+
+
+def run(tool_input, user=None, project=None):
+    """user·project 는 각 위치에 쓸 설정. dict 면 JSON 으로, str 이면 그대로 쓴다."""
+    with tempfile.TemporaryDirectory() as home, tempfile.TemporaryDirectory() as proj:
+        for base, conf in ((os.path.join(home, ".claude", "curvez"), user),
+                           (os.path.join(proj, ".curvez"), project)):
+            if conf is None:
+                continue
+            os.makedirs(base)
+            with open(os.path.join(base, "forbidden-words.json"), "w") as f:
+                f.write(conf if isinstance(conf, str) else json.dumps(conf))
+        payload = json.dumps({"tool_name": "Write", "tool_input": tool_input, "cwd": proj})
+        return subprocess.run(["node", HOOK], input=payload, capture_output=True,
+                              text=True, env={**os.environ, "HOME": home})
+
+
 fails = []
+# 위 케이스는 사용자 단위 설정에 '벽' 이 있는 상태로 돈다
 for tool_input, want, label in cases:
-    payload = json.dumps({"tool_name": "Write", "tool_input": tool_input})
-    r = subprocess.run(
-        ["node", HOOK], input=payload, capture_output=True, text=True
-    )
+    r = run(tool_input, user=WALL)
     if r.returncode != want:
         fails.append(f"{label}: exit {r.returncode} (기대 {want}) — {tool_input}")
+
+# 설정 위치와 합치기
+WROTE = {"file_path": NOWHERE, "content": "첫 번째 벽을 넘었다"}
+CHAL = {"file_path": NOWHERE, "content": "이번 난관을 넘었다"}
+config_cases = [
+    (WROTE, None, None, 0, "설정이 없으면 아무것도 막지 않는다"),
+    (WROTE, None, WALL, 2, "프로젝트 설정만 있어도 막는다"),
+    (CHAL, WALL, {"words": [{"word": "난관"}]}, 2, "두 설정의 낱말을 합친다 — 프로젝트 쪽"),
+    (WROTE, WALL, {"words": [{"word": "난관"}]}, 2, "두 설정의 낱말을 합친다 — 사용자 쪽"),
+    (WROTE, "{깨진 JSON", None, 2, "깨진 설정은 조용히 꺼지지 않고 막는다"),
+    (WROTE, {"words": [{"word": "wall"}]}, None, 2, "한글이 아닌 낱말은 설정 오류로 막는다"),
+    ({"file_path": NOWHERE}, "{깨진 JSON", None, 0, "쓰는 내용이 없으면 설정을 읽지 않는다"),
+]
+for tool_input, user, project, want, label in config_cases:
+    r = run(tool_input, user=user, project=project)
+    if r.returncode != want:
+        fails.append(f"{label}: exit {r.returncode} (기대 {want}) — {r.stderr.strip()[:120]}")
+
+cases = cases + config_cases
 
 if fails:
     print(f"FAILED {len(fails)}/{len(cases)}")
