@@ -15,7 +15,7 @@ description: profile.json 의 commands 로 아키텍처 경계·typecheck·lint�
 ## 1. 실행기를 돌린다
 
 ```bash
-node "$CLAUDE_PLUGIN_ROOT/scripts/quality-gate.mjs" [--json] [--only arch,typecheck] [--no-stop]
+node "$CURVEZ_ROOT/scripts/quality-gate.mjs" [--json] [--only arch,typecheck] [--no-stop]
 ```
 
 실행기가 하는 일:

@@ -29,13 +29,14 @@ curvez 는 이제 그 위에 얹어 쓰는 **규칙·검증 계층**이다.
 | ⑥   | **`validate-agents` `validate-skills` `new-agent` `new-skill` 과 `validate-on-write` 훅을 지웠다.** doctor 는 프로젝트의 `.claude/skills/` 를 더 이상 검증하지 않는다 | `scripts/doctor.mjs` |
 | ⑦   | **bootstrap 이 `.curvez/team.md` 와 `.curvez/research/` 를 만들지 않는다** | `scripts/bootstrap.mjs` |
 | ⑧   | **bootstrap 스킬의 push·설치는 사용자 승인 뒤에 한다** | `skills/bootstrap/SKILL.md` |
+| ⑨   | **0.6.0 에서 더한 원칙 파일·지시서 훅(`check-brief`)·교차 리뷰어·`curvez-mode`·자율 권한(`check-grant`)을 지웠다.** 플러그인 경로 변수 `$CURVEZ_ROOT` 는 그대로 둔다 | `hooks/notify-update.mjs` |
 
 핸드오프 스키마는 그대로다.
 
 ### 업데이트 절차 (필수)
 
 절차의 정본은 [README 의 업데이트](README.md#업데이트)다. 끝나면 `installed_plugins.json` 의
-`curvez@curvez` 가 `version: "0.7.0"` 인지 확인하고, `node "$CLAUDE_PLUGIN_ROOT/scripts/doctor.mjs"` 로
+`curvez@curvez` 가 `version: "0.7.0"` 인지 확인하고, `node "$CURVEZ_ROOT/scripts/doctor.mjs"` 로
 exit 0 을 본다.
 
 ### 프로젝트에서 할 일 (조건부)
@@ -46,14 +47,42 @@ exit 0 을 본다.
   예전에 초록불이던 arch 게이트에서 위반이 새로 나올 수 있다. 그건 새로 생긴 위반이 아니라 그동안 못 보던 위반이다
 - **CLAUDE.md·프로젝트 문서가 지운 스킬·에이전트를 부르는 프로젝트** — `curvez:team-orchestration` 이나
   `curvez-orchestrator` 같은 이름은 더 이상 없다. 그 자리는 OMC·superpowers 의 해당 기능으로 바꾼다
-- **0.6.0 을 설치해 쓰던 경우** — 0.6.0 에만 있던 `curvez-mode`, 교차 리뷰어, `.curvez/grant.md` 자율 권한도
-  0.7.0 에는 없다
+- **0.6.0 을 설치해 쓰던 경우** — 0.6.0 에만 있던 `curvez-mode`, 교차 리뷰어, `.curvez/grant.md` 자율 권한, 원칙 파일,
+  지시서 훅도 0.7.0 에는 없다. `.curvez/grant.md` 와 `.curvez/standing.md` 는 남겨 둬도 아무것도 읽지 않는다
+- **0.5.0 에서 바로 올리는 경우** — 프로젝트가 직접 만든 스킬·문서에 `$CLAUDE_PLUGIN_ROOT` 가 있으면 `$CURVEZ_ROOT` 로 바꾼다.
+  앞의 것은 Bash 명령에 전달되지 않아 빈 경로가 된다. 업데이트 뒤 세션을 새로 열어야 `CURVEZ_ROOT` 가 잡힌다
 
 ### 하지 않아도 되는 것
 
 - **`.curvez/team.md` `requirements.md` `design/` `research/` 정리** — curvez 가 더 이상 읽지도 쓰지도 않는다.
   남겨 둬도 아무 일이 없다. 지울지는 프로젝트가 정한다
 - **기존 핸드오프 마이그레이션** — 스키마 변경이 없다. `from`·`to` 에 지운 에이전트 이름이 있어도 검증을 통과한다
+
+---
+
+## 0.6.0 — pstack 참고 리팩터링: 원칙·지시서·교차 검토·플레이북·자율 권한
+
+설계와 단계별 기록은 저장소의 `docs/goals/pstack-refactor.md` 에 있다.
+
+| #   | 변경                                                                                                              | 정본                                            |
+| --- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| ①   | 여러 정의에 걸친 규칙 12개를 원칙 파일로 나눴다                                                                   | `principles/README.md`                          |
+| ②   | curvez 워커 호출은 지시서 칸 8개를 채워야 뜬다. 빈 칸이 있으면 `check-brief` 훅이 막는다                          | `skills/agent-contract/SKILL.md` 의 `## 지시서` |
+| ③   | 다른 모델(codex)이 diff 를 따로 보는 `curvez-cross-reviewer` 를 더했다. 에이전트 13종                             | `agents/curvez-cross-reviewer.md`               |
+| ④   | 플러그인 경로 변수를 `$CLAUDE_PLUGIN_ROOT` 에서 `$CURVEZ_ROOT` 로 옮겼다. SessionStart 훅이 내보낸다              | `hooks/notify-update.mjs`                       |
+| ⑤   | 작업 종류별 플레이북 입구 `curvez-mode` 와 플레이북 6개를 더했다. 스킬 17종                                       | `skills/curvez-mode/SKILL.md`                   |
+| ⑥   | `.curvez/grant.md` 자율 권한과 머지 판정기 `check-grant` 를 더했다. 머지는 리뷰·QA·교차 검토 증거가 있어야 열린다 | `scripts/check-grant.mjs`                       |
+
+**프로젝트에서 할 일**
+
+- 업데이트 뒤 세션을 새로 연다. `CURVEZ_ROOT` 는 세션이 시작될 때 내보낸다
+- 프로젝트가 직접 만든 에이전트·스킬에 `$CLAUDE_PLUGIN_ROOT` 가 있으면 `$CURVEZ_ROOT` 로 바꾼다. 앞의 것은 Bash 명령에 전달되지 않아 빈 경로가 된다
+- 프로젝트 문서나 스킬이 curvez 워커를 자유 서술로 부르고 있으면 지시서 형식으로 바꾼다. 그대로 두면 호출이 막힌다
+- 선택: 교차 검토를 쓰려면 `profile.json` 에 `"crossReview": { "cli": "codex" }` 를 넣는다. codex CLI 가 필요하다
+- 선택: 자율 머지를 쓰려면 사용자 원문을 인용한 `.curvez/grant.md` 를 두고, 머지 대상이 `git.humanMergeTargets` 에 없어야 한다
+
+**알려진 한계:** 헤드리스(`claude -p`) 자율 실행이 오케스트레이터 도중에 멈추는 일이 있었다. 원인은 찾지 못했다.
+대화형 세션에서 쓰는 것을 권한다.
 
 ---
 
@@ -101,7 +130,7 @@ curvez 플러그인과 독립이다. 하나만 깔아도 된다.
 움직일 때 무엇이 맞는지는 다루지 않았다. 구현 에이전트가 이징·지속 시간·중단 가능성을 각자
 추측하던 자리가 조회 가능한 표로 채워진다.
 
-에이전트 12종 라인업과 핸드오프 스키마는 그대로다. 벤더 사본은 `skills/` 가 아니라
+그때의 에이전트 라인업(12개)과 핸드오프 스키마는 그대로였다. 벤더 사본은 `skills/` 가 아니라
 `vendor/` 아래에 있어 curvez 스킬 개수에 들어가지 않는다 — 개수가 16종이 된 것은 새로 만든
 `motion-standards` 하나 때문이다.
 

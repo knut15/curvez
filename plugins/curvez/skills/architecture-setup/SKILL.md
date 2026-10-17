@@ -27,7 +27,7 @@ test -f .curvez/architecture.md && echo "재실행" || echo "최초 실행"
 
 curvez 는 **DDD 하나만** 제공한다. 다른 구조를 쓰고 싶다는 요청이 없으면 되묻지 않고 DDD 로 진행한다.
 
-프리셋 본문은 `$CLAUDE_PLUGIN_ROOT/presets/architecture/ddd.md` 에 있다. 이 파일이 없어도 멈추지 않는다.
+프리셋 본문은 `$CURVEZ_ROOT/presets/architecture/ddd.md` 에 있다. 이 파일이 없어도 멈추지 않는다.
 아래 폴백 레이어로 진행하고 `## 결정 로그` 에 "프리셋 파일 부재로 내장 폴백 사용" 을 남긴다.
 
 | 프리셋 | 폴백 레이어 (안쪽 → 바깥쪽) |

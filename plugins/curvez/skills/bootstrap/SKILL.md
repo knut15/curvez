@@ -15,8 +15,8 @@ description: 프로젝트에 curvez 를 붙인다. 스택을 감지해 `.curvez/
 ## 1. 실행기를 돌린다
 
 ```bash
-node "$CLAUDE_PLUGIN_ROOT/scripts/bootstrap.mjs" --dry-run --json   # 무엇을 만들지 먼저 본다
-node "$CLAUDE_PLUGIN_ROOT/scripts/bootstrap.mjs" --json             # 실제로 만든다
+node "$CURVEZ_ROOT/scripts/bootstrap.mjs" --dry-run --json   # 무엇을 만들지 먼저 본다
+node "$CURVEZ_ROOT/scripts/bootstrap.mjs" --json             # 실제로 만든다
 ```
 
 실행기는 사용자에게 묻지 않는다. 자동으로 판정한 것만 쓰고, 판정하지 못한 것은 `questions[]` 로 돌려준다.
@@ -35,7 +35,7 @@ node "$CLAUDE_PLUGIN_ROOT/scripts/bootstrap.mjs" --json             # 실제로 
 이미 있는 워크플로, lint 설정, `CLAUDE.md` 는 `--force` 로도 덮지 않는다. `--force` 는 `profile.json` 에만 적용된다.
 
 스택 감지가 애매하면 [references/stack-detection.md](references/stack-detection.md) 를 읽는다.
-스택이 정해지면 `$CLAUDE_PLUGIN_ROOT/presets/stack/<stack>.md` 를 읽는다. 그 스택에서만 생기는 오탐과 경로 후보가 있다.
+스택이 정해지면 `$CURVEZ_ROOT/presets/stack/<stack>.md` 를 읽는다. 그 스택에서만 생기는 오탐과 경로 후보가 있다.
 
 ## 2. 질문을 한 번에 묻는다
 

@@ -74,7 +74,7 @@ grep '"version"' ~/.claude/plugins/marketplaces/curvez/plugins/curvez/.claude-pl
 | `~/.claude/plugins/installed_plugins.json` 의 `curvez@curvez` | `version` 과 `gitCommitSha` 가 올라갔다 |
 
 ```bash
-node "$CLAUDE_PLUGIN_ROOT/scripts/doctor.mjs"
+node "$CURVEZ_ROOT/scripts/doctor.mjs"
 ```
 
 exit 0 이면 된다. **업데이트 뒤 Claude Code 를 재시작한다.** 돌고 있는 세션은 옛 버전을 물고 있다.

@@ -74,7 +74,7 @@ description: 서브에이전트가 작업 결과를 넘기는 핸드오프 계�
 5. 파일로 쓰고 검증한다
 
 ```bash
-node "$CLAUDE_PLUGIN_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
+node "$CURVEZ_ROOT/scripts/validate-handoff.mjs" .curvez/handoff/
 ```
 
 ## 읽는 순서
