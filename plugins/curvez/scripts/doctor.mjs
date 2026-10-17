@@ -37,12 +37,10 @@ function run(label, script, args) {
  * curvez 의 참조는 층위마다 형태가 다르다. 마크다운 링크만 세면 대부분이 고립으로 잡힌다 —
  * 실제로 이름 참조를 못 보고 9건을 오탐한 적이 있다.
  *
- *   에이전트  → 이름(`curvez-designer`)으로 참조된다. 제어면 등록 검사가 따로 본다
- *   스킬      → 이름(`curvez:wireframe-spec`, `skills/<name>`)으로 참조된다
+ *   스킬      → 이름(`curvez:quality-gate`, `skills/<name>`)으로 참조된다
  *   docs      → README 인덱스에서 링크로 도달해야 한다
- *   references→ 소속 SKILL.md 가 포인터로 가리켜야 한다 (validate-skills 가 본다)
  *
- * 여기서는 스킬과 docs 두 층을 본다. 나머지는 각자의 검사가 담당한다.
+ * 여기서는 스킬과 docs 두 층을 본다.
  */
 function checkOrphanDocs() {
   const problems = [];
@@ -257,41 +255,6 @@ function checkDocDrift() {
 }
 
 /**
- * 에이전트가 제어면에 등록됐는지 본다.
- *
- * 정의가 규약을 지키는 것과 오케스트레이터가 그 존재를 아는 것은 다르다.
- * 실제로 `curvez-git` 을 만들고 세 곳 어디에도 등록하지 않아, 검증은 전부 통과하는데
- * 라운드 그래프에 자리가 없어 호출될 수 없는 상태가 됐다.
- *
- * 오케스트레이터 자신은 제외한다 — 자기를 자기 통신 표에 적지 않는다.
- */
-function checkControlPlane() {
-  const registries = [
-    "agents/curvez-orchestrator.md",
-    "skills/team-orchestration/SKILL.md",
-    "docs/team-execution.md",
-  ];
-  const texts = registries.map((r) => {
-    const p = join(PLUGIN_ROOT, r);
-    return { rel: r, text: existsSync(p) ? readFileSync(p, "utf8") : "" };
-  });
-
-  const dir = join(PLUGIN_ROOT, "agents");
-  if (!existsSync(dir)) return { ok: true, orphans: [] };
-
-  const orphans = [];
-  for (const f of readdirSync(dir).filter((n) => n.endsWith(".md"))) {
-    const name = f.slice(0, -3);
-    if (name === "curvez-orchestrator") continue;
-    const missing = texts
-      .filter((t) => !t.text.includes(name))
-      .map((t) => t.rel);
-    if (missing.length) orphans.push({ name, missing });
-  }
-  return { ok: orphans.length === 0, orphans };
-}
-
-/**
  * 훅 매니페스트가 로드 가능한 형태인지 본다.
  *
  * 파일이 존재한다는 것과 로더가 읽을 수 있다는 것은 다르다. 실제로 최상위 `hooks` 키가 없어
@@ -422,17 +385,12 @@ function checkStructure() {
     "scripts/lib/frontmatter.mjs",
     "scripts/lib/report.mjs",
     "scripts/schema/handoff.schema.json",
-    "scripts/validate-agents.mjs",
-    "scripts/validate-skills.mjs",
     "scripts/validate-handoff.mjs",
-    "scripts/new-agent.mjs",
-    "scripts/new-skill.mjs",
     "scripts/bootstrap.mjs",
     "scripts/quality-gate.mjs",
     "hooks/hooks.json",
     "hooks/guard-bash.mjs",
     "hooks/guard-forbidden-words.mjs",
-    "hooks/validate-on-write.mjs",
     "hooks/check-handoff.mjs",
     "hooks/notify-update.mjs",
   ];
@@ -465,23 +423,6 @@ function main() {
   );
   results.push(["훅 매니페스트", hookManifest.ok]);
 
-  const cp = checkControlPlane();
-  if (cp.ok) {
-    console.log(
-      "OK 제어면 등록 — 모든 에이전트가 오케스트레이터·팀 스킬·docs 에 등록됨",
-    );
-  } else {
-    for (const o of cp.orphans) {
-      console.log(
-        `FAIL 제어면 등록 — ${o.name} 이 등록되지 않았다: ${o.missing.join(", ")}`,
-      );
-    }
-    console.log(
-      "     정의만으로는 호출되지 않는다. authoring-agents 의 `### 4. 제어면에 등록한다` 를 따르라.",
-    );
-  }
-  results.push(["제어면 등록", cp.ok]);
-
   const drift = checkDocDrift();
   if (drift.ok) {
     console.log("OK 문서 동기화 — 개수·구현 상태 서술이 실제와 일치");
@@ -498,38 +439,11 @@ function main() {
   }
   results.push(["문서 연결", orphan.ok]);
 
-  const agentTargets = [join(PLUGIN_ROOT, "agents")];
-  const skillTargets = [join(PLUGIN_ROOT, "skills")];
   const handoffTargets = [];
 
   if (!pluginOnly) {
-    const projectAgents = join(process.cwd(), ".claude", "agents");
-    const projectSkills = join(process.cwd(), ".claude", "skills");
     const projectHandoff = join(process.cwd(), ".curvez", "handoff");
-    if (existsSync(projectAgents)) agentTargets.push(projectAgents);
-    if (existsSync(projectSkills)) skillTargets.push(projectSkills);
     if (existsSync(projectHandoff)) handoffTargets.push(projectHandoff);
-  }
-
-  const existingAgents = agentTargets.filter(existsSync);
-  const existingSkills = skillTargets.filter(existsSync);
-
-  if (existingAgents.length > 0) {
-    results.push([
-      "에이전트",
-      run("에이전트 검증", "validate-agents.mjs", existingAgents),
-    ]);
-  } else {
-    console.log("\n── 에이전트 검증 ──\n건너뜀 — agents/ 디렉터리가 없다.");
-  }
-
-  if (existingSkills.length > 0) {
-    results.push([
-      "스킬",
-      run("스킬 검증", "validate-skills.mjs", existingSkills),
-    ]);
-  } else {
-    console.log("\n── 스킬 검증 ──\n건너뜀 — skills/ 디렉터리가 없다.");
   }
 
   if (handoffTargets.length > 0) {
